@@ -18,11 +18,9 @@ import SettingsView, { AVAILABLE_THEMES } from './components/SettingsView';
 import LongTermView from './components/LongTermView';
 import InvestmentsView from './components/InvestmentsView';
 import LoginScreen from './components/LoginScreen';
-import AIChatOverlay from './components/AIChatOverlay';
 import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification } from './types';
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { IconBell, IconMore } from './components/Icons';
-import { MessageSquare, RefreshCw } from 'lucide-react';
 
 // Firebase Services
 import { loginUser, registerUser, loadUserData, saveCollection, saveUserField } from './services/firebase';
@@ -132,7 +130,6 @@ const App: React.FC = () => {
 
   // View State
   const [currentView, setCurrentView] = useState<AppView>('home');
-  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Modal States
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
@@ -859,17 +856,6 @@ const App: React.FC = () => {
          onClose={handleCloseAnalytics}
          transactions={transactions}
          months={months}
-      />
-
-      <AIChatOverlay 
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        contextData={{
-           transactions: filteredTransactions,
-           accounts: filteredAccounts,
-           balance: profitBalance,
-           month: activeMonthSummary?.month
-        }}
       />
     </div>
   );

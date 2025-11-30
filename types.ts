@@ -1,9 +1,4 @@
 
-
-
-
-
-
 export type LogoType = 
   | 'netflix' 
   | 'tnf' 
@@ -43,12 +38,6 @@ export interface Contact {
   id: string;
   name: string;
   imageUrl: string;
-}
-
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'model';
-  text: string;
 }
 
 export type CardTheme = 'default' | 'lime' | 'purple' | 'blue' | 'orange' | 'red';
