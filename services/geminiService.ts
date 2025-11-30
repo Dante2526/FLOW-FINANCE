@@ -1,12 +1,48 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to safely get the API Key without crashing the browser
+const getApiKey = () => {
+  // 1. Try standard process.env (Node/Webpack/Compatible environments)
+  try {
+    if (typeof process !== 'undefined' && process.env) {
+      if (process.env.API_KEY) return process.env.API_KEY;
+      if (process.env.VITE_API_KEY) return process.env.VITE_API_KEY;
+      if (process.env.NEXT_PUBLIC_API_KEY) return process.env.NEXT_PUBLIC_API_KEY;
+    }
+  } catch (e) {
+    // Ignore errors
+  }
+
+  // 2. Try import.meta.env (Standard Vite/Modern Browsers)
+  try {
+    // @ts-ignore
+    if (import.meta && import.meta.env) {
+      // @ts-ignore
+      if (import.meta.env.API_KEY) return import.meta.env.API_KEY;
+      // @ts-ignore
+      if (import.meta.env.VITE_API_KEY) return import.meta.env.VITE_API_KEY;
+    }
+  } catch (e) {
+    // Ignore errors
+  }
+
+  return undefined;
+};
 
 export const getFinancialAdvice = async (
   query: string,
   contextData: any
 ): Promise<string> => {
   try {
+    const apiKey = getApiKey();
+
+    if (!apiKey) {
+      console.warn("Gemini API Key missing");
+      return "A inteligência artificial não está configurada neste ambiente. Verifique as variáveis de ambiente na Vercel (VITE_API_KEY).";
+    }
+
+    // Initialize client lazily to prevent startup crashes
+    const ai = new GoogleGenAI({ apiKey });
     const model = 'gemini-2.5-flash';
     
     const prompt = `

@@ -716,12 +716,6 @@ const App: React.FC = () => {
               
               <div className="flex items-center gap-2">
                  <IconBell count={notifications.filter(n => !n.read).length} onClick={handleOpenNotification} />
-                 <button 
-                  onClick={() => setIsChatOpen(true)}
-                  className="p-3 bg-surface rounded-2xl hover:bg-surfaceLight transition-colors cursor-pointer active:scale-95"
-                 >
-                   <MessageSquare className="w-6 h-6 text-accent" />
-                 </button>
               </div>
             </div>
 
