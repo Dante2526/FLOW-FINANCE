@@ -266,5 +266,6 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
 
       </div>
     </div>
+    </div>
   );
 };
