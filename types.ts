@@ -32,6 +32,8 @@ export interface Transaction {
   paymentMethod?: 'pix' | 'card';
   logoType: LogoType;
   paid: boolean;
+  month?: string; // The dashboard month name (e.g. "JANEIRO") this belongs to
+  year?: string;  // The dashboard year (e.g. "2025") this belongs to
 }
 
 export interface Contact {

@@ -18,6 +18,20 @@ const typeTranslation = {
   transfer: 'Transferência'
 };
 
+const formatDateDisplay = (dateStr: string) => {
+  if (!dateStr) return '';
+  if (dateStr.toLowerCase().includes('hoje')) return 'Hoje';
+  
+  // Handle ISO YYYY-MM-DD
+  if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+    const d = new Date(dateStr.split(' ')[0] + 'T00:00:00');
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
+  }
+  
+  // Handle "24 Jan"
+  return dateStr;
+};
+
 interface SwipeableTransactionItemProps {
   tx: Transaction;
   onDelete: (id: string) => void;
@@ -167,10 +181,17 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
           </div>
           
           {/* Info */}
-          <div className="pointer-events-auto">
-            <span className={`font-bold text-lg transition-colors block ${tx.paid ? 'text-white/60 line-through decoration-white/30' : 'text-white'}`}>
+          <div className="pointer-events-auto flex flex-col items-start">
+            <span className={`font-bold text-lg transition-colors block leading-tight ${tx.paid ? 'text-white/60 line-through decoration-white/30' : 'text-white'}`}>
               {tx.name}
             </span>
+
+            {/* Date Display (Tiny) */}
+            {!tx.paid && (
+              <span className="text-[10px] text-gray-500 font-medium uppercase mt-0.5">
+                Vence: <span className="text-gray-400">{formatDateDisplay(tx.date)}</span>
+              </span>
+            )}
             
             {/* Payment Method Badge - Clickable - ONLY VISIBLE IF PAID */}
             {tx.paid && (

@@ -92,7 +92,7 @@ const getMonthFromDateStr = (dateStr: string): string => {
 
   // "24 Jan ..."
   const parts = dateStr.split(' ');
-  if (parts.length >= 2) {
+  if (parts.length >= 2 && !dateStr.includes('-')) {
     const code = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase(); // Ensure title case "Jan"
     return SHORT_CODE_TO_FULL[code] || '';
   }
@@ -119,6 +119,21 @@ const getYearFromDateStr = (dateStr: string, activeYearContext?: string): string
   if (activeYearContext) return activeYearContext;
 
   return new Date().getFullYear().toString();
+};
+
+// Helper: Sort Months Chronologically
+const sortMonths = (monthsList: MonthSummary[]) => {
+  return [...monthsList].sort((a, b) => {
+    const yearA = parseInt(a.year);
+    const yearB = parseInt(b.year);
+    
+    if (yearA !== yearB) return yearA - yearB;
+    
+    const monthIndexA = MONTH_NAMES.indexOf(a.month);
+    const monthIndexB = MONTH_NAMES.indexOf(b.month);
+    
+    return monthIndexA - monthIndexB;
+  });
 };
 
 const App: React.FC = () => {
@@ -179,9 +194,10 @@ const App: React.FC = () => {
             if (data.theme) setAppTheme(data.theme);
             if (data.notepadContent) setNotepadContent(data.notepadContent);
             if (data.months && data.months.length > 0) {
-              setMonths(data.months);
+              const sorted = sortMonths(data.months);
+              setMonths(sorted);
               // Set active month to the last one by default
-              setActiveMonthId(data.months[data.months.length - 1].id);
+              setActiveMonthId(sorted[sorted.length - 1].id);
             } else {
               setMonths([SYSTEM_INITIAL_MONTH]);
               setActiveMonthId(SYSTEM_INITIAL_MONTH.id);
@@ -300,8 +316,11 @@ const App: React.FC = () => {
     if (!activeMonthSummary) return [];
     
     return transactions.filter(tx => {
-      const txMonth = getMonthFromDateStr(tx.date);
-      const txYear = getYearFromDateStr(tx.date, activeMonthSummary.year);
+      // 1. Check for Explicit Tags first (New System)
+      // 2. Fallback to Date Parsing (Legacy Data)
+      const txMonth = tx.month || getMonthFromDateStr(tx.date);
+      const txYear = tx.year || getYearFromDateStr(tx.date, activeMonthSummary.year);
+      
       return txMonth === activeMonthSummary.month && txYear === activeMonthSummary.year;
     });
   }, [transactions, activeMonthSummary]);
@@ -339,7 +358,8 @@ const App: React.FC = () => {
           isDueToday = true;
         } else {
           const parts = tx.date.split(' ');
-          if (parts.length >= 2) {
+          // Handle "08 Dez" style
+          if (parts.length >= 2 && !tx.date.includes('-')) {
              const day = parseInt(parts[0]);
              const monthStr = parts[1].toLowerCase().slice(0, 3);
              const monthsMap: {[key: string]: number} = {
@@ -350,6 +370,13 @@ const App: React.FC = () => {
                 if (day === today.getDate() && monthsMap[monthStr] === today.getMonth()) {
                   isDueToday = true;
                 }
+             }
+          }
+          // Handle "2025-12-08" style
+          else if (tx.date.match(/^\d{4}-\d{2}-\d{2}/)) {
+             const d = new Date(tx.date.split(' ')[0] + 'T00:00:00');
+             if (d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()) {
+                isDueToday = true;
              }
           }
         }
@@ -463,14 +490,23 @@ const App: React.FC = () => {
       return;
     }
 
+    // Create duplicate transactions for the next month
     const newTxs: Transaction[] = filteredTransactions.map(tx => {
        let newDateStr = '';
        const parts = tx.date.split(' ');
        
-       if (parts.length >= 2 && !tx.date.toLowerCase().includes('hoje')) {
+       // Handle "08 Nov" -> "08 Dez"
+       if (parts.length >= 2 && !tx.date.toLowerCase().includes('hoje') && !tx.date.includes('-')) {
           const day = parts[0];
           newDateStr = `${day} ${nextShortCode}`;
-       } else {
+       } 
+       // Handle "2025-11-08" -> "2025-12-08"
+       else if (tx.date.match(/^\d{4}-\d{2}-\d{2}/)) {
+           const d = new Date(tx.date.split(' ')[0] + 'T00:00:00');
+           d.setMonth(d.getMonth() + 1); // Move to next month
+           newDateStr = d.toISOString().split('T')[0];
+       }
+       else {
           newDateStr = `01 ${nextShortCode}`;
        }
 
@@ -478,7 +514,9 @@ const App: React.FC = () => {
          ...tx,
          id: Date.now().toString() + Math.random(),
          date: newDateStr,
-         paid: false
+         paid: false,
+         month: nextMonthName, // Assign to next month explicitly
+         year: nextYearInt.toString()
        };
     });
 
@@ -498,7 +536,8 @@ const App: React.FC = () => {
       total: newMonthTotal
     };
 
-    setMonths(prev => [...prev, newMonthSummary]);
+    const newMonthsList = [...months, newMonthSummary];
+    setMonths(sortMonths(newMonthsList));
     setTransactions(prev => [...newTxs, ...prev]); 
     setAccounts(prev => [...prev, ...newAccounts]);
     setActiveMonthId(newMonthSummary.id);
@@ -510,34 +549,41 @@ const App: React.FC = () => {
         t.id === editingTransaction.id ? { ...t, ...txData } : t
       ));
       
-      const oldMonth = getMonthFromDateStr(editingTransaction.date);
-      const newMonth = getMonthFromDateStr(txData.date);
-
-      setMonths(prev => prev.map(m => {
-        const oldTxYear = getYearFromDateStr(editingTransaction.date, m.year);
-        const newTxYear = getYearFromDateStr(txData.date, m.year);
-
-        let newTotal = m.total;
-        if (m.month === oldMonth && m.year === oldTxYear) {
-           newTotal -= editingTransaction.amount;
-        }
-        if (m.month === newMonth && m.year === newTxYear) {
-           newTotal += txData.amount;
-        }
-        return { ...m, total: newTotal };
-      }));
+      const oldMonth = editingTransaction.month || getMonthFromDateStr(editingTransaction.date);
+      const oldYear = editingTransaction.year || getYearFromDateStr(editingTransaction.date, activeMonthSummary.year);
+      
+      // When editing, we generally keep the transaction in the SAME grouping (unless moving features added later)
+      // So we assume the 'txData' doesn't contain month/year override, so 't' fields (preserved above) are used.
+      
+      setMonths(prev => {
+        const updated = prev.map(m => {
+          // If we are editing a transaction in this month summary...
+          if (m.month === oldMonth && m.year === oldYear) {
+             // Re-calc total: remove old amount, add new amount
+             return { ...m, total: m.total - editingTransaction.amount + txData.amount };
+          }
+          return m;
+        });
+        return updated;
+      });
       setEditingTransaction(null);
+
     } else {
+      // NEW TRANSACTION
       const newTx: Transaction = {
         id: Date.now().toString(),
         ...txData,
+        // CRITICAL: Explicitly assign to the currently active month view
+        // regardless of the specific due date selected.
+        month: activeMonthSummary.month,
+        year: activeMonthSummary.year
       };
+
       setTransactions(prev => [newTx, ...prev]);
       
       setMonths(prev => prev.map(m => {
-        const txMonth = getMonthFromDateStr(newTx.date);
-        const txYear = getYearFromDateStr(newTx.date, m.year);
-        if (m.month === txMonth && m.year === txYear) {
+        // Only update the total of the ACTIVE month where this was added
+        if (m.month === activeMonthSummary.month && m.year === activeMonthSummary.year) {
           return { ...m, total: m.total + newTx.amount };
         }
         return m;
@@ -549,9 +595,11 @@ const App: React.FC = () => {
     const tx = transactions.find(t => t.id === id);
     if (tx) {
       setTransactions(prev => prev.filter(t => t.id !== id));
+      
+      const txMonth = tx.month || getMonthFromDateStr(tx.date);
+      const txYear = tx.year || getYearFromDateStr(tx.date, activeMonthSummary.year);
+
       setMonths(prev => prev.map(m => {
-        const txMonth = getMonthFromDateStr(tx.date);
-        const txYear = getYearFromDateStr(tx.date, m.year);
         if (m.month === txMonth && m.year === txYear) {
           return { ...m, total: m.total - tx.amount };
         }
@@ -588,8 +636,8 @@ const App: React.FC = () => {
     if (!monthToDelete) return;
 
     setTransactions(prev => prev.filter(tx => {
-      const txMonth = getMonthFromDateStr(tx.date);
-      const txYear = getYearFromDateStr(tx.date, monthToDelete.year);
+      const txMonth = tx.month || getMonthFromDateStr(tx.date);
+      const txYear = tx.year || getYearFromDateStr(tx.date, monthToDelete.year);
       return !(txMonth === monthToDelete.month && txYear === monthToDelete.year);
     }));
 

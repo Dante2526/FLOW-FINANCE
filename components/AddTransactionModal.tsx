@@ -131,27 +131,6 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
 
   if (!isOpen) return null;
 
-  const formatDateForDisplay = (isoDate: string) => {
-    if (!isoDate) return '';
-    
-    // SAFE PARSING: Split string to avoid Timezone offsets shifting the day
-    // "2024-12-25" -> parts[0]=2024, parts[1]=12, parts[2]=25
-    const parts = isoDate.split('-');
-    if (parts.length !== 3) return isoDate;
-    
-    const year = parseInt(parts[0]);
-    const monthIndex = parseInt(parts[1]) - 1; // 0-indexed for Date
-    const day = parseInt(parts[2]);
-
-    // Create date using explicit year/month/day constructor which uses Local Time
-    const d = new Date(year, monthIndex, day);
-    
-    const monthName = d.toLocaleString('pt-BR', { month: 'short' });
-    // Returns format like "25 Out" (removing dots if any browser adds them like 'out.')
-    const cleanMonth = monthName.replace('.', '');
-    return `${day} ${cleanMonth.charAt(0).toUpperCase() + cleanMonth.slice(1)}`;
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !name || !date) return;
@@ -163,7 +142,8 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
     if (date === today) {
        finalDateString = `Hoje ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
     } else {
-       finalDateString = formatDateForDisplay(date);
+       // IMPORTANT: Save as ISO YYYY-MM-DD to preserve year information for future dates
+       finalDateString = date;
     }
 
     onSave({
