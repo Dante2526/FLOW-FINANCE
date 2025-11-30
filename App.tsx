@@ -1,0 +1,884 @@
+
+import React, { useState, useMemo, useEffect } from 'react';
+import BalanceCard from './components/BalanceCard';
+import SecondaryCard from './components/SecondaryCard';
+import ContactsRow from './components/ContactsRow';
+import TransactionSummary from './components/TransactionSummary';
+import TransactionList from './components/TransactionList';
+import BottomNav from './components/BottomNav';
+import AddTransactionModal from './components/AddTransactionModal';
+import AddAccountModal from './components/AddAccountModal';
+import CalculatorModal from './components/CalculatorModal';
+import EditProfileModal from './components/EditProfileModal';
+import NotepadModal from './components/NotepadModal';
+import { CalendarModal } from './components/CalendarModal';
+import NotificationModal from './components/NotificationModal';
+import AnalyticsModal from './components/AnalyticsModal';
+import SettingsView, { AVAILABLE_THEMES } from './components/SettingsView';
+import LongTermView from './components/LongTermView';
+import InvestmentsView from './components/InvestmentsView';
+import LoginScreen from './components/LoginScreen';
+import AIChatOverlay from './components/AIChatOverlay';
+import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification } from './types';
+import { loadData, saveData, STORAGE_KEYS } from './services/storage';
+import { IconBell, IconMore } from './components/Icons';
+import { MessageSquare, RefreshCw } from 'lucide-react';
+
+// Firebase Services
+import { loginUser, registerUser, loadUserData, saveCollection, saveUserField } from './services/firebase';
+
+// Constants
+const MONTH_NAMES = [
+  'JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 
+  'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'
+];
+
+const MONTH_SHORT_CODES: Record<string, string> = {
+  'JANEIRO': 'Jan',
+  'FEVEREIRO': 'Fev',
+  'MARÇO': 'Mar',
+  'ABRIL': 'Abr',
+  'MAIO': 'Mai',
+  'JUNHO': 'Jun',
+  'JULHO': 'Jul',
+  'AGOSTO': 'Ago',
+  'SETEMBRO': 'Set',
+  'OUTUBRO': 'Out',
+  'NOVEMBRO': 'Nov',
+  'DEZEMBRO': 'Dez'
+};
+
+const SHORT_CODE_TO_FULL: Record<string, string> = {
+  'Jan': 'JANEIRO', 'Fev': 'FEVEREIRO', 'Mar': 'MARÇO', 'Abr': 'ABRIL',
+  'Mai': 'MAIO', 'Jun': 'JUNHO', 'Jul': 'JULHO', 'Ago': 'AGOSTO',
+  'Set': 'SETEMBRO', 'Out': 'OUTUBRO', 'Nov': 'NOVEMBRO', 'Dez': 'DEZEMBRO'
+};
+
+// --- DYNAMIC INITIALIZATION LOGIC ---
+const currentDate = new Date();
+const currentMonthIndex = currentDate.getMonth();
+const currentYear = currentDate.getFullYear();
+const currentMonthName = MONTH_NAMES[currentMonthIndex];
+const currentShortCode = MONTH_SHORT_CODES[currentMonthName];
+
+// Initial Month based on System Date
+const SYSTEM_INITIAL_MONTH: MonthSummary = {
+  id: '1',
+  month: currentMonthName,
+  year: currentYear.toString(),
+  total: 0
+};
+
+// Mock Data for Contacts (Static)
+const MOCK_CONTACTS: Contact[] = [
+  { id: '1', name: 'Notas', imageUrl: '' }, // Notes / Smart Notepad
+  { id: '2', name: 'Calendário', imageUrl: '' }, // Calendar
+  { id: '3', name: 'Análise', imageUrl: '' }, // Analytics
+];
+
+// Initial Profile
+const INITIAL_PROFILE: UserProfile = {
+  name: '',
+  subtitle: '',
+  avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix'
+};
+
+// Helper: Parse Date String to determine month
+const getMonthFromDateStr = (dateStr: string): string => {
+  if (!dateStr) return '';
+  
+  // "Hoje ..." -> Current real month
+  if (dateStr.toLowerCase().includes('hoje')) {
+    return MONTH_NAMES[new Date().getMonth()];
+  }
+
+  // "24 Jan ..."
+  const parts = dateStr.split(' ');
+  if (parts.length >= 2) {
+    const code = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase(); // Ensure title case "Jan"
+    return SHORT_CODE_TO_FULL[code] || '';
+  }
+
+  // ISO "YYYY-MM-DD"
+  if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+    const d = new Date(dateStr.split(' ')[0] + 'T00:00:00');
+    return MONTH_NAMES[d.getMonth()];
+  }
+
+  return '';
+};
+
+// Helper: Get Year from Date String
+const getYearFromDateStr = (dateStr: string, activeYearContext?: string): string => {
+  // If "Hoje", it's definitely current year
+  if (dateStr.toLowerCase().includes('hoje')) return new Date().getFullYear().toString();
+  
+  // If ISO, extract year
+  if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) return dateStr.split('-')[0];
+  
+  // For "24 Jan", we have ambiguity.
+  // We prefer the context year if it matches the month flow.
+  if (activeYearContext) return activeYearContext;
+
+  return new Date().getFullYear().toString();
+};
+
+const App: React.FC = () => {
+  // --- AUTH STATE ---
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(() => {
+    return loadData(STORAGE_KEYS.USER_SESSION, null);
+  });
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
+
+  // View State
+  const [currentView, setCurrentView] = useState<AppView>('home');
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  // Modal States
+  const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
+  const [isAddAccountOpen, setIsAddAccountOpen] = useState(false);
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isNotepadOpen, setIsNotepadOpen] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+  
+  // --- DATA STATES (Initialized Empty, Loaded via Firebase) ---
+  const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_PROFILE);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [months, setMonths] = useState<MonthSummary[]>([SYSTEM_INITIAL_MONTH]);
+  const [longTermTransactions, setLongTermTransactions] = useState<LongTermTransaction[]>([]);
+  const [investments, setInvestments] = useState<Investment[]>([]);
+  const [notepadContent, setNotepadContent] = useState<string>('');
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [appTheme, setAppTheme] = useState<AppTheme>(AVAILABLE_THEMES[0]);
+  const [cdiRate, setCdiRate] = useState<number>(11.25); // Default CDI
+
+  const [activeMonthId, setActiveMonthId] = useState<string>(SYSTEM_INITIAL_MONTH.id);
+  
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+
+  // --- FIREBASE LOADING EFFECT ---
+  useEffect(() => {
+    if (currentUserEmail) {
+      setIsLoadingData(true);
+      loadUserData(currentUserEmail)
+        .then((data) => {
+          if (data) {
+            // Restore Profile
+            if (data.profile) setUserProfile(data.profile);
+            
+            // Restore Arrays (Subcollections)
+            if (data.transactions) setTransactions(data.transactions);
+            if (data.accounts) setAccounts(data.accounts);
+            if (data.investments) setInvestments(data.investments);
+            if (data.longTerm) setLongTermTransactions(data.longTerm);
+            if (data.notifications) setNotifications(data.notifications);
+
+            // Restore Single Field Data
+            if (data.theme) setAppTheme(data.theme);
+            if (data.notepadContent) setNotepadContent(data.notepadContent);
+            if (data.months && data.months.length > 0) {
+              setMonths(data.months);
+              // Set active month to the last one by default
+              setActiveMonthId(data.months[data.months.length - 1].id);
+            } else {
+              setMonths([SYSTEM_INITIAL_MONTH]);
+              setActiveMonthId(SYSTEM_INITIAL_MONTH.id);
+            }
+            if (data.cdiRate !== undefined) setCdiRate(data.cdiRate);
+
+          } else {
+            console.log("No remote data found, starting fresh.");
+          }
+        })
+        .catch(err => console.error("Error loading data:", err))
+        .finally(() => setIsLoadingData(false));
+    } else {
+      // Reset if logged out
+      setTransactions([]);
+      setAccounts([]);
+      setMonths([SYSTEM_INITIAL_MONTH]);
+      setUserProfile(INITIAL_PROFILE);
+    }
+  }, [currentUserEmail]);
+
+  // --- FIREBASE SAVING EFFECTS WITH DEBOUNCE ---
+  // We use setTimeout to debounce the save calls, preventing excessive writes
+  // during rapid UI updates (e.g. typing or quick edits).
+  const DEBOUNCE_DELAY = 1500;
+
+  useEffect(() => {
+    if (currentUserEmail && !isLoadingData) {
+      const timer = setTimeout(() => {
+        saveCollection(currentUserEmail, "transactions", transactions);
+      }, DEBOUNCE_DELAY);
+      return () => clearTimeout(timer);
+    }
+  }, [transactions, currentUserEmail, isLoadingData]);
+
+  useEffect(() => {
+    if (currentUserEmail && !isLoadingData) {
+      const timer = setTimeout(() => {
+        saveCollection(currentUserEmail, "accounts", accounts);
+      }, DEBOUNCE_DELAY);
+      return () => clearTimeout(timer);
+    }
+  }, [accounts, currentUserEmail, isLoadingData]);
+
+  useEffect(() => {
+    if (currentUserEmail && !isLoadingData) {
+      const timer = setTimeout(() => {
+        saveCollection(currentUserEmail, "investments", investments);
+      }, DEBOUNCE_DELAY);
+      return () => clearTimeout(timer);
+    }
+  }, [investments, currentUserEmail, isLoadingData]);
+
+  useEffect(() => {
+    if (currentUserEmail && !isLoadingData) {
+      const timer = setTimeout(() => {
+        saveCollection(currentUserEmail, "longTerm", longTermTransactions);
+      }, DEBOUNCE_DELAY);
+      return () => clearTimeout(timer);
+    }
+  }, [longTermTransactions, currentUserEmail, isLoadingData]);
+
+  useEffect(() => {
+    if (currentUserEmail && !isLoadingData) {
+      const timer = setTimeout(() => {
+        saveCollection(currentUserEmail, "notifications", notifications);
+      }, DEBOUNCE_DELAY);
+      return () => clearTimeout(timer);
+    }
+  }, [notifications, currentUserEmail, isLoadingData]);
+
+  // Single Fields - Save immediately or short debounce
+  useEffect(() => {
+    if (currentUserEmail && !isLoadingData) {
+      const timer = setTimeout(() => {
+         saveUserField(currentUserEmail, "profile", userProfile);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [userProfile, currentUserEmail, isLoadingData]);
+
+  useEffect(() => {
+    if (currentUserEmail && !isLoadingData) {
+      saveUserField(currentUserEmail, "theme", appTheme);
+    }
+  }, [appTheme, currentUserEmail, isLoadingData]);
+
+  useEffect(() => {
+    if (currentUserEmail && !isLoadingData) {
+       const timer = setTimeout(() => {
+         saveUserField(currentUserEmail, "months", months);
+       }, 1000);
+       return () => clearTimeout(timer);
+    }
+  }, [months, currentUserEmail, isLoadingData]);
+
+  useEffect(() => {
+    if (currentUserEmail && !isLoadingData) {
+      const timer = setTimeout(() => {
+        saveUserField(currentUserEmail, "notepadContent", notepadContent);
+      }, 2000); // Long debounce for typing
+      return () => clearTimeout(timer);
+    }
+  }, [notepadContent, currentUserEmail, isLoadingData]);
+
+  useEffect(() => {
+    if (currentUserEmail && !isLoadingData) {
+      saveUserField(currentUserEmail, "cdiRate", cdiRate);
+    }
+  }, [cdiRate, currentUserEmail, isLoadingData]);
+
+   // --- FILTER TRANSACTIONS BY ACTIVE MONTH ---
+  const activeMonthSummary = months.find(m => m.id === activeMonthId) || months[0];
+  
+  const filteredTransactions = useMemo(() => {
+    if (!activeMonthSummary) return [];
+    
+    return transactions.filter(tx => {
+      const txMonth = getMonthFromDateStr(tx.date);
+      const txYear = getYearFromDateStr(tx.date, activeMonthSummary.year);
+      return txMonth === activeMonthSummary.month && txYear === activeMonthSummary.year;
+    });
+  }, [transactions, activeMonthSummary]);
+
+  // --- FILTER ACCOUNTS BY ACTIVE MONTH ---
+  const filteredAccounts = useMemo(() => {
+    if (!activeMonthSummary) return [];
+
+    return accounts.filter(acc => {
+      if (!acc.month && !acc.year) return true;
+      return acc.month === activeMonthSummary.month && acc.year === activeMonthSummary.year;
+    });
+  }, [accounts, activeMonthSummary]);
+
+  // --- PROFIT CALCULATION LOGIC ---
+  const profitBalance = useMemo(() => {
+    const totalAccounts = filteredAccounts.reduce((acc, account) => acc + account.balance, 0);
+    const totalExpenses = filteredTransactions.reduce((acc, tx) => acc + tx.amount, 0);
+    return totalAccounts - totalExpenses;
+  }, [filteredAccounts, filteredTransactions]);
+
+  // --- AUTOMATIC NOTIFICATION LOGIC ---
+  useEffect(() => {
+    if (!currentUserEmail) return;
+
+    const checkDueBills = () => {
+      const today = new Date();
+      const newNotifications: AppNotification[] = [];
+      
+      transactions.forEach(tx => {
+        if (tx.paid) return;
+        let isDueToday = false;
+        
+        if (tx.date.toLowerCase().includes('hoje')) {
+          isDueToday = true;
+        } else {
+          const parts = tx.date.split(' ');
+          if (parts.length >= 2) {
+             const day = parseInt(parts[0]);
+             const monthStr = parts[1].toLowerCase().slice(0, 3);
+             const monthsMap: {[key: string]: number} = {
+                 'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3, 'mai': 4, 'jun': 5,
+                 'jul': 6, 'ago': 7, 'set': 8, 'out': 9, 'nov': 10, 'dez': 11
+             };
+             if (monthsMap[monthStr] !== undefined && !isNaN(day)) {
+                if (day === today.getDate() && monthsMap[monthStr] === today.getMonth()) {
+                  isDueToday = true;
+                }
+             }
+          }
+        }
+        if (isDueToday) {
+           const alreadyNotified = notifications.some(n => n.message.includes(tx.name) && n.date === new Date().toLocaleDateString('pt-BR'));
+           if (!alreadyNotified) {
+             newNotifications.push({
+               id: Date.now().toString() + Math.random(),
+               title: 'Vencimento Hoje!',
+               message: `A conta ${tx.name} no valor de R$ ${tx.amount} vence hoje.`,
+               date: new Date().toLocaleDateString('pt-BR'),
+               read: false,
+               type: 'alert'
+             });
+             if ('Notification' in window && Notification.permission === 'granted') {
+               try {
+                 new Notification('Contas a Pagar', {
+                   body: `${tx.name} vence hoje! Valor: R$ ${tx.amount}`,
+                   icon: '/icon.png' 
+                 });
+               } catch (e) { console.warn("Notification failed", e); }
+             }
+           }
+        }
+      });
+      if (newNotifications.length > 0) {
+        setNotifications(prev => [...newNotifications, ...prev]);
+      }
+    };
+    const timer = setTimeout(checkDueBills, 2000);
+    return () => clearTimeout(timer);
+  }, [transactions, currentUserEmail]); 
+
+  // --- Handlers ---
+  
+  const handleLogin = async (email: string, name?: string) => {
+    // Request notification permission on first login interaction
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    // The LoginScreen component now handles the try/catch logic and errors
+    if (name) {
+      // Registration Mode
+      await registerUser(email, name, {
+        months: [SYSTEM_INITIAL_MONTH],
+        cdiRate: 11.25
+      });
+    } else {
+      // Login Mode
+      await loginUser(email);
+    }
+    
+    // If success, set session
+    saveData(STORAGE_KEYS.USER_SESSION, email);
+    setCurrentUserEmail(email);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem(STORAGE_KEYS.USER_SESSION);
+    setCurrentUserEmail(null);
+    setIsProfileModalOpen(false);
+  };
+
+  const handleOpenProfile = () => setIsProfileModalOpen(true);
+  const handleOpenAddTransaction = () => setIsAddTransactionOpen(true);
+  const handleOpenAddAccount = () => setIsAddAccountOpen(true);
+  const handleOpenCalculator = () => setIsCalculatorOpen(true);
+  const handleOpenNotepad = () => setIsNotepadOpen(true);
+  const handleOpenCalendar = () => setIsCalendarOpen(true);
+  const handleOpenNotification = () => setIsNotificationOpen(true);
+
+  // Close Handlers
+  const handleCloseAddTransaction = () => {
+    setIsAddTransactionOpen(false);
+    setEditingTransaction(null);
+  };
+  const handleCloseAddAccount = () => {
+    setIsAddAccountOpen(false);
+    setEditingAccount(null);
+  };
+  const handleCloseCalculator = () => setIsCalculatorOpen(false);
+  const handleCloseProfile = () => setIsProfileModalOpen(false);
+  const handleCloseNotepad = () => setIsNotepadOpen(false);
+  const handleCloseCalendar = () => setIsCalendarOpen(false);
+  const handleCloseNotification = () => setIsNotificationOpen(false);
+  const handleCloseAnalytics = () => setIsAnalyticsOpen(false);
+
+  // --- DUPLICATE MONTH LOGIC ---
+  const handleDuplicateMonth = () => {
+    const currentSummary = activeMonthSummary;
+    if (!currentSummary) return;
+
+    const currentMonthIndex = MONTH_NAMES.indexOf(currentSummary.month);
+    const currentYearInt = parseInt(currentSummary.year);
+
+    let nextMonthIndex = currentMonthIndex + 1;
+    let nextYearInt = currentYearInt;
+
+    if (nextMonthIndex > 11) {
+      nextMonthIndex = 0;
+      nextYearInt++;
+    }
+
+    const nextMonthName = MONTH_NAMES[nextMonthIndex];
+    const nextShortCode = MONTH_SHORT_CODES[nextMonthName];
+
+    const exists = months.find(m => m.month === nextMonthName && m.year === nextYearInt.toString());
+    if (exists) {
+      alert(`O mês de ${nextMonthName} de ${nextYearInt} já existe!`);
+      return;
+    }
+
+    const newTxs: Transaction[] = filteredTransactions.map(tx => {
+       let newDateStr = '';
+       const parts = tx.date.split(' ');
+       
+       if (parts.length >= 2 && !tx.date.toLowerCase().includes('hoje')) {
+          const day = parts[0];
+          newDateStr = `${day} ${nextShortCode}`;
+       } else {
+          newDateStr = `01 ${nextShortCode}`;
+       }
+
+       return {
+         ...tx,
+         id: Date.now().toString() + Math.random(),
+         date: newDateStr,
+         paid: false
+       };
+    });
+
+    const newAccounts: Account[] = filteredAccounts.map(acc => ({
+       ...acc,
+       id: Date.now().toString() + Math.random(),
+       month: nextMonthName,
+       year: nextYearInt.toString()
+    }));
+
+    const newMonthTotal = newTxs.reduce((acc, t) => acc + t.amount, 0);
+
+    const newMonthSummary: MonthSummary = {
+      id: Date.now().toString(),
+      month: nextMonthName,
+      year: nextYearInt.toString(),
+      total: newMonthTotal
+    };
+
+    setMonths(prev => [...prev, newMonthSummary]);
+    setTransactions(prev => [...newTxs, ...prev]); 
+    setAccounts(prev => [...prev, ...newAccounts]);
+    setActiveMonthId(newMonthSummary.id);
+  };
+
+  const handleSaveTransaction = (txData: Omit<Transaction, 'id'>) => {
+    if (editingTransaction) {
+      setTransactions(prev => prev.map(t => 
+        t.id === editingTransaction.id ? { ...t, ...txData } : t
+      ));
+      
+      const oldMonth = getMonthFromDateStr(editingTransaction.date);
+      const newMonth = getMonthFromDateStr(txData.date);
+
+      setMonths(prev => prev.map(m => {
+        const oldTxYear = getYearFromDateStr(editingTransaction.date, m.year);
+        const newTxYear = getYearFromDateStr(txData.date, m.year);
+
+        let newTotal = m.total;
+        if (m.month === oldMonth && m.year === oldTxYear) {
+           newTotal -= editingTransaction.amount;
+        }
+        if (m.month === newMonth && m.year === newTxYear) {
+           newTotal += txData.amount;
+        }
+        return { ...m, total: newTotal };
+      }));
+      setEditingTransaction(null);
+    } else {
+      const newTx: Transaction = {
+        id: Date.now().toString(),
+        ...txData,
+      };
+      setTransactions(prev => [newTx, ...prev]);
+      
+      setMonths(prev => prev.map(m => {
+        const txMonth = getMonthFromDateStr(newTx.date);
+        const txYear = getYearFromDateStr(newTx.date, m.year);
+        if (m.month === txMonth && m.year === txYear) {
+          return { ...m, total: m.total + newTx.amount };
+        }
+        return m;
+      }));
+    }
+  };
+
+  const handleDeleteTransaction = (id: string) => {
+    const tx = transactions.find(t => t.id === id);
+    if (tx) {
+      setTransactions(prev => prev.filter(t => t.id !== id));
+      setMonths(prev => prev.map(m => {
+        const txMonth = getMonthFromDateStr(tx.date);
+        const txYear = getYearFromDateStr(tx.date, m.year);
+        if (m.month === txMonth && m.year === txYear) {
+          return { ...m, total: m.total - tx.amount };
+        }
+        return m;
+      }));
+    }
+  };
+
+  const handleEditTransaction = (tx: Transaction) => {
+    setEditingTransaction(tx);
+    setIsAddTransactionOpen(true);
+  };
+
+  const handleToggleTransactionStatus = (id: string) => {
+    setTransactions(prev => prev.map(t => 
+      t.id === id ? { ...t, paid: !t.paid } : t
+    ));
+  };
+
+  const handleTogglePaymentMethod = (id: string) => {
+    setTransactions(prev => prev.map(t => 
+       t.id === id ? { ...t, paymentMethod: t.paymentMethod === 'pix' ? 'card' : 'pix' } : t
+    ));
+  };
+
+  const handleSelectMonth = (id: string) => {
+    setActiveMonthId(id);
+  };
+
+  const handleDeleteMonth = (id: string) => {
+    if (months.length <= 1) return;
+    
+    const monthToDelete = months.find(m => m.id === id);
+    if (!monthToDelete) return;
+
+    setTransactions(prev => prev.filter(tx => {
+      const txMonth = getMonthFromDateStr(tx.date);
+      const txYear = getYearFromDateStr(tx.date, monthToDelete.year);
+      return !(txMonth === monthToDelete.month && txYear === monthToDelete.year);
+    }));
+
+    setAccounts(prev => prev.filter(acc => {
+       if (!acc.month) return true;
+       return !(acc.month === monthToDelete.month && acc.year === monthToDelete.year);
+    }));
+
+    const newMonths = months.filter(m => m.id !== id);
+    setMonths(newMonths);
+    setActiveMonthId(newMonths[newMonths.length - 1].id);
+  };
+
+  const handleContactClick = (contact: Contact) => {
+    if (contact.id === '1') {
+      setIsNotepadOpen(true);
+    } else if (contact.id === '2') {
+      setIsCalendarOpen(true);
+    } else if (contact.id === '3') {
+      setIsAnalyticsOpen(true);
+    }
+  };
+
+  const handleSaveAccount = (name: string, balance: number, theme: CardTheme) => {
+    if (editingAccount) {
+      setAccounts(prev => prev.map(acc => 
+        acc.id === editingAccount.id ? { 
+           ...acc, 
+           name, 
+           balance, 
+           colorTheme: theme,
+           month: acc.month || activeMonthSummary?.month,
+           year: acc.year || activeMonthSummary?.year
+        } : acc
+      ));
+      setEditingAccount(null);
+    } else {
+      const newAccount: Account = {
+        id: Date.now().toString(),
+        name,
+        balance,
+        colorTheme: theme,
+        month: activeMonthSummary?.month,
+        year: activeMonthSummary?.year
+      };
+      setAccounts(prev => [...prev, newAccount]);
+    }
+  };
+
+  const handleDeleteAccount = (id: string) => {
+    setAccounts(prev => prev.filter(a => a.id !== id));
+  };
+
+  const handleEditAccount = (account: Account) => {
+    setEditingAccount(account);
+    setIsAddAccountOpen(true);
+  };
+
+  const activeMonthContext = useMemo(() => {
+     if (!activeMonthSummary) return undefined;
+     return {
+       monthIndex: MONTH_NAMES.indexOf(activeMonthSummary.month),
+       year: parseInt(activeMonthSummary.year)
+     };
+  }, [activeMonthSummary]);
+
+  // --- VIEW RENDERER ---
+  const renderView = () => {
+    switch(currentView) {
+      case 'settings':
+        return (
+          <SettingsView 
+            currentThemeId={appTheme.id}
+            onSaveTheme={(theme) => {
+              setAppTheme(theme);
+              setCurrentView('home');
+            }}
+          />
+        );
+      case 'long-term':
+        return (
+          <LongTermView 
+            items={longTermTransactions}
+            onAdd={(item) => setLongTermTransactions(prev => [...prev, { ...item, id: Date.now().toString(), installmentsPaid: 0 }])}
+            onEdit={(item) => setLongTermTransactions(prev => prev.map(i => i.id === item.id ? item : i))}
+            onDelete={(id) => setLongTermTransactions(prev => prev.filter(i => i.id !== id))}
+          />
+        );
+      case 'investments':
+        return (
+          <InvestmentsView 
+             investments={investments}
+             onAdd={(inv) => setInvestments(prev => [...prev, { ...inv, id: Date.now().toString() }])}
+             onEdit={(inv) => setInvestments(prev => prev.map(i => i.id === inv.id ? inv : i))}
+             onDelete={(id) => setInvestments(prev => prev.filter(i => i.id !== id))}
+             onBack={() => setCurrentView('home')}
+             cdiRate={cdiRate}
+             onUpdateCdiRate={setCdiRate}
+          />
+        );
+      case 'home':
+      default:
+        return (
+          <>
+            {/* Header / Profile Row */}
+            <div className="flex justify-between items-center mb-6 pl-1">
+              <div 
+                className="flex items-center gap-3 cursor-pointer group"
+                onClick={handleOpenProfile}
+              >
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-full border-2 border-transparent group-hover:border-accent transition-all overflow-hidden shadow-lg shadow-black/20">
+                     <img src={userProfile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  </div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Bem vindo,</span>
+                  <h1 className="text-white text-xl font-bold leading-none">{userProfile.name || 'Usuário'}</h1>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                 <IconBell count={notifications.filter(n => !n.read).length} onClick={handleOpenNotification} />
+                 <button 
+                  onClick={() => setIsChatOpen(true)}
+                  className="p-3 bg-surface rounded-2xl hover:bg-surfaceLight transition-colors cursor-pointer active:scale-95"
+                 >
+                   <MessageSquare className="w-6 h-6 text-accent" />
+                 </button>
+              </div>
+            </div>
+
+            {/* Main Balance Card */}
+            <div className="mb-6">
+              <BalanceCard 
+                balance={profitBalance} 
+                onAddClick={handleOpenAddTransaction}
+                onDuplicateClick={handleDuplicateMonth}
+                onCalculatorClick={handleOpenCalculator}
+              />
+            </div>
+
+            {/* Secondary Cards (Accounts) */}
+            <div className="mb-0">
+               <div className="flex justify-between items-center px-2 mb-3">
+                 <h2 className="text-xl font-medium text-gray-400">FONTES DE RENDA</h2>
+               </div>
+               
+               {filteredAccounts.length === 0 ? (
+                 <div className="w-full h-32" />
+               ) : (
+                 filteredAccounts.map(acc => (
+                   <SecondaryCard 
+                     key={acc.id} 
+                     account={acc} 
+                     onDelete={handleDeleteAccount}
+                     onEdit={handleEditAccount}
+                   />
+                 ))
+               )}
+            </div>
+
+            <ContactsRow 
+               contacts={MOCK_CONTACTS} 
+               onAddClick={handleOpenAddAccount}
+               onContactClick={handleContactClick}
+            />
+
+            <TransactionSummary 
+              months={months}
+              activeMonthId={activeMonthId}
+              onSelectMonth={handleSelectMonth}
+              onDeleteMonth={handleDeleteMonth}
+            />
+
+            <TransactionList 
+              transactions={filteredTransactions} 
+              onDelete={handleDeleteTransaction}
+              onEdit={handleEditTransaction}
+              onToggleStatus={handleToggleTransactionStatus}
+              onTogglePaymentMethod={handleTogglePaymentMethod}
+            />
+          </>
+        );
+    }
+  };
+
+  // --- CSS VARIABLES ---
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--color-accent', appTheme.primary);
+    root.style.setProperty('--color-accent-dark', appTheme.secondary);
+  }, [appTheme]);
+
+  if (!currentUserEmail) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
+
+  // Initial Loading State
+  if (isLoadingData) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0b] flex flex-col items-center justify-center gap-4">
+        <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-gray-400 text-sm font-medium animate-pulse">Sincronizando dados...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0a0a0b] text-white p-6 pb-24 font-sans selection:bg-accent selection:text-black">
+      {renderView()}
+
+      <BottomNav 
+        currentView={currentView} 
+        onChangeView={setCurrentView} 
+      />
+
+      <AddTransactionModal 
+        isOpen={isAddTransactionOpen} 
+        onClose={handleCloseAddTransaction} 
+        onSave={handleSaveTransaction}
+        transactionToEdit={editingTransaction}
+        activeMonthContext={activeMonthContext}
+      />
+      
+      <AddAccountModal 
+        isOpen={isAddAccountOpen} 
+        onClose={handleCloseAddAccount} 
+        onSave={handleSaveAccount}
+        accountToEdit={editingAccount}
+      />
+
+      <CalculatorModal 
+        isOpen={isCalculatorOpen} 
+        onClose={handleCloseCalculator} 
+      />
+
+      <EditProfileModal 
+         isOpen={isProfileModalOpen}
+         onClose={handleCloseProfile}
+         onSave={(p) => setUserProfile(p)}
+         onLogout={handleLogout}
+         currentProfile={userProfile}
+      />
+
+      <NotepadModal 
+        isOpen={isNotepadOpen}
+        onClose={handleCloseNotepad}
+        initialContent={notepadContent}
+        onSave={(content) => setNotepadContent(content)}
+      />
+
+      <CalendarModal 
+         isOpen={isCalendarOpen}
+         onClose={handleCloseCalendar}
+         transactions={transactions}
+         activeMonthContext={activeMonthContext}
+      />
+
+      <NotificationModal 
+        isOpen={isNotificationOpen}
+        onClose={handleCloseNotification}
+        notifications={notifications}
+        onMarkAllRead={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+        onDelete={(id) => setNotifications(prev => prev.filter(n => n.id !== id))}
+      />
+
+      <AnalyticsModal 
+         isOpen={isAnalyticsOpen}
+         onClose={handleCloseAnalytics}
+         transactions={transactions}
+         months={months}
+      />
+
+      <AIChatOverlay 
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        contextData={{
+           transactions: filteredTransactions,
+           accounts: filteredAccounts,
+           balance: profitBalance,
+           month: activeMonthSummary?.month
+        }}
+      />
+    </div>
+  );
+};
+
+export default App;
