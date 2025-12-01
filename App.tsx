@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -395,14 +396,31 @@ const App: React.FC = () => {
              if ('Notification' in window && Notification.permission === 'granted') {
                try {
                  const iconUrl = 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b';
-                 new Notification('Conta Vencendo Hoje! 💸', {
+                 
+                 // Fallback method for auto notifications
+                 const options: any = {
                    body: `A conta ${tx.name} vence hoje. Valor: R$ ${tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
                    icon: iconUrl,
-                   badge: iconUrl, // Important for Android Status Bar
-                   vibrate: [200, 100, 200],
-                   tag: `flow-finance-bill-${tx.id}`, // Prevents duplicate push notifications
+                   tag: `flow-finance-bill-${tx.id}`, 
                    requireInteraction: true
-                 } as any);
+                   // Removed vibrate to be safe
+                 };
+
+                 // Try Service Worker first
+                 if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistration().then(reg => {
+                       if (reg) {
+                          reg.showNotification('Conta Vencendo Hoje! 💸', options);
+                       } else {
+                          new Notification('Conta Vencendo Hoje! 💸', options);
+                       }
+                    }).catch(() => {
+                       new Notification('Conta Vencendo Hoje! 💸', options);
+                    });
+                 } else {
+                    new Notification('Conta Vencendo Hoje! 💸', options);
+                 }
+                 
                } catch (e) { console.warn("Notification failed", e); }
              }
            }

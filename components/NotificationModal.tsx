@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare, Smartphone } from 'lucide-react';
 import { AppNotification } from '../types';
@@ -42,31 +43,46 @@ const NotificationModal: React.FC<Props> = ({
     }
   };
 
-  const handleTestNotification = () => {
-    if ('Notification' in window) {
-      if (Notification.permission === 'granted') {
-         const iconUrl = 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b';
-         
-         try {
-           const n = new Notification('Flow Finance', {
-              body: 'Teste: Notificação na barra de status funcionando! 🚀',
-              icon: iconUrl,
-              badge: iconUrl,
-              vibrate: [200, 100, 200],
-              tag: 'test-notification-' + Date.now(),
-              requireInteraction: false,
-           } as any);
-           
-           n.onclick = () => window.focus();
-         } catch (e) {
-           console.error(e);
-           alert("Erro ao criar notificação nativa.");
-         }
-      } else {
-        alert("Permissão não concedida. Clique em 'Ativar Notificações'.");
-      }
-    } else {
+  const handleTestNotification = async () => {
+    if (!('Notification' in window)) {
       alert("Navegador não suporta notificações.");
+      return;
+    }
+
+    if (Notification.permission !== 'granted') {
+      alert("Permissão não concedida. Clique em 'Ativar Notificações' primeiro.");
+      return;
+    }
+
+    const iconUrl = 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b';
+    
+    // Simplifed options to ensure compatibility across Android/iOS/Desktop
+    const options: any = {
+      body: 'Teste: Notificação na barra de status funcionando! 🚀',
+      icon: iconUrl,
+      tag: 'test-notification-' + Date.now(),
+      requireInteraction: false,
+      // Removed 'vibrate' and 'badge' to prevent TypeError on some Android WebViews
+    };
+
+    try {
+      // 1. Try Service Worker Method (Best for Android Status Bar)
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          await registration.showNotification('Flow Finance', options);
+          return; 
+        }
+      }
+
+      // 2. Fallback to Standard Constructor (Desktop / iOS PWA)
+      const n = new Notification('Flow Finance', options);
+      n.onclick = () => window.focus();
+      
+    } catch (e: any) {
+      console.error(e);
+      // Show specific error message for debugging
+      alert("Erro técnico ao criar notificação: " + (e.message || e));
     }
   };
   
