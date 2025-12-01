@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare } from 'lucide-react';
+import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare, Smartphone } from 'lucide-react';
 import { AppNotification } from '../types';
 
 interface Props {
@@ -39,6 +39,34 @@ const NotificationModal: React.FC<Props> = ({
         body: 'Notificações ativadas com sucesso! Você receberá avisos na barra de status.',
         icon: 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b'
       });
+    }
+  };
+
+  const handleTestNotification = () => {
+    if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+         const iconUrl = 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b';
+         
+         try {
+           const n = new Notification('Flow Finance', {
+              body: 'Teste: Notificação na barra de status funcionando! 🚀',
+              icon: iconUrl,
+              badge: iconUrl,
+              vibrate: [200, 100, 200],
+              tag: 'test-notification-' + Date.now(),
+              requireInteraction: false,
+           } as any);
+           
+           n.onclick = () => window.focus();
+         } catch (e) {
+           console.error(e);
+           alert("Erro ao criar notificação nativa.");
+         }
+      } else {
+        alert("Permissão não concedida. Clique em 'Ativar Notificações'.");
+      }
+    } else {
+      alert("Navegador não suporta notificações.");
     }
   };
   
@@ -268,6 +296,17 @@ const NotificationModal: React.FC<Props> = ({
                    >
                      <Bell className="w-5 h-5" />
                      Ativar Notificações no Celular
+                   </button>
+                )}
+                
+                {/* Test Button - Only if Granted */}
+                {notificationPermission === 'granted' && (
+                   <button 
+                     onClick={handleTestNotification}
+                     className="w-full h-14 rounded-[1.5rem] bg-[#2c2c2e] text-white font-bold flex items-center justify-center gap-2 hover:bg-[#3a3a3c] border border-white/5 transition-colors shadow-lg"
+                   >
+                     <Smartphone className="w-5 h-5 text-accent" />
+                     Testar Notificação Status Bar
                    </button>
                 )}
 
