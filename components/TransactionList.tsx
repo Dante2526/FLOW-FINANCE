@@ -139,9 +139,9 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
   };
 
   return (
-    <div className="relative mb-3 h-20 rounded-[1.5rem] bg-[#1c1c1e] overflow-hidden select-none cursor-grab active:cursor-grabbing">
+    <div className="relative mb-2 h-[4.5rem] rounded-2xl bg-[#1c1c1e] overflow-hidden select-none cursor-grab active:cursor-grabbing">
       {/* Background (Buttons) */}
-      <div className={`absolute inset-0 flex justify-between rounded-[1.5rem] transition-all duration-200 ${offsetX === 0 ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
+      <div className={`absolute inset-0 flex justify-between rounded-2xl transition-all duration-200 ${offsetX === 0 ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
          {/* Left Side (Edit) - Visible when swiping Right */}
          <button
           onClick={() => {
@@ -164,7 +164,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
 
       {/* Foreground (Card) */}
       <div 
-        className="relative bg-[#1c1c1e] h-full p-4 rounded-[1.5rem] flex items-center justify-between border border-white/5 shadow-lg shadow-black/20 touch-pan-y transition-transform duration-200 ease-out z-10"
+        className="relative bg-[#1c1c1e] h-full px-4 flex items-center justify-between border border-white/5 shadow-lg shadow-black/20 touch-pan-y transition-transform duration-200 ease-out z-10 rounded-2xl"
         style={{ transform: `translateX(${offsetX}px)` }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
@@ -176,19 +176,19 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
       >
         <div className="flex items-center gap-4 pointer-events-none">
           {/* Logo */}
-          <div className="relative">
+          <div className="relative scale-90">
             <TransactionIcon type={tx.logoType} />
           </div>
           
           {/* Info */}
-          <div className="pointer-events-auto flex flex-col items-start">
-            <span className={`font-bold text-lg transition-colors block leading-tight ${tx.paid ? 'text-white/60 line-through decoration-white/30' : 'text-white'}`}>
+          <div className="pointer-events-auto flex flex-col items-start justify-center h-full pt-1">
+            <span className={`font-bold text-base transition-colors block leading-none mb-1 ${tx.paid ? 'text-white/60 line-through decoration-white/30' : 'text-white'}`}>
               {tx.name}
             </span>
 
             {/* Date Display (Tiny) */}
             {!tx.paid && (
-              <span className="text-[10px] text-gray-500 font-medium uppercase mt-0.5">
+              <span className="text-[10px] text-gray-500 font-medium uppercase">
                 Vence: <span className="text-gray-400">{formatDateDisplay(tx.date)}</span>
               </span>
             )}
@@ -200,27 +200,27 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
                    e.stopPropagation();
                    onTogglePaymentMethod(tx.id);
                  }}
-                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase mt-1 cursor-pointer hover:opacity-80 active:scale-95 transition-all select-none ${
+                 className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase cursor-pointer hover:opacity-80 active:scale-95 transition-all select-none ${
                  tx.paymentMethod === 'pix'
                   ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
                   : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
               }`}>
                  {tx.paymentMethod === 'pix' ? <QrCode className="w-3 h-3" /> : <CreditCard className="w-3 h-3" />}
-                 {tx.paymentMethod === 'pix' ? 'PIX' : 'CARTÃO'}
+                 {tx.paymentMethod === 'pix' ? 'PIX' : 'CARD'}
               </div>
             )}
           </div>
         </div>
 
         {/* Right Side Group: Amount + Toggle */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           {/* Amount & Badge */}
-          <div className="flex flex-col items-end gap-1 pointer-events-none">
-            <span className={`text-lg font-bold tabular-nums transition-colors ${tx.paid ? 'text-white/50' : 'text-white'}`}>
+          <div className="flex flex-col items-end gap-0.5 pointer-events-none">
+            <span className={`text-base font-bold tabular-nums transition-colors ${tx.paid ? 'text-white/50' : 'text-white'}`}>
               R$ {tx.amount.toFixed(2).replace('.', ',')}
             </span>
             
-            <div className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide transition-opacity ${
+            <div className={`px-1.5 py-px rounded-full text-[8px] font-bold uppercase tracking-wide transition-opacity ${
               tx.paid ? 'opacity-50' : 'opacity-100'
             } ${
               tx.type === 'subscription' 
@@ -244,7 +244,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
                 : 'bg-transparent border-gray-600 hover:border-gray-400'
             }`}
           >
-            {tx.paid && <Check className="w-5 h-5 text-black" strokeWidth={3} />}
+            {tx.paid && <Check className="w-4 h-4 text-black" strokeWidth={4} />}
           </button>
         </div>
       </div>
@@ -255,7 +255,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
 const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onToggleStatus, onTogglePaymentMethod }) => {
   return (
     <div className="mt-6 flex flex-col pb-32">
-      <h2 className="text-xl font-medium text-gray-400 mb-4">CONTAS</h2>
+      <h2 className="text-xl font-medium text-gray-400 mb-4 pl-1">CONTAS</h2>
       
       {transactions.map((tx) => (
         <SwipeableTransactionItem 
