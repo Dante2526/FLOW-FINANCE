@@ -13,7 +13,7 @@ const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick }) 
   return (
     <div className="mt-8">
       <h2 className="text-xl font-medium text-gray-400 mb-4">ACESSO RÁPIDO</h2>
-      <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar px-4 -mx-4">
+      <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar px-2 -mx-2">
         
         {/* Add Button - Bank/Finance */}
         <button 

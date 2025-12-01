@@ -139,7 +139,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
   };
 
   return (
-    <div className="relative mb-4 h-24 rounded-[1.5rem] bg-[#1c1c1e] overflow-hidden select-none cursor-grab active:cursor-grabbing">
+    <div className="relative mb-3 h-20 rounded-[1.5rem] bg-[#1c1c1e] overflow-hidden select-none cursor-grab active:cursor-grabbing">
       {/* Background (Buttons) */}
       <div className={`absolute inset-0 flex justify-between rounded-[1.5rem] transition-all duration-200 ${offsetX === 0 ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
          {/* Left Side (Edit) - Visible when swiping Right */}
@@ -164,7 +164,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
 
       {/* Foreground (Card) */}
       <div 
-        className="relative bg-[#1c1c1e] h-full p-5 rounded-[1.5rem] flex items-center justify-between border border-white/5 shadow-lg shadow-black/20 touch-pan-y transition-transform duration-200 ease-out z-10"
+        className="relative bg-[#1c1c1e] h-full p-4 rounded-[1.5rem] flex items-center justify-between border border-white/5 shadow-lg shadow-black/20 touch-pan-y transition-transform duration-200 ease-out z-10"
         style={{ transform: `translateX(${offsetX}px)` }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
@@ -215,12 +215,12 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
         {/* Right Side Group: Amount + Toggle */}
         <div className="flex items-center gap-4">
           {/* Amount & Badge */}
-          <div className="flex flex-col items-end gap-2 pointer-events-none">
+          <div className="flex flex-col items-end gap-1 pointer-events-none">
             <span className={`text-lg font-bold tabular-nums transition-colors ${tx.paid ? 'text-white/50' : 'text-white'}`}>
               R$ {tx.amount.toFixed(2).replace('.', ',')}
             </span>
             
-            <div className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide transition-opacity ${
+            <div className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide transition-opacity ${
               tx.paid ? 'opacity-50' : 'opacity-100'
             } ${
               tx.type === 'subscription' 
