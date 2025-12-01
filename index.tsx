@@ -5,12 +5,16 @@ import App from './App';
 // Register Service Worker for PWA capabilities and Android Notifications
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    // Explicitly register at root scope
-    navigator.serviceWorker.register('/sw.js')
+    // Explicitly register with relative path to avoid Origin mismatch in previews
+    navigator.serviceWorker.register('./sw.js')
       .then(registration => {
-        console.log('SW registered successfully:', registration.scope);
+        // Registration successful
       })
       .catch(registrationError => {
+        // Silently skip specific error in preview environments to keep console clean
+        if (registrationError.message?.includes('origin') || registrationError.message?.includes('failed')) {
+           return;
+        }
         console.warn('SW registration failed:', registrationError);
       });
   });

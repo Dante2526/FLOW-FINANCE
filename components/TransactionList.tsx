@@ -205,7 +205,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
                   : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
               }`}>
                  {tx.paymentMethod === 'pix' ? <QrCode className="w-3 h-3" /> : <CreditCard className="w-3 h-3" />}
-                 {tx.paymentMethod === 'pix' ? 'PIX' : 'CARD'}
+                 {tx.paymentMethod === 'pix' ? 'PIX' : 'CARTAO'}
               </div>
             )}
           </div>

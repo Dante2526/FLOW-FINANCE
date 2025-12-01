@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Mail, ArrowRight, ShieldCheck, User } from 'lucide-react';
 
@@ -105,7 +104,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
         {/* Login/Register Card */}
         {/* Dynamic Padding: Reduced vertical padding on Register mode */}
         <div className={`bg-[#1c1c1e]/80 backdrop-blur-xl border border-white/5 ${mode === 'register' ? 'p-6 py-5' : 'p-6 sm:p-8'} rounded-[2rem] shadow-2xl w-full flex flex-col justify-center transition-all duration-300`}>
-           <div className="mb-6 flex flex-col gap-1">
+           <div className="mb-6 flex flex-col items-center text-center gap-1">
              <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">
                 {mode === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta'}
              </h2>

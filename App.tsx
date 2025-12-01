@@ -404,11 +404,11 @@ const App: React.FC = () => {
                  };
 
                  if ('serviceWorker' in navigator) {
-                    // Use ready to ensure we have an active worker, critical for Android
-                    navigator.serviceWorker.register('/sw.js').then(async () => {
+                    // Use relative path './sw.js' to avoid origin issues in previews
+                    navigator.serviceWorker.register('./sw.js').then(async () => {
                        const reg = await navigator.serviceWorker.ready;
                        reg.showNotification('Conta Vencendo Hoje! 💸', options);
-                    });
+                    }).catch(err => console.log('SW Notification failed (preview mode):', err));
                  } else {
                     new Notification('Conta Vencendo Hoje! 💸', options);
                  }
