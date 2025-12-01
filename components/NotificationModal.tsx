@@ -81,10 +81,23 @@ const NotificationModal: React.FC<Props> = ({
 
     try {
       if ('serviceWorker' in navigator) {
-        // Force register/get to ensure we don't hang on .ready if SW failed silently
+        // Force register explicitly to /sw.js which should be served from root
         const registration = await navigator.serviceWorker.register('/sw.js');
-        await registration.showNotification('Flow Finance', options);
-        alert("Comando enviado! Verifique a barra de status do seu celular.");
+        
+        // Wait for it to be active
+        let activeWorker = registration.active;
+        if (!activeWorker && registration.installing) {
+            activeWorker = registration.installing;
+        }
+
+        if (activeWorker) {
+            await registration.showNotification('Flow Finance', options);
+            alert("Comando enviado! Verifique a barra de status do seu celular.");
+        } else {
+             // Fallback if registration returns but no worker is immediately ready
+             // This happens on first load sometimes
+             alert("Service Worker registrado. Tente clicar novamente em 5 segundos.");
+        }
       } else {
         const n = new Notification('Flow Finance', options);
         n.onclick = () => window.focus();
@@ -93,7 +106,11 @@ const NotificationModal: React.FC<Props> = ({
       
     } catch (e: any) {
       console.error(e);
-      alert("Erro ao enviar notificação: " + (e.message || e));
+      if (e.message && e.message.includes('404')) {
+        alert("Erro 404: O arquivo sw.js não foi encontrado. Tente recarregar a página para atualizar o cache.");
+      } else {
+        alert("Erro técnico: " + (e.message || e));
+      }
     }
   };
   
