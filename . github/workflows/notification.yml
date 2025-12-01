@@ -1,0 +1,33 @@
+name: Daily Bill Check
+
+on:
+  schedule:
+    # Roda às 12:00 UTC (09:00 Horário de Brasília)
+    - cron: '0 12 * * *'
+  workflow_dispatch: # Permite rodar manualmente para testar
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    
+    env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      VAPID_PUBLIC_KEY: 'BOabgmhdqm_B03NgjZgZUG4tT6whqH_sfr9-ZmMt1XY-lbI_ADbOzze9pRDU3tnj7oXttv01ZXcNKLhzeXlifC8'
+      VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+      # Email para contato VAPID
+      VAPID_SUBJECT: 'mailto:naylanmoreira350@gmail.com'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: npm install firebase-admin web-push
+
+      - name: Run Check Script
+        run: node scripts/check_bills.js
