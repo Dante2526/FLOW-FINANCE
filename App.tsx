@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -399,12 +400,12 @@ const App: React.FC = () => {
                    body: `A conta ${tx.name} vence hoje. Valor: R$ ${tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
                    icon: iconUrl,
                    tag: `flow-finance-bill-${tx.id}`, 
-                   requireInteraction: true
+                   requireInteraction: true,
+                   vibrate: [200, 100, 200]
                  };
 
-                 // CRITICAL FIX: Ensure SW is used if available to avoid "Illegal constructor"
                  if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.ready.then(reg => {
+                    navigator.serviceWorker.register('/sw.js').then(reg => {
                        reg.showNotification('Conta Vencendo Hoje! 💸', options);
                     });
                  } else {

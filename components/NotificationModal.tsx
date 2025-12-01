@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare, Smartphone } from 'lucide-react';
 import { AppNotification } from '../types';
@@ -70,29 +71,29 @@ const NotificationModal: React.FC<Props> = ({
 
     const iconUrl = 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b';
     
-    // Simplifed options
     const options: any = {
       body: 'Teste: Notificação na barra de status funcionando! 🚀',
       icon: iconUrl,
       tag: 'test-notification-' + Date.now(),
       requireInteraction: false,
+      vibrate: [200, 100, 200]
     };
 
     try {
-      // CRITICAL FIX: Use serviceWorker.ready to ensure we use the SW registration
-      // This avoids "Illegal constructor" error on Android Chrome
       if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.ready;
+        // Force register/get to ensure we don't hang on .ready if SW failed silently
+        const registration = await navigator.serviceWorker.register('/sw.js');
         await registration.showNotification('Flow Finance', options);
+        alert("Comando enviado! Verifique a barra de status do seu celular.");
       } else {
-        // Fallback for desktops without SW (rare in this setup but possible)
         const n = new Notification('Flow Finance', options);
         n.onclick = () => window.focus();
+        alert("Notificação enviada (Modo Desktop).");
       }
       
     } catch (e: any) {
       console.error(e);
-      alert("Erro técnico ao criar notificação: " + (e.message || e));
+      alert("Erro ao enviar notificação: " + (e.message || e));
     }
   };
   

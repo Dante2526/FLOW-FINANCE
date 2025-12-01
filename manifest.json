@@ -1,3 +1,4 @@
+
 {
   "name": "Flow Finance",
   "short_name": "Flow",
@@ -8,14 +9,14 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "https://api.dicebear.com/9.x/shapes/svg?seed=FlowFinance&backgroundColor=0a0a0b",
+      "src": "https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b",
       "sizes": "192x192",
-      "type": "image/svg+xml"
+      "type": "image/png"
     },
     {
-      "src": "https://api.dicebear.com/9.x/shapes/svg?seed=FlowFinance&backgroundColor=0a0a0b",
+      "src": "https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b",
       "sizes": "512x512",
-      "type": "image/svg+xml"
+      "type": "image/png"
     }
   ]
 }
