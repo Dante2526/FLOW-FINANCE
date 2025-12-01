@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -391,12 +390,19 @@ const App: React.FC = () => {
                read: false,
                type: 'alert'
              });
+
+             // System Notification - Updated for Android Status Bar compatibility
              if ('Notification' in window && Notification.permission === 'granted') {
                try {
-                 new Notification('Contas a Pagar', {
-                   body: `${tx.name} vence hoje! Valor: R$ ${tx.amount}`,
-                   icon: '/icon.png' 
-                 });
+                 const iconUrl = 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b';
+                 new Notification('Conta Vencendo Hoje! 💸', {
+                   body: `A conta ${tx.name} vence hoje. Valor: R$ ${tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                   icon: iconUrl,
+                   badge: iconUrl, // Important for Android Status Bar
+                   vibrate: [200, 100, 200],
+                   tag: `flow-finance-bill-${tx.id}`, // Prevents duplicate push notifications
+                   requireInteraction: true
+                 } as any);
                } catch (e) { console.warn("Notification failed", e); }
              }
            }

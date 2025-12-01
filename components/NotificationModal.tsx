@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare } from 'lucide-react';
 import { AppNotification } from '../types';
 
@@ -21,6 +20,27 @@ const NotificationModal: React.FC<Props> = ({
   onDelete
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('inbox');
+  const [notificationPermission, setNotificationPermission] = useState(
+    'Notification' in window ? Notification.permission : 'default'
+  );
+
+  useEffect(() => {
+    if (isOpen && 'Notification' in window) {
+      setNotificationPermission(Notification.permission);
+    }
+  }, [isOpen]);
+
+  const handleRequestPermission = async () => {
+    if (!('Notification' in window)) return;
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+    if (permission === 'granted') {
+      new Notification('Flow Finance', {
+        body: 'Notificações ativadas com sucesso! Você receberá avisos na barra de status.',
+        icon: 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b'
+      });
+    }
+  };
   
   // Form States for Sending
   const [recipientName, setRecipientName] = useState('');
@@ -240,6 +260,17 @@ const NotificationModal: React.FC<Props> = ({
         <div className="flex-shrink-0 p-5 pt-3 border-t border-white/5 bg-[#1c1c1e] z-10">
            {activeTab === 'inbox' ? (
              <div className="flex flex-col gap-3">
+                {/* Permission Request Button - ONLY IF NOT GRANTED */}
+                {notificationPermission !== 'granted' && 'Notification' in window && (
+                   <button 
+                     onClick={handleRequestPermission}
+                     className="w-full h-14 rounded-[1.5rem] bg-blue-600 text-white font-bold flex items-center justify-center gap-2 hover:bg-blue-500 transition-colors shadow-lg"
+                   >
+                     <Bell className="w-5 h-5" />
+                     Ativar Notificações no Celular
+                   </button>
+                )}
+
                 {notifications.length > 0 && (
                   <button 
                     onClick={onMarkAllRead}
