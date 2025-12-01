@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare } from 'lucide-react';
+import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare, CloudLightning } from 'lucide-react';
 import { AppNotification } from '../types';
+import { saveUserField } from '../services/firebase';
 
 interface Props {
   isOpen: boolean;
@@ -9,47 +10,114 @@ interface Props {
   notifications: AppNotification[];
   onMarkAllRead: () => void;
   onDelete: (id: string) => void;
+  currentUserEmail: string | null;
 }
 
 type TabType = 'inbox' | 'send';
+
+// VAPID Public Key provided by the user
+const VAPID_PUBLIC_KEY = 'BOabgmhdqm_B03NgjZgZUG4tT6whqH_sfr9-ZmMt1XY-lbI_ADbOzze9pRDU3tnj7oXttv01ZXcNKLhzeXlifC8';
+
+// Helper function to convert VAPID key
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
 const NotificationModal: React.FC<Props> = ({ 
   isOpen, 
   onClose, 
   notifications, 
   onMarkAllRead, 
-  onDelete
+  onDelete,
+  currentUserEmail
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('inbox');
   const [notificationPermission, setNotificationPermission] = useState(
     'Notification' in window ? Notification.permission : 'default'
   );
+  // State to track if we have a valid cloud subscription
+  const [hasPushSubscription, setHasPushSubscription] = useState(true); // Default to true to prevent flicker
 
+  // Check permissions and subscription status when modal opens
   useEffect(() => {
-    if (isOpen && 'Notification' in window) {
-      setNotificationPermission(Notification.permission);
+    if (isOpen) {
+      if ('Notification' in window) {
+        setNotificationPermission(Notification.permission);
+      }
+      
+      // Check for existing Push Subscription
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(registration => {
+          registration.pushManager.getSubscription().then(subscription => {
+            setHasPushSubscription(!!subscription);
+          });
+        });
+      }
     }
   }, [isOpen]);
 
   const handleRequestPermission = async () => {
     if (!('Notification' in window)) return;
     try {
+      // 1. Request Permission (or verify if already granted)
       const permission = await Notification.requestPermission();
       setNotificationPermission(permission);
       
       if (permission === 'granted') {
-        // Try to trigger a confirmation via SW if possible, else standard
-        if ('serviceWorker' in navigator) {
-           const reg = await navigator.serviceWorker.ready;
-           reg.showNotification('Flow Finance', {
-             body: 'Notificações ativadas! 🚀',
-             icon: 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b'
-           });
-        } else {
-           new Notification('Flow Finance', {
-             body: 'Notificações ativadas! 🚀',
-             icon: 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b'
-           });
+        let subscribed = false;
+
+        // 2. Try to Subscribe to Push Service (GitHub Actions Backend)
+        if ('serviceWorker' in navigator && currentUserEmail) {
+          try {
+             const registration = await navigator.serviceWorker.ready;
+             
+             // Check if already subscribed to avoid duplicate work, but ensure we save it
+             let subscription = await registration.pushManager.getSubscription();
+             
+             if (!subscription) {
+                subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                });
+             }
+
+             // Save to Firebase (Updated logic)
+             if (subscription) {
+                const subscriptionJson = JSON.parse(JSON.stringify(subscription));
+                await saveUserField(currentUserEmail, 'pushSubscription', subscriptionJson);
+                
+                registration.showNotification('Flow Finance', {
+                  body: 'Sincronização com a nuvem concluída! ☁️',
+                  icon: 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b'
+                });
+                
+                subscribed = true;
+                setHasPushSubscription(true);
+             }
+
+          } catch (pushError) {
+             console.warn("Falha ao registrar Push Notification:", pushError);
+             alert("Erro ao conectar com servidor de notificações. Tente novamente.");
+          }
+        }
+
+        // 3. Fallback local notification test if push setup failed
+        if (!subscribed) {
+             new Notification('Flow Finance', {
+               body: 'Notificações locais ativadas! 🚀',
+               icon: 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b'
+             });
         }
       }
     } catch (e) {
@@ -276,14 +344,14 @@ const NotificationModal: React.FC<Props> = ({
         <div className="flex-shrink-0 p-5 pt-3 border-t border-white/5 bg-[#1c1c1e] z-10">
            {activeTab === 'inbox' ? (
              <div className="flex flex-col gap-3">
-                {/* Permission Request Button - ONLY IF NOT GRANTED */}
-                {notificationPermission !== 'granted' && 'Notification' in window && (
+                {/* Permission Request Button - Shows if Permission is NOT granted OR Subscription is missing */}
+                {('Notification' in window) && (notificationPermission !== 'granted' || !hasPushSubscription) && (
                    <button 
                      onClick={handleRequestPermission}
                      className="w-full h-14 rounded-[1.5rem] bg-blue-600 text-white font-bold flex items-center justify-center gap-2 hover:bg-blue-500 transition-colors shadow-lg"
                    >
-                     <Bell className="w-5 h-5" />
-                     Ativar Notificações no Celular
+                     {notificationPermission === 'granted' ? <CloudLightning className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+                     {notificationPermission === 'granted' ? 'Sincronizar Notificações Automáticas' : 'Ativar Notificações no Celular'}
                    </button>
                 )}
                 

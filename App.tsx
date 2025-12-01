@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -917,6 +916,7 @@ const App: React.FC = () => {
         notifications={notifications}
         onMarkAllRead={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
         onDelete={(id) => setNotifications(prev => prev.filter(n => n.id !== id))}
+        currentUserEmail={currentUserEmail}
       />
 
       <AnalyticsModal 
