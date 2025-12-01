@@ -285,6 +285,8 @@ const NotificationModal: React.FC<Props> = ({
                   placeholder="Nome do contato..."
                   className="w-full bg-[#2c2c2e] text-white p-3 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium text-sm"
                   autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
                 />
               </div>
 
@@ -335,6 +337,7 @@ const NotificationModal: React.FC<Props> = ({
                   placeholder={messageType === 'cobranca' ? "Ex: Preciso que pague sua parte da internet..." : "Ex: Já paguei a conta de luz..."}
                   className="w-full h-32 bg-[#2c2c2e] text-white p-3 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium resize-none text-sm"
                   autoComplete="off"
+                  spellCheck="false"
                 />
               </div>
 
