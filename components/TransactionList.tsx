@@ -163,7 +163,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
 
       {/* Foreground (Card) */}
       <div 
-        className="relative bg-[#1c1c1e] h-full px-5 flex items-center justify-between border border-white/5 shadow-lg shadow-black/20 touch-pan-y transition-transform duration-200 ease-out z-10 rounded-2xl"
+        className="relative bg-[#1c1c1e] h-full px-4 flex items-center justify-between gap-4 border border-white/5 shadow-lg shadow-black/20 touch-pan-y transition-transform duration-200 ease-out z-10 rounded-2xl"
         style={{ transform: `translateX(${offsetX}px)` }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
@@ -173,21 +173,21 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseLeave}
       >
-        <div className="flex items-center gap-4 pointer-events-none">
+        <div className="flex items-center gap-3 pointer-events-none flex-1 min-w-0">
           {/* Logo */}
-          <div className="relative scale-90">
+          <div className="relative scale-90 shrink-0">
             <TransactionIcon type={tx.logoType} />
           </div>
           
           {/* Info */}
-          <div className="pointer-events-auto flex flex-col items-start justify-center h-full pt-1">
-            <span className={`font-bold text-base transition-colors block leading-none mb-1 ${tx.paid ? 'text-white/60 line-through decoration-white/30' : 'text-white'}`}>
+          <div className="pointer-events-auto flex flex-col items-start justify-center h-full pt-1 min-w-0 w-full">
+            <span className={`font-bold text-sm transition-colors block leading-none mb-1 whitespace-nowrap overflow-hidden w-full ${tx.paid ? 'text-white/60 line-through decoration-white/30' : 'text-white'}`}>
               {tx.name}
             </span>
 
             {/* Date Display (Tiny) */}
             {!tx.paid && (
-              <span className="text-[10px] text-gray-500 font-medium uppercase">
+              <span className="text-[10px] text-gray-500 font-medium uppercase whitespace-nowrap overflow-hidden w-full">
                 Vence: <span className="text-gray-400">{formatDateDisplay(tx.date)}</span>
               </span>
             )}
@@ -212,7 +212,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
         </div>
 
         {/* Right Side Group: Amount + Toggle */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           {/* Amount & Badge */}
           <div className="flex flex-col items-end gap-0.5 pointer-events-none">
             <span className={`text-base font-bold tabular-nums transition-colors ${tx.paid ? 'text-white/50' : 'text-white'}`}>
