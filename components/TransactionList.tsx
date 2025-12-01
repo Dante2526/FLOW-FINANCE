@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Transaction } from '../types';
 import { TransactionIcon } from './Icons';
@@ -139,7 +138,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
   };
 
   return (
-    <div className="relative mb-2 h-[4.5rem] rounded-2xl bg-[#1c1c1e] overflow-hidden select-none cursor-grab active:cursor-grabbing">
+    <div className="relative mb-3 h-24 rounded-2xl bg-[#1c1c1e] overflow-hidden select-none cursor-grab active:cursor-grabbing">
       {/* Background (Buttons) */}
       <div className={`absolute inset-0 flex justify-between rounded-2xl transition-all duration-200 ${offsetX === 0 ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
          {/* Left Side (Edit) - Visible when swiping Right */}
@@ -164,7 +163,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
 
       {/* Foreground (Card) */}
       <div 
-        className="relative bg-[#1c1c1e] h-full px-4 flex items-center justify-between border border-white/5 shadow-lg shadow-black/20 touch-pan-y transition-transform duration-200 ease-out z-10 rounded-2xl"
+        className="relative bg-[#1c1c1e] h-full px-5 flex items-center justify-between border border-white/5 shadow-lg shadow-black/20 touch-pan-y transition-transform duration-200 ease-out z-10 rounded-2xl"
         style={{ transform: `translateX(${offsetX}px)` }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
