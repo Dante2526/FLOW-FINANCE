@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare, Smartphone } from 'lucide-react';
+import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare } from 'lucide-react';
 import { AppNotification } from '../types';
 
 interface Props {
@@ -58,62 +58,6 @@ const NotificationModal: React.FC<Props> = ({
     }
   };
 
-  const handleTestNotification = async () => {
-    if (!('Notification' in window)) {
-      alert("Navegador não suporta notificações.");
-      return;
-    }
-
-    if (Notification.permission !== 'granted') {
-      alert("Permissão não concedida. Clique em 'Ativar Notificações' primeiro.");
-      return;
-    }
-
-    const iconUrl = 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b';
-    
-    const options: any = {
-      body: 'Teste: Notificação na barra de status funcionando! 🚀',
-      icon: iconUrl,
-      tag: 'test-notification-' + Date.now(),
-      requireInteraction: false,
-      vibrate: [200, 100, 200]
-    };
-
-    try {
-      if ('serviceWorker' in navigator) {
-        // Force register explicitly to /sw.js which should be served from root
-        const registration = await navigator.serviceWorker.register('/sw.js');
-        
-        // Wait for it to be active
-        let activeWorker = registration.active;
-        if (!activeWorker && registration.installing) {
-            activeWorker = registration.installing;
-        }
-
-        if (activeWorker) {
-            await registration.showNotification('Flow Finance', options);
-            alert("Comando enviado! Verifique a barra de status do seu celular.");
-        } else {
-             // Fallback if registration returns but no worker is immediately ready
-             // This happens on first load sometimes
-             alert("Service Worker registrado. Tente clicar novamente em 5 segundos.");
-        }
-      } else {
-        const n = new Notification('Flow Finance', options);
-        n.onclick = () => window.focus();
-        alert("Notificação enviada (Modo Desktop).");
-      }
-      
-    } catch (e: any) {
-      console.error(e);
-      if (e.message && e.message.includes('404')) {
-        alert("Erro 404: O arquivo sw.js não foi encontrado. Tente recarregar a página para atualizar o cache.");
-      } else {
-        alert("Erro técnico: " + (e.message || e));
-      }
-    }
-  };
-  
   // Form States for Sending
   const [recipientName, setRecipientName] = useState('');
   const [messageType, setMessageType] = useState<'cobranca' | 'aviso'>('aviso');
@@ -343,17 +287,6 @@ const NotificationModal: React.FC<Props> = ({
                    </button>
                 )}
                 
-                {/* Test Button - Only if Granted */}
-                {notificationPermission === 'granted' && (
-                   <button 
-                     onClick={handleTestNotification}
-                     className="w-full h-14 rounded-[1.5rem] bg-[#2c2c2e] text-white font-bold flex items-center justify-center gap-2 hover:bg-[#3a3a3c] border border-white/5 transition-colors shadow-lg"
-                   >
-                     <Smartphone className="w-5 h-5 text-accent" />
-                     Testar Notificação Status Bar
-                   </button>
-                )}
-
                 {notifications.length > 0 && (
                   <button 
                     onClick={onMarkAllRead}

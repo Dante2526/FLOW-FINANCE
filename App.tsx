@@ -405,7 +405,9 @@ const App: React.FC = () => {
                  };
 
                  if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.register('/sw.js').then(reg => {
+                    // Use ready to ensure we have an active worker, critical for Android
+                    navigator.serviceWorker.register('/sw.js').then(async () => {
+                       const reg = await navigator.serviceWorker.ready;
                        reg.showNotification('Conta Vencendo Hoje! 💸', options);
                     });
                  } else {
