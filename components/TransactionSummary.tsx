@@ -13,7 +13,7 @@ interface Props {
 const TransactionSummary: React.FC<Props> = ({ months, activeMonthId, onSelectMonth, onDeleteMonth }) => {
   return (
     <div className="mt-8 mb-2">
-      <div className="flex gap-4 overflow-x-auto no-scrollbar p-4 items-center">
+      <div className="flex gap-4 overflow-x-auto no-scrollbar py-4 px-4 -mx-4 items-center">
         
         {months.map((item) => {
           const isActive = item.id === activeMonthId;

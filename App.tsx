@@ -776,7 +776,7 @@ const App: React.FC = () => {
 
             {/* Secondary Cards (Accounts) */}
             <div className="mb-0">
-               <div className="flex justify-between items-center px-2 mb-3">
+               <div className="flex justify-between items-center mb-3">
                  <h2 className="text-xl font-medium text-gray-400">FONTES DE RENDA</h2>
                </div>
                
@@ -841,7 +841,10 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] text-white p-6 pb-24 font-sans selection:bg-accent selection:text-black">
+    <div 
+      className="min-h-screen bg-[#0a0a0b] text-white p-4 pb-24 font-sans selection:bg-accent selection:text-black"
+      style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+    >
       {renderView()}
 
       <BottomNav 

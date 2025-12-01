@@ -255,7 +255,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
 const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onToggleStatus, onTogglePaymentMethod }) => {
   return (
     <div className="mt-6 flex flex-col pb-32">
-      <h2 className="text-xl font-medium text-gray-400 mb-4 px-2">CONTAS</h2>
+      <h2 className="text-xl font-medium text-gray-400 mb-4">CONTAS</h2>
       
       {transactions.map((tx) => (
         <SwipeableTransactionItem 
