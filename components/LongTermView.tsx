@@ -13,8 +13,12 @@ interface Props {
 const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
   const [selectedItem, setSelectedItem] = useState<LongTermTransaction | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  
+  // Edit Modals State
   const [isEditMonthlyOpen, setIsEditMonthlyOpen] = useState(false);
   const [isEditInstallmentOpen, setIsEditInstallmentOpen] = useState(false);
+  const [isEditTitleOpen, setIsEditTitleOpen] = useState(false);
+  const [isEditTotalOpen, setIsEditTotalOpen] = useState(false);
 
   // Form State for Adding
   const [newTitle, setNewTitle] = useState('');
@@ -22,10 +26,12 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
   const [newInstallments, setNewInstallments] = useState('');
   const [newStartDate, setNewStartDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // Edit State
+  // Edit Value States
   const [editMonthlyValue, setEditMonthlyValue] = useState('');
   const [editInstallmentValue, setEditInstallmentValue] = useState('');
   const [editingInstallmentIndex, setEditingInstallmentIndex] = useState<number | null>(null);
+  const [editTitleValue, setEditTitleValue] = useState('');
+  const [editTotalValue, setEditTotalValue] = useState('');
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string) => void) => {
     const rawValue = e.target.value.replace(/\D/g, '');
@@ -101,6 +107,8 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
     setSelectedItem(newItem);
   };
 
+  // --- SAVE HANDLERS ---
+
   const handleSaveNewMonthlyValue = (e: React.FormEvent) => {
       e.preventDefault();
       if (!selectedItem || !editMonthlyValue) return;
@@ -126,8 +134,6 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
       newItem.installmentsHistory = newHistory;
 
       // Recalculate Total Amount based on history + future projections
-      // NOTE: When changing the base monthly value, we DO recalculate the total because
-      // it implies a structural change to the plan.
       let projectedTotal = 0;
       for (let i = 0; i < newItem.installmentsCount; i++) {
           if (newHistory[i] !== undefined) {
@@ -158,15 +164,45 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
     newHistory[editingInstallmentIndex] = newAmount;
     newItem.installmentsHistory = newHistory;
 
-    // NOTE: We do NOT recalculate the Total Amount here anymore.
-    // The Total Amount remains fixed even if individual installments are edited manually.
-
     onEdit(newItem);
     setSelectedItem(newItem);
     setIsEditInstallmentOpen(false);
     setEditingInstallmentIndex(null);
     setEditInstallmentValue('');
   };
+
+  const handleSaveTitle = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedItem || !editTitleValue.trim()) return;
+
+    const newItem = { ...selectedItem, title: editTitleValue.toUpperCase() };
+    onEdit(newItem);
+    setSelectedItem(newItem);
+    setIsEditTitleOpen(false);
+  };
+
+  const handleSaveTotal = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedItem || !editTotalValue) return;
+
+    const cleanVal = editTotalValue.replace(/\./g, '').replace(',', '.');
+    const newTotalAmount = parseFloat(cleanVal);
+
+    // If total changes, we adjust the monthly amount base
+    const newMonthlyBase = newTotalAmount / selectedItem.installmentsCount;
+
+    const newItem = { 
+      ...selectedItem, 
+      totalAmount: newTotalAmount,
+      monthlyAmount: newMonthlyBase 
+    };
+
+    onEdit(newItem);
+    setSelectedItem(newItem);
+    setIsEditTotalOpen(false);
+  };
+
+  // --- MODAL OPENERS ---
 
   const openEditMonthlyModal = () => {
       if (!selectedItem) return;
@@ -179,6 +215,18 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
       setEditingInstallmentIndex(index);
       setEditInstallmentValue(currentAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       setIsEditInstallmentOpen(true);
+  };
+
+  const openEditTitleModal = () => {
+    if (!selectedItem) return;
+    setEditTitleValue(selectedItem.title);
+    setIsEditTitleOpen(true);
+  };
+
+  const openEditTotalModal = () => {
+    if (!selectedItem) return;
+    setEditTotalValue(selectedItem.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setIsEditTotalOpen(true);
   };
 
   // --- DETAIL VIEW (SPREADSHEET) ---
@@ -201,10 +249,16 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
           >
             <ChevronLeft className="w-6 h-6 text-white" />
           </button>
+          
           <div className="flex-1 min-w-0">
-             <h2 className="text-xl font-bold text-white truncate">{selectedItem.title}</h2>
-             <p className="text-xs text-gray-400">Clique em uma linha para marcar como paga</p>
+             <div className="flex items-center gap-2">
+               <h2 className="text-xl font-bold text-white truncate">
+                  {selectedItem.title}
+               </h2>
+             </div>
+             <p className="text-xs text-gray-400">Clique nos blocos para editar valores</p>
           </div>
+
           <button 
              onClick={() => {
                onDelete(selectedItem.id);
@@ -232,16 +286,31 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
             </span>
           </button>
 
-          <div className="bg-indigo-600 p-3 flex flex-col items-center justify-center text-center h-20">
+          {/* Payment Status (Center) - Now Editable Title */}
+          <button 
+            onClick={openEditTitleModal}
+            className="bg-indigo-600 p-3 flex flex-col items-center justify-center text-center h-20 relative hover:bg-indigo-500 transition-all active:scale-95 group"
+          >
+            <div className="absolute top-1.5 right-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
+                 <Edit2 className="w-3 h-3 text-white" />
+            </div>
             <span className="text-[10px] font-bold uppercase text-white/80">Pagamento</span>
             <span className="text-xs font-bold text-white leading-tight mt-1 line-clamp-2">{selectedItem.title}</span>
-          </div>
-          <div className="bg-blue-600 rounded-tr-xl p-3 flex flex-col items-center justify-center text-center h-20">
+          </button>
+
+          {/* Editable Total Value */}
+          <button 
+             onClick={openEditTotalModal}
+             className="bg-blue-600 rounded-tr-xl p-3 flex flex-col items-center justify-center text-center h-20 relative hover:bg-blue-500 transition-all active:scale-95 group"
+          >
+             <div className="absolute top-1.5 right-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
+                 <Edit2 className="w-3 h-3 text-white" />
+             </div>
              <span className="text-[10px] font-bold uppercase text-white/80">Valor Total</span>
              <span className="text-sm font-bold text-white">
                R$ {selectedItem.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
              </span>
-          </div>
+          </button>
           
           {/* Sub Header */}
           <div className="col-span-3 grid grid-cols-4 bg-orange-600 h-10 items-center px-2">
@@ -315,12 +384,14 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
           </div>
         </div>
 
+         {/* --- MODALS --- */}
+
          {/* Edit Monthly Value Modal */}
          {isEditMonthlyOpen && (
             <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4">
                     <h3 className="text-lg font-bold text-white text-center">Novo Valor Mensal</h3>
-                    <p className="text-xs text-gray-400 text-center -mt-2">Isso atualizará parcelas futuras. O histórico de parcelas pagas será mantido.</p>
+                    <p className="text-xs text-gray-400 text-center -mt-2">Isso atualizará parcelas futuras e recalculará o total.</p>
                     
                     <form onSubmit={handleSaveNewMonthlyValue} className="flex flex-col gap-4 mt-2">
                         <div className="relative">
@@ -337,6 +408,78 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                             <button 
                                 type="button" 
                                 onClick={() => setIsEditMonthlyOpen(false)}
+                                className="flex-1 bg-[#2c2c2e] text-white h-12 rounded-xl font-bold text-sm"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                type="submit" 
+                                className="flex-1 bg-accent text-black h-12 rounded-xl font-bold text-sm"
+                            >
+                                Salvar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+         )}
+
+         {/* Edit Title Modal */}
+         {isEditTitleOpen && (
+            <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4">
+                    <h3 className="text-lg font-bold text-white text-center">Editar Nome</h3>
+                    
+                    <form onSubmit={handleSaveTitle} className="flex flex-col gap-4 mt-2">
+                        <input 
+                            type="text" 
+                            value={editTitleValue}
+                            onChange={(e) => setEditTitleValue(e.target.value.toUpperCase())}
+                            className="w-full bg-[#2c2c2e] text-white text-xl font-bold py-3 px-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center uppercase"
+                            autoFocus
+                        />
+                        <div className="flex gap-2">
+                            <button 
+                                type="button" 
+                                onClick={() => setIsEditTitleOpen(false)}
+                                className="flex-1 bg-[#2c2c2e] text-white h-12 rounded-xl font-bold text-sm"
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                type="submit" 
+                                className="flex-1 bg-accent text-black h-12 rounded-xl font-bold text-sm"
+                            >
+                                Salvar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+         )}
+
+         {/* Edit Total Modal */}
+         {isEditTotalOpen && (
+            <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4">
+                    <h3 className="text-lg font-bold text-white text-center">Editar Valor Total</h3>
+                    <p className="text-xs text-gray-400 text-center -mt-2">Isso ajustará o valor base das parcelas (Total / Qtd).</p>
+                    
+                    <form onSubmit={handleSaveTotal} className="flex flex-col gap-4 mt-2">
+                         <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-accent">R$</span>
+                            <input 
+                                type="text" 
+                                value={editTotalValue}
+                                onChange={(e) => handleAmountChange(e, setEditTotalValue)}
+                                className="w-full bg-[#2c2c2e] text-white text-2xl font-bold py-3 pl-12 pr-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center"
+                                autoFocus
+                            />
+                        </div>
+                        <div className="flex gap-2">
+                            <button 
+                                type="button" 
+                                onClick={() => setIsEditTotalOpen(false)}
                                 className="flex-1 bg-[#2c2c2e] text-white h-12 rounded-xl font-bold text-sm"
                             >
                                 Cancelar
@@ -438,7 +581,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                        <span className="text-xs text-gray-400">Início: {new Date(item.startDate).toLocaleDateString('pt-BR')}</span>
                      </div>
                      <span className="text-xl font-bold text-accent">
-                       R$ {item.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+                       R$ {item.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                      </span>
                    </div>
 
