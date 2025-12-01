@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare, Smartphone } from 'lucide-react';
 import { AppNotification } from '../types';
@@ -33,13 +32,28 @@ const NotificationModal: React.FC<Props> = ({
 
   const handleRequestPermission = async () => {
     if (!('Notification' in window)) return;
-    const permission = await Notification.requestPermission();
-    setNotificationPermission(permission);
-    if (permission === 'granted') {
-      new Notification('Flow Finance', {
-        body: 'Notificações ativadas com sucesso! Você receberá avisos na barra de status.',
-        icon: 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b'
-      });
+    try {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+      
+      if (permission === 'granted') {
+        // Try to trigger a confirmation via SW if possible, else standard
+        if ('serviceWorker' in navigator) {
+           const reg = await navigator.serviceWorker.ready;
+           reg.showNotification('Flow Finance', {
+             body: 'Notificações ativadas! 🚀',
+             icon: 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b'
+           });
+        } else {
+           new Notification('Flow Finance', {
+             body: 'Notificações ativadas! 🚀',
+             icon: 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b'
+           });
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Não foi possível ativar as notificações. Verifique as configurações do navegador.");
     }
   };
 
@@ -56,32 +70,28 @@ const NotificationModal: React.FC<Props> = ({
 
     const iconUrl = 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b';
     
-    // Simplifed options to ensure compatibility across Android/iOS/Desktop
+    // Simplifed options
     const options: any = {
       body: 'Teste: Notificação na barra de status funcionando! 🚀',
       icon: iconUrl,
       tag: 'test-notification-' + Date.now(),
       requireInteraction: false,
-      // Removed 'vibrate' and 'badge' to prevent TypeError on some Android WebViews
     };
 
     try {
-      // 1. Try Service Worker Method (Best for Android Status Bar)
+      // CRITICAL FIX: Use serviceWorker.ready to ensure we use the SW registration
+      // This avoids "Illegal constructor" error on Android Chrome
       if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.getRegistration();
-        if (registration) {
-          await registration.showNotification('Flow Finance', options);
-          return; 
-        }
+        const registration = await navigator.serviceWorker.ready;
+        await registration.showNotification('Flow Finance', options);
+      } else {
+        // Fallback for desktops without SW (rare in this setup but possible)
+        const n = new Notification('Flow Finance', options);
+        n.onclick = () => window.focus();
       }
-
-      // 2. Fallback to Standard Constructor (Desktop / iOS PWA)
-      const n = new Notification('Flow Finance', options);
-      n.onclick = () => window.focus();
       
     } catch (e: any) {
       console.error(e);
-      // Show specific error message for debugging
       alert("Erro técnico ao criar notificação: " + (e.message || e));
     }
   };
