@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Mail, ArrowRight, ShieldCheck, User } from 'lucide-react';
 
@@ -130,6 +131,8 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                            onChange={(e) => setName(e.target.value)}
                            placeholder="Seu Nome"
                            className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium capitalize"
+                           autoComplete="off"
+                           autoCorrect="off"
                          />
                       </div>
                    </div>
@@ -149,7 +152,8 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                          onChange={(e) => setEmail(e.target.value)}
                          placeholder="seu@email.com"
                          className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium"
-                         autoComplete="email"
+                         autoComplete="off"
+                         autoCorrect="off"
                          autoFocus={mode === 'login'}
                        />
                     </div>

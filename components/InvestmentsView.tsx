@@ -406,6 +406,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                    onChange={(e) => setInstitution(e.target.value)}
                    placeholder={type === 'cdi' ? "Ex: PICPAY, NUBANK..." : "Ex: RICO, XP..."}
                    className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium uppercase"
+                   autoComplete="off"
                  />
               </div>
 
@@ -417,6 +418,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                     onChange={(e) => setName(e.target.value)}
                     placeholder={type === 'cdi' ? "Ex: CAIXINHA RESERVA" : "Ex: MXRF11"}
                     className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium uppercase"
+                    autoComplete="off"
                  />
               </div>
 
@@ -433,6 +435,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                              onChange={(e) => setQuantity(e.target.value)}
                              placeholder="1"
                              className="w-full bg-[#2c2c2e] text-white p-4 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold text-lg"
+                             autoComplete="off"
                           />
                           <Layers className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                       </div>
@@ -450,6 +453,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                          onChange={handleCurrencyChange}
                          placeholder="0,00"
                          className="w-full bg-[#2c2c2e] text-white p-4 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold text-lg"
+                         autoComplete="off"
                        />
                     </div>
                  </div>
@@ -466,6 +470,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                       onChange={(e) => setYieldRate(e.target.value)}
                       placeholder={type === 'cdi' ? "Ex: 100 (para 100%)" : "Ex: 12.5"}
                       className="w-full bg-[#2c2c2e] text-white p-4 pr-24 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold"
+                      autoComplete="off"
                     />
 
                     {/* Search Button for FIIs/Stocks (Direct StatusInvest Link) */}
@@ -617,6 +622,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                        onChange={(e) => setTempCdiRate(e.target.value)}
                        className="w-full bg-[#2c2c2e] text-white text-2xl font-bold py-3 px-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center"
                        autoFocus
+                       autoComplete="off"
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-bold">%</span>
                  </div>

@@ -402,6 +402,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                                 onChange={(e) => handleAmountChange(e, setEditMonthlyValue)}
                                 className="w-full bg-[#2c2c2e] text-white text-2xl font-bold py-3 pl-12 pr-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center"
                                 autoFocus
+                                autoComplete="off"
                             />
                         </div>
                         <div className="flex gap-2">
@@ -437,6 +438,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                             onChange={(e) => setEditTitleValue(e.target.value.toUpperCase())}
                             className="w-full bg-[#2c2c2e] text-white text-xl font-bold py-3 px-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center uppercase"
                             autoFocus
+                            autoComplete="off"
                         />
                         <div className="flex gap-2">
                             <button 
@@ -474,6 +476,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                                 onChange={(e) => handleAmountChange(e, setEditTotalValue)}
                                 className="w-full bg-[#2c2c2e] text-white text-2xl font-bold py-3 pl-12 pr-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center"
                                 autoFocus
+                                autoComplete="off"
                             />
                         </div>
                         <div className="flex gap-2">
@@ -516,6 +519,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                                 onChange={(e) => handleAmountChange(e, setEditInstallmentValue)}
                                 className="w-full bg-[#2c2c2e] text-white text-2xl font-bold py-3 pl-12 pr-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center"
                                 autoFocus
+                                autoComplete="off"
                             />
                         </div>
                         <div className="flex gap-2">
@@ -627,6 +631,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                     value={newTitle}
                     onChange={e => setNewTitle(e.target.value.toUpperCase())}
                     required
+                    autoComplete="off"
                  />
                </div>
 
@@ -641,6 +646,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                       value={newTotal}
                       onChange={(e) => handleAmountChange(e, setNewTotal)}
                       required
+                      autoComplete="off"
                    />
                  </div>
                  <div className="w-24 flex flex-col gap-1">
@@ -652,6 +658,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                       value={newInstallments}
                       onChange={e => setNewInstallments(e.target.value)}
                       required
+                      autoComplete="off"
                    />
                  </div>
                </div>
@@ -665,6 +672,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                       value={newStartDate}
                       onChange={e => setNewStartDate(e.target.value)}
                       required
+                      autoComplete="off"
                    />
                    <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-5 h-5" />
                  </div>

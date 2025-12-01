@@ -91,6 +91,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
                 placeholder="0.00"
                 className="w-full bg-[#2c2c2e] text-white text-3xl font-bold py-4 pl-14 pr-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600"
                 autoFocus
+                autoComplete="off"
               />
             </div>
           </div>
@@ -105,6 +106,8 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
               placeholder="Ex: Reserva, Salário..."
               className="w-full bg-[#2c2c2e] text-white text-lg py-4 px-6 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600"
               required
+              autoComplete="off"
+              autoCorrect="off"
             />
           </div>
 

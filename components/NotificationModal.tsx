@@ -284,6 +284,7 @@ const NotificationModal: React.FC<Props> = ({
                   onChange={(e) => setRecipientName(e.target.value)} 
                   placeholder="Nome do contato..."
                   className="w-full bg-[#2c2c2e] text-white p-3 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium text-sm"
+                  autoComplete="off"
                 />
               </div>
 
@@ -319,6 +320,7 @@ const NotificationModal: React.FC<Props> = ({
                       onChange={(e) => setAmount(e.target.value)} 
                       placeholder="0.00"
                       className="w-full bg-[#2c2c2e] text-white p-3 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 font-bold text-base"
+                      autoComplete="off"
                     />
                   </div>
                 </div>
@@ -332,6 +334,7 @@ const NotificationModal: React.FC<Props> = ({
                   onChange={(e) => setCustomMessage(e.target.value)} 
                   placeholder={messageType === 'cobranca' ? "Ex: Preciso que pague sua parte da internet..." : "Ex: Já paguei a conta de luz..."}
                   className="w-full h-32 bg-[#2c2c2e] text-white p-3 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium resize-none text-sm"
+                  autoComplete="off"
                 />
               </div>
 

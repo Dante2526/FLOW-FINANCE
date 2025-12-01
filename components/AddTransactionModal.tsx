@@ -198,6 +198,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
                 className="w-full bg-[#2c2c2e] text-white text-3xl font-bold py-4 pl-14 pr-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600"
                 autoFocus
                 required
+                autoComplete="off"
               />
             </div>
           </div>
@@ -212,6 +213,8 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
               placeholder="DO QUE SE TRATA?"
               className="w-full bg-[#2c2c2e] text-white text-lg py-4 px-6 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600 uppercase"
               required
+              autoComplete="off"
+              autoCorrect="off"
             />
           </div>
 
@@ -225,6 +228,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
                   onChange={(e) => setDate(e.target.value)}
                   className="w-full bg-[#2c2c2e] text-white text-lg py-4 px-6 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600 appearance-none"
                   required
+                  autoComplete="off"
                />
                <Calendar className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-5 h-5" />
              </div>
