@@ -51,6 +51,24 @@ const SHORT_CODE_TO_FULL: Record<string, string> = {
   'Set': 'SETEMBRO', 'Out': 'OUTUBRO', 'Nov': 'NOVEMBRO', 'Dez': 'DEZEMBRO'
 };
 
+// VAPID Configuration for Push Notifications
+const VAPID_PUBLIC_KEY = 'BOabgmhdqm_B03NgjZgZUG4tT6whqH_sfr9-ZmMt1XY-lbI_ADbOzze9pRDU3tnj7oXttv01ZXcNKLhzeXlifC8';
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
 // --- DYNAMIC INITIALIZATION LOGIC ---
 const currentDate = new Date();
 const currentMonthIndex = currentDate.getMonth();
@@ -475,26 +493,65 @@ const App: React.FC = () => {
   // --- Handlers ---
   
   const handleLogin = async (email: string, name?: string) => {
-    // REQUEST PERMISSION IMMEDIATELY ON LOGIN/REGISTER CLICK
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+    try {
+      // REQUEST PERMISSION IMMEDIATELY ON LOGIN/REGISTER CLICK
+      let permissionGranted = false;
+      if ('Notification' in window) {
+        if (Notification.permission === 'default') {
+          const permission = await Notification.requestPermission();
+          permissionGranted = permission === 'granted';
+        } else if (Notification.permission === 'granted') {
+          permissionGranted = true;
+        }
+      }
 
-    // The LoginScreen component now handles the try/catch logic and errors
-    if (name) {
-      // Registration Mode
-      await registerUser(email, name, {
-        months: [SYSTEM_INITIAL_MONTH],
-        cdiRate: 11.25
-      });
-    } else {
-      // Login Mode
-      await loginUser(email);
+      // Perform Auth
+      if (name) {
+        // Registration Mode
+        await registerUser(email, name, {
+          months: [SYSTEM_INITIAL_MONTH],
+          cdiRate: 11.25
+        });
+      } else {
+        // Login Mode
+        await loginUser(email);
+      }
+      
+      // If success, set session
+      saveData(STORAGE_KEYS.USER_SESSION, email);
+      setCurrentUserEmail(email);
+
+      // AUTOMATIC PUSH SUBSCRIPTION AFTER LOGIN (If permission granted)
+      if (permissionGranted && 'serviceWorker' in navigator) {
+         try {
+             const registration = await navigator.serviceWorker.ready;
+             let subscription = await registration.pushManager.getSubscription();
+             
+             if (!subscription) {
+                subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                });
+             }
+
+             if (subscription) {
+                const subscriptionJson = JSON.parse(JSON.stringify(subscription));
+                await saveUserField(email, 'pushSubscription', subscriptionJson);
+                // Optional: Show welcome notification
+                registration.showNotification('Flow Finance', {
+                  body: 'Notificações em nuvem ativadas automaticamente! ☁️',
+                  icon: 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b'
+                });
+             }
+         } catch (e) {
+             console.log('Background subscription silently failed (likely preview env)', e);
+         }
+      }
+
+    } catch (error) {
+       console.error("Login sequence failed:", error);
+       throw error; // Re-throw to be caught by LoginScreen
     }
-    
-    // If success, set session
-    saveData(STORAGE_KEYS.USER_SESSION, email);
-    setCurrentUserEmail(email);
   };
 
   const handleLogout = () => {
