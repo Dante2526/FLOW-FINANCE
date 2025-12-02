@@ -162,7 +162,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
            <div className="flex gap-3">
               {/* Quantity Input - ONLY for FII */}
               {type === 'fii' && (
-                 <div className="w-24 flex flex-col gap-2">
+                 <div className="w-[35%] flex flex-col gap-2">
                    <label className="text-gray-400 text-xs ml-2 font-bold uppercase">Qtd</label>
                    <div className="relative">
                        <input 
@@ -171,10 +171,10 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
                           value={quantity}
                           onChange={(e) => setQuantity(e.target.value)}
                           placeholder="1"
-                          className="w-full bg-[#2c2c2e] text-white p-4 pl-8 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold text-sm"
+                          className="w-full bg-[#2c2c2e] text-white p-4 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold text-lg"
                           autoComplete="off"
                        />
-                       <Layers className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                       <Layers className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                    </div>
                  </div>
               )}
