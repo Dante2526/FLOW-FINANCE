@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -708,52 +707,108 @@ const App: React.FC = () => {
     setAccounts(prev => prev.filter(a => a.id !== id));
   };
 
-  if (!currentUserEmail) {
-    return <LoginScreen onLogin={handleLogin} />;
-  }
+  const handleEditAccount = (account: Account) => {
+    setEditingAccount(account);
+    setIsAddAccountOpen(true);
+  };
 
-  return (
-    <div className={`min-h-[100dvh] bg-[#0a0a0b] text-white pb-24 font-sans selection:bg-accent selection:text-black`}>
-       {/* Theme Injection */}
-       <style>{`
-        :root {
-          --color-accent: ${appTheme.primary};
-          --color-accent-dark: ${appTheme.secondary};
-        }
-        .text-accent { color: var(--color-accent) !important; }
-        .bg-accent { background-color: var(--color-accent) !important; }
-        .bg-accentDark { background-color: var(--color-accent-dark) !important; }
-        .border-accent { border-color: var(--color-accent) !important; }
-        .ring-accent { --tw-ring-color: var(--color-accent) !important; }
-        .stroke-accent { stroke: var(--color-accent) !important; }
-      `}</style>
+  const activeMonthContext = useMemo(() => {
+     if (!activeMonthSummary) return undefined;
+     return {
+       monthIndex: MONTH_NAMES.indexOf(activeMonthSummary.month),
+       year: parseInt(activeMonthSummary.year)
+     };
+  }, [activeMonthSummary]);
 
-      {currentView === 'home' && (
-         <div className="p-6 animate-in fade-in duration-500">
-            <div className="flex justify-between items-center mb-6">
-                <div 
-                   className="flex items-center gap-3 cursor-pointer" 
-                   onClick={handleOpenProfile}
-                >
-                   <img src={userProfile.avatarUrl} alt="Avatar" className="w-12 h-12 rounded-full border-2 border-white/10 object-cover" />
-                   <div>
-                      <h2 className="text-gray-400 text-xs font-bold uppercase tracking-wider">Boas vindas,</h2>
-                      <h1 className="text-xl font-bold text-white leading-none">{userProfile.name}</h1>
-                   </div>
+  // --- VIEW RENDERER ---
+  const renderView = () => {
+    switch(currentView) {
+      case 'settings':
+        return (
+          <SettingsView 
+            currentThemeId={appTheme.id}
+            onSaveTheme={(theme) => {
+              setAppTheme(theme);
+              setCurrentView('home');
+            }}
+          />
+        );
+      case 'long-term':
+        return (
+          <LongTermView 
+            items={longTermTransactions}
+            onAdd={(item) => setLongTermTransactions(prev => [...prev, { ...item, id: Date.now().toString(), installmentsPaid: 0 }])}
+            onEdit={(item) => setLongTermTransactions(prev => prev.map(i => i.id === item.id ? item : i))}
+            onDelete={(id) => setLongTermTransactions(prev => prev.filter(i => i.id !== id))}
+          />
+        );
+      case 'investments':
+        return (
+          <InvestmentsView 
+             investments={investments}
+             onAdd={(inv) => setInvestments(prev => [...prev, { ...inv, id: Date.now().toString() }])}
+             onEdit={(inv) => setInvestments(prev => prev.map(i => i.id === inv.id ? inv : i))}
+             onDelete={(id) => setInvestments(prev => prev.filter(i => i.id !== id))}
+             onBack={() => setCurrentView('home')}
+             cdiRate={cdiRate}
+             onUpdateCdiRate={setCdiRate}
+          />
+        );
+      case 'home':
+      default:
+        return (
+          <>
+            {/* Header / Profile Row */}
+            <div className="flex justify-between items-center mb-6 pl-1">
+              <div 
+                className="flex items-center gap-3 cursor-pointer group"
+                onClick={handleOpenProfile}
+              >
+                <div className="relative">
+                  <div className="w-12 h-12 rounded-full border-2 border-transparent group-hover:border-accent transition-all overflow-hidden shadow-lg shadow-black/20">
+                     <img src={userProfile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  </div>
                 </div>
-                
-                <IconBell 
-                   count={notifications.filter(n => !n.read).length} 
-                   onClick={handleOpenNotification} 
-                />
+                <div className="flex flex-col">
+                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Bem vindo,</span>
+                  <h1 className="text-white text-xl font-bold leading-none">{userProfile.name || 'Usuário'}</h1>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                 <IconBell count={notifications.filter(n => !n.read).length} onClick={handleOpenNotification} />
+              </div>
             </div>
 
-            <BalanceCard 
-               balance={profitBalance} 
-               onAddClick={handleOpenAddTransaction}
-               onDuplicateClick={handleDuplicateMonth}
-               onCalculatorClick={handleOpenCalculator}
-            />
+            {/* Main Balance Card */}
+            <div className="mb-6">
+              <BalanceCard 
+                balance={profitBalance} 
+                onAddClick={handleOpenAddTransaction}
+                onDuplicateClick={handleDuplicateMonth}
+                onCalculatorClick={handleOpenCalculator}
+              />
+            </div>
+
+            {/* Secondary Cards (Accounts) */}
+            <div className="mb-0">
+               <div className="flex justify-between items-center mb-3">
+                 <h2 className="text-xl font-medium text-gray-400">FONTES DE RENDA</h2>
+               </div>
+               
+               {filteredAccounts.length === 0 ? (
+                 <div className="w-full h-32" />
+               ) : (
+                 filteredAccounts.map(acc => (
+                   <SecondaryCard 
+                     key={acc.id} 
+                     account={acc} 
+                     onDelete={handleDeleteAccount}
+                     onEdit={handleEditAccount}
+                   />
+                 ))
+               )}
+            </div>
 
             <ContactsRow 
                contacts={MOCK_CONTACTS} 
@@ -761,134 +816,107 @@ const App: React.FC = () => {
                onContactClick={handleContactClick}
             />
 
-            <div className="mt-8">
-               <div className="flex justify-between items-end mb-4 pl-1">
-                 <h2 className="text-xl font-medium text-gray-400">CONTAS</h2>
-                 <button onClick={handleOpenAddAccount} className="p-2 bg-[#1c1c1e] rounded-full hover:bg-white/10 transition-colors">
-                    <IconMore />
-                 </button>
-               </div>
-               {filteredAccounts.map(acc => (
-                 <SecondaryCard 
-                   key={acc.id} 
-                   account={acc} 
-                   onDelete={handleDeleteAccount}
-                   onEdit={(acc) => {
-                      setEditingAccount(acc);
-                      setIsAddAccountOpen(true);
-                   }}
-                 />
-               ))}
-               {filteredAccounts.length === 0 && (
-                 <div className="text-center py-8 text-gray-500 text-sm">Nenhuma conta cadastrada este mês.</div>
-               )}
-            </div>
-
             <TransactionSummary 
-               months={months}
-               activeMonthId={activeMonthId}
-               onSelectMonth={handleSelectMonth}
-               onDeleteMonth={handleDeleteMonth}
+              months={months}
+              activeMonthId={activeMonthId}
+              onSelectMonth={handleSelectMonth}
+              onDeleteMonth={handleDeleteMonth}
             />
 
             <TransactionList 
-               transactions={filteredTransactions}
-               onDelete={handleDeleteTransaction}
-               onEdit={handleEditTransaction}
-               onToggleStatus={handleToggleTransactionStatus}
-               onTogglePaymentMethod={handleTogglePaymentMethod}
+              transactions={filteredTransactions} 
+              onDelete={handleDeleteTransaction}
+              onEdit={handleEditTransaction}
+              onToggleStatus={handleToggleTransactionStatus}
+              onTogglePaymentMethod={handleTogglePaymentMethod}
             />
-         </div>
-      )}
+          </>
+        );
+    }
+  };
 
-      {currentView === 'investments' && (
-         <div className="p-6 h-full">
-            <InvestmentsView 
-               investments={investments}
-               onAdd={(inv) => setInvestments(prev => [...prev, { ...inv, id: Date.now().toString() }])}
-               onEdit={(inv) => setInvestments(prev => prev.map(i => i.id === inv.id ? inv : i))}
-               onDelete={(id) => setInvestments(prev => prev.filter(i => i.id !== id))}
-               onBack={() => setCurrentView('home')}
-               cdiRate={cdiRate}
-               onUpdateCdiRate={setCdiRate}
-            />
-         </div>
-      )}
+  // --- CSS VARIABLES ---
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--color-accent', appTheme.primary);
+    root.style.setProperty('--color-accent-dark', appTheme.secondary);
+  }, [appTheme]);
 
-      {currentView === 'long-term' && (
-         <div className="p-6 h-full">
-            <LongTermView 
-               items={longTermTransactions}
-               onAdd={(item) => setLongTermTransactions(prev => [...prev, { ...item, id: Date.now().toString(), installmentsPaid: 0 }])}
-               onEdit={(item) => setLongTermTransactions(prev => prev.map(i => i.id === item.id ? item : i))}
-               onDelete={(id) => setLongTermTransactions(prev => prev.filter(i => i.id !== id))}
-            />
-         </div>
-      )}
+  if (!currentUserEmail) {
+    return <LoginScreen onLogin={handleLogin} />;
+  }
 
-      {currentView === 'settings' && (
-         <div className="p-6 h-full">
-            <SettingsView 
-               currentThemeId={appTheme.id}
-               onSaveTheme={(theme) => {
-                  setAppTheme(theme);
-                  setCurrentView('home');
-               }}
-            />
-         </div>
-      )}
+  // Initial Loading State
+  if (isLoadingData) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0b] flex flex-col items-center justify-center gap-4">
+        <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-gray-400 text-sm font-medium animate-pulse">Sincronizando dados...</p>
+      </div>
+    );
+  }
 
-      <BottomNav currentView={currentView} onChangeView={setCurrentView} />
+  return (
+    <div 
+      className="min-h-screen bg-[#0a0a0b] text-white px-2 pt-4 pb-24 font-sans selection:bg-accent selection:text-black"
+      style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+    >
+      {renderView()}
 
-      <AddTransactionModal 
-         isOpen={isAddTransactionOpen}
-         onClose={handleCloseAddTransaction}
-         onSave={handleSaveTransaction}
-         transactionToEdit={editingTransaction}
-         activeMonthContext={activeMonthSummary ? { monthIndex: MONTH_NAMES.indexOf(activeMonthSummary.month), year: parseInt(activeMonthSummary.year) } : undefined}
+      <BottomNav 
+        currentView={currentView} 
+        onChangeView={setCurrentView} 
       />
 
+      <AddTransactionModal 
+        isOpen={isAddTransactionOpen} 
+        onClose={handleCloseAddTransaction} 
+        onSave={handleSaveTransaction}
+        transactionToEdit={editingTransaction}
+        activeMonthContext={activeMonthContext}
+      />
+      
       <AddAccountModal 
-         isOpen={isAddAccountOpen}
-         onClose={handleCloseAddAccount}
-         onSave={handleSaveAccount}
-         accountToEdit={editingAccount}
+        isOpen={isAddAccountOpen} 
+        onClose={handleCloseAddAccount} 
+        onSave={handleSaveAccount}
+        accountToEdit={editingAccount}
       />
 
       <CalculatorModal 
-         isOpen={isCalculatorOpen}
-         onClose={handleCloseCalculator}
+        isOpen={isCalculatorOpen} 
+        onClose={handleCloseCalculator} 
       />
 
       <EditProfileModal 
          isOpen={isProfileModalOpen}
          onClose={handleCloseProfile}
-         onSave={(updated) => setUserProfile(prev => ({ ...prev, ...updated }))}
+         onSave={(p) => setUserProfile(p)}
          onLogout={handleLogout}
          currentProfile={userProfile}
       />
 
       <NotepadModal 
-         isOpen={isNotepadOpen}
-         onClose={handleCloseNotepad}
-         initialContent={notepadContent}
-         onSave={setNotepadContent}
+        isOpen={isNotepadOpen}
+        onClose={handleCloseNotepad}
+        initialContent={notepadContent}
+        onSave={(content) => setNotepadContent(content)}
       />
 
       <CalendarModal 
          isOpen={isCalendarOpen}
          onClose={handleCloseCalendar}
          transactions={transactions}
-         activeMonthContext={activeMonthSummary ? { monthIndex: MONTH_NAMES.indexOf(activeMonthSummary.month), year: parseInt(activeMonthSummary.year) } : undefined}
+         activeMonthContext={activeMonthContext}
       />
 
       <NotificationModal 
-         isOpen={isNotificationOpen}
-         onClose={handleCloseNotification}
-         notifications={notifications}
-         onMarkAllRead={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
-         onDelete={(id) => setNotifications(prev => prev.filter(n => n.id !== id))}
-         currentUserEmail={currentUserEmail}
+        isOpen={isNotificationOpen}
+        onClose={handleCloseNotification}
+        notifications={notifications}
+        onMarkAllRead={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))}
+        onDelete={(id) => setNotifications(prev => prev.filter(n => n.id !== id))}
+        currentUserEmail={currentUserEmail}
       />
 
       <AnalyticsModal 
@@ -897,7 +925,6 @@ const App: React.FC = () => {
          transactions={transactions}
          months={months}
       />
-
     </div>
   );
 };

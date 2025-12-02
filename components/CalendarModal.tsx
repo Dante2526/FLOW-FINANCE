@@ -140,7 +140,7 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col max-h-[85dvh] overflow-hidden">
+      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col max-h-[90vh] overflow-hidden">
         
         {/* Header */}
         <div className="flex justify-between items-center p-7 shrink-0">
@@ -265,6 +265,7 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
             </div>
 
       </div>
+    </div>
     </div>
   );
 };

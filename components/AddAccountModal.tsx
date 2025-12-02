@@ -24,10 +24,6 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
   const [name, setName] = useState('');
   const [selectedTheme, setSelectedTheme] = useState<CardTheme>('default');
 
-  // ReadOnly States
-  const [balanceFocused, setBalanceFocused] = useState(false);
-  const [nameFocused, setNameFocused] = useState(false);
-
   // Load data when entering edit mode
   useEffect(() => {
     if (isOpen && accountToEdit) {
@@ -66,7 +62,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-6 max-h-[85dvh] overflow-y-auto no-scrollbar">
+      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-6">
         
         {/* Header */}
         <div className="flex justify-between items-center">
@@ -97,9 +93,6 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
                 className="w-full bg-[#2c2c2e] text-white text-3xl font-bold py-4 pl-14 pr-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600"
                 autoComplete="off"
                 data-lpignore="true"
-                readOnly={!balanceFocused}
-                onFocus={() => setBalanceFocused(true)}
-                onBlur={() => setBalanceFocused(false)}
               />
             </div>
           </div>
@@ -119,9 +112,6 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
               autoCorrect="off"
               spellCheck="false"
               data-lpignore="true"
-              readOnly={!nameFocused}
-              onFocus={() => setNameFocused(true)}
-              onBlur={() => setNameFocused(false)}
             />
           </div>
 

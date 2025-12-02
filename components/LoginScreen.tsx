@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Mail, ArrowRight, ShieldCheck, User } from 'lucide-react';
 
 interface Props {
@@ -33,10 +33,6 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  // ReadOnly State Hack to prevent browser autocomplete bar
-  const [isNameFocused, setIsNameFocused] = useState(false);
-  const [isEmailFocused, setIsEmailFocused] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,7 +96,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
         {/* Login/Register Card */}
         {/* Dynamic Padding: Reduced vertical padding on Register mode */}
         <div className={`bg-[#1c1c1e]/80 backdrop-blur-xl border border-white/5 ${mode === 'register' ? 'p-6 py-5' : 'p-6 sm:p-8'} rounded-[2rem] shadow-2xl w-full flex flex-col justify-center transition-all duration-300`}>
-           <div className="mb-6 flex flex-col items-center text-center gap-1">
+           <div className="mb-6 flex flex-col gap-1">
              <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">
                 {mode === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta'}
              </h2>
@@ -109,7 +105,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
              </p>
            </div>
 
-           <form onSubmit={handleSubmit} className="flex flex-col gap-4" autoComplete="off">
+           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               
               {/* Name Input */}
               {mode === 'register' && (
@@ -121,17 +117,11 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                          </div>
                          <input 
                            type="text" 
-                           name="new_user_name_hidden"
                            value={name}
                            onChange={(e) => setName(e.target.value)}
                            placeholder="Seu Nome"
                            className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium capitalize"
-                           autoComplete="off"
-                           autoCorrect="off"
-                           spellCheck="false"
-                           readOnly={!isNameFocused}
-                           onFocus={() => setIsNameFocused(true)}
-                           onBlur={() => setIsNameFocused(false)}
+                           autoFocus={mode === 'register'}
                          />
                       </div>
                    </div>
@@ -146,21 +136,13 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                           <Mail className="w-5 h-5" />
                        </div>
                        <input 
-                         type="text" 
-                         inputMode="email"
-                         name="user_login_email_hidden"
+                         type="email" 
                          value={email}
                          onChange={(e) => setEmail(e.target.value)}
                          placeholder="seu@email.com"
                          className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium"
-                         autoComplete="off"
-                         autoCorrect="off"
-                         autoCapitalize="none"
-                         spellCheck="false"
-                         data-lpignore="true"
-                         readOnly={!isEmailFocused}
-                         onFocus={() => setIsEmailFocused(true)}
-                         onBlur={() => setIsEmailFocused(false)}
+                         autoComplete="email"
+                         autoFocus={mode === 'login'}
                        />
                     </div>
                  </div>

@@ -25,11 +25,6 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
   const [newTotal, setNewTotal] = useState('');
   const [newInstallments, setNewInstallments] = useState('');
   const [newStartDate, setNewStartDate] = useState(new Date().toISOString().split('T')[0]);
-  
-  // ReadOnly States
-  const [titleFocused, setTitleFocused] = useState(false);
-  const [totalFocused, setTotalFocused] = useState(false);
-  const [countFocused, setCountFocused] = useState(false);
 
   // Edit Value States
   const [editMonthlyValue, setEditMonthlyValue] = useState('');
@@ -646,9 +641,6 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                     autoComplete="off"
                     autoCorrect="off"
                     spellCheck="false"
-                    readOnly={!titleFocused}
-                    onFocus={() => setTitleFocused(true)}
-                    onBlur={() => setTitleFocused(false)}
                  />
                </div>
 
@@ -665,9 +657,6 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                       onChange={(e) => handleAmountChange(e, setNewTotal)}
                       required
                       autoComplete="off"
-                      readOnly={!totalFocused}
-                      onFocus={() => setTotalFocused(true)}
-                      onBlur={() => setTotalFocused(false)}
                    />
                  </div>
                  <div className="w-24 flex flex-col gap-1">
@@ -681,9 +670,6 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                       onChange={e => setNewInstallments(e.target.value)}
                       required
                       autoComplete="off"
-                      readOnly={!countFocused}
-                      onFocus={() => setCountFocused(true)}
-                      onBlur={() => setCountFocused(false)}
                    />
                  </div>
                </div>

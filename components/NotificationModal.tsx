@@ -49,11 +49,6 @@ const NotificationModal: React.FC<Props> = ({
   // State to track if we have a valid cloud subscription
   const [hasPushSubscription, setHasPushSubscription] = useState(true); // Default to true to prevent flicker
   
-  // ReadOnly States
-  const [recipientFocused, setRecipientFocused] = useState(false);
-  const [messageFocused, setMessageFocused] = useState(false);
-  const [amountFocused, setAmountFocused] = useState(false);
-
   // Check permissions and subscription status when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -175,7 +170,7 @@ const NotificationModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2rem] shadow-2xl border border-white/5 relative flex flex-col h-[85dvh] max-h-[700px] overflow-hidden">
+      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2rem] shadow-2xl border border-white/5 relative flex flex-col h-[85vh] max-h-[700px] overflow-hidden">
         
         {/* HEADER SECTION (Fixed) */}
         <div className="flex-shrink-0 p-5 pb-0 bg-[#1c1c1e] z-10">
@@ -294,9 +289,6 @@ const NotificationModal: React.FC<Props> = ({
                   autoCorrect="off"
                   spellCheck="false"
                   data-lpignore="true"
-                  readOnly={!recipientFocused}
-                  onFocus={() => setRecipientFocused(true)}
-                  onBlur={() => setRecipientFocused(false)}
                 />
               </div>
 
@@ -335,9 +327,6 @@ const NotificationModal: React.FC<Props> = ({
                       className="w-full bg-[#2c2c2e] text-white p-3 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 font-bold text-base"
                       autoComplete="off"
                       data-lpignore="true"
-                      readOnly={!amountFocused}
-                      onFocus={() => setAmountFocused(true)}
-                      onBlur={() => setAmountFocused(false)}
                     />
                   </div>
                 </div>
@@ -356,9 +345,6 @@ const NotificationModal: React.FC<Props> = ({
                   autoCorrect="off"
                   spellCheck="false"
                   data-lpignore="true"
-                  readOnly={!messageFocused}
-                  onFocus={() => setMessageFocused(true)}
-                  onBlur={() => setMessageFocused(false)}
                 />
               </div>
 

@@ -50,10 +50,6 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
   const [date, setDate] = useState('');
   // Default icons based on initial type
   const [selectedIcon, setSelectedIcon] = useState<LogoType>('shopping');
-  
-  // ReadOnly Hack States
-  const [amountFocused, setAmountFocused] = useState(false);
-  const [nameFocused, setNameFocused] = useState(false);
 
   // Determine which icon set to show
   const visibleIcons = type === 'subscription' ? SUBSCRIPTION_ICONS : PURCHASE_ICONS;
@@ -172,7 +168,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-5 max-h-[85dvh] overflow-y-auto no-scrollbar">
+      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-5 max-h-[90dvh] overflow-y-auto no-scrollbar">
         
         {/* Header */}
         <div className="flex justify-between items-center">
@@ -204,9 +200,6 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
                 required
                 autoComplete="off"
                 data-lpignore="true"
-                readOnly={!amountFocused}
-                onFocus={() => setAmountFocused(true)}
-                onBlur={() => setAmountFocused(false)}
               />
             </div>
           </div>
@@ -226,9 +219,6 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
               autoCorrect="off"
               spellCheck="false"
               data-lpignore="true"
-              readOnly={!nameFocused}
-              onFocus={() => setNameFocused(true)}
-              onBlur={() => setNameFocused(false)}
             />
           </div>
 

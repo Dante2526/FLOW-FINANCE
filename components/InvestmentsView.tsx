@@ -193,13 +193,6 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
   const [tempCdiRate, setTempCdiRate] = useState('');
   const [isFetchingCdi, setIsFetchingCdi] = useState(false);
   
-  // ReadOnly States
-  const [instFocused, setInstFocused] = useState(false);
-  const [nameFocused, setNameFocused] = useState(false);
-  const [qtyFocused, setQtyFocused] = useState(false);
-  const [amountFocused, setAmountFocused] = useState(false);
-  const [yieldFocused, setYieldFocused] = useState(false);
-
   // Auto-fetch CDI from BrasilAPI (sourced from BCB) on mount
   useEffect(() => {
     const fetchCdi = async () => {
@@ -417,9 +410,6 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                    autoComplete="off"
                    autoCorrect="off"
                    spellCheck="false"
-                   readOnly={!instFocused}
-                   onFocus={() => setInstFocused(true)}
-                   onBlur={() => setInstFocused(false)}
                  />
               </div>
 
@@ -435,9 +425,6 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                     autoComplete="off"
                     autoCorrect="off"
                     spellCheck="false"
-                    readOnly={!nameFocused}
-                    onFocus={() => setNameFocused(true)}
-                    onBlur={() => setNameFocused(false)}
                  />
               </div>
 
@@ -456,9 +443,6 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                              placeholder="1"
                              className="w-full bg-[#2c2c2e] text-white p-4 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold text-lg"
                              autoComplete="off"
-                             readOnly={!qtyFocused}
-                             onFocus={() => setQtyFocused(true)}
-                             onBlur={() => setQtyFocused(false)}
                           />
                           <Layers className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                       </div>
@@ -478,9 +462,6 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                          placeholder="0,00"
                          className="w-full bg-[#2c2c2e] text-white p-4 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold text-lg"
                          autoComplete="off"
-                         readOnly={!amountFocused}
-                         onFocus={() => setAmountFocused(true)}
-                         onBlur={() => setAmountFocused(false)}
                        />
                     </div>
                  </div>
@@ -499,9 +480,6 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                       placeholder={type === 'cdi' ? "Ex: 100 (para 100%)" : "Ex: 12.5"}
                       className="w-full bg-[#2c2c2e] text-white p-4 pr-24 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold"
                       autoComplete="off"
-                      readOnly={!yieldFocused}
-                      onFocus={() => setYieldFocused(true)}
-                      onBlur={() => setYieldFocused(false)}
                     />
 
                     {/* Search Button for FIIs/Stocks (Direct StatusInvest Link) */}
