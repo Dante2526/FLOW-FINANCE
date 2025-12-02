@@ -34,10 +34,10 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, currentThemeId, onSel
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-6">
+      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-6 max-h-[90dvh] overflow-hidden">
         
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-surfaceLight flex items-center justify-center">
               <Palette className="w-5 h-5 text-accent" />
@@ -53,10 +53,10 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, currentThemeId, onSel
         </div>
 
         {/* Content */}
-        <div>
+        <div className="overflow-y-auto no-scrollbar">
           <h3 className="text-gray-400 text-sm font-bold ml-2 mb-4 uppercase tracking-wider">Temas do Sistema</h3>
           
-          <div className="grid grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto no-scrollbar pr-1">
+          <div className="grid grid-cols-2 gap-3 pr-1">
             {AVAILABLE_THEMES.map((theme) => {
               const isActive = currentThemeId === theme.id;
               
@@ -64,7 +64,7 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, currentThemeId, onSel
                 <button
                   key={theme.id}
                   onClick={() => onSelectTheme(theme)}
-                  className={`relative h-20 rounded-2xl flex items-center justify-between px-4 transition-all duration-300 border-2 overflow-hidden group ${
+                  className={`relative h-20 rounded-2xl flex items-center justify-between px-4 transition-all duration-300 border-2 overflow-hidden group shrink-0 ${
                     isActive 
                       ? 'border-white bg-[#2c2c2e]' 
                       : 'border-transparent bg-[#2c2c2e] hover:bg-[#3a3a3c]'

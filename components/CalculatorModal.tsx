@@ -130,7 +130,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-6 pb-12 sm:pb-6">
+      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-6 pb-12 sm:pb-6 max-h-[90dvh] overflow-y-auto no-scrollbar">
         
         {/* Header */}
         <div className="flex justify-between items-center">
@@ -144,7 +144,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Display */}
-        <div className="bg-[#0a0a0b] p-6 rounded-[1.5rem] flex flex-col items-end justify-center h-32 overflow-hidden">
+        <div className="bg-[#0a0a0b] p-6 rounded-[1.5rem] flex flex-col items-end justify-center h-32 overflow-hidden shrink-0">
           {/* History Line */}
           <span className="text-gray-400 text-xl font-medium h-8 flex items-center mb-1">
             {getHistoryDisplay()}
@@ -156,7 +156,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Keypad */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-4 gap-3 shrink-0">
           <Button label="C" onClick={clear} variant="gray" className="text-red-400" />
           <Button label="÷" onClick={() => performOperation('/')} variant="gray" className="text-accent" />
           <Button label="×" onClick={() => performOperation('*')} variant="gray" className="text-accent" />
