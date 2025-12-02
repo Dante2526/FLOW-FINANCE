@@ -197,8 +197,7 @@ const App: React.FC = () => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   // --- REMOTE CHANGE TRACKING ---
-  // This ref stores whether the last update came from Firebase (Remote) or User (Local).
-  // If Remote, we skip the next "Save" effect to prevent infinite loops.
+  // These flags prevent us from saving data back to Firebase if the update CAME from Firebase.
   const isRemoteChange = useRef({
     transactions: false,
     accounts: false,
@@ -258,7 +257,6 @@ const App: React.FC = () => {
               const sorted = sortMonths(data);
               setMonths(sorted);
               // Only set active month if we haven't selected one or if it's initial load
-              // Check if we are in "initial load" by seeing if activeMonthId is strictly the default
               if (activeMonthId === SYSTEM_INITIAL_MONTH.id && sorted.length > 0) {
                  setActiveMonthId(sorted[sorted.length - 1].id);
               }
@@ -314,7 +312,8 @@ const App: React.FC = () => {
   }, [currentUserEmail]);
 
   // --- FIREBASE SAVING EFFECTS ---
-  // Using short debounces or immediate saves, controlled by isRemoteChange
+  // These effects watch for state changes and save to Firebase.
+  // They are skipped if the change came from a remote source (isRemoteChange = true).
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
@@ -324,7 +323,7 @@ const App: React.FC = () => {
       }
       const timer = setTimeout(() => {
         saveCollection(currentUserEmail, "transactions", transactions);
-      }, 500);
+      }, 800);
       return () => clearTimeout(timer);
     }
   }, [transactions, currentUserEmail, isLoadingData]);
@@ -337,7 +336,7 @@ const App: React.FC = () => {
       }
       const timer = setTimeout(() => {
         saveCollection(currentUserEmail, "accounts", accounts);
-      }, 500);
+      }, 800);
       return () => clearTimeout(timer);
     }
   }, [accounts, currentUserEmail, isLoadingData]);
@@ -350,7 +349,7 @@ const App: React.FC = () => {
       }
       const timer = setTimeout(() => {
         saveCollection(currentUserEmail, "investments", investments);
-      }, 500);
+      }, 800);
       return () => clearTimeout(timer);
     }
   }, [investments, currentUserEmail, isLoadingData]);
@@ -363,7 +362,7 @@ const App: React.FC = () => {
       }
       const timer = setTimeout(() => {
         saveCollection(currentUserEmail, "longTerm", longTermTransactions);
-      }, 500);
+      }, 800);
       return () => clearTimeout(timer);
     }
   }, [longTermTransactions, currentUserEmail, isLoadingData]);
@@ -376,7 +375,7 @@ const App: React.FC = () => {
       }
       const timer = setTimeout(() => {
         saveCollection(currentUserEmail, "notifications", notifications);
-      }, 500);
+      }, 800);
       return () => clearTimeout(timer);
     }
   }, [notifications, currentUserEmail, isLoadingData]);
@@ -419,7 +418,7 @@ const App: React.FC = () => {
        }
        const timer = setTimeout(() => {
          saveUserField(currentUserEmail, "months", months);
-       }, 500);
+       }, 800);
        return () => clearTimeout(timer);
     }
   }, [months, currentUserEmail, isLoadingData]);

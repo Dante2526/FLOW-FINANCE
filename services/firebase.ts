@@ -44,10 +44,27 @@ const ensureAuth = async () => {
   }
 };
 
-// --- HELPER: SANITIZE DATA ---
-// Removes undefined values which Firestore rejects
-const sanitizeData = (data: any) => {
-  return JSON.parse(JSON.stringify(data));
+// --- HELPER: SANITIZE & NORMALIZE DATA ---
+// Removes undefined values AND sorts keys recursively to ensure consistent JSON strings
+const normalizeData = (data: any): any => {
+  if (data === null || typeof data !== 'object') {
+    return data;
+  }
+
+  if (Array.isArray(data)) {
+    return data.map(normalizeData);
+  }
+
+  return Object.keys(data)
+    .sort()
+    .reduce((result: any, key) => {
+      const value = data[key];
+      // Skip undefined values entirely (Firestore doesn't support them)
+      if (value !== undefined) {
+        result[key] = normalizeData(value);
+      }
+      return result;
+    }, {});
 };
 
 // --- AUTH HELPERS ---
@@ -142,15 +159,21 @@ export const subscribeToUserData = (
   };
 
   // SAFETY TIMEOUT: Force load after 5 seconds if listeners stall
-  // This prevents the "Infinite Loading Spinner" if a collection is empty or offline
   const safetyTimeout = setTimeout(() => {
-    console.log("Force triggering initial load due to timeout");
-    triggerInitialLoad();
+    if (!initialLoadTriggered) {
+      console.log("Force triggering initial load due to timeout");
+      triggerInitialLoad();
+    }
   }, 5000);
 
   // 1. Listen to User Document (Single Fields)
   const unsubUser = onSnapshot(userRef, 
     (docSnap) => {
+      // Ignore local writes (latency compensation) to prevent echoes
+      if (docSnap.metadata.hasPendingWrites) {
+        return;
+      }
+
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.profile) callbacks.setProfile(data.profile);
@@ -179,14 +202,21 @@ export const subscribeToUserData = (
   const unsubSubs = subcollections.map(sub => {
     return onSnapshot(collection(db, "users", normalizedEmail, sub.name), 
       (snapshot) => {
+        // Critical: Loop prevention. 
+        // If hasPendingWrites is true, it means this device just wrote this data.
+        // We do NOT want to update state again, as it triggers a re-render and potentially another save.
+        if (snapshot.metadata.hasPendingWrites) {
+           markLoaded(sub.key as any);
+           return;
+        }
+
         const data = snapshot.docs.map(d => d.data());
         sub.setter(data);
-        // @ts-ignore
-        markLoaded(sub.key);
+        markLoaded(sub.key as any);
       },
       (error) => {
-        // @ts-ignore
-        markLoaded(sub.key); 
+        console.warn(`Error syncing ${sub.name}:`, error);
+        markLoaded(sub.key as any); 
       }
     );
   });
@@ -198,59 +228,51 @@ export const subscribeToUserData = (
   };
 };
 
-// --- OPTIMIZED SAVE HELPERS ---
+// --- SAVE FUNCTIONS ---
 
-export const saveCollection = async (userId: string, collectionName: string, dataArray: any[]) => {
-  await ensureAuth();
+export const saveCollection = async (userId: string, collectionName: string, data: any[]) => {
+  if (!userId) return;
   const normalizedEmail = userId.toLowerCase().trim();
-  const colRef = collection(db, "users", normalizedEmail, collectionName);
   
-  // Read current DB state to prevent redundant writes or infinite loops
-  const snapshot = await getDocs(colRef);
-  const newIds = new Set(dataArray.map(d => d.id));
-  
-  const batch = writeBatch(db);
-  let opCount = 0;
-  
-  // 1. Delete items that are no longer in the local state
-  for (const doc of snapshot.docs) {
-    if (!newIds.has(doc.id)) {
-      batch.delete(doc.ref);
-      opCount++;
-    }
-  }
+  try {
+    const batch = writeBatch(db);
+    const colRef = collection(db, "users", normalizedEmail, collectionName);
 
-  // 2. Update or Create items
-  for (const item of dataArray) {
-    const docRef = doc(colRef, item.id);
-    const cleanItem = sanitizeData(item); // Strip undefineds
+    // 1. Get current docs to identify deletions
+    const snapshot = await getDocs(colRef);
+    const currentIds = new Set(snapshot.docs.map(d => d.id));
+    const newIds = new Set(data.map(item => item.id));
 
-    const existingDoc = snapshot.docs.find(d => d.id === item.id);
-    let needsUpdate = true;
-
-    // Deep compare to check if update is actually needed
-    if (existingDoc) {
-      const existingData = existingDoc.data();
-      if (JSON.stringify(existingData) === JSON.stringify(cleanItem)) {
-        needsUpdate = false;
+    // 2. Delete items that are no longer in the new data
+    snapshot.docs.forEach(doc => {
+      if (!newIds.has(doc.id)) {
+        batch.delete(doc.ref);
       }
-    }
+    });
 
-    if (needsUpdate) {
+    // 3. Set/Update items from the new data
+    data.forEach(item => {
+      const docRef = doc(colRef, item.id);
+      // Clean data before sending
+      const cleanItem = normalizeData(item);
       batch.set(docRef, cleanItem);
-      opCount++;
-    }
-  }
+    });
 
-  if (opCount > 0) {
     await batch.commit();
+  } catch (error) {
+    console.error(`Error saving collection ${collectionName}:`, error);
   }
 };
 
 export const saveUserField = async (userId: string, field: string, data: any) => {
-  await ensureAuth();
+  if (!userId) return;
   const normalizedEmail = userId.toLowerCase().trim();
   const userRef = doc(db, "users", normalizedEmail);
-  const cleanData = sanitizeData(data);
-  await setDoc(userRef, { [field]: cleanData }, { merge: true });
+
+  try {
+    const cleanData = normalizeData(data);
+    await setDoc(userRef, { [field]: cleanData }, { merge: true });
+  } catch (error) {
+    console.error(`Error saving field ${field}:`, error);
+  }
 };
