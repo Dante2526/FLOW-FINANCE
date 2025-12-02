@@ -120,15 +120,17 @@ export const subscribeToUserData = (
 
   let initialLoadTriggered = false;
 
-  const checkAllLoaded = () => {
-    if (initialLoadTriggered) return;
+  const triggerInitialLoad = () => {
+    if (!initialLoadTriggered) {
+      initialLoadTriggered = true;
+      callbacks.onInitialLoad();
+    }
+  };
 
+  const checkAllLoaded = () => {
     const allLoaded = Object.values(loadStatus).every(status => status);
     if (allLoaded) {
-       initialLoadTriggered = true;
-       setTimeout(() => {
-         callbacks.onInitialLoad();
-       }, 50);
+       triggerInitialLoad();
     }
   };
 
@@ -138,6 +140,13 @@ export const subscribeToUserData = (
       checkAllLoaded();
     }
   };
+
+  // SAFETY TIMEOUT: Force load after 5 seconds if listeners stall
+  // This prevents the "Infinite Loading Spinner" if a collection is empty or offline
+  const safetyTimeout = setTimeout(() => {
+    console.log("Force triggering initial load due to timeout");
+    triggerInitialLoad();
+  }, 5000);
 
   // 1. Listen to User Document (Single Fields)
   const unsubUser = onSnapshot(userRef, 
@@ -183,6 +192,7 @@ export const subscribeToUserData = (
   });
 
   return () => {
+    clearTimeout(safetyTimeout);
     unsubUser();
     unsubSubs.forEach(unsub => unsub());
   };
