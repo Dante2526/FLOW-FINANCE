@@ -157,7 +157,7 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
         }
       `}</style>
 
-      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col max-h-[90vh] overflow-hidden">
+      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col max-h-[85dvh] overflow-hidden">
         
         {/* Header */}
         <div className="flex justify-between items-center p-7 pb-4 shrink-0">
