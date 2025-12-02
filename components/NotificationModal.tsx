@@ -370,13 +370,19 @@ const NotificationModal: React.FC<Props> = ({
                        >
                          {isSubscribing ? (
                            <>
-                             <Loader2 className="w-5 h-5 animate-spin" />
-                             Registrando...
+                             <Loader2 className="w-5 h-5 animate-spin shrink-0" />
+                             <span>Registrando...</span>
                            </>
                          ) : (
                            <>
-                             {notificationPermission === 'granted' ? <CloudLightning className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
-                             {notificationPermission === 'granted' ? 'Sincronizar Notificações Automáticas' : 'Ativar Notificações no Celular'}
+                             {notificationPermission === 'granted' ? (
+                                <CloudLightning className="w-5 h-5 shrink-0" />
+                             ) : (
+                                <Bell className="w-5 h-5 shrink-0" />
+                             )}
+                             <span className="truncate">
+                               {notificationPermission === 'granted' ? 'Ativar Alertas em Nuvem' : 'Permitir Notificações'}
+                             </span>
                            </>
                          )}
                        </button>
