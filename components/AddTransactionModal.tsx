@@ -183,7 +183,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5" autoComplete="off">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           
           {/* Amount Input */}
           <div className="flex flex-col gap-2">
@@ -215,7 +215,6 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
               required
               autoComplete="off"
               autoCorrect="off"
-              spellCheck="false"
             />
           </div>
 

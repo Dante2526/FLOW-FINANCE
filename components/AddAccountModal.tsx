@@ -77,7 +77,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6" autoComplete="off">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           
           {/* Balance Input */}
           <div className="flex flex-col gap-2">
@@ -108,7 +108,6 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
               required
               autoComplete="off"
               autoCorrect="off"
-              spellCheck="false"
             />
           </div>
 
