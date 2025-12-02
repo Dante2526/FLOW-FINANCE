@@ -1,23 +1,33 @@
-import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
-    return {
-      server: {
-        port: 3000,
-        host: '0.0.0.0',
-      },
-      plugins: [react()],
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-      },
-      resolve: {
-        alias: {
-          '@': path.resolve(__dirname, '.'),
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    // Aumenta o limite de aviso para 1.5MB para limpar o log da Vercel
+    chunkSizeWarningLimit: 1500,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // Estratégia de divisão de código para performance
+          if (id.includes('node_modules')) {
+            // Separa o Firebase (que é pesado) em um arquivo isolado
+            if (id.includes('firebase')) {
+              return 'firebase';
+            }
+            // Separa bibliotecas visuais pesadas
+            if (id.includes('recharts') || id.includes('lucide-react')) {
+              return 'ui-libs';
+            }
+            // Separa o core do React
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-vendor';
+            }
+            // O restante vai para um vendor genérico
+            return 'vendor';
+          }
         }
       }
-    };
+    }
+  }
 });
