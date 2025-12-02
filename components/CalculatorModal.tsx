@@ -111,8 +111,8 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
     variant?: 'default' | 'accent' | 'gray',
     className?: string
   }) => {
-    // Reduced height from h-16 to h-13/14 and text size for compact view
-    const baseStyles = "h-14 sm:h-16 rounded-2xl text-xl sm:text-2xl font-bold flex items-center justify-center transition-all active:scale-95";
+    // Height increased to h-16 (mobile) / h-20 (desktop) to avoid flattened look
+    const baseStyles = "h-16 sm:h-20 rounded-2xl text-2xl sm:text-3xl font-bold flex items-center justify-center transition-all active:scale-95";
     const variants = {
       default: "bg-[#2c2c2e] text-white hover:bg-[#3a3a3c]",
       accent: "bg-accent text-black hover:bg-accentDark",
@@ -131,37 +131,38 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-t-[2rem] sm:rounded-[2.5rem] p-5 shadow-2xl border border-white/5 relative flex flex-col gap-4 pb-8 sm:pb-5 overflow-hidden">
+      {/* Container allows scrolling if screen is too small, but tries to fit within 90dvh */}
+      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-5 max-h-[90dvh] overflow-y-auto no-scrollbar">
         
         {/* Header */}
         <div className="flex justify-between items-center shrink-0">
-          <h2 className="text-lg font-bold text-white">Calculadora</h2>
+          <h2 className="text-xl font-bold text-white">Calculadora</h2>
           <button 
             onClick={onClose} 
-            className="w-9 h-9 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-white/10 transition-colors"
+            className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5 text-gray-400" />
           </button>
         </div>
 
-        {/* Display - Reduced height */}
-        <div className="bg-[#0a0a0b] p-5 rounded-[1.5rem] flex flex-col items-end justify-center h-24 sm:h-28 overflow-hidden shrink-0">
+        {/* Display - Taller (h-32) */}
+        <div className="bg-[#0a0a0b] p-6 rounded-[2rem] flex flex-col items-end justify-center h-32 sm:h-40 shrink-0 shadow-inner">
           {/* History Line */}
-          <span className="text-gray-400 text-lg font-medium h-6 flex items-center mb-0.5">
+          <span className="text-gray-400 text-lg font-medium h-6 flex items-center mb-1">
             {getHistoryDisplay()}
           </span>
           {/* Main Result */}
-          <span className="text-4xl sm:text-5xl font-bold text-white tracking-tight truncate w-full text-right">
+          <span className="text-5xl sm:text-6xl font-bold text-white tracking-tight truncate w-full text-right">
             {display}
           </span>
         </div>
 
-        {/* Keypad - Tighter gaps */}
-        <div className="grid grid-cols-4 gap-2 shrink-0">
+        {/* Keypad */}
+        <div className="grid grid-cols-4 gap-3 shrink-0 pb-2">
           <Button label="C" onClick={clear} variant="gray" className="text-red-400" />
           <Button label="÷" onClick={() => performOperation('/')} variant="gray" className="text-accent" />
           <Button label="×" onClick={() => performOperation('*')} variant="gray" className="text-accent" />
-          <Button label={<Delete className="w-6 h-6" />} onClick={handleDelete} variant="gray" />
+          <Button label={<Delete className="w-7 h-7" />} onClick={handleDelete} variant="gray" />
 
           <Button label="7" onClick={() => inputDigit('7')} />
           <Button label="8" onClick={() => inputDigit('8')} />
@@ -173,7 +174,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
           <Button label="6" onClick={() => inputDigit('6')} />
           <Button label="+" onClick={() => performOperation('+')} variant="gray" className="text-accent" />
 
-          <div className="col-span-3 grid grid-cols-3 gap-2">
+          <div className="col-span-3 grid grid-cols-3 gap-3">
             <Button label="1" onClick={() => inputDigit('1')} />
             <Button label="2" onClick={() => inputDigit('2')} />
             <Button label="3" onClick={() => inputDigit('3')} />
@@ -185,7 +186,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
             label="=" 
             onClick={handleEquals} 
             variant="accent" 
-            className="h-full row-span-2" 
+            className="h-full row-span-2 text-4xl" 
           />
         </div>
 
