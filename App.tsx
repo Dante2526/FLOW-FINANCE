@@ -838,7 +838,7 @@ const App: React.FC = () => {
 
             {/* Secondary Cards (Accounts) */}
             <div className="mb-0">
-               <div className="flex justify-between items-center mb-3">
+               <div className="flex justify-between items-center mb-3 pl-1">
                  <h2 className="text-xl font-medium text-gray-400">FONTES DE RENDA</h2>
                </div>
                
