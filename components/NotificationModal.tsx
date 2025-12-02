@@ -100,11 +100,6 @@ const NotificationModal: React.FC<Props> = ({
                 const subscriptionJson = JSON.parse(JSON.stringify(subscription));
                 await saveUserField(currentUserEmail, 'pushSubscription', subscriptionJson);
                 
-                registration.showNotification('Flow Finance', {
-                  body: 'Sincronização com a nuvem concluída! ☁️',
-                  icon: 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b'
-                });
-                
                 subscribed = true;
                 setHasPushSubscription(true);
              }
@@ -115,13 +110,7 @@ const NotificationModal: React.FC<Props> = ({
           }
         }
 
-        // 3. Fallback local notification test if push setup failed
-        if (!subscribed) {
-             new Notification('Flow Finance', {
-               body: 'Notificações locais ativadas! 🚀',
-               icon: 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b'
-             });
-        }
+        // Silent activation - no fallback notification here anymore
       }
     } catch (e) {
       console.error(e);

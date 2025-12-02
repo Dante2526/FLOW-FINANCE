@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -522,6 +523,7 @@ const App: React.FC = () => {
       setCurrentUserEmail(email);
 
       // AUTOMATIC PUSH SUBSCRIPTION AFTER LOGIN (If permission granted)
+      // SILENT ACTIVATION: No system notification shown
       if (permissionGranted && 'serviceWorker' in navigator) {
          try {
              const registration = await navigator.serviceWorker.ready;
@@ -537,11 +539,6 @@ const App: React.FC = () => {
              if (subscription) {
                 const subscriptionJson = JSON.parse(JSON.stringify(subscription));
                 await saveUserField(email, 'pushSubscription', subscriptionJson);
-                // Optional: Show welcome notification
-                registration.showNotification('Flow Finance', {
-                  body: 'Notificações em nuvem ativadas automaticamente! ☁️',
-                  icon: 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b'
-                });
              }
          } catch (e) {
              console.log('Background subscription silently failed (likely preview env)', e);
