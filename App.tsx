@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
 import ContactsRow from './components/ContactsRow';
@@ -23,7 +23,7 @@ import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { IconBell, IconMore } from './components/Icons';
 
 // Firebase Services
-import { loginUser, registerUser, loadUserData, saveCollection, saveUserField } from './services/firebase';
+import { loginUser, registerUser, subscribeToUserData, saveCollection, saveUserField } from './services/firebase';
 
 // Constants
 const MONTH_NAMES = [
@@ -196,6 +196,21 @@ const App: React.FC = () => {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
+  // --- REMOTE CHANGE TRACKING ---
+  // This ref stores whether the last update came from Firebase (Remote) or User (Local).
+  // If Remote, we skip the next "Save" effect to prevent infinite loops.
+  const isRemoteChange = useRef({
+    transactions: false,
+    accounts: false,
+    investments: false,
+    longTerm: false,
+    notifications: false,
+    profile: false,
+    months: false,
+    notepad: false,
+    cdi: false
+  });
+
   // --- SCROLL LOCK EFFECT ---
   useEffect(() => {
     const isAnyModalOpen = 
@@ -223,109 +238,156 @@ const App: React.FC = () => {
     isNotificationOpen, isAnalyticsOpen
   ]);
 
-  // --- FIREBASE LOADING EFFECT ---
+  // --- FIREBASE REAL-TIME SUBSCRIPTION ---
   useEffect(() => {
     if (currentUserEmail) {
       setIsLoadingData(true);
-      loadUserData(currentUserEmail)
-        .then((data) => {
-          if (data) {
-            // Restore Profile
-            if (data.profile) setUserProfile(data.profile);
-            
-            // Restore Arrays (Subcollections)
-            if (data.transactions) setTransactions(data.transactions);
-            if (data.accounts) setAccounts(data.accounts);
-            if (data.investments) setInvestments(data.investments);
-            if (data.longTerm) setLongTermTransactions(data.longTerm);
-            if (data.notifications) setNotifications(data.notifications);
-
-            // Restore Single Field Data
-            if (data.theme) {
-               setAppTheme(data.theme);
-               // Also sync local storage with cloud data on load
-               saveData(STORAGE_KEYS.APP_THEME, data.theme);
-            }
-            if (data.notepadContent) setNotepadContent(data.notepadContent);
-            if (data.months && data.months.length > 0) {
-              const sorted = sortMonths(data.months);
+      
+      const unsubscribe = subscribeToUserData(currentUserEmail, {
+        setProfile: (data) => {
+          isRemoteChange.current.profile = true;
+          setUserProfile(data);
+        },
+        setTheme: (data) => {
+           setAppTheme(data);
+           saveData(STORAGE_KEYS.APP_THEME, data);
+        },
+        setMonths: (data) => {
+           isRemoteChange.current.months = true;
+           if (data && data.length > 0) {
+              const sorted = sortMonths(data);
               setMonths(sorted);
-              // Set active month to the last one by default
-              setActiveMonthId(sorted[sorted.length - 1].id);
-            } else {
-              setMonths([SYSTEM_INITIAL_MONTH]);
-              setActiveMonthId(SYSTEM_INITIAL_MONTH.id);
-            }
-            if (data.cdiRate !== undefined) setCdiRate(data.cdiRate);
+              // Only set active month if we haven't selected one or if it's initial load
+              // Check if we are in "initial load" by seeing if activeMonthId is strictly the default
+              if (activeMonthId === SYSTEM_INITIAL_MONTH.id && sorted.length > 0) {
+                 setActiveMonthId(sorted[sorted.length - 1].id);
+              }
+           } else {
+             setMonths([SYSTEM_INITIAL_MONTH]);
+           }
+        },
+        setNotepad: (data) => {
+          isRemoteChange.current.notepad = true;
+          setNotepadContent(data);
+        },
+        setCdiRate: (data) => {
+          isRemoteChange.current.cdi = true;
+          setCdiRate(data);
+        },
+        setTransactions: (data) => {
+          isRemoteChange.current.transactions = true;
+          setTransactions(data);
+        },
+        setAccounts: (data) => {
+          isRemoteChange.current.accounts = true;
+          setAccounts(data);
+        },
+        setInvestments: (data) => {
+          isRemoteChange.current.investments = true;
+          setInvestments(data);
+        },
+        setLongTerm: (data) => {
+          isRemoteChange.current.longTerm = true;
+          setLongTermTransactions(data);
+        },
+        setNotifications: (data) => {
+          isRemoteChange.current.notifications = true;
+          setNotifications(data);
+        },
+        onInitialLoad: () => {
+          setIsLoadingData(false);
+        }
+      });
 
-          } else {
-            console.log("No remote data found, starting fresh.");
-          }
-        })
-        .catch(err => console.error("Error loading data:", err))
-        .finally(() => setIsLoadingData(false));
+      return () => {
+        unsubscribe();
+      };
+
     } else {
       // Reset if logged out
       setTransactions([]);
       setAccounts([]);
       setMonths([SYSTEM_INITIAL_MONTH]);
       setUserProfile(INITIAL_PROFILE);
+      setIsLoadingData(false);
     }
   }, [currentUserEmail]);
 
-  // --- FIREBASE SAVING EFFECTS WITH DEBOUNCE ---
-  // We use setTimeout to debounce the save calls, preventing excessive writes
-  // during rapid UI updates (e.g. typing or quick edits).
-  const DEBOUNCE_DELAY = 1500;
+  // --- FIREBASE SAVING EFFECTS ---
+  // Using short debounces or immediate saves, controlled by isRemoteChange
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+      if (isRemoteChange.current.transactions) {
+        isRemoteChange.current.transactions = false;
+        return;
+      }
       const timer = setTimeout(() => {
         saveCollection(currentUserEmail, "transactions", transactions);
-      }, DEBOUNCE_DELAY);
+      }, 500);
       return () => clearTimeout(timer);
     }
   }, [transactions, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+      if (isRemoteChange.current.accounts) {
+        isRemoteChange.current.accounts = false;
+        return;
+      }
       const timer = setTimeout(() => {
         saveCollection(currentUserEmail, "accounts", accounts);
-      }, DEBOUNCE_DELAY);
+      }, 500);
       return () => clearTimeout(timer);
     }
   }, [accounts, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+      if (isRemoteChange.current.investments) {
+        isRemoteChange.current.investments = false;
+        return;
+      }
       const timer = setTimeout(() => {
         saveCollection(currentUserEmail, "investments", investments);
-      }, DEBOUNCE_DELAY);
+      }, 500);
       return () => clearTimeout(timer);
     }
   }, [investments, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+      if (isRemoteChange.current.longTerm) {
+        isRemoteChange.current.longTerm = false;
+        return;
+      }
       const timer = setTimeout(() => {
         saveCollection(currentUserEmail, "longTerm", longTermTransactions);
-      }, DEBOUNCE_DELAY);
+      }, 500);
       return () => clearTimeout(timer);
     }
   }, [longTermTransactions, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+      if (isRemoteChange.current.notifications) {
+        isRemoteChange.current.notifications = false;
+        return;
+      }
       const timer = setTimeout(() => {
         saveCollection(currentUserEmail, "notifications", notifications);
-      }, DEBOUNCE_DELAY);
+      }, 500);
       return () => clearTimeout(timer);
     }
   }, [notifications, currentUserEmail, isLoadingData]);
 
-  // Single Fields - Save immediately or short debounce
+  // Single Fields
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+      if (isRemoteChange.current.profile) {
+        isRemoteChange.current.profile = false;
+        return;
+      }
       const timer = setTimeout(() => {
          saveUserField(currentUserEmail, "profile", userProfile);
       }, 1000);
@@ -333,14 +395,14 @@ const App: React.FC = () => {
     }
   }, [userProfile, currentUserEmail, isLoadingData]);
 
-  // THEME EFFECT: Applies CSS variables AND Saves to Storage/Firebase
+  // THEME EFFECT
   useEffect(() => {
     // 1. Apply to DOM
     const root = document.documentElement;
     root.style.setProperty('--color-accent', appTheme.primary);
     root.style.setProperty('--color-accent-dark', appTheme.secondary);
     
-    // 2. Save Local (Instant persistence)
+    // 2. Save Local
     saveData(STORAGE_KEYS.APP_THEME, appTheme);
 
     // 3. Save Cloud
@@ -351,24 +413,36 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+       if (isRemoteChange.current.months) {
+         isRemoteChange.current.months = false;
+         return;
+       }
        const timer = setTimeout(() => {
          saveUserField(currentUserEmail, "months", months);
-       }, 1000);
+       }, 500);
        return () => clearTimeout(timer);
     }
   }, [months, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+      if (isRemoteChange.current.notepad) {
+        isRemoteChange.current.notepad = false;
+        return;
+      }
       const timer = setTimeout(() => {
         saveUserField(currentUserEmail, "notepadContent", notepadContent);
-      }, 2000); // Long debounce for typing
+      }, 2000); // Longer debounce for text
       return () => clearTimeout(timer);
     }
   }, [notepadContent, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+      if (isRemoteChange.current.cdi) {
+        isRemoteChange.current.cdi = false;
+        return;
+      }
       saveUserField(currentUserEmail, "cdiRate", cdiRate);
     }
   }, [cdiRate, currentUserEmail, isLoadingData]);
@@ -668,9 +742,6 @@ const App: React.FC = () => {
       const oldMonth = editingTransaction.month || getMonthFromDateStr(editingTransaction.date);
       const oldYear = editingTransaction.year || getYearFromDateStr(editingTransaction.date, activeMonthSummary.year);
       
-      // When editing, we generally keep the transaction in the SAME grouping (unless moving features added later)
-      // So we assume the 'txData' doesn't contain month/year override, so 't' fields (preserved above) are used.
-      
       setMonths(prev => {
         const updated = prev.map(m => {
           // If we are editing a transaction in this month summary...
@@ -690,7 +761,6 @@ const App: React.FC = () => {
         id: Date.now().toString(),
         ...txData,
         // CRITICAL: Explicitly assign to the currently active month view
-        // regardless of the specific due date selected.
         month: activeMonthSummary.month,
         year: activeMonthSummary.year
       };
@@ -945,7 +1015,7 @@ const App: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#0a0a0b] flex flex-col items-center justify-center gap-4">
         <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-gray-400 text-sm font-medium animate-pulse">Sincronizando dados...</p>
+        <p className="text-gray-400 text-sm font-medium animate-pulse">Sincronizando em tempo real...</p>
       </div>
     );
   }
