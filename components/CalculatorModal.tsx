@@ -111,7 +111,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
     variant?: 'default' | 'accent' | 'gray',
     className?: string
   }) => {
-    // Height increased to h-16 (mobile) / h-20 (desktop) to avoid flattened look
+    // Large, robust buttons (h-16) to avoid flattened look
     const baseStyles = "h-16 sm:h-20 rounded-2xl text-2xl sm:text-3xl font-bold flex items-center justify-center transition-all active:scale-95";
     const variants = {
       default: "bg-[#2c2c2e] text-white hover:bg-[#3a3a3c]",
@@ -131,11 +131,16 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      {/* Container allows scrolling if screen is too small, but tries to fit within 90dvh */}
-      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-5 max-h-[90dvh] overflow-y-auto no-scrollbar">
+      {/* 
+        Adjusted container: 
+        - overflow-hidden (no scrolling)
+        - p-4 (compact padding)
+        - gap-3 (compact vertical spacing)
+      */}
+      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] p-4 shadow-2xl border border-white/5 relative flex flex-col gap-3 max-h-[95dvh] overflow-hidden">
         
         {/* Header */}
-        <div className="flex justify-between items-center shrink-0">
+        <div className="flex justify-between items-center shrink-0 px-2">
           <h2 className="text-xl font-bold text-white">Calculadora</h2>
           <button 
             onClick={onClose} 
@@ -145,20 +150,18 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        {/* Display - Taller (h-32) */}
-        <div className="bg-[#0a0a0b] p-6 rounded-[2rem] flex flex-col items-end justify-center h-32 sm:h-40 shrink-0 shadow-inner">
-          {/* History Line */}
+        {/* Display: h-28 (slightly shorter than 32 but still large) */}
+        <div className="bg-[#0a0a0b] p-4 rounded-[2rem] flex flex-col items-end justify-center h-28 sm:h-36 shrink-0 shadow-inner">
           <span className="text-gray-400 text-lg font-medium h-6 flex items-center mb-1">
             {getHistoryDisplay()}
           </span>
-          {/* Main Result */}
           <span className="text-5xl sm:text-6xl font-bold text-white tracking-tight truncate w-full text-right">
             {display}
           </span>
         </div>
 
-        {/* Keypad */}
-        <div className="grid grid-cols-4 gap-3 shrink-0 pb-2">
+        {/* Keypad: gap-2 (tighter grid) */}
+        <div className="grid grid-cols-4 gap-2 shrink-0 pb-1">
           <Button label="C" onClick={clear} variant="gray" className="text-red-400" />
           <Button label="÷" onClick={() => performOperation('/')} variant="gray" className="text-accent" />
           <Button label="×" onClick={() => performOperation('*')} variant="gray" className="text-accent" />
@@ -174,7 +177,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
           <Button label="6" onClick={() => inputDigit('6')} />
           <Button label="+" onClick={() => performOperation('+')} variant="gray" className="text-accent" />
 
-          <div className="col-span-3 grid grid-cols-3 gap-3">
+          <div className="col-span-3 grid grid-cols-3 gap-2">
             <Button label="1" onClick={() => inputDigit('1')} />
             <Button label="2" onClick={() => inputDigit('2')} />
             <Button label="3" onClick={() => inputDigit('3')} />
