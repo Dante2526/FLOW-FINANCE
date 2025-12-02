@@ -613,7 +613,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
       {/* CDI Edit Modal */}
       {isCdiModalOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-           <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4">
+           <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4 max-h-[90dvh] overflow-y-auto no-scrollbar">
               <div className="flex justify-between items-center">
                  <h3 className="text-lg font-bold text-white">Taxa CDI / Selic</h3>
                  <button onClick={() => setIsCdiModalOpen(false)} className="p-1 hover:bg-white/10 rounded-full">

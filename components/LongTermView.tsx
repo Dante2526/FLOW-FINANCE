@@ -389,7 +389,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
          {/* Edit Monthly Value Modal */}
          {isEditMonthlyOpen && (
             <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4">
+                <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4 max-h-[90dvh] overflow-y-auto no-scrollbar">
                     <h3 className="text-lg font-bold text-white text-center">Novo Valor Mensal</h3>
                     <p className="text-xs text-gray-400 text-center -mt-2">Isso atualizará parcelas futuras e recalculará o total.</p>
                     
@@ -429,7 +429,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
          {/* Edit Title Modal */}
          {isEditTitleOpen && (
             <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4">
+                <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4 max-h-[90dvh] overflow-y-auto no-scrollbar">
                     <h3 className="text-lg font-bold text-white text-center">Editar Nome</h3>
                     
                     <form onSubmit={handleSaveTitle} className="flex flex-col gap-4 mt-2">
@@ -467,7 +467,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
          {/* Edit Total Modal */}
          {isEditTotalOpen && (
             <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4">
+                <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4 max-h-[90dvh] overflow-y-auto no-scrollbar">
                     <h3 className="text-lg font-bold text-white text-center">Editar Valor Total</h3>
                     <p className="text-xs text-gray-400 text-center -mt-2">Isso ajustará o valor base das parcelas (Total / Qtd).</p>
                     
@@ -507,7 +507,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
          {/* Edit Specific Installment Modal */}
          {isEditInstallmentOpen && (
             <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-                <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4">
+                <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4 max-h-[90dvh] overflow-y-auto no-scrollbar">
                     <h3 className="text-lg font-bold text-white text-center">
                         Editar Parcela {editingInstallmentIndex !== null ? editingInstallmentIndex + 1 : ''}
                     </h3>
@@ -625,7 +625,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
       {/* Add Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-5">
+          <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-5 max-h-[90dvh] overflow-y-auto no-scrollbar">
             <h2 className="text-xl font-bold text-white">Nova Parcela</h2>
             <form onSubmit={handleCreate} className="flex flex-col gap-4" autoComplete="off">
                

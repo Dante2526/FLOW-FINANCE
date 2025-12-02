@@ -170,7 +170,7 @@ const NotificationModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2rem] shadow-2xl border border-white/5 relative flex flex-col h-[85vh] max-h-[700px] overflow-hidden">
+      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2rem] shadow-2xl border border-white/5 relative flex flex-col h-[85dvh] max-h-[700px] overflow-hidden">
         
         {/* HEADER SECTION (Fixed) */}
         <div className="flex-shrink-0 p-5 pb-0 bg-[#1c1c1e] z-10">

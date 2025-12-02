@@ -89,7 +89,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1c1c1e] w-full max-w-lg h-[80vh] rounded-[2.5rem] p-1 shadow-2xl border border-white/5 relative flex flex-col">
+      <div className="bg-[#1c1c1e] w-full max-w-lg h-[80dvh] rounded-[2.5rem] p-1 shadow-2xl border border-white/5 relative flex flex-col">
         
         {/* Header (Integrated into the card look) */}
         <div className="flex justify-between items-center p-5 pb-2">
