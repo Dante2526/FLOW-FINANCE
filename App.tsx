@@ -172,6 +172,33 @@ const App: React.FC = () => {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
+  // --- SCROLL LOCK EFFECT ---
+  useEffect(() => {
+    const isAnyModalOpen = 
+      isAddTransactionOpen || 
+      isAddAccountOpen || 
+      isCalculatorOpen || 
+      isProfileModalOpen || 
+      isNotepadOpen || 
+      isCalendarOpen || 
+      isNotificationOpen || 
+      isAnalyticsOpen;
+
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [
+    isAddTransactionOpen, isAddAccountOpen, isCalculatorOpen, 
+    isProfileModalOpen, isNotepadOpen, isCalendarOpen, 
+    isNotificationOpen, isAnalyticsOpen
+  ]);
+
   // --- FIREBASE LOADING EFFECT ---
   useEffect(() => {
     if (currentUserEmail) {

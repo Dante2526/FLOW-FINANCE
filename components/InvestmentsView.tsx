@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { TrendingUp, Plus, PieChart, Building, Trash2, ArrowLeft, Check, Edit2, Search, Settings2, X, RefreshCw, Layers } from 'lucide-react';
 import { Investment, InvestmentType } from '../types';
@@ -220,6 +219,21 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
 
     fetchCdi();
   }, []); // Run once on mount
+
+  // --- SCROLL LOCK EFFECT FOR LOCAL MODALS ---
+  useEffect(() => {
+    const isAnyModalOpen = isFormOpen || isCdiModalOpen;
+
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isFormOpen, isCdiModalOpen]);
 
   // Form State
   const [name, setName] = useState('');

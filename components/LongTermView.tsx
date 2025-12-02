@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Wallet, Plus, ChevronLeft, Calendar, Trash2, Check, Edit2 } from 'lucide-react';
 import { LongTermTransaction } from '../types';
 
@@ -32,6 +31,26 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
   const [editingInstallmentIndex, setEditingInstallmentIndex] = useState<number | null>(null);
   const [editTitleValue, setEditTitleValue] = useState('');
   const [editTotalValue, setEditTotalValue] = useState('');
+
+  // --- SCROLL LOCK EFFECT FOR LOCAL MODALS ---
+  useEffect(() => {
+    const isAnyModalOpen = 
+      isAddModalOpen || 
+      isEditMonthlyOpen || 
+      isEditInstallmentOpen || 
+      isEditTitleOpen || 
+      isEditTotalOpen;
+
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isAddModalOpen, isEditMonthlyOpen, isEditInstallmentOpen, isEditTitleOpen, isEditTotalOpen]);
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>, setter: (val: string) => void) => {
     const rawValue = e.target.value.replace(/\D/g, '');
