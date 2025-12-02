@@ -48,6 +48,11 @@ const NotificationModal: React.FC<Props> = ({
   );
   // State to track if we have a valid cloud subscription
   const [hasPushSubscription, setHasPushSubscription] = useState(true); // Default to true to prevent flicker
+  
+  // ReadOnly States
+  const [recipientFocused, setRecipientFocused] = useState(false);
+  const [messageFocused, setMessageFocused] = useState(false);
+  const [amountFocused, setAmountFocused] = useState(false);
 
   // Check permissions and subscription status when modal opens
   useEffect(() => {
@@ -289,6 +294,9 @@ const NotificationModal: React.FC<Props> = ({
                   autoCorrect="off"
                   spellCheck="false"
                   data-lpignore="true"
+                  readOnly={!recipientFocused}
+                  onFocus={() => setRecipientFocused(true)}
+                  onBlur={() => setRecipientFocused(false)}
                 />
               </div>
 
@@ -327,6 +335,9 @@ const NotificationModal: React.FC<Props> = ({
                       className="w-full bg-[#2c2c2e] text-white p-3 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 font-bold text-base"
                       autoComplete="off"
                       data-lpignore="true"
+                      readOnly={!amountFocused}
+                      onFocus={() => setAmountFocused(true)}
+                      onBlur={() => setAmountFocused(false)}
                     />
                   </div>
                 </div>
@@ -345,6 +356,9 @@ const NotificationModal: React.FC<Props> = ({
                   autoCorrect="off"
                   spellCheck="false"
                   data-lpignore="true"
+                  readOnly={!messageFocused}
+                  onFocus={() => setMessageFocused(true)}
+                  onBlur={() => setMessageFocused(false)}
                 />
               </div>
 

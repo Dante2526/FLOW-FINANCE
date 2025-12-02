@@ -34,14 +34,9 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  const nameInputRef = useRef<HTMLInputElement>(null);
-
-  // Auto-focus name field when switching to register mode
-  useEffect(() => {
-    if (mode === 'register' && nameInputRef.current) {
-      nameInputRef.current.focus();
-    }
-  }, [mode]);
+  // ReadOnly State Hack to prevent browser autocomplete bar
+  const [isNameFocused, setIsNameFocused] = useState(false);
+  const [isEmailFocused, setIsEmailFocused] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,7 +120,6 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                             <User className="w-5 h-5" />
                          </div>
                          <input 
-                           ref={nameInputRef}
                            type="text" 
                            name="new_user_name_hidden"
                            value={name}
@@ -135,6 +129,9 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                            autoComplete="off"
                            autoCorrect="off"
                            spellCheck="false"
+                           readOnly={!isNameFocused}
+                           onFocus={() => setIsNameFocused(true)}
+                           onBlur={() => setIsNameFocused(false)}
                          />
                       </div>
                    </div>
@@ -161,7 +158,9 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                          autoCapitalize="none"
                          spellCheck="false"
                          data-lpignore="true"
-                         autoFocus={mode === 'login'}
+                         readOnly={!isEmailFocused}
+                         onFocus={() => setIsEmailFocused(true)}
+                         onBlur={() => setIsEmailFocused(false)}
                        />
                     </div>
                  </div>

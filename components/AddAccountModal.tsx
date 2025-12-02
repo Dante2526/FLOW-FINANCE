@@ -24,6 +24,10 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
   const [name, setName] = useState('');
   const [selectedTheme, setSelectedTheme] = useState<CardTheme>('default');
 
+  // ReadOnly States
+  const [balanceFocused, setBalanceFocused] = useState(false);
+  const [nameFocused, setNameFocused] = useState(false);
+
   // Load data when entering edit mode
   useEffect(() => {
     if (isOpen && accountToEdit) {
@@ -91,9 +95,11 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
                 onChange={(e) => setBalance(e.target.value)}
                 placeholder="0.00"
                 className="w-full bg-[#2c2c2e] text-white text-3xl font-bold py-4 pl-14 pr-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600"
-                autoFocus
                 autoComplete="off"
                 data-lpignore="true"
+                readOnly={!balanceFocused}
+                onFocus={() => setBalanceFocused(true)}
+                onBlur={() => setBalanceFocused(false)}
               />
             </div>
           </div>
@@ -113,6 +119,9 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
               autoCorrect="off"
               spellCheck="false"
               data-lpignore="true"
+              readOnly={!nameFocused}
+              onFocus={() => setNameFocused(true)}
+              onBlur={() => setNameFocused(false)}
             />
           </div>
 

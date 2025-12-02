@@ -50,6 +50,10 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
   const [date, setDate] = useState('');
   // Default icons based on initial type
   const [selectedIcon, setSelectedIcon] = useState<LogoType>('shopping');
+  
+  // ReadOnly Hack States
+  const [amountFocused, setAmountFocused] = useState(false);
+  const [nameFocused, setNameFocused] = useState(false);
 
   // Determine which icon set to show
   const visibleIcons = type === 'subscription' ? SUBSCRIPTION_ICONS : PURCHASE_ICONS;
@@ -197,10 +201,12 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
                 className="w-full bg-[#2c2c2e] text-white text-3xl font-bold py-4 pl-14 pr-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600"
-                autoFocus
                 required
                 autoComplete="off"
                 data-lpignore="true"
+                readOnly={!amountFocused}
+                onFocus={() => setAmountFocused(true)}
+                onBlur={() => setAmountFocused(false)}
               />
             </div>
           </div>
@@ -220,6 +226,9 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
               autoCorrect="off"
               spellCheck="false"
               data-lpignore="true"
+              readOnly={!nameFocused}
+              onFocus={() => setNameFocused(true)}
+              onBlur={() => setNameFocused(false)}
             />
           </div>
 
