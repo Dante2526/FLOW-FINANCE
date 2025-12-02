@@ -858,7 +858,7 @@ const App: React.FC = () => {
 
   return (
     <div 
-      className="min-h-screen bg-[#0a0a0b] text-white px-2 pt-4 pb-24 font-sans selection:bg-accent selection:text-black"
+      className="min-h-[100dvh] bg-[#0a0a0b] text-white px-2 pt-4 pb-24 font-sans selection:bg-accent selection:text-black"
       style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
     >
       {renderView()}
