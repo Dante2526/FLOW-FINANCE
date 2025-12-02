@@ -23,7 +23,7 @@ import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { IconBell, IconMore } from './components/Icons';
 
 // Firebase Services
-import { loginUser, registerUser, loadUserData, saveCollection, saveUserField } from './services/firebase';
+import { loginUser, registerUser, subscribeToUserData, saveCollection, saveUserField } from './services/firebase';
 
 // Constants
 const MONTH_NAMES = [
@@ -223,55 +223,56 @@ const App: React.FC = () => {
     isNotificationOpen, isAnalyticsOpen
   ]);
 
-  // --- FIREBASE LOADING EFFECT ---
+  // --- FIREBASE REAL-TIME SUBSCRIPTION ---
   useEffect(() => {
     if (currentUserEmail) {
       setIsLoadingData(true);
-      loadUserData(currentUserEmail)
-        .then((data) => {
-          if (data) {
-            // Restore Profile
-            if (data.profile) setUserProfile(data.profile);
-            
-            // Restore Arrays (Subcollections)
-            if (data.transactions) setTransactions(data.transactions);
-            if (data.accounts) setAccounts(data.accounts);
-            if (data.investments) setInvestments(data.investments);
-            if (data.longTerm) setLongTermTransactions(data.longTerm);
-            if (data.notifications) setNotifications(data.notifications);
-
-            // Restore Single Field Data
-            if (data.theme) {
-               setAppTheme(data.theme);
-               // Also sync local storage with cloud data on load
-               saveData(STORAGE_KEYS.APP_THEME, data.theme);
-            }
-            if (data.notepadContent) setNotepadContent(data.notepadContent);
-            if (data.months && data.months.length > 0) {
-              const sorted = sortMonths(data.months);
+      
+      const unsubscribe = subscribeToUserData(currentUserEmail, {
+        setProfile: (data) => setUserProfile(data),
+        setTheme: (data) => {
+           setAppTheme(data);
+           saveData(STORAGE_KEYS.APP_THEME, data);
+        },
+        setMonths: (data) => {
+           if (data && data.length > 0) {
+              const sorted = sortMonths(data);
               setMonths(sorted);
-              // Set active month to the last one by default
-              setActiveMonthId(sorted[sorted.length - 1].id);
-            } else {
-              setMonths([SYSTEM_INITIAL_MONTH]);
-              setActiveMonthId(SYSTEM_INITIAL_MONTH.id);
-            }
-            if (data.cdiRate !== undefined) setCdiRate(data.cdiRate);
+              // Only set active month if we haven't selected one or if it's initial load
+              // Check if we are in "initial load" by seeing if activeMonthId is strictly the default
+              if (activeMonthId === SYSTEM_INITIAL_MONTH.id && sorted.length > 0) {
+                 setActiveMonthId(sorted[sorted.length - 1].id);
+              }
+           } else {
+             setMonths([SYSTEM_INITIAL_MONTH]);
+           }
+        },
+        setNotepad: (data) => setNotepadContent(data),
+        setCdiRate: (data) => setCdiRate(data),
+        setTransactions: (data) => setTransactions(data),
+        setAccounts: (data) => setAccounts(data),
+        setInvestments: (data) => setInvestments(data),
+        setLongTerm: (data) => setLongTermTransactions(data),
+        setNotifications: (data) => setNotifications(data),
+      });
 
-          } else {
-            console.log("No remote data found, starting fresh.");
-          }
-        })
-        .catch(err => console.error("Error loading data:", err))
-        .finally(() => setIsLoadingData(false));
+      // Remove loading spinner after a short delay (connection established)
+      const timer = setTimeout(() => setIsLoadingData(false), 800);
+
+      return () => {
+        unsubscribe();
+        clearTimeout(timer);
+      };
+
     } else {
       // Reset if logged out
       setTransactions([]);
       setAccounts([]);
       setMonths([SYSTEM_INITIAL_MONTH]);
       setUserProfile(INITIAL_PROFILE);
+      setIsLoadingData(false);
     }
-  }, [currentUserEmail]);
+  }, [currentUserEmail]); // Dependency mainly on user login state
 
   // --- FIREBASE SAVING EFFECTS WITH DEBOUNCE ---
   // We use setTimeout to debounce the save calls, preventing excessive writes
@@ -945,7 +946,7 @@ const App: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#0a0a0b] flex flex-col items-center justify-center gap-4">
         <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-gray-400 text-sm font-medium animate-pulse">Sincronizando dados...</p>
+        <p className="text-gray-400 text-sm font-medium animate-pulse">Sincronizando em tempo real...</p>
       </div>
     );
   }

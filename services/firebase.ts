@@ -9,7 +9,8 @@ import {
   setDoc, 
   writeBatch, 
   collection, 
-  getDocs
+  getDocs,
+  onSnapshot
 } from "firebase/firestore";
 import { getAuth, signInAnonymously } from "firebase/auth";
 
@@ -83,7 +84,62 @@ export const registerUser = async (email: string, name: string, initialData: any
   return { email: normalizedEmail, name };
 };
 
-// --- OPTIMIZED SYNC HELPERS ---
+// --- REAL-TIME SYNC HELPER ---
+
+export const subscribeToUserData = (
+  userId: string, 
+  callbacks: {
+    setProfile: (data: any) => void;
+    setTheme: (data: any) => void;
+    setMonths: (data: any[]) => void;
+    setNotepad: (data: string) => void;
+    setCdiRate: (data: number) => void;
+    setTransactions: (data: any[]) => void;
+    setAccounts: (data: any[]) => void;
+    setInvestments: (data: any[]) => void;
+    setLongTerm: (data: any[]) => void;
+    setNotifications: (data: any[]) => void;
+  }
+) => {
+  const normalizedEmail = userId.toLowerCase().trim();
+  const userRef = doc(db, "users", normalizedEmail);
+  
+  // 1. Listen to User Document (Single Fields)
+  const unsubUser = onSnapshot(userRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      if (data.profile) callbacks.setProfile(data.profile);
+      if (data.theme) callbacks.setTheme(data.theme);
+      if (data.months) callbacks.setMonths(data.months);
+      if (data.notepadContent !== undefined) callbacks.setNotepad(data.notepadContent);
+      if (data.cdiRate !== undefined) callbacks.setCdiRate(data.cdiRate);
+    }
+  });
+
+  // 2. Listen to Subcollections (Lists)
+  const subcollections = [
+    { name: "transactions", setter: callbacks.setTransactions },
+    { name: "accounts", setter: callbacks.setAccounts },
+    { name: "investments", setter: callbacks.setInvestments },
+    { name: "longTerm", setter: callbacks.setLongTerm },
+    { name: "notifications", setter: callbacks.setNotifications }
+  ];
+
+  const unsubSubs = subcollections.map(sub => {
+    return onSnapshot(collection(db, "users", normalizedEmail, sub.name), (snapshot) => {
+      const data = snapshot.docs.map(d => d.data());
+      sub.setter(data);
+    });
+  });
+
+  // Return a function to unsubscribe from everything
+  return () => {
+    unsubUser();
+    unsubSubs.forEach(unsub => unsub());
+  };
+};
+
+// --- OPTIMIZED SAVE HELPERS ---
 
 export const saveCollection = async (userId: string, collectionName: string, dataArray: any[]) => {
   await ensureAuth();
@@ -107,6 +163,8 @@ export const saveCollection = async (userId: string, collectionName: string, dat
   }
 
   // 3. Identify items to SET
+  // Note: For true real-time efficiency, we might compare content equality here, 
+  // but simpler ID checking + overwrite is safer for consistency in this setup.
   for (const item of dataArray) {
     const docRef = doc(colRef, item.id);
     batch.set(docRef, item);
@@ -127,43 +185,4 @@ export const saveUserField = async (userId: string, field: string, data: any) =>
   const normalizedEmail = userId.toLowerCase().trim();
   const userRef = doc(db, "users", normalizedEmail);
   await setDoc(userRef, { [field]: data }, { merge: true });
-};
-
-export const loadUserData = async (userId: string) => {
-  await ensureAuth();
-  const normalizedEmail = userId.toLowerCase().trim();
-  const userRef = doc(db, "users", normalizedEmail);
-  
-  try {
-    const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) return null;
-
-    const userData = userSnap.data();
-
-    const loadSub = async (colName: string) => {
-      const colRef = collection(db, "users", normalizedEmail, colName);
-      const snap = await getDocs(colRef);
-      return snap.docs.map(d => d.data());
-    };
-
-    const [transactions, accounts, investments, longTerm, notifications] = await Promise.all([
-      loadSub("transactions"),
-      loadSub("accounts"),
-      loadSub("investments"),
-      loadSub("longTerm"),
-      loadSub("notifications")
-    ]);
-
-    return {
-      ...userData,
-      transactions,
-      accounts,
-      investments,
-      longTerm,
-      notifications
-    };
-  } catch (error) {
-    console.error("Error loading user data:", error);
-    throw error;
-  }
 };
