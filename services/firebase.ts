@@ -169,10 +169,10 @@ export const subscribeToUserData = (
   // 1. Listen to User Document (Single Fields)
   const unsubUser = onSnapshot(userRef, 
     (docSnap) => {
-      // Ignore local writes (latency compensation) to prevent echoes
-      if (docSnap.metadata.hasPendingWrites) {
-        return;
-      }
+      // NOTE: We do NOT block hasPendingWrites here. 
+      // This ensures that local updates (cached) are reflected immediately in the UI state
+      // preventing the "empty database" issue on reload if data hasn't synced yet.
+      // App.tsx handles loop prevention via isRemoteChange.
 
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -202,14 +202,8 @@ export const subscribeToUserData = (
   const unsubSubs = subcollections.map(sub => {
     return onSnapshot(collection(db, "users", normalizedEmail, sub.name), 
       (snapshot) => {
-        // Critical: Loop prevention. 
-        // If hasPendingWrites is true, it means this device just wrote this data.
-        // We do NOT want to update state again, as it triggers a re-render and potentially another save.
-        if (snapshot.metadata.hasPendingWrites) {
-           markLoaded(sub.key as any);
-           return;
-        }
-
+        // NOTE: We do NOT block hasPendingWrites here either.
+        
         const data = snapshot.docs.map(d => d.data());
         sub.setter(data);
         markLoaded(sub.key as any);
