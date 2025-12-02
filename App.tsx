@@ -475,7 +475,7 @@ const App: React.FC = () => {
   // --- Handlers ---
   
   const handleLogin = async (email: string, name?: string) => {
-    // Request notification permission on first login interaction
+    // REQUEST PERMISSION IMMEDIATELY ON LOGIN/REGISTER CLICK
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }

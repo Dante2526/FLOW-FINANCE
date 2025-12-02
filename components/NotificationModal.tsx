@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare, CloudLightning } from 'lucide-react';
+import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare, CloudLightning, Loader2 } from 'lucide-react';
 import { AppNotification } from '../types';
 import { saveUserField } from '../services/firebase';
 
@@ -48,6 +48,7 @@ const NotificationModal: React.FC<Props> = ({
   );
   // State to track if we have a valid cloud subscription
   const [hasPushSubscription, setHasPushSubscription] = useState(true); // Default to true to prevent flicker
+  const [isSubscribing, setIsSubscribing] = useState(false);
   
   // Check permissions and subscription status when modal opens
   useEffect(() => {
@@ -69,6 +70,8 @@ const NotificationModal: React.FC<Props> = ({
 
   const handleRequestPermission = async () => {
     if (!('Notification' in window)) return;
+    setIsSubscribing(true);
+    
     try {
       // 1. Request Permission (or verify if already granted)
       const permission = await Notification.requestPermission();
@@ -123,6 +126,8 @@ const NotificationModal: React.FC<Props> = ({
     } catch (e) {
       console.error(e);
       alert("Não foi possível ativar as notificações. Verifique as configurações do navegador.");
+    } finally {
+      setIsSubscribing(false);
     }
   };
 
@@ -359,13 +364,28 @@ const NotificationModal: React.FC<Props> = ({
              <div className="flex flex-col gap-3">
                 {/* Permission Request Button - Shows if Permission is NOT granted OR Subscription is missing */}
                 {('Notification' in window) && (notificationPermission !== 'granted' || !hasPushSubscription) && (
-                   <button 
-                     onClick={handleRequestPermission}
-                     className="w-full h-14 rounded-[1.5rem] bg-blue-600 text-white font-bold flex items-center justify-center gap-2 hover:bg-blue-500 transition-colors shadow-lg"
-                   >
-                     {notificationPermission === 'granted' ? <CloudLightning className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
-                     {notificationPermission === 'granted' ? 'Sincronizar Notificações Automáticas' : 'Ativar Notificações no Celular'}
-                   </button>
+                   <div className="flex flex-col gap-2">
+                     <button 
+                       onClick={handleRequestPermission}
+                       disabled={isSubscribing}
+                       className="w-full h-14 rounded-[1.5rem] bg-blue-600 text-white font-bold flex items-center justify-center gap-2 hover:bg-blue-500 disabled:opacity-70 disabled:cursor-not-allowed transition-colors shadow-lg"
+                     >
+                       {isSubscribing ? (
+                         <>
+                           <Loader2 className="w-5 h-5 animate-spin" />
+                           Registrando...
+                         </>
+                       ) : (
+                         <>
+                           {notificationPermission === 'granted' ? <CloudLightning className="w-5 h-5" /> : <Bell className="w-5 h-5" />}
+                           {notificationPermission === 'granted' ? 'Sincronizar Notificações Automáticas' : 'Ativar Notificações no Celular'}
+                         </>
+                       )}
+                     </button>
+                     <p className="text-[10px] text-gray-500 text-center leading-tight px-4">
+                       Isso permite que o app te avise sobre contas vencendo "Hoje", mesmo com o navegador fechado.
+                     </p>
+                   </div>
                 )}
                 
                 {notifications.length > 0 && (
