@@ -117,7 +117,7 @@ const SwipeableInvestmentItem: React.FC<SwipeableItemProps> = ({ inv, onEdit, on
   };
 
   return (
-    <div className="relative mb-3 h-20 rounded-2xl overflow-hidden select-none cursor-grab active:cursor-grabbing">
+    <div className="relative h-20 rounded-2xl overflow-hidden select-none cursor-grab active:cursor-grabbing">
       {/* Background Layer (Actions) */}
       <div className={`absolute inset-0 flex justify-between transition-all duration-200 ${offsetX === 0 ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
         
@@ -369,7 +369,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
       </div>
 
       {/* List */}
-      <div className="flex-1 flex flex-col gap-3">
+      <div className="flex-1 flex flex-col gap-2">
           <div className="flex justify-between items-center px-1 mb-2">
              <h3 className="text-sm font-bold text-gray-400 uppercase">Seus Ativos</h3>
           </div>
@@ -450,3 +450,4 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
 };
 
 export default InvestmentsView;
+    
