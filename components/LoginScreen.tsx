@@ -114,7 +114,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
              </p>
            </div>
 
-           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+           <form onSubmit={handleSubmit} className="flex flex-col gap-4" autoComplete="off">
               
               {/* Name Input */}
               {mode === 'register' && (
@@ -127,12 +127,14 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                          <input 
                            ref={nameInputRef}
                            type="text" 
+                           name="new_user_name_hidden"
                            value={name}
                            onChange={(e) => setName(e.target.value)}
                            placeholder="Seu Nome"
                            className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium capitalize"
                            autoComplete="off"
                            autoCorrect="off"
+                           spellCheck="false"
                          />
                       </div>
                    </div>
@@ -147,13 +149,18 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                           <Mail className="w-5 h-5" />
                        </div>
                        <input 
-                         type="email" 
+                         type="text" 
+                         inputMode="email"
+                         name="user_login_email_hidden"
                          value={email}
                          onChange={(e) => setEmail(e.target.value)}
                          placeholder="seu@email.com"
                          className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium"
                          autoComplete="off"
                          autoCorrect="off"
+                         autoCapitalize="none"
+                         spellCheck="false"
+                         data-lpignore="true"
                          autoFocus={mode === 'login'}
                        />
                     </div>

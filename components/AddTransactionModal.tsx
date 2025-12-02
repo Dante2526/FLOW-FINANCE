@@ -65,7 +65,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
           return displayDate.split(' ')[0];
       }
 
-      // Handle "DD Mmm" format (e.g. "24 Dez")
+      // Handle "DD Mmm" format (e.g. "24 Jan")
       const parts = displayDate.split(' ');
       if (parts.length >= 2) {
         const day = parts[0].padStart(2, '0');
@@ -183,7 +183,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5" autoComplete="off">
           
           {/* Amount Input */}
           <div className="flex flex-col gap-2">
@@ -192,6 +192,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-accent">R$</span>
               <input 
                 type="number" 
+                name="transaction_amount_hidden"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
@@ -199,6 +200,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
                 autoFocus
                 required
                 autoComplete="off"
+                data-lpignore="true"
               />
             </div>
           </div>
@@ -208,6 +210,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
             <label className="text-gray-400 text-sm ml-2">Descrição</label>
             <input 
               type="text" 
+              name="transaction_desc_hidden"
               value={name}
               onChange={(e) => setName(e.target.value.toUpperCase())}
               placeholder="DO QUE SE TRATA?"
@@ -215,6 +218,8 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
               required
               autoComplete="off"
               autoCorrect="off"
+              spellCheck="false"
+              data-lpignore="true"
             />
           </div>
 
@@ -224,6 +229,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
              <div className="relative">
                <input 
                   type="date"
+                  name="transaction_date_hidden"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
                   className="w-full bg-[#2c2c2e] text-white text-lg py-4 px-6 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600 appearance-none"

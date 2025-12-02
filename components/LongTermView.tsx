@@ -398,6 +398,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-accent">R$</span>
                             <input 
                                 type="text" 
+                                name="lt_monthly_hidden"
                                 value={editMonthlyValue}
                                 onChange={(e) => handleAmountChange(e, setEditMonthlyValue)}
                                 className="w-full bg-[#2c2c2e] text-white text-2xl font-bold py-3 pl-12 pr-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center"
@@ -434,11 +435,14 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                     <form onSubmit={handleSaveTitle} className="flex flex-col gap-4 mt-2">
                         <input 
                             type="text" 
+                            name="lt_title_edit_hidden"
                             value={editTitleValue}
                             onChange={(e) => setEditTitleValue(e.target.value.toUpperCase())}
                             className="w-full bg-[#2c2c2e] text-white text-xl font-bold py-3 px-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center uppercase"
                             autoFocus
                             autoComplete="off"
+                            autoCorrect="off"
+                            spellCheck="false"
                         />
                         <div className="flex gap-2">
                             <button 
@@ -472,6 +476,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-accent">R$</span>
                             <input 
                                 type="text" 
+                                name="lt_total_edit_hidden"
                                 value={editTotalValue}
                                 onChange={(e) => handleAmountChange(e, setEditTotalValue)}
                                 className="w-full bg-[#2c2c2e] text-white text-2xl font-bold py-3 pl-12 pr-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center"
@@ -515,6 +520,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-accent">R$</span>
                             <input 
                                 type="text" 
+                                name="lt_installment_edit_hidden"
                                 value={editInstallmentValue}
                                 onChange={(e) => handleAmountChange(e, setEditInstallmentValue)}
                                 className="w-full bg-[#2c2c2e] text-white text-2xl font-bold py-3 pl-12 pr-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center"
@@ -621,17 +627,20 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-5">
             <h2 className="text-xl font-bold text-white">Nova Parcela</h2>
-            <form onSubmit={handleCreate} className="flex flex-col gap-4">
+            <form onSubmit={handleCreate} className="flex flex-col gap-4" autoComplete="off">
                
                <div className="flex flex-col gap-1">
                  <label className="text-xs text-gray-400 ml-2">Título</label>
                  <input 
                     className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent uppercase font-bold"
                     placeholder="EX: CARRO"
+                    name="lt_title_hidden"
                     value={newTitle}
                     onChange={e => setNewTitle(e.target.value.toUpperCase())}
                     required
                     autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck="false"
                  />
                </div>
 
@@ -641,6 +650,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                    <input 
                       type="text"
                       inputMode="numeric"
+                      name="lt_total_hidden"
                       className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold"
                       placeholder="0,00"
                       value={newTotal}
@@ -653,6 +663,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                    <label className="text-xs text-gray-400 ml-2">Vezes</label>
                    <input 
                       type="number"
+                      name="lt_count_hidden"
                       className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold text-center"
                       placeholder="12"
                       value={newInstallments}
@@ -668,6 +679,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                  <div className="relative">
                    <input 
                       type="date"
+                      name="lt_date_hidden"
                       className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold"
                       value={newStartDate}
                       onChange={e => setNewStartDate(e.target.value)}

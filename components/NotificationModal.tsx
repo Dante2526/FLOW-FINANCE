@@ -280,11 +280,15 @@ const NotificationModal: React.FC<Props> = ({
                 <label className="text-[10px] text-gray-400 ml-2 font-bold uppercase">Para quem?</label>
                 <input 
                   type="text"
+                  name="notification_recipient_hidden"
                   value={recipientName}
                   onChange={(e) => setRecipientName(e.target.value)} 
                   placeholder="Nome do contato..."
                   className="w-full bg-[#2c2c2e] text-white p-3 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium text-sm"
                   autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
+                  data-lpignore="true"
                 />
               </div>
 
@@ -316,11 +320,13 @@ const NotificationModal: React.FC<Props> = ({
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-500 font-bold text-sm">R$</span>
                     <input 
                       type="number"
+                      name="notification_amount_hidden"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)} 
                       placeholder="0.00"
                       className="w-full bg-[#2c2c2e] text-white p-3 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 font-bold text-base"
                       autoComplete="off"
+                      data-lpignore="true"
                     />
                   </div>
                 </div>
@@ -330,11 +336,15 @@ const NotificationModal: React.FC<Props> = ({
               <div className="flex flex-col gap-1 flex-shrink-0">
                 <label className="text-[10px] text-gray-400 ml-2 font-bold uppercase">Mensagem</label>
                 <textarea 
+                  name="notification_message_hidden"
                   value={customMessage}
                   onChange={(e) => setCustomMessage(e.target.value)} 
                   placeholder={messageType === 'cobranca' ? "Ex: Preciso que pague sua parte da internet..." : "Ex: Já paguei a conta de luz..."}
                   className="w-full h-32 bg-[#2c2c2e] text-white p-3 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium resize-none text-sm"
                   autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck="false"
+                  data-lpignore="true"
                 />
               </div>
 

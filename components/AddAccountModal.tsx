@@ -77,7 +77,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6" autoComplete="off">
           
           {/* Balance Input */}
           <div className="flex flex-col gap-2">
@@ -86,12 +86,14 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-accent">R$</span>
               <input 
                 type="number" 
+                name="account_balance_hidden"
                 value={balance}
                 onChange={(e) => setBalance(e.target.value)}
                 placeholder="0.00"
                 className="w-full bg-[#2c2c2e] text-white text-3xl font-bold py-4 pl-14 pr-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600"
                 autoFocus
                 autoComplete="off"
+                data-lpignore="true"
               />
             </div>
           </div>
@@ -101,6 +103,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
             <label className="text-gray-400 text-sm ml-2">Nome da Fonte de Renda</label>
             <input 
               type="text" 
+              name="account_name_hidden"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ex: Reserva, Salário..."
@@ -108,6 +111,8 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
               required
               autoComplete="off"
               autoCorrect="off"
+              spellCheck="false"
+              data-lpignore="true"
             />
           </div>
 

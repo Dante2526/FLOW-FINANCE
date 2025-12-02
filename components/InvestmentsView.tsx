@@ -368,7 +368,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
           <h2 className="text-xl font-bold text-white">{editingId ? 'Editar Investimento' : 'Novo Investimento'}</h2>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6" autoComplete="off">
            {/* Type Selector */}
            <div className="grid grid-cols-2 gap-3 p-1 bg-[#2c2c2e] rounded-2xl">
               <button 
@@ -402,11 +402,14 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                  <label className="text-xs text-gray-400 ml-2 font-bold uppercase">Instituição</label>
                  <input 
                    type="text" 
+                   name="investment_institution_hidden"
                    value={institution}
                    onChange={(e) => setInstitution(e.target.value)}
                    placeholder={type === 'cdi' ? "Ex: PICPAY, NUBANK..." : "Ex: RICO, XP..."}
                    className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium uppercase"
                    autoComplete="off"
+                   autoCorrect="off"
+                   spellCheck="false"
                  />
               </div>
 
@@ -414,11 +417,14 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                  <label className="text-xs text-gray-400 ml-2 font-bold uppercase">Nome do Ativo</label>
                  <input 
                     type="text" 
+                    name="investment_name_hidden"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder={type === 'cdi' ? "Ex: CAIXINHA RESERVA" : "Ex: MXRF11"}
                     className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium uppercase"
                     autoComplete="off"
+                    autoCorrect="off"
+                    spellCheck="false"
                  />
               </div>
 
@@ -431,6 +437,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                           <input 
                              type="number"
                              inputMode="numeric"
+                             name="investment_qty_hidden"
                              value={quantity}
                              onChange={(e) => setQuantity(e.target.value)}
                              placeholder="1"
@@ -449,6 +456,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                        <input 
                          type="text"
                          inputMode="numeric" 
+                         name="investment_amount_hidden"
                          value={amount}
                          onChange={handleCurrencyChange}
                          placeholder="0,00"
@@ -466,6 +474,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                  <div className="relative flex items-center">
                     <input 
                       type="number" 
+                      name="investment_yield_hidden"
                       value={yieldRate}
                       onChange={(e) => setYieldRate(e.target.value)}
                       placeholder={type === 'cdi' ? "Ex: 100 (para 100%)" : "Ex: 12.5"}
@@ -618,6 +627,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
                     <input 
                        type="number" 
                        step="0.01"
+                       name="cdi_rate_hidden"
                        value={tempCdiRate}
                        onChange={(e) => setTempCdiRate(e.target.value)}
                        className="w-full bg-[#2c2c2e] text-white text-2xl font-bold py-3 px-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center"
