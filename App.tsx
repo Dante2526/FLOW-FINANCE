@@ -164,7 +164,12 @@ const App: React.FC = () => {
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [notepadContent, setNotepadContent] = useState<string>('');
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [appTheme, setAppTheme] = useState<AppTheme>(AVAILABLE_THEMES[0]);
+  
+  // Initialize Theme from LocalStorage immediately to prevent flickering
+  const [appTheme, setAppTheme] = useState<AppTheme>(() => {
+    return loadData(STORAGE_KEYS.APP_THEME, AVAILABLE_THEMES[0]);
+  });
+  
   const [cdiRate, setCdiRate] = useState<number>(11.25); // Default CDI
 
   const [activeMonthId, setActiveMonthId] = useState<string>(SYSTEM_INITIAL_MONTH.id);
@@ -217,7 +222,11 @@ const App: React.FC = () => {
             if (data.notifications) setNotifications(data.notifications);
 
             // Restore Single Field Data
-            if (data.theme) setAppTheme(data.theme);
+            if (data.theme) {
+               setAppTheme(data.theme);
+               // Also sync local storage with cloud data on load
+               saveData(STORAGE_KEYS.APP_THEME, data.theme);
+            }
             if (data.notepadContent) setNotepadContent(data.notepadContent);
             if (data.months && data.months.length > 0) {
               const sorted = sortMonths(data.months);
@@ -305,7 +314,17 @@ const App: React.FC = () => {
     }
   }, [userProfile, currentUserEmail, isLoadingData]);
 
+  // THEME EFFECT: Applies CSS variables AND Saves to Storage/Firebase
   useEffect(() => {
+    // 1. Apply to DOM
+    const root = document.documentElement;
+    root.style.setProperty('--color-accent', appTheme.primary);
+    root.style.setProperty('--color-accent-dark', appTheme.secondary);
+    
+    // 2. Save Local (Instant persistence)
+    saveData(STORAGE_KEYS.APP_THEME, appTheme);
+
+    // 3. Save Cloud
     if (currentUserEmail && !isLoadingData) {
       saveUserField(currentUserEmail, "theme", appTheme);
     }
@@ -863,12 +882,6 @@ const App: React.FC = () => {
   };
 
   // --- CSS VARIABLES ---
-  useEffect(() => {
-    const root = document.documentElement;
-    root.style.setProperty('--color-accent', appTheme.primary);
-    root.style.setProperty('--color-accent-dark', appTheme.secondary);
-  }, [appTheme]);
-
   if (!currentUserEmail) {
     return <LoginScreen onLogin={handleLogin} />;
   }
