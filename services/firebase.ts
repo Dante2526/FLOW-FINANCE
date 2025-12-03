@@ -7,7 +7,6 @@ import {
   doc, 
   getDoc, 
   setDoc, 
-  writeBatch, 
   collection, 
   getDocs
 } from "firebase/firestore";
@@ -24,8 +23,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore with new persistence settings to avoid deprecation warning
-// This replaces enableIndexedDbPersistence and supports multi-tab automatically
+// Initialize Firestore with persistence settings
 export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager()
@@ -35,7 +33,6 @@ export const db = initializeFirestore(app, {
 export const auth = getAuth(app);
 
 // Helper to ensure user is authenticated anonymously before any DB action
-// This solves the "Insecure Rules" warning by allowing us to use rules that require auth
 const ensureAuth = async () => {
   if (!auth.currentUser) {
     try {
@@ -88,37 +85,18 @@ export const registerUser = async (email: string, name: string, initialData: any
 export const saveCollection = async (userId: string, collectionName: string, dataArray: any[]) => {
   await ensureAuth();
   const normalizedEmail = userId.toLowerCase().trim();
-  const colRef = collection(db, "users", normalizedEmail, collectionName);
   
-  // 1. Fetch current IDs to minimize writes (Diffing Strategy)
-  const snapshot = await getDocs(colRef);
-  const existingIds = new Set(snapshot.docs.map(d => d.id));
-  const newIds = new Set(dataArray.map(d => d.id));
-  
-  const batch = writeBatch(db);
-  let opCount = 0;
-  
-  // 2. Identify items to DELETE
-  for (const doc of snapshot.docs) {
-    if (!newIds.has(doc.id)) {
-      batch.delete(doc.ref);
-      opCount++;
+  // OPTIMIZATION: Save as a single document containing the array.
+  // This significantly reduces Write operations (1 write vs N items) and Reads (no diffing needed).
+  // Fixes "Quota Exceeded" errors on free tier.
+  try {
+    const docRef = doc(db, "users", normalizedEmail, "app_data", collectionName);
+    await setDoc(docRef, { items: dataArray });
+  } catch (error: any) {
+    console.error("Error saving collection:", error);
+    if (error.code === 'resource-exhausted') {
+       console.warn("Firestore Quota Exceeded. Data may not be saved.");
     }
-  }
-
-  // 3. Identify items to SET
-  for (const item of dataArray) {
-    const docRef = doc(colRef, item.id);
-    batch.set(docRef, item);
-    opCount++;
-  }
-
-  // 4. Commit 
-  if (opCount > 0) {
-    if (opCount > 500) {
-       console.warn("Large batch detected. Saving strictly necessary items.");
-    }
-    await batch.commit();
   }
 };
 
@@ -140,10 +118,34 @@ export const loadUserData = async (userId: string) => {
 
     const userData = userSnap.data();
 
+    // Helper to load from optimized single-doc format, falling back to legacy subcollection
     const loadSub = async (colName: string) => {
-      const colRef = collection(db, "users", normalizedEmail, colName);
-      const snap = await getDocs(colRef);
-      return snap.docs.map(d => d.data());
+      // 1. Try new format: users/{email}/app_data/{colName}
+      try {
+        const docRef = doc(db, "users", normalizedEmail, "app_data", colName);
+        const docSnap = await getDoc(docRef);
+        
+        if (docSnap.exists()) {
+          return docSnap.data().items || [];
+        }
+      } catch (err) {
+        console.warn(`Error loading new format for ${colName}, checking legacy...`, err);
+      }
+
+      // 2. Fallback: Legacy Subcollection users/{email}/{colName}
+      // This ensures existing users don't lose data.
+      // On the next save, it will be written to the new format.
+      try {
+        const colRef = collection(db, "users", normalizedEmail, colName);
+        const snap = await getDocs(colRef);
+        if (!snap.empty) {
+          return snap.docs.map(d => d.data());
+        }
+      } catch (err) {
+        console.warn(`Error loading legacy format for ${colName}`, err);
+      }
+
+      return [];
     };
 
     const [transactions, accounts, investments, longTerm, notifications] = await Promise.all([
