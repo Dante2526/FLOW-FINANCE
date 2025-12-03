@@ -120,6 +120,8 @@ export const loadUserData = async (userId: string) => {
 
     // Helper to load from optimized single-doc format, falling back to legacy subcollection
     const loadSub = async (colName: string) => {
+      let error = null;
+
       // 1. Try new format: users/{email}/app_data/{colName}
       try {
         const docRef = doc(db, "users", normalizedEmail, "app_data", colName);
@@ -128,8 +130,9 @@ export const loadUserData = async (userId: string) => {
         if (docSnap.exists()) {
           return docSnap.data().items || [];
         }
-      } catch (err) {
-        console.warn(`Error loading new format for ${colName}, checking legacy...`, err);
+      } catch (err: any) {
+        console.warn(`Error loading new format for ${colName}`, err);
+        error = err;
       }
 
       // 2. Fallback: Legacy Subcollection users/{email}/{colName}
@@ -141,8 +144,15 @@ export const loadUserData = async (userId: string) => {
         if (!snap.empty) {
           return snap.docs.map(d => d.data());
         }
-      } catch (err) {
+      } catch (err: any) {
         console.warn(`Error loading legacy format for ${colName}`, err);
+        error = err || error;
+      }
+
+      // If we had an error (like Quota Exceeded) and didn't find data, throw
+      // to avoid overwriting existing cloud data with an empty array.
+      if (error) {
+        throw error;
       }
 
       return [];

@@ -174,7 +174,7 @@ const App: React.FC = () => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   
-  // --- DATA STATES (Initialized Empty, Loaded via Firebase) ---
+  // --- DATA STATES (Initialized Empty, Loaded via Firebase/LocalStorage) ---
   const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_PROFILE);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -223,46 +223,43 @@ const App: React.FC = () => {
     isNotificationOpen, isAnalyticsOpen
   ]);
 
-  // --- FIREBASE LOADING EFFECT ---
+  // --- DATA LOADING EFFECT (Firebase with LocalStorage Fallback) ---
   useEffect(() => {
     if (currentUserEmail) {
       setIsLoadingData(true);
       loadUserData(currentUserEmail)
         .then((data) => {
           if (data) {
-            // Restore Profile
-            if (data.profile) setUserProfile(data.profile);
-            
-            // Restore Arrays (Subcollections)
-            if (data.transactions) setTransactions(data.transactions);
-            if (data.accounts) setAccounts(data.accounts);
-            if (data.investments) setInvestments(data.investments);
-            if (data.longTerm) setLongTermTransactions(data.longTerm);
-            if (data.notifications) setNotifications(data.notifications);
-
-            // Restore Single Field Data
-            if (data.theme) {
-               setAppTheme(data.theme);
-               // Also sync local storage with cloud data on load
-               saveData(STORAGE_KEYS.APP_THEME, data.theme);
-            }
-            if (data.notepadContent) setNotepadContent(data.notepadContent);
-            if (data.months && data.months.length > 0) {
-              const sorted = sortMonths(data.months);
-              setMonths(sorted);
-              // Set active month to the last one by default
-              setActiveMonthId(sorted[sorted.length - 1].id);
-            } else {
-              setMonths([SYSTEM_INITIAL_MONTH]);
-              setActiveMonthId(SYSTEM_INITIAL_MONTH.id);
-            }
-            if (data.cdiRate !== undefined) setCdiRate(data.cdiRate);
-
+            applyData(data);
           } else {
             console.log("No remote data found, starting fresh.");
           }
         })
-        .catch(err => console.error("Error loading data:", err))
+        .catch(err => {
+          console.error("Error loading data from Cloud, trying LocalStorage fallback:", err);
+          // Fallback to LocalStorage on error (e.g. Quota Exceeded)
+          const localTransactions = loadData(STORAGE_KEYS.TRANSACTIONS, []);
+          const localAccounts = loadData(STORAGE_KEYS.ACCOUNTS, []);
+          const localInvestments = loadData(STORAGE_KEYS.INVESTMENTS, []);
+          const localLongTerm = loadData(STORAGE_KEYS.LONG_TERM_TRANSACTIONS, []);
+          const localNotifications = loadData(STORAGE_KEYS.NOTIFICATIONS, []);
+          const localProfile = loadData(STORAGE_KEYS.USER_PROFILE, INITIAL_PROFILE);
+          const localMonths = loadData(STORAGE_KEYS.MONTHS, [SYSTEM_INITIAL_MONTH]);
+          const localNotepad = loadData(STORAGE_KEYS.NOTEPAD_CONTENT, '');
+          const localCdi = loadData(STORAGE_KEYS.CDI_RATE, 11.25);
+
+          applyData({
+            profile: localProfile,
+            transactions: localTransactions,
+            accounts: localAccounts,
+            investments: localInvestments,
+            longTerm: localLongTerm,
+            notifications: localNotifications,
+            months: localMonths,
+            notepadContent: localNotepad,
+            cdiRate: localCdi
+          });
+        })
         .finally(() => setIsLoadingData(false));
     } else {
       // Reset if logged out
@@ -273,13 +270,38 @@ const App: React.FC = () => {
     }
   }, [currentUserEmail]);
 
-  // --- FIREBASE SAVING EFFECTS WITH DEBOUNCE ---
-  // We use setTimeout to debounce the save calls, preventing excessive writes
-  // during rapid UI updates (e.g. typing or quick edits).
+  const applyData = (data: any) => {
+      if (data.profile) setUserProfile(data.profile);
+      if (data.transactions) setTransactions(data.transactions);
+      if (data.accounts) setAccounts(data.accounts);
+      if (data.investments) setInvestments(data.investments);
+      if (data.longTerm) setLongTermTransactions(data.longTerm);
+      if (data.notifications) setNotifications(data.notifications);
+
+      if (data.theme) {
+         setAppTheme(data.theme);
+         saveData(STORAGE_KEYS.APP_THEME, data.theme);
+      }
+      if (data.notepadContent) setNotepadContent(data.notepadContent);
+      if (data.months && data.months.length > 0) {
+        const sorted = sortMonths(data.months);
+        setMonths(sorted);
+        setActiveMonthId(sorted[sorted.length - 1].id);
+      } else {
+        setMonths([SYSTEM_INITIAL_MONTH]);
+        setActiveMonthId(SYSTEM_INITIAL_MONTH.id);
+      }
+      if (data.cdiRate !== undefined) setCdiRate(data.cdiRate);
+  };
+
+  // --- SAVING EFFECTS WITH DEBOUNCE (Firebase + LocalStorage) ---
   const DEBOUNCE_DELAY = 1500;
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+      // Sync to LocalStorage immediately
+      saveData(STORAGE_KEYS.TRANSACTIONS, transactions);
+      
       const timer = setTimeout(() => {
         saveCollection(currentUserEmail, "transactions", transactions);
       }, DEBOUNCE_DELAY);
@@ -289,6 +311,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+      saveData(STORAGE_KEYS.ACCOUNTS, accounts);
+      
       const timer = setTimeout(() => {
         saveCollection(currentUserEmail, "accounts", accounts);
       }, DEBOUNCE_DELAY);
@@ -298,6 +322,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+      saveData(STORAGE_KEYS.INVESTMENTS, investments);
+      
       const timer = setTimeout(() => {
         saveCollection(currentUserEmail, "investments", investments);
       }, DEBOUNCE_DELAY);
@@ -307,6 +333,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+      saveData(STORAGE_KEYS.LONG_TERM_TRANSACTIONS, longTermTransactions);
+      
       const timer = setTimeout(() => {
         saveCollection(currentUserEmail, "longTerm", longTermTransactions);
       }, DEBOUNCE_DELAY);
@@ -316,6 +344,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+      saveData(STORAGE_KEYS.NOTIFICATIONS, notifications);
+      
       const timer = setTimeout(() => {
         saveCollection(currentUserEmail, "notifications", notifications);
       }, DEBOUNCE_DELAY);
@@ -323,9 +353,10 @@ const App: React.FC = () => {
     }
   }, [notifications, currentUserEmail, isLoadingData]);
 
-  // Single Fields - Save immediately or short debounce
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+      saveData(STORAGE_KEYS.USER_PROFILE, userProfile);
+      
       const timer = setTimeout(() => {
          saveUserField(currentUserEmail, "profile", userProfile);
       }, 1000);
@@ -335,15 +366,12 @@ const App: React.FC = () => {
 
   // THEME EFFECT: Applies CSS variables AND Saves to Storage/Firebase
   useEffect(() => {
-    // 1. Apply to DOM
     const root = document.documentElement;
     root.style.setProperty('--color-accent', appTheme.primary);
     root.style.setProperty('--color-accent-dark', appTheme.secondary);
     
-    // 2. Save Local (Instant persistence)
     saveData(STORAGE_KEYS.APP_THEME, appTheme);
 
-    // 3. Save Cloud
     if (currentUserEmail && !isLoadingData) {
       saveUserField(currentUserEmail, "theme", appTheme);
     }
@@ -351,6 +379,8 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+       saveData(STORAGE_KEYS.MONTHS, months);
+       
        const timer = setTimeout(() => {
          saveUserField(currentUserEmail, "months", months);
        }, 1000);
@@ -360,15 +390,18 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+      saveData(STORAGE_KEYS.NOTEPAD_CONTENT, notepadContent);
+      
       const timer = setTimeout(() => {
         saveUserField(currentUserEmail, "notepadContent", notepadContent);
-      }, 2000); // Long debounce for typing
+      }, 2000); 
       return () => clearTimeout(timer);
     }
   }, [notepadContent, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
+      saveData(STORAGE_KEYS.CDI_RATE, cdiRate);
       saveUserField(currentUserEmail, "cdiRate", cdiRate);
     }
   }, [cdiRate, currentUserEmail, isLoadingData]);
@@ -380,8 +413,6 @@ const App: React.FC = () => {
     if (!activeMonthSummary) return [];
     
     return transactions.filter(tx => {
-      // 1. Check for Explicit Tags first (New System)
-      // 2. Fallback to Date Parsing (Legacy Data)
       const txMonth = tx.month || getMonthFromDateStr(tx.date);
       const txYear = tx.year || getYearFromDateStr(tx.date, activeMonthSummary.year);
       
@@ -469,7 +500,6 @@ const App: React.FC = () => {
                  };
 
                  if ('serviceWorker' in navigator) {
-                    // Use relative path './sw.js' to avoid origin issues in previews
                     navigator.serviceWorker.register('./sw.js').then(async () => {
                        const reg = await navigator.serviceWorker.ready;
                        reg.showNotification('Conta Vencendo Hoje! 💸', options);
@@ -523,7 +553,6 @@ const App: React.FC = () => {
       setCurrentUserEmail(email);
 
       // AUTOMATIC PUSH SUBSCRIPTION AFTER LOGIN (If permission granted)
-      // SILENT ACTIVATION: No system notification shown
       if (permissionGranted && 'serviceWorker' in navigator) {
          try {
              const registration = await navigator.serviceWorker.ready;
@@ -547,7 +576,7 @@ const App: React.FC = () => {
 
     } catch (error) {
        console.error("Login sequence failed:", error);
-       throw error; // Re-throw to be caught by LoginScreen
+       throw error; 
     }
   };
 
@@ -611,15 +640,13 @@ const App: React.FC = () => {
        let newDateStr = '';
        const parts = tx.date.split(' ');
        
-       // Handle "08 Nov" -> "08 Dez"
        if (parts.length >= 2 && !tx.date.toLowerCase().includes('hoje') && !tx.date.includes('-')) {
           const day = parts[0];
           newDateStr = `${day} ${nextShortCode}`;
        } 
-       // Handle "2025-11-08" -> "2025-12-08"
        else if (tx.date.match(/^\d{4}-\d{2}-\d{2}/)) {
            const d = new Date(tx.date.split(' ')[0] + 'T00:00:00');
-           d.setMonth(d.getMonth() + 1); // Move to next month
+           d.setMonth(d.getMonth() + 1); 
            newDateStr = d.toISOString().split('T')[0];
        }
        else {
@@ -631,7 +658,7 @@ const App: React.FC = () => {
          id: Date.now().toString() + Math.random(),
          date: newDateStr,
          paid: false,
-         month: nextMonthName, // Assign to next month explicitly
+         month: nextMonthName, 
          year: nextYearInt.toString()
        };
     });
@@ -668,14 +695,9 @@ const App: React.FC = () => {
       const oldMonth = editingTransaction.month || getMonthFromDateStr(editingTransaction.date);
       const oldYear = editingTransaction.year || getYearFromDateStr(editingTransaction.date, activeMonthSummary.year);
       
-      // When editing, we generally keep the transaction in the SAME grouping (unless moving features added later)
-      // So we assume the 'txData' doesn't contain month/year override, so 't' fields (preserved above) are used.
-      
       setMonths(prev => {
         const updated = prev.map(m => {
-          // If we are editing a transaction in this month summary...
           if (m.month === oldMonth && m.year === oldYear) {
-             // Re-calc total: remove old amount, add new amount
              return { ...m, total: m.total - editingTransaction.amount + txData.amount };
           }
           return m;
@@ -685,12 +707,9 @@ const App: React.FC = () => {
       setEditingTransaction(null);
 
     } else {
-      // NEW TRANSACTION
       const newTx: Transaction = {
         id: Date.now().toString(),
         ...txData,
-        // CRITICAL: Explicitly assign to the currently active month view
-        // regardless of the specific due date selected.
         month: activeMonthSummary.month,
         year: activeMonthSummary.year
       };
@@ -698,7 +717,6 @@ const App: React.FC = () => {
       setTransactions(prev => [newTx, ...prev]);
       
       setMonths(prev => prev.map(m => {
-        // Only update the total of the ACTIVE month where this was added
         if (m.month === activeMonthSummary.month && m.year === activeMonthSummary.year) {
           return { ...m, total: m.total + newTx.amount };
         }
