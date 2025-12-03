@@ -2,10 +2,18 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Configuração do Projeto Flow Finance
-const SUPABASE_URL = 'https://xfsmdidfcgptfzjhhui.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmc21kaWRmY2NncHRmempoaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3MTQ0NjAsImV4cCI6MjA4MDI5MDQ2MH0.4oFJ_L7fdjw2ttYtTko8EdTVhDpBtM5WWXQM4_N7zTU';
+// ID CORRIGIDO (extraído do payload do JWT fornecido)
+const SUPABASE_URL = 'https://xfsmdidfccgptfzjhhui.supabase.co'.trim();
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmc21kaWRmY2NncHRmempoaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3MTQ0NjAsImV4cCI6MjA4MDI5MDQ2MH0.4oFJ_L7fdjw2ttYtTko8EdTVhDpBtM5WWXQM4_N7zTU'.trim();
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Configurações importantes para evitar erros de "Failed to fetch" e persistência
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: false, // Desativa persistência pois usamos login personalizado
+    autoRefreshToken: false,
+    detectSessionInUrl: false
+  }
+});
 
 // --- AUTH / USER MANAGEMENT ---
 
@@ -19,8 +27,17 @@ export const loginUser = async (email: string) => {
     .eq('email', normalizedEmail)
     .single();
 
-  if (error || !data) {
+  if (error) {
+    console.error("Erro Supabase Login:", error);
+    // Se o erro for de conexão, lança mensagem amigável
+    if (error.message && (error.message.includes('fetch') || error.message.includes('network'))) {
+       throw new Error("Erro de conexão. Verifique sua internet ou o ID do projeto.");
+    }
     throw new Error("Usuário não encontrado. Verifique o e-mail ou crie uma conta.");
+  }
+  
+  if (!data) {
+    throw new Error("Usuário não encontrado.");
   }
 
   // Normaliza os dados do banco (snake_case) para o app (camelCase)
@@ -31,11 +48,19 @@ export const registerUser = async (email: string, name: string, initialData: any
   const normalizedEmail = email.toLowerCase().trim();
 
   // Verifica se usuário já existe
-  const { data: existingUser } = await supabase
+  const { data: existingUser, error: checkError } = await supabase
     .from('users')
     .select('email')
     .eq('email', normalizedEmail)
-    .single();
+    .maybeSingle(); // maybeSingle evita erro se não encontrar
+
+  if (checkError && !checkError.message.includes('JSON')) {
+     console.error("Erro verificação registro:", checkError);
+     if (checkError.message.includes('fetch')) {
+       throw new Error("Erro de conexão ao verificar usuário. Tente novamente.");
+     }
+     throw new Error("Erro ao verificar usuário: " + checkError.message);
+  }
 
   if (existingUser) {
     throw new Error("Este e-mail já possui cadastro.");
@@ -57,7 +82,8 @@ export const registerUser = async (email: string, name: string, initialData: any
     });
 
   if (error) {
-    throw new Error("Erro ao criar usuário: " + error.message);
+    console.error("Erro criação usuário:", error);
+    throw new Error("Erro ao criar conta. Tente novamente.");
   }
 
   return { email: normalizedEmail, name };
