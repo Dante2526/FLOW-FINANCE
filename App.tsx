@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
 import ContactsRow from './components/ContactsRow';
@@ -174,7 +174,7 @@ const App: React.FC = () => {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   
-  // --- DATA STATES (Initialized Empty, Loaded via Firebase/LocalStorage) ---
+  // --- DATA STATES ---
   const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_PROFILE);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -184,17 +184,30 @@ const App: React.FC = () => {
   const [notepadContent, setNotepadContent] = useState<string>('');
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   
-  // Initialize Theme from LocalStorage immediately to prevent flickering
   const [appTheme, setAppTheme] = useState<AppTheme>(() => {
     return loadData(STORAGE_KEYS.APP_THEME, AVAILABLE_THEMES[0]);
   });
   
-  const [cdiRate, setCdiRate] = useState<number>(11.25); // Default CDI
+  const [cdiRate, setCdiRate] = useState<number>(11.25); 
 
   const [activeMonthId, setActiveMonthId] = useState<string>(SYSTEM_INITIAL_MONTH.id);
   
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+
+  // --- REFS FOR CHANGE DETECTION (PREVENT WRITE-ON-LOAD) ---
+  // Stores the stringified version of the data that was last synced/loaded.
+  // We only write to Firebase if the current data differs from this ref.
+  const prevTransactionsRef = useRef<string>('');
+  const prevAccountsRef = useRef<string>('');
+  const prevInvestmentsRef = useRef<string>('');
+  const prevLongTermRef = useRef<string>('');
+  const prevNotificationsRef = useRef<string>('');
+  const prevProfileRef = useRef<string>('');
+  const prevThemeRef = useRef<string>('');
+  const prevMonthsRef = useRef<string>('');
+  const prevNotepadRef = useRef<string>('');
+  const prevCdiRef = useRef<number>(11.25);
 
   // --- SCROLL LOCK EFFECT ---
   useEffect(() => {
@@ -237,7 +250,7 @@ const App: React.FC = () => {
         })
         .catch(err => {
           console.error("Error loading data from Cloud, trying LocalStorage fallback:", err);
-          // Fallback to LocalStorage on error (e.g. Quota Exceeded)
+          // Fallback to LocalStorage
           const localTransactions = loadData(STORAGE_KEYS.TRANSACTIONS, []);
           const localAccounts = loadData(STORAGE_KEYS.ACCOUNTS, []);
           const localInvestments = loadData(STORAGE_KEYS.INVESTMENTS, []);
@@ -262,7 +275,6 @@ const App: React.FC = () => {
         })
         .finally(() => setIsLoadingData(false));
     } else {
-      // Reset if logged out
       setTransactions([]);
       setAccounts([]);
       setMonths([SYSTEM_INITIAL_MONTH]);
@@ -271,27 +283,57 @@ const App: React.FC = () => {
   }, [currentUserEmail]);
 
   const applyData = (data: any) => {
-      if (data.profile) setUserProfile(data.profile);
-      if (data.transactions) setTransactions(data.transactions);
-      if (data.accounts) setAccounts(data.accounts);
-      if (data.investments) setInvestments(data.investments);
-      if (data.longTerm) setLongTermTransactions(data.longTerm);
-      if (data.notifications) setNotifications(data.notifications);
+      if (data.profile) {
+        setUserProfile(data.profile);
+        prevProfileRef.current = JSON.stringify(data.profile);
+      }
+      if (data.transactions) {
+        setTransactions(data.transactions);
+        prevTransactionsRef.current = JSON.stringify(data.transactions);
+      }
+      if (data.accounts) {
+        setAccounts(data.accounts);
+        prevAccountsRef.current = JSON.stringify(data.accounts);
+      }
+      if (data.investments) {
+        setInvestments(data.investments);
+        prevInvestmentsRef.current = JSON.stringify(data.investments);
+      }
+      if (data.longTerm) {
+        setLongTermTransactions(data.longTerm);
+        prevLongTermRef.current = JSON.stringify(data.longTerm);
+      }
+      if (data.notifications) {
+        setNotifications(data.notifications);
+        prevNotificationsRef.current = JSON.stringify(data.notifications);
+      }
 
       if (data.theme) {
          setAppTheme(data.theme);
          saveData(STORAGE_KEYS.APP_THEME, data.theme);
+         prevThemeRef.current = JSON.stringify(data.theme);
       }
-      if (data.notepadContent) setNotepadContent(data.notepadContent);
+      
+      if (data.notepadContent) {
+        setNotepadContent(data.notepadContent);
+        prevNotepadRef.current = data.notepadContent;
+      }
+
       if (data.months && data.months.length > 0) {
         const sorted = sortMonths(data.months);
         setMonths(sorted);
         setActiveMonthId(sorted[sorted.length - 1].id);
+        prevMonthsRef.current = JSON.stringify(sorted);
       } else {
         setMonths([SYSTEM_INITIAL_MONTH]);
         setActiveMonthId(SYSTEM_INITIAL_MONTH.id);
+        prevMonthsRef.current = JSON.stringify([SYSTEM_INITIAL_MONTH]);
       }
-      if (data.cdiRate !== undefined) setCdiRate(data.cdiRate);
+      
+      if (data.cdiRate !== undefined) {
+        setCdiRate(data.cdiRate);
+        prevCdiRef.current = data.cdiRate;
+      }
   };
 
   // --- SAVING EFFECTS WITH DEBOUNCE (Firebase + LocalStorage) ---
@@ -299,72 +341,102 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
-      // Sync to LocalStorage immediately
-      saveData(STORAGE_KEYS.TRANSACTIONS, transactions);
+      const currentStr = JSON.stringify(transactions);
       
-      const timer = setTimeout(() => {
-        saveCollection(currentUserEmail, "transactions", transactions);
-      }, DEBOUNCE_DELAY);
-      return () => clearTimeout(timer);
+      // Only save if content has actually changed from what we loaded/saved last
+      if (currentStr !== prevTransactionsRef.current) {
+        saveData(STORAGE_KEYS.TRANSACTIONS, transactions);
+        
+        const timer = setTimeout(() => {
+          saveCollection(currentUserEmail, "transactions", transactions);
+          prevTransactionsRef.current = currentStr;
+        }, DEBOUNCE_DELAY);
+        return () => clearTimeout(timer);
+      }
     }
   }, [transactions, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
-      saveData(STORAGE_KEYS.ACCOUNTS, accounts);
+      const currentStr = JSON.stringify(accounts);
       
-      const timer = setTimeout(() => {
-        saveCollection(currentUserEmail, "accounts", accounts);
-      }, DEBOUNCE_DELAY);
-      return () => clearTimeout(timer);
+      if (currentStr !== prevAccountsRef.current) {
+        saveData(STORAGE_KEYS.ACCOUNTS, accounts);
+        
+        const timer = setTimeout(() => {
+          saveCollection(currentUserEmail, "accounts", accounts);
+          prevAccountsRef.current = currentStr;
+        }, DEBOUNCE_DELAY);
+        return () => clearTimeout(timer);
+      }
     }
   }, [accounts, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
-      saveData(STORAGE_KEYS.INVESTMENTS, investments);
+      const currentStr = JSON.stringify(investments);
       
-      const timer = setTimeout(() => {
-        saveCollection(currentUserEmail, "investments", investments);
-      }, DEBOUNCE_DELAY);
-      return () => clearTimeout(timer);
+      if (currentStr !== prevInvestmentsRef.current) {
+        saveData(STORAGE_KEYS.INVESTMENTS, investments);
+        
+        const timer = setTimeout(() => {
+          saveCollection(currentUserEmail, "investments", investments);
+          prevInvestmentsRef.current = currentStr;
+        }, DEBOUNCE_DELAY);
+        return () => clearTimeout(timer);
+      }
     }
   }, [investments, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
-      saveData(STORAGE_KEYS.LONG_TERM_TRANSACTIONS, longTermTransactions);
+      const currentStr = JSON.stringify(longTermTransactions);
       
-      const timer = setTimeout(() => {
-        saveCollection(currentUserEmail, "longTerm", longTermTransactions);
-      }, DEBOUNCE_DELAY);
-      return () => clearTimeout(timer);
+      if (currentStr !== prevLongTermRef.current) {
+        saveData(STORAGE_KEYS.LONG_TERM_TRANSACTIONS, longTermTransactions);
+        
+        const timer = setTimeout(() => {
+          saveCollection(currentUserEmail, "longTerm", longTermTransactions);
+          prevLongTermRef.current = currentStr;
+        }, DEBOUNCE_DELAY);
+        return () => clearTimeout(timer);
+      }
     }
   }, [longTermTransactions, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
-      saveData(STORAGE_KEYS.NOTIFICATIONS, notifications);
-      
-      const timer = setTimeout(() => {
-        saveCollection(currentUserEmail, "notifications", notifications);
-      }, DEBOUNCE_DELAY);
-      return () => clearTimeout(timer);
+      const currentStr = JSON.stringify(notifications);
+
+      if (currentStr !== prevNotificationsRef.current) {
+        saveData(STORAGE_KEYS.NOTIFICATIONS, notifications);
+        
+        const timer = setTimeout(() => {
+          saveCollection(currentUserEmail, "notifications", notifications);
+          prevNotificationsRef.current = currentStr;
+        }, DEBOUNCE_DELAY);
+        return () => clearTimeout(timer);
+      }
     }
   }, [notifications, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
-      saveData(STORAGE_KEYS.USER_PROFILE, userProfile);
-      
-      const timer = setTimeout(() => {
-         saveUserField(currentUserEmail, "profile", userProfile);
-      }, 1000);
-      return () => clearTimeout(timer);
+      const currentStr = JSON.stringify(userProfile);
+
+      if (currentStr !== prevProfileRef.current) {
+        saveData(STORAGE_KEYS.USER_PROFILE, userProfile);
+        
+        const timer = setTimeout(() => {
+           saveUserField(currentUserEmail, "profile", userProfile);
+           prevProfileRef.current = currentStr;
+        }, 1000);
+        return () => clearTimeout(timer);
+      }
     }
   }, [userProfile, currentUserEmail, isLoadingData]);
 
-  // THEME EFFECT: Applies CSS variables AND Saves to Storage/Firebase
+  // THEME EFFECT
   useEffect(() => {
     const root = document.documentElement;
     root.style.setProperty('--color-accent', appTheme.primary);
@@ -373,36 +445,51 @@ const App: React.FC = () => {
     saveData(STORAGE_KEYS.APP_THEME, appTheme);
 
     if (currentUserEmail && !isLoadingData) {
-      saveUserField(currentUserEmail, "theme", appTheme);
+      const currentStr = JSON.stringify(appTheme);
+      if (currentStr !== prevThemeRef.current) {
+        saveUserField(currentUserEmail, "theme", appTheme);
+        prevThemeRef.current = currentStr;
+      }
     }
   }, [appTheme, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
-       saveData(STORAGE_KEYS.MONTHS, months);
+       const currentStr = JSON.stringify(months);
        
-       const timer = setTimeout(() => {
-         saveUserField(currentUserEmail, "months", months);
-       }, 1000);
-       return () => clearTimeout(timer);
+       if (currentStr !== prevMonthsRef.current) {
+         saveData(STORAGE_KEYS.MONTHS, months);
+         
+         const timer = setTimeout(() => {
+           saveUserField(currentUserEmail, "months", months);
+           prevMonthsRef.current = currentStr;
+         }, 1000);
+         return () => clearTimeout(timer);
+       }
     }
   }, [months, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
-      saveData(STORAGE_KEYS.NOTEPAD_CONTENT, notepadContent);
-      
-      const timer = setTimeout(() => {
-        saveUserField(currentUserEmail, "notepadContent", notepadContent);
-      }, 2000); 
-      return () => clearTimeout(timer);
+      if (notepadContent !== prevNotepadRef.current) {
+        saveData(STORAGE_KEYS.NOTEPAD_CONTENT, notepadContent);
+        
+        const timer = setTimeout(() => {
+          saveUserField(currentUserEmail, "notepadContent", notepadContent);
+          prevNotepadRef.current = notepadContent;
+        }, 2000); 
+        return () => clearTimeout(timer);
+      }
     }
   }, [notepadContent, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
-      saveData(STORAGE_KEYS.CDI_RATE, cdiRate);
-      saveUserField(currentUserEmail, "cdiRate", cdiRate);
+      if (cdiRate !== prevCdiRef.current) {
+        saveData(STORAGE_KEYS.CDI_RATE, cdiRate);
+        saveUserField(currentUserEmail, "cdiRate", cdiRate);
+        prevCdiRef.current = cdiRate;
+      }
     }
   }, [cdiRate, currentUserEmail, isLoadingData]);
 
