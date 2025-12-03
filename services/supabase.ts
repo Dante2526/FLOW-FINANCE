@@ -118,6 +118,7 @@ export const saveUserField = async (userId: string, field: string, data: any): P
   if (field === 'notepadContent') dbColumn = 'notepad_content';
   if (field === 'cdiRate') dbColumn = 'cdi_rate';
   if (field === 'pushSubscription') dbColumn = 'push_subscription';
+  // O campo 'theme' já é igual no banco, então passa direto
 
   const { error } = await supabase
     .from('users')
@@ -160,6 +161,7 @@ const normalizeUserData = (data: any) => {
     investments: data.investments || [],
     notifications: data.notifications || [],
     months: data.months || [],
-    profile: data.profile || {}
+    profile: data.profile || {},
+    theme: data.theme || null // Garante leitura explícita do tema
   };
 };
