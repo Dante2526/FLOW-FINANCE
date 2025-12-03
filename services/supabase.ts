@@ -15,6 +15,25 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   }
 });
 
+// Helper para converter os dados do Supabase para o formato do App
+// Exportado para ser usado na subscrição Realtime
+export const normalizeUserData = (data: any) => {
+  return {
+    ...data,
+    longTerm: data.long_term || [],
+    notepadContent: data.notepad_content || '',
+    cdiRate: data.cdi_rate !== null ? data.cdi_rate : 11.25,
+    // Garante que arrays nunca sejam null
+    transactions: data.transactions || [],
+    accounts: data.accounts || [],
+    investments: data.investments || [],
+    notifications: data.notifications || [],
+    months: data.months || [],
+    profile: data.profile || {},
+    theme: data.theme || null // Garante leitura explícita do tema
+  };
+};
+
 // --- AUTH / USER MANAGEMENT ---
 
 export const loginUser = async (email: string) => {
@@ -89,6 +108,40 @@ export const registerUser = async (email: string, name: string, initialData: any
   return { email: normalizedEmail, name };
 };
 
+// --- REALTIME SUBSCRIPTION ---
+
+export const subscribeToUserChanges = (email: string, onUpdate: (data: any) => void) => {
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // Cria um canal específico para este usuário
+  // Isso diz ao Supabase: "Me avise quando houver UPDATE na tabela 'users'
+  // MAS APENAS se o 'email' for igual ao meu e-mail".
+  const channel = supabase
+    .channel(`user-updates-${normalizedEmail}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE', 
+        schema: 'public',
+        table: 'users',
+        filter: `email=eq.${normalizedEmail}` 
+      },
+      (payload) => {
+        // payload.new contém a nova linha inteira do banco de dados (snake_case)
+        if (payload.new) {
+          // Normaliza os dados para camelCase e envia para o callback do React
+          onUpdate(normalizeUserData(payload.new));
+        }
+      }
+    )
+    .subscribe();
+
+  // Retorna função de limpeza para parar de escutar quando sair
+  return () => {
+    supabase.removeChannel(channel);
+  };
+};
+
 // --- DATA SYNC ---
 
 export const saveCollection = async (userId: string, collectionName: string, dataArray: any[]): Promise<boolean> => {
@@ -146,22 +199,4 @@ export const loadUserData = async (userId: string) => {
   }
 
   return normalizeUserData(data);
-};
-
-// Helper para converter os dados do Supabase para o formato do App
-const normalizeUserData = (data: any) => {
-  return {
-    ...data,
-    longTerm: data.long_term || [],
-    notepadContent: data.notepad_content || '',
-    cdiRate: data.cdi_rate !== null ? data.cdi_rate : 11.25,
-    // Garante que arrays nunca sejam null
-    transactions: data.transactions || [],
-    accounts: data.accounts || [],
-    investments: data.investments || [],
-    notifications: data.notifications || [],
-    months: data.months || [],
-    profile: data.profile || {},
-    theme: data.theme || null // Garante leitura explícita do tema
-  };
 };

@@ -23,7 +23,7 @@ import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { IconBell, IconMore } from './components/Icons';
 
 // Supabase Services (Migrated from Firebase)
-import { loginUser, registerUser, loadUserData, saveCollection, saveUserField } from './services/supabase';
+import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges } from './services/supabase';
 
 // Constants
 const MONTH_NAMES = [
@@ -284,7 +284,7 @@ const App: React.FC = () => {
           .catch(err => {
             console.error("Error loading data from Cloud, using LocalStorage fallback:", err);
             loadLocalData();
-            // If cloud failed (e.g. Quota), mark as dirty so we don't try to fetch stale data next time
+            // If cloud failed (e.g. Quota), mark as dirty so we trust LocalStorage next load
             saveData(STORAGE_KEYS.IS_SYNC_DIRTY, true);
           })
           .finally(() => setIsLoadingData(false));
@@ -295,6 +295,23 @@ const App: React.FC = () => {
       setMonths([SYSTEM_INITIAL_MONTH]);
       setUserProfile(INITIAL_PROFILE);
     }
+  }, [currentUserEmail]);
+
+  // --- REALTIME SUBSCRIPTION EFFECT (NOVO) ---
+  useEffect(() => {
+    if (!currentUserEmail) return;
+
+    console.log("Iniciando escuta Realtime para:", currentUserEmail);
+    const unsubscribe = subscribeToUserChanges(currentUserEmail, (newData) => {
+      console.log('Atualização Realtime Recebida!', newData);
+      // Atualiza o estado da tela, mas NÃO dispara o salvamento (loop)
+      // pois o applyData atualiza os 'Refs' de controle
+      applyData(newData);
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, [currentUserEmail]);
 
   const applyData = (data: any) => {
@@ -337,7 +354,10 @@ const App: React.FC = () => {
       if (data.months && data.months.length > 0) {
         const sorted = sortMonths(data.months);
         setMonths(sorted);
-        setActiveMonthId(sorted[sorted.length - 1].id);
+        // Only set active month if not already set, or if it's initial load
+        if (activeMonthId === SYSTEM_INITIAL_MONTH.id || activeMonthId === '1') {
+           setActiveMonthId(sorted[sorted.length - 1].id);
+        }
         prevMonthsRef.current = JSON.stringify(sorted);
       } else {
         setMonths([SYSTEM_INITIAL_MONTH]);
