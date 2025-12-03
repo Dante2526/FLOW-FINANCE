@@ -207,6 +207,37 @@ const App: React.FC = () => {
   const prevNotepadRef = useRef<string>('');
   const prevCdiRef = useRef<number>(11.25);
 
+  // --- CURRENT STATE REFS FOR REALTIME PROTECTION ---
+  // We use these to check if local state is "ahead" of saved state (dirty)
+  const currentStateRef = useRef({
+    transactions,
+    accounts,
+    investments,
+    longTermTransactions,
+    notifications,
+    userProfile,
+    appTheme,
+    months,
+    notepadContent,
+    cdiRate
+  });
+
+  // Update current state ref on every render
+  useEffect(() => {
+    currentStateRef.current = {
+      transactions,
+      accounts,
+      investments,
+      longTermTransactions,
+      notifications,
+      userProfile,
+      appTheme,
+      months,
+      notepadContent,
+      cdiRate
+    };
+  });
+
   // --- SCROLL LOCK EFFECT ---
   useEffect(() => {
     const isAnyModalOpen = 
@@ -303,10 +334,8 @@ const App: React.FC = () => {
 
     console.log("Iniciando escuta Realtime para:", currentUserEmail);
     const unsubscribe = subscribeToUserChanges(currentUserEmail, (newData) => {
-      console.log('Atualização Realtime Recebida!', newData);
-      // Atualiza o estado da tela, mas NÃO dispara o salvamento (loop)
-      // pois o applyData atualiza os 'Refs' de controle
-      applyData(newData);
+      // Aqui usamos a função segura que checa conflitos antes de aplicar
+      applyDataSafe(newData);
     });
 
     return () => {
@@ -315,6 +344,7 @@ const App: React.FC = () => {
   }, [currentUserEmail]);
 
   const applyData = (data: any) => {
+      // Direct apply without checks (used for initial load)
       if (data.profile) {
         setUserProfile(data.profile);
         prevProfileRef.current = JSON.stringify(data.profile);
@@ -368,6 +398,111 @@ const App: React.FC = () => {
       if (data.cdiRate !== undefined) {
         setCdiRate(data.cdiRate);
         prevCdiRef.current = data.cdiRate;
+      }
+  };
+
+  // Safe apply function for Realtime updates
+  const applyDataSafe = (data: any) => {
+      console.log('Realtime update received. Checking for local conflicts...');
+
+      // Helper: Check if local state is different from what we last saved.
+      // If it IS different, it means the user is typing/editing and hasn't saved yet.
+      // We should NOT overwrite their work with the incoming server data.
+      
+      // 1. Transactions
+      const currentTxStr = JSON.stringify(currentStateRef.current.transactions);
+      if (currentTxStr === prevTransactionsRef.current) {
+        if (data.transactions && JSON.stringify(data.transactions) !== currentTxStr) {
+           setTransactions(data.transactions);
+           prevTransactionsRef.current = JSON.stringify(data.transactions);
+        }
+      } else {
+        console.log('Skipping Transactions update - Local changes pending.');
+      }
+
+      // 2. Accounts
+      const currentAccStr = JSON.stringify(currentStateRef.current.accounts);
+      if (currentAccStr === prevAccountsRef.current) {
+         if (data.accounts && JSON.stringify(data.accounts) !== currentAccStr) {
+            setAccounts(data.accounts);
+            prevAccountsRef.current = JSON.stringify(data.accounts);
+         }
+      } else {
+         console.log('Skipping Accounts update - Local changes pending.');
+      }
+
+      // 3. Notepad
+      if (currentStateRef.current.notepadContent === prevNotepadRef.current) {
+         if (data.notepadContent !== undefined && data.notepadContent !== currentStateRef.current.notepadContent) {
+            setNotepadContent(data.notepadContent);
+            prevNotepadRef.current = data.notepadContent;
+         }
+      } else {
+         console.log('Skipping Notepad update - Local changes pending.');
+      }
+
+      // 4. Investments
+      const currentInvStr = JSON.stringify(currentStateRef.current.investments);
+      if (currentInvStr === prevInvestmentsRef.current) {
+         if (data.investments && JSON.stringify(data.investments) !== currentInvStr) {
+            setInvestments(data.investments);
+            prevInvestmentsRef.current = JSON.stringify(data.investments);
+         }
+      }
+
+      // 5. Long Term
+      const currentLTStr = JSON.stringify(currentStateRef.current.longTermTransactions);
+      if (currentLTStr === prevLongTermRef.current) {
+         if (data.longTerm && JSON.stringify(data.longTerm) !== currentLTStr) {
+            setLongTermTransactions(data.longTerm);
+            prevLongTermRef.current = JSON.stringify(data.longTerm);
+         }
+      }
+
+      // 6. Profile
+      const currentProfileStr = JSON.stringify(currentStateRef.current.userProfile);
+      if (currentProfileStr === prevProfileRef.current) {
+         if (data.profile && JSON.stringify(data.profile) !== currentProfileStr) {
+             setUserProfile(data.profile);
+             prevProfileRef.current = JSON.stringify(data.profile);
+         }
+      }
+
+      // 7. Theme
+      const currentThemeStr = JSON.stringify(currentStateRef.current.appTheme);
+      if (currentThemeStr === prevThemeRef.current) {
+         if (data.theme && JSON.stringify(data.theme) !== currentThemeStr) {
+             setAppTheme(data.theme);
+             saveData(STORAGE_KEYS.APP_THEME, data.theme);
+             prevThemeRef.current = JSON.stringify(data.theme);
+         }
+      }
+
+      // 8. Months
+      const currentMonthsStr = JSON.stringify(currentStateRef.current.months);
+      if (currentMonthsStr === prevMonthsRef.current) {
+         if (data.months && JSON.stringify(data.months) !== currentMonthsStr) {
+             const sorted = sortMonths(data.months);
+             setMonths(sorted);
+             prevMonthsRef.current = JSON.stringify(sorted);
+         }
+      }
+      
+      // 9. Notifications (Usually safe to update, but sticking to pattern)
+      const currentNotifStr = JSON.stringify(currentStateRef.current.notifications);
+      if (currentNotifStr === prevNotificationsRef.current) {
+         if (data.notifications && JSON.stringify(data.notifications) !== currentNotifStr) {
+             setNotifications(data.notifications);
+             prevNotificationsRef.current = JSON.stringify(data.notifications);
+         }
+      }
+      
+      // 10. CDI
+      if (currentStateRef.current.cdiRate === prevCdiRef.current) {
+         if (data.cdiRate !== undefined && data.cdiRate !== currentStateRef.current.cdiRate) {
+             setCdiRate(data.cdiRate);
+             prevCdiRef.current = data.cdiRate;
+         }
       }
   };
 
