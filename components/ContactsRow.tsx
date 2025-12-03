@@ -17,7 +17,7 @@ const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick }) 
         {/* Add Button - Bank/Finance */}
         <button 
           onClick={onAddClick}
-          className="w-full aspect-[5/4] rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-lg shadow-black/20 hover:brightness-110 transition-all group border-2 border-transparent"
+          className="w-full aspect-[5/4] rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-lg shadow-black/20 hover:brightness-110 transition-all group border-2 border-transparent hover:border-purple-500/50"
           title="Adicionar Nova Fonte de Renda"
         >
           <Landmark className="w-7 h-7 text-purple-500 group-hover:text-purple-400 transition-colors" />
