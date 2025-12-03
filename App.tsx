@@ -22,8 +22,8 @@ import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, Ap
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { IconBell, IconMore } from './components/Icons';
 
-// Firebase Services
-import { loginUser, registerUser, loadUserData, saveCollection, saveUserField } from './services/firebase';
+// Supabase Services (Migrated from Firebase)
+import { loginUser, registerUser, loadUserData, saveCollection, saveUserField } from './services/supabase';
 
 // Constants
 const MONTH_NAMES = [
@@ -196,8 +196,6 @@ const App: React.FC = () => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
   // --- REFS FOR CHANGE DETECTION (PREVENT WRITE-ON-LOAD) ---
-  // Stores the stringified version of the data that was last synced/loaded.
-  // We only write to Firebase if the current data differs from this ref.
   const prevTransactionsRef = useRef<string>('');
   const prevAccountsRef = useRef<string>('');
   const prevInvestmentsRef = useRef<string>('');
@@ -236,44 +234,61 @@ const App: React.FC = () => {
     isNotificationOpen, isAnalyticsOpen
   ]);
 
-  // --- DATA LOADING EFFECT (Firebase with LocalStorage Fallback) ---
+  // --- DATA LOADING EFFECT (Supabase with LocalStorage Fallback) ---
+  const loadLocalData = () => {
+    const localTransactions = loadData(STORAGE_KEYS.TRANSACTIONS, []);
+    const localAccounts = loadData(STORAGE_KEYS.ACCOUNTS, []);
+    const localInvestments = loadData(STORAGE_KEYS.INVESTMENTS, []);
+    const localLongTerm = loadData(STORAGE_KEYS.LONG_TERM_TRANSACTIONS, []);
+    const localNotifications = loadData(STORAGE_KEYS.NOTIFICATIONS, []);
+    const localProfile = loadData(STORAGE_KEYS.USER_PROFILE, INITIAL_PROFILE);
+    const localMonths = loadData(STORAGE_KEYS.MONTHS, [SYSTEM_INITIAL_MONTH]);
+    const localNotepad = loadData(STORAGE_KEYS.NOTEPAD_CONTENT, '');
+    const localCdi = loadData(STORAGE_KEYS.CDI_RATE, 11.25);
+
+    applyData({
+      profile: localProfile,
+      transactions: localTransactions,
+      accounts: localAccounts,
+      investments: localInvestments,
+      longTerm: localLongTerm,
+      notifications: localNotifications,
+      months: localMonths,
+      notepadContent: localNotepad,
+      cdiRate: localCdi
+    });
+  };
+
   useEffect(() => {
     if (currentUserEmail) {
       setIsLoadingData(true);
-      loadUserData(currentUserEmail)
-        .then((data) => {
-          if (data) {
-            applyData(data);
-          } else {
-            console.log("No remote data found, starting fresh.");
-          }
-        })
-        .catch(err => {
-          console.error("Error loading data from Cloud, trying LocalStorage fallback:", err);
-          // Fallback to LocalStorage
-          const localTransactions = loadData(STORAGE_KEYS.TRANSACTIONS, []);
-          const localAccounts = loadData(STORAGE_KEYS.ACCOUNTS, []);
-          const localInvestments = loadData(STORAGE_KEYS.INVESTMENTS, []);
-          const localLongTerm = loadData(STORAGE_KEYS.LONG_TERM_TRANSACTIONS, []);
-          const localNotifications = loadData(STORAGE_KEYS.NOTIFICATIONS, []);
-          const localProfile = loadData(STORAGE_KEYS.USER_PROFILE, INITIAL_PROFILE);
-          const localMonths = loadData(STORAGE_KEYS.MONTHS, [SYSTEM_INITIAL_MONTH]);
-          const localNotepad = loadData(STORAGE_KEYS.NOTEPAD_CONTENT, '');
-          const localCdi = loadData(STORAGE_KEYS.CDI_RATE, 11.25);
 
-          applyData({
-            profile: localProfile,
-            transactions: localTransactions,
-            accounts: localAccounts,
-            investments: localInvestments,
-            longTerm: localLongTerm,
-            notifications: localNotifications,
-            months: localMonths,
-            notepadContent: localNotepad,
-            cdiRate: localCdi
-          });
-        })
-        .finally(() => setIsLoadingData(false));
+      // CRITICAL: Check if we have pending syncs (Local data is newer than Cloud)
+      const isSyncDirty = loadData(STORAGE_KEYS.IS_SYNC_DIRTY, false);
+
+      if (isSyncDirty) {
+        console.log("Local changes pending (Quota/Network Error). Loading from LocalStorage to prevent overwrite.");
+        loadLocalData();
+        // Allow the useEffect save hooks to eventually sync this when they run
+        setIsLoadingData(false);
+      } else {
+        loadUserData(currentUserEmail)
+          .then((data) => {
+            if (data) {
+              applyData(data);
+            } else {
+              console.log("No remote data found, starting fresh.");
+              loadLocalData(); // Try local if remote is empty
+            }
+          })
+          .catch(err => {
+            console.error("Error loading data from Cloud, using LocalStorage fallback:", err);
+            loadLocalData();
+            // If cloud failed (e.g. Quota), mark as dirty so we don't try to fetch stale data next time
+            saveData(STORAGE_KEYS.IS_SYNC_DIRTY, true);
+          })
+          .finally(() => setIsLoadingData(false));
+      }
     } else {
       setTransactions([]);
       setAccounts([]);
@@ -336,19 +351,29 @@ const App: React.FC = () => {
       }
   };
 
-  // --- SAVING EFFECTS WITH DEBOUNCE (Firebase + LocalStorage) ---
+  // --- SAVING EFFECTS WITH DEBOUNCE (Supabase + LocalStorage) ---
   const DEBOUNCE_DELAY = 1500;
+
+  // Helper to handle Sync Status
+  const handleSyncResult = (success: boolean) => {
+    if (success) {
+      saveData(STORAGE_KEYS.IS_SYNC_DIRTY, false);
+    } else {
+      // If save failed (e.g. Quota), mark as dirty so we trust LocalStorage next load
+      saveData(STORAGE_KEYS.IS_SYNC_DIRTY, true);
+    }
+  };
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(transactions);
       
-      // Only save if content has actually changed from what we loaded/saved last
       if (currentStr !== prevTransactionsRef.current) {
         saveData(STORAGE_KEYS.TRANSACTIONS, transactions);
         
-        const timer = setTimeout(() => {
-          saveCollection(currentUserEmail, "transactions", transactions);
+        const timer = setTimeout(async () => {
+          const success = await saveCollection(currentUserEmail, "transactions", transactions);
+          handleSyncResult(success);
           prevTransactionsRef.current = currentStr;
         }, DEBOUNCE_DELAY);
         return () => clearTimeout(timer);
@@ -363,8 +388,9 @@ const App: React.FC = () => {
       if (currentStr !== prevAccountsRef.current) {
         saveData(STORAGE_KEYS.ACCOUNTS, accounts);
         
-        const timer = setTimeout(() => {
-          saveCollection(currentUserEmail, "accounts", accounts);
+        const timer = setTimeout(async () => {
+          const success = await saveCollection(currentUserEmail, "accounts", accounts);
+          handleSyncResult(success);
           prevAccountsRef.current = currentStr;
         }, DEBOUNCE_DELAY);
         return () => clearTimeout(timer);
@@ -379,8 +405,9 @@ const App: React.FC = () => {
       if (currentStr !== prevInvestmentsRef.current) {
         saveData(STORAGE_KEYS.INVESTMENTS, investments);
         
-        const timer = setTimeout(() => {
-          saveCollection(currentUserEmail, "investments", investments);
+        const timer = setTimeout(async () => {
+          const success = await saveCollection(currentUserEmail, "investments", investments);
+          handleSyncResult(success);
           prevInvestmentsRef.current = currentStr;
         }, DEBOUNCE_DELAY);
         return () => clearTimeout(timer);
@@ -395,8 +422,9 @@ const App: React.FC = () => {
       if (currentStr !== prevLongTermRef.current) {
         saveData(STORAGE_KEYS.LONG_TERM_TRANSACTIONS, longTermTransactions);
         
-        const timer = setTimeout(() => {
-          saveCollection(currentUserEmail, "longTerm", longTermTransactions);
+        const timer = setTimeout(async () => {
+          const success = await saveCollection(currentUserEmail, "longTerm", longTermTransactions);
+          handleSyncResult(success);
           prevLongTermRef.current = currentStr;
         }, DEBOUNCE_DELAY);
         return () => clearTimeout(timer);
@@ -411,8 +439,9 @@ const App: React.FC = () => {
       if (currentStr !== prevNotificationsRef.current) {
         saveData(STORAGE_KEYS.NOTIFICATIONS, notifications);
         
-        const timer = setTimeout(() => {
-          saveCollection(currentUserEmail, "notifications", notifications);
+        const timer = setTimeout(async () => {
+          const success = await saveCollection(currentUserEmail, "notifications", notifications);
+          handleSyncResult(success);
           prevNotificationsRef.current = currentStr;
         }, DEBOUNCE_DELAY);
         return () => clearTimeout(timer);
@@ -427,8 +456,9 @@ const App: React.FC = () => {
       if (currentStr !== prevProfileRef.current) {
         saveData(STORAGE_KEYS.USER_PROFILE, userProfile);
         
-        const timer = setTimeout(() => {
-           saveUserField(currentUserEmail, "profile", userProfile);
+        const timer = setTimeout(async () => {
+           const success = await saveUserField(currentUserEmail, "profile", userProfile);
+           handleSyncResult(success);
            prevProfileRef.current = currentStr;
         }, 1000);
         return () => clearTimeout(timer);
@@ -460,8 +490,9 @@ const App: React.FC = () => {
        if (currentStr !== prevMonthsRef.current) {
          saveData(STORAGE_KEYS.MONTHS, months);
          
-         const timer = setTimeout(() => {
-           saveUserField(currentUserEmail, "months", months);
+         const timer = setTimeout(async () => {
+           const success = await saveUserField(currentUserEmail, "months", months);
+           handleSyncResult(success);
            prevMonthsRef.current = currentStr;
          }, 1000);
          return () => clearTimeout(timer);
@@ -474,8 +505,9 @@ const App: React.FC = () => {
       if (notepadContent !== prevNotepadRef.current) {
         saveData(STORAGE_KEYS.NOTEPAD_CONTENT, notepadContent);
         
-        const timer = setTimeout(() => {
-          saveUserField(currentUserEmail, "notepadContent", notepadContent);
+        const timer = setTimeout(async () => {
+          const success = await saveUserField(currentUserEmail, "notepadContent", notepadContent);
+          handleSyncResult(success);
           prevNotepadRef.current = notepadContent;
         }, 2000); 
         return () => clearTimeout(timer);

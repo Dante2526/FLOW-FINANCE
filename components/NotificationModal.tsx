@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare, CloudLightning, Loader2, Check } from 'lucide-react';
 import { AppNotification } from '../types';
-import { saveUserField } from '../services/firebase';
+import { saveUserField } from '../services/supabase';
 
 interface Props {
   isOpen: boolean;

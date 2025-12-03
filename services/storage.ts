@@ -11,7 +11,8 @@ export const STORAGE_KEYS = {
   INVESTMENTS: 'flow_investments',
   CDI_RATE: 'flow_cdi_rate',
   NOTEPAD_CONTENT: 'flow_notepad_content',
-  USER_SESSION: 'flow_user_session', // New key for auth
+  USER_SESSION: 'flow_user_session',
+  IS_SYNC_DIRTY: 'flow_is_sync_dirty', // New key to track if local data is ahead of cloud
 };
 
 // Generic load function

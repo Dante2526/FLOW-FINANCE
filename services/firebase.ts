@@ -83,32 +83,36 @@ export const registerUser = async (email: string, name: string, initialData: any
 // --- OPTIMIZED SYNC HELPERS ---
 
 // OPTIMIZATION: Save as a single document containing the array.
-// This significantly reduces Write operations (1 write vs N items).
-export const saveCollection = async (userId: string, collectionName: string, dataArray: any[]) => {
+// Returns TRUE if success, FALSE if failed (e.g. Quota Exceeded)
+export const saveCollection = async (userId: string, collectionName: string, dataArray: any[]): Promise<boolean> => {
   await ensureAuth();
   const normalizedEmail = userId.toLowerCase().trim();
   
   try {
     // Saves to users/{email}/app_data/{collectionName} -> { items: [...] }
     const docRef = doc(db, "users", normalizedEmail, "app_data", collectionName);
-    await setDoc(docRef, { items: dataArray });
+    await setDoc(docRef, { items: dataArray, lastUpdated: Date.now() });
+    return true;
   } catch (error: any) {
     console.error(`Error saving ${collectionName}:`, error);
     // Silent fail on quota exceeded to allow local storage to take over in App.tsx
     if (error.code === 'resource-exhausted') {
-       console.warn("Firestore Quota Exceeded. Data saved locally only.");
+       console.warn("Firestore Quota Exceeded. Marked for sync later.");
     }
+    return false;
   }
 };
 
-export const saveUserField = async (userId: string, field: string, data: any) => {
+export const saveUserField = async (userId: string, field: string, data: any): Promise<boolean> => {
   await ensureAuth();
   const normalizedEmail = userId.toLowerCase().trim();
   try {
     const userRef = doc(db, "users", normalizedEmail);
     await setDoc(userRef, { [field]: data }, { merge: true });
+    return true;
   } catch (error: any) {
     console.error(`Error saving field ${field}:`, error);
+    return false;
   }
 };
 
@@ -134,13 +138,11 @@ export const loadUserData = async (userId: string) => {
           return docSnap.data().items || [];
         }
       } catch (err: any) {
-        console.warn(`Attempted new format load for ${colName}`, err);
         // If quota exceeded, stop trying to read legacy to save reads
         if (err.code === 'resource-exhausted') throw err;
       }
 
       // 2. Fallback: Legacy Subcollection users/{email}/{colName}
-      // ONLY if new format failed/empty. 
       try {
         const colRef = collection(db, "users", normalizedEmail, colName);
         const snap = await getDocs(colRef);
@@ -149,7 +151,6 @@ export const loadUserData = async (userId: string) => {
           return snap.docs.map(d => d.data());
         }
       } catch (err: any) {
-        console.warn(`Error loading legacy format for ${colName}`, err);
         if (err.code === 'resource-exhausted') throw err;
       }
 
