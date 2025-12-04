@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, Crown, BarChart3, Users, Zap, CheckCircle2 } from 'lucide-react';
+import { X, Crown, BarChart3, Users, CheckCircle2, Palette, Building } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -33,19 +33,44 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade }) => {
             <h2 className="text-2xl font-black text-white italic tracking-wide uppercase mb-1">
               Seja <span className="text-yellow-500">PRO</span>
             </h2>
-            <p className="text-gray-400 text-sm mb-8">Desbloqueie todo o potencial financeiro.</p>
+            <p className="text-gray-400 text-sm mb-6">Desbloqueie todo o potencial financeiro.</p>
 
-            <div className="flex flex-col gap-6 w-full mb-8">
+            <div className="flex flex-col gap-5 w-full mb-8">
+                
+                {/* Analytics */}
                 <div className="flex items-center gap-4 text-left">
                     <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
                         <BarChart3 className="w-6 h-6 text-blue-500" />
                     </div>
                     <div>
                         <h3 className="text-white font-bold text-sm">Análise Completa</h3>
-                        <p className="text-xs text-gray-500">Gráficos detalhados de gastos.</p>
+                        <p className="text-xs text-gray-500">Gráficos detalhados e insights.</p>
                     </div>
                 </div>
 
+                {/* Customization */}
+                <div className="flex items-center gap-4 text-left">
+                    <div className="w-10 h-10 rounded-xl bg-pink-500/10 flex items-center justify-center shrink-0">
+                        <Palette className="w-6 h-6 text-pink-500" />
+                    </div>
+                    <div>
+                        <h3 className="text-white font-bold text-sm">Temas Premium</h3>
+                        <p className="text-xs text-gray-500">7 Cores de App + Cores de Cartão.</p>
+                    </div>
+                </div>
+
+                {/* Investments */}
+                <div className="flex items-center gap-4 text-left">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                        <Building className="w-6 h-6 text-emerald-500" />
+                    </div>
+                    <div>
+                        <h3 className="text-white font-bold text-sm">Investidor FIIs</h3>
+                        <p className="text-xs text-gray-500">Acesso a Fundos Imobiliários.</p>
+                    </div>
+                </div>
+
+                {/* Avatars */}
                 <div className="flex items-center gap-4 text-left">
                     <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
                         <Users className="w-6 h-6 text-purple-500" />
@@ -56,15 +81,6 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade }) => {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4 text-left">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-                        <Zap className="w-6 h-6 text-emerald-500" />
-                    </div>
-                    <div>
-                        <h3 className="text-white font-bold text-sm">Sem Limites</h3>
-                        <p className="text-xs text-gray-500">Crie contas ilimitadas.</p>
-                    </div>
-                </div>
             </div>
 
             <button 

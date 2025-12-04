@@ -108,6 +108,20 @@ export const registerUser = async (email: string, name: string, initialData: any
   return { email: normalizedEmail, name };
 };
 
+export const deleteUser = async (email: string) => {
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  const { error } = await supabase
+    .from('users')
+    .delete()
+    .eq('email', normalizedEmail);
+
+  if (error) {
+    console.error("Erro ao deletar usuário:", error);
+    throw new Error("Erro ao excluir conta: " + error.message);
+  }
+};
+
 // --- REALTIME SUBSCRIPTION ---
 
 export const subscribeToUserChanges = (email: string, onUpdate: (data: any) => void) => {

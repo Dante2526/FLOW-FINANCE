@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Check } from 'lucide-react';
+import { X, Check, Lock, Crown } from 'lucide-react';
 import { CardTheme, Account } from '../types';
 
 interface Props {
@@ -8,18 +8,20 @@ interface Props {
   onClose: () => void;
   onSave: (name: string, balance: number, theme: CardTheme) => void;
   accountToEdit?: Account | null;
+  isPro?: boolean;
+  onOpenProModal?: () => void;
 }
 
-const THEMES: { id: CardTheme; color: string; label: string }[] = [
+const THEMES: { id: CardTheme; color: string; label: string; isPro?: boolean }[] = [
   { id: 'default', color: 'bg-[#1c1c1e]', label: 'Padrão' },
-  { id: 'lime', color: 'bg-[#65a30d]', label: 'Verde Cana' }, // Updated color
+  { id: 'lime', color: 'bg-[#65a30d]', label: 'Verde Cana' },
   { id: 'purple', color: 'bg-purple-600', label: 'Roxo' },
-  { id: 'blue', color: 'bg-blue-600', label: 'Azul' },
-  { id: 'orange', color: 'bg-orange-500', label: 'Laranja' },
-  { id: 'red', color: 'bg-red-600', label: 'Vermelho' },
+  { id: 'blue', color: 'bg-blue-600', label: 'Azul', isPro: true },
+  { id: 'orange', color: 'bg-orange-500', label: 'Laranja', isPro: true },
+  { id: 'red', color: 'bg-red-600', label: 'Vermelho', isPro: true },
 ];
 
-const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEdit }) => {
+const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEdit, isPro = false, onOpenProModal }) => {
   const [balance, setBalance] = useState('');
   const [name, setName] = useState('');
   const [selectedTheme, setSelectedTheme] = useState<CardTheme>('default');
@@ -56,6 +58,14 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
       setSelectedTheme('default');
     }
     onClose();
+  };
+
+  const handleThemeSelect = (theme: typeof THEMES[0]) => {
+    if (theme.isPro && !isPro) {
+      if (onOpenProModal) onOpenProModal();
+      return;
+    }
+    setSelectedTheme(theme.id);
   };
 
   const isFormValid = name.length > 0;
@@ -118,24 +128,39 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
           {/* Color Selection */}
           <div className="flex flex-col gap-2">
             <label className="text-gray-400 text-sm ml-2">Cor do Cartão</label>
-            <div className="flex gap-3 overflow-x-auto py-1 px-1 no-scrollbar">
-              {THEMES.map((theme) => (
-                <button
-                  key={theme.id}
-                  type="button"
-                  onClick={() => setSelectedTheme(theme.id)}
-                  className={`w-12 h-12 rounded-full flex-shrink-0 ${theme.color} flex items-center justify-center transition-all border-2 ${
-                    selectedTheme === theme.id 
-                      ? 'border-white scale-110 shadow-lg' 
-                      : 'border-transparent opacity-80 hover:opacity-100'
-                  }`}
-                  aria-label={theme.label}
-                >
-                  {selectedTheme === theme.id && (
-                    <Check className={`w-5 h-5 ${theme.id === 'lime' ? 'text-white' : 'text-white'}`} />
-                  )}
-                </button>
-              ))}
+            <div className="flex gap-3 overflow-x-auto py-1 px-1 no-scrollbar pb-2">
+              {THEMES.map((theme) => {
+                const isLocked = theme.isPro && !isPro;
+                return (
+                  <button
+                    key={theme.id}
+                    type="button"
+                    onClick={() => handleThemeSelect(theme)}
+                    className={`relative w-12 h-12 rounded-full flex-shrink-0 ${theme.color} flex items-center justify-center transition-all border-2 ${
+                      selectedTheme === theme.id 
+                        ? 'border-white scale-110 shadow-lg z-10' 
+                        : isLocked 
+                          ? 'border-transparent opacity-60' 
+                          : 'border-transparent opacity-80 hover:opacity-100'
+                    }`}
+                    aria-label={theme.label}
+                  >
+                    {selectedTheme === theme.id && (
+                      <Check className="w-5 h-5 text-white" />
+                    )}
+                    {isLocked && selectedTheme !== theme.id && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-full">
+                         <Lock className="w-4 h-4 text-white/90 drop-shadow-md" />
+                      </div>
+                    )}
+                    {theme.isPro && (
+                       <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-0.5 shadow-sm border border-black/10">
+                          <Crown className="w-2 h-2 text-black fill-black" />
+                       </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
 

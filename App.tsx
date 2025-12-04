@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -24,7 +25,7 @@ import { IconBell, IconMore } from './components/Icons';
 import { Crown } from 'lucide-react';
 
 // Supabase Services (Migrated from Firebase)
-import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges } from './services/supabase';
+import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, deleteUser } from './services/supabase';
 
 // Constants
 const MONTH_NAMES = [
@@ -815,6 +816,40 @@ const App: React.FC = () => {
     setCurrentUserEmail(null);
     setIsProfileModalOpen(false);
   };
+  
+  const handleDeleteUserAccount = async () => {
+    if (!currentUserEmail) return;
+
+    if (window.confirm("ATENÇÃO: Você está prestes a excluir sua conta permanentemente.\n\nTodos os seus dados (transações, contas, investimentos) serão apagados do servidor e não poderão ser recuperados.\n\nDeseja continuar?")) {
+       if (window.confirm("Tem certeza absoluta? Esta ação é irreversível.")) {
+          try {
+             setIsLoadingData(true);
+             await deleteUser(currentUserEmail);
+             
+             // Cleanup Local Storage
+             localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
+             localStorage.removeItem(STORAGE_KEYS.ACCOUNTS);
+             localStorage.removeItem(STORAGE_KEYS.MONTHS);
+             localStorage.removeItem(STORAGE_KEYS.USER_PROFILE);
+             localStorage.removeItem(STORAGE_KEYS.APP_THEME);
+             localStorage.removeItem(STORAGE_KEYS.LONG_TERM_TRANSACTIONS);
+             localStorage.removeItem(STORAGE_KEYS.NOTIFICATIONS);
+             localStorage.removeItem(STORAGE_KEYS.INVESTMENTS);
+             localStorage.removeItem(STORAGE_KEYS.CDI_RATE);
+             localStorage.removeItem(STORAGE_KEYS.NOTEPAD_CONTENT);
+             localStorage.removeItem(STORAGE_KEYS.IS_SYNC_DIRTY);
+             
+             handleLogout();
+             alert("Conta excluída com sucesso.");
+          } catch (error: any) {
+             console.error(error);
+             alert("Falha ao excluir conta: " + error.message);
+          } finally {
+             setIsLoadingData(false);
+          }
+       }
+    }
+  };
 
   const handleOpenProfile = () => setIsProfileModalOpen(true);
   const handleOpenAddTransaction = () => setIsAddTransactionOpen(true);
@@ -1162,14 +1197,7 @@ const App: React.FC = () => {
 
             {/* Secondary Cards (Accounts) */}
             <div className="mb-0">
-               <div className="flex justify-between items-center mb-3 pl-1">
-                 <h2 className="text-xl font-medium text-gray-400">FONTES DE RENDA</h2>
-               </div>
-               
-               {filteredAccounts.length === 0 ? (
-                 <div className="w-full h-32" />
-               ) : (
-                 filteredAccounts.map(acc => (
+               {filteredAccounts.map(acc => (
                    <SecondaryCard 
                      key={acc.id} 
                      account={acc} 
@@ -1177,7 +1205,7 @@ const App: React.FC = () => {
                      onEdit={handleEditAccount}
                    />
                  ))
-               )}
+               }
             </div>
 
             <ContactsRow 
@@ -1246,6 +1274,8 @@ const App: React.FC = () => {
         onClose={handleCloseAddAccount} 
         onSave={handleSaveAccount}
         accountToEdit={editingAccount}
+        isPro={!!userProfile.isPro}
+        onOpenProModal={() => setIsProModalOpen(true)}
       />
 
       <CalculatorModal 
@@ -1258,6 +1288,7 @@ const App: React.FC = () => {
          onClose={handleCloseProfile}
          onSave={(p) => setUserProfile(p)}
          onLogout={handleLogout}
+         onDeleteAccount={handleDeleteUserAccount}
          currentProfile={userProfile}
       />
 

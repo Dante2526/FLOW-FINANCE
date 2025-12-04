@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Check, LogOut, Lock, Crown } from 'lucide-react';
+import { X, Check, LogOut, Lock, Crown, Trash2 } from 'lucide-react';
 import { UserProfile } from '../types';
 
 interface Props {
@@ -8,6 +8,7 @@ interface Props {
   onClose: () => void;
   onSave: (profile: UserProfile) => void;
   onLogout: () => void;
+  onDeleteAccount: () => void;
   currentProfile: UserProfile;
 }
 
@@ -29,7 +30,7 @@ const PRESET_AVATARS = [
   "https://api.dicebear.com/9.x/adventurer/svg?seed=Annie",
 ];
 
-const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, currentProfile }) => {
+const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, onDeleteAccount, currentProfile }) => {
   const [name, setName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   // Developer toggle to simulate subscription status inside the edit modal
@@ -89,10 +90,10 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5 flex-1 min-h-0">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5 flex-1 min-h-0 overflow-y-auto no-scrollbar">
           
           {/* Current Avatar Preview */}
-          <div className="flex justify-center flex-shrink-0">
+          <div className="flex justify-center flex-shrink-0 mt-2">
             <div className="w-20 h-20 rounded-full border-4 border-accent overflow-hidden relative shadow-lg shadow-accent/20 bg-white/10">
               <img 
                 src={avatarUrl} 
@@ -115,14 +116,14 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
             />
           </div>
 
-          {/* Avatar Selection */}
+          {/* Avatar Selection - Horizontal Scroll */}
           <div className="flex flex-col gap-2 flex-shrink-0">
             <div className="flex justify-between items-end ml-2 mr-2">
                <label className="text-gray-400 text-sm">Escolher Avatar</label>
                {!isPro && <span className="text-[10px] text-yellow-500 font-bold flex items-center gap-1"><Lock className="w-3 h-3" /> 8 Bloqueados</span>}
             </div>
             
-            <div className="grid grid-cols-4 gap-2 p-1 pb-2 overflow-y-auto max-h-48 no-scrollbar">
+            <div className="flex gap-3 p-1 pb-4 overflow-x-auto no-scrollbar">
               {PRESET_AVATARS.map((url, index) => {
                 const isPremium = index >= 4;
                 const isLocked = isPremium && !isPro;
@@ -134,9 +135,9 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
                     type="button"
                     onClick={() => handleAvatarSelect(url, index)}
                     disabled={isLocked}
-                    className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all ${
+                    className={`relative w-20 h-20 shrink-0 rounded-xl overflow-hidden border-2 transition-all ${
                       isSelected
-                        ? 'border-accent opacity-100 scale-105 z-10' 
+                        ? 'border-accent opacity-100 scale-105 z-10 shadow-lg shadow-accent/20' 
                         : 'border-transparent opacity-100 hover:opacity-80'
                     } ${isLocked ? 'opacity-50 cursor-not-allowed bg-black/40' : 'bg-white/5'}`}
                   >
@@ -159,7 +160,7 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
           </div>
 
           {/* Buttons Group */}
-          <div className="flex flex-col gap-3 mt-auto flex-shrink-0">
+          <div className="flex flex-col gap-3 mt-auto flex-shrink-0 pb-2">
             
              {/* Dev/Simulated PRO Toggle */}
              <div className="flex items-center justify-between bg-[#2c2c2e] p-3 rounded-2xl border border-white/5">
@@ -190,10 +191,19 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
             <button 
               type="button"
               onClick={onLogout}
-              className="w-full bg-[#2c2c2e] text-red-500 h-14 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#3a3a3c] transition-colors"
+              className="w-full bg-[#2c2c2e] text-white h-14 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#3a3a3c] transition-colors"
             >
               Sair da Conta
               <LogOut className="w-5 h-5" />
+            </button>
+
+            <button 
+              type="button"
+              onClick={onDeleteAccount}
+              className="w-full bg-transparent border border-red-900/30 text-red-600 h-14 rounded-[1.5rem] font-bold text-sm flex items-center justify-center gap-2 hover:bg-red-950/10 transition-colors mt-2"
+            >
+              Excluir Conta Permanentemente
+              <Trash2 className="w-4 h-4" />
             </button>
           </div>
 
