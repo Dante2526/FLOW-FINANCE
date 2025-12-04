@@ -27,6 +27,9 @@ import { Crown } from 'lucide-react';
 // Supabase Services (Migrated from Firebase)
 import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, deleteUser } from './services/supabase';
 
+// VIP Emails List - Premium de fábrica
+const VIP_EMAILS = ['naylanmoreira350@gmail.com', 'lopesisa40@gmail.com'];
+
 // Constants
 const MONTH_NAMES = [
   'JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 
@@ -345,8 +348,13 @@ const App: React.FC = () => {
 
   const applyData = (data: any) => {
       if (data.profile) {
-        setUserProfile(data.profile);
-        prevProfileRef.current = JSON.stringify(data.profile);
+        let profile = data.profile;
+        // Enforce VIP Status
+        if (currentUserEmail && VIP_EMAILS.includes(currentUserEmail.toLowerCase())) {
+           profile = { ...profile, isPro: true };
+        }
+        setUserProfile(profile);
+        prevProfileRef.current = JSON.stringify(profile);
       }
       if (data.transactions) {
         setTransactions(data.transactions);
@@ -444,8 +452,13 @@ const App: React.FC = () => {
       const currentProfileStr = JSON.stringify(currentStateRef.current.userProfile);
       if (currentProfileStr === prevProfileRef.current) {
          if (data.profile && JSON.stringify(data.profile) !== currentProfileStr) {
-             setUserProfile(data.profile);
-             prevProfileRef.current = JSON.stringify(data.profile);
+             let profile = data.profile;
+             // Enforce VIP Status on realtime update too
+             if (currentUserEmail && VIP_EMAILS.includes(currentUserEmail.toLowerCase())) {
+                profile = { ...profile, isPro: true };
+             }
+             setUserProfile(profile);
+             prevProfileRef.current = JSON.stringify(profile);
          }
       }
 

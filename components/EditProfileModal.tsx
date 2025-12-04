@@ -33,14 +33,11 @@ const PRESET_AVATARS = [
 const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, onDeleteAccount, currentProfile }) => {
   const [name, setName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
-  // Developer toggle to simulate subscription status inside the edit modal
-  const [isPro, setIsPro] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
       setName(currentProfile.name);
       setAvatarUrl(currentProfile.avatarUrl);
-      setIsPro(!!currentProfile.isPro);
     }
   }, [isOpen, currentProfile]);
 
@@ -54,14 +51,14 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
       name,
       subtitle: '', 
       avatarUrl: avatarUrl,
-      isPro: isPro // Persist the toggled state
+      isPro: currentProfile.isPro // Mantém o status atual (gerenciado pelo App)
     });
     onClose();
   };
 
   const handleAvatarSelect = (url: string, index: number) => {
     const isPremium = index >= 4;
-    if (isPremium && !isPro) {
+    if (isPremium && !currentProfile.isPro) {
       // Shake animation or visual feedback could go here
       return;
     }
@@ -76,7 +73,7 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
         <div className="flex justify-between items-center flex-shrink-0">
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-white">Editar Perfil</h2>
-            {isPro && (
+            {currentProfile.isPro && (
                <div className="bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full text-[10px] font-bold border border-yellow-500/50 flex items-center gap-1">
                  <Crown className="w-3 h-3" fill="currentColor" /> PRO
                </div>
@@ -120,13 +117,13 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
           <div className="flex flex-col gap-2 flex-shrink-0">
             <div className="flex justify-between items-end ml-2 mr-2">
                <label className="text-gray-400 text-sm">Escolher Avatar</label>
-               {!isPro && <span className="text-[10px] text-yellow-500 font-bold flex items-center gap-1"><Lock className="w-3 h-3" /> 8 Bloqueados</span>}
+               {!currentProfile.isPro && <span className="text-[10px] text-yellow-500 font-bold flex items-center gap-1"><Lock className="w-3 h-3" /> 8 Bloqueados</span>}
             </div>
             
             <div className="flex gap-3 p-1 pb-4 overflow-x-auto no-scrollbar">
               {PRESET_AVATARS.map((url, index) => {
                 const isPremium = index >= 4;
-                const isLocked = isPremium && !isPro;
+                const isLocked = isPremium && !currentProfile.isPro;
                 const isSelected = avatarUrl === url;
 
                 return (
@@ -162,24 +159,6 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
           {/* Buttons Group */}
           <div className="flex flex-col gap-3 mt-auto flex-shrink-0 pb-2">
             
-             {/* Dev/Simulated PRO Toggle */}
-             <div className="flex items-center justify-between bg-[#2c2c2e] p-3 rounded-2xl border border-white/5">
-                <div className="flex items-center gap-2">
-                   <Crown className={`w-5 h-5 ${isPro ? 'text-yellow-500 fill-yellow-500' : 'text-gray-500'}`} />
-                   <div className="flex flex-col">
-                      <span className={`text-sm font-bold ${isPro ? 'text-white' : 'text-gray-400'}`}>Status PRO</span>
-                      <span className="text-[10px] text-gray-500">Simulação de Assinatura</span>
-                   </div>
-                </div>
-                <button 
-                   type="button"
-                   onClick={() => setIsPro(!isPro)}
-                   className={`w-12 h-7 rounded-full transition-colors relative ${isPro ? 'bg-yellow-500' : 'bg-gray-600'}`}
-                >
-                   <div className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform shadow-sm ${isPro ? 'left-6' : 'left-1'}`} />
-                </button>
-             </div>
-
             <button 
               type="submit"
               className="w-full bg-accent text-black h-14 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-2 hover:bg-accentDark transition-colors shadow-lg"
