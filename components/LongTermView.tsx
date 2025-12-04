@@ -377,16 +377,16 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                        {isPaid && <Check className="w-3 h-3 text-white" />}
                    </div>
                    
-                   {/* Specific Edit Button - Visible on column hover */}
+                   {/* Specific Edit Button - Re-positioned to be strictly on the right side */}
                    <button 
                       onClick={(e) => {
                           e.stopPropagation();
                           openEditInstallmentModal(index, amount);
                       }}
-                      className="absolute inset-0 flex items-center justify-end pr-2 opacity-0 group-hover/col:opacity-100 transition-opacity bg-black/20 rounded-r-2xl"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center opacity-0 group-hover/col:opacity-100 transition-opacity bg-black/40 hover:bg-black/60 rounded-full z-20 backdrop-blur-sm"
                       title="Editar valor desta parcela"
                    >
-                      <Edit2 className="w-3 h-3 text-white" />
+                      <Edit2 className="w-3.5 h-3.5 text-white" />
                    </button>
                 </div>
               </div>
