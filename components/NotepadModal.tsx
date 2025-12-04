@@ -78,80 +78,67 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
   };
 
   return (
-    <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-hidden">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       {/* 
-        Layout Strategy:
-        - Mobile: Absolute positioning from top (top-24). This detaches it from the flex flow relative to viewport height,
-          preventing 'jumps' when the keyboard resizes the viewport. It strictly anchors to the top visual edge.
-        - Desktop (sm): Flex centering for standard modal behavior.
+        Container:
+        - h-[500px]: Altura base similar ao modal de Nova Fonte de Renda preenchido.
+        - max-h-[90dvh]: Garante que nunca ultrapasse 90% da altura visível (útil quando teclado abre).
+        - flex flex-col: Permite que o conteúdo interno encolha/cresça.
       */}
-      <div className="w-full h-full relative sm:flex sm:items-center sm:justify-center">
+      <div className="bg-[#1c1c1e] w-full max-w-sm h-[500px] max-h-[90dvh] rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col transition-all overflow-hidden">
         
-        <div className="
-          absolute top-24 left-0 right-0 mx-auto
-          sm:static sm:mx-0 sm:mt-0
-          bg-[#1c1c1e] 
-          w-full max-w-sm 
-          h-[500px] 
-          rounded-[2.5rem] 
-          shadow-2xl border border-white/5 
-          flex flex-col 
-          overflow-hidden
-        ">
-          
-          {/* Header */}
-          <div className="flex justify-between items-center p-6 pb-4 shrink-0">
-            <div className="flex items-center gap-3">
-               <div className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center border border-white/5">
-                  <NotebookPen className="w-5 h-5 text-yellow-500" />
-               </div>
-               <div>
-                  <h2 className="text-xl font-bold text-white leading-none">Smart Notes</h2>
-                  <p className="text-[10px] text-gray-400 mt-1">Digite calculos (ex: 10 + 20 =)</p>
-               </div>
-            </div>
-            
-            <div className="flex gap-2">
-              <button 
-                onClick={handleClear} 
-                className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-white/10 transition-colors"
-                title="Limpar"
-              >
-                <Eraser className="w-5 h-5 text-gray-400" />
-              </button>
-              <button 
-                onClick={handleClose} 
-                className="w-10 h-10 rounded-full bg-accent flex items-center justify-center hover:bg-accentDark transition-colors"
-              >
-                <X className="w-5 h-5 text-black" />
-              </button>
-            </div>
-          </div>
-
-          {/* Paper Area */}
-          <div className="flex-1 min-h-0 px-2 pb-2">
-             <div className="w-full h-full bg-[#2c2c2e]/50 rounded-[2rem] p-4 relative overflow-hidden border border-white/5">
-                <textarea
-                  ref={textareaRef}
-                  value={content}
-                  onChange={handleChange}
-                  placeholder="Comece a digitar..."
-                  className="w-full h-full bg-transparent text-white text-lg leading-relaxed outline-none resize-none placeholder-gray-600 font-medium scrollbar-thin scrollbar-thumb-gray-600"
-                  style={{ fontFamily: 'Inter, sans-serif' }}
-                  autoFocus
-                />
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 pb-4 shrink-0">
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center border border-white/5">
+                <NotebookPen className="w-5 h-5 text-yellow-500" />
+             </div>
+             <div>
+                <h2 className="text-xl font-bold text-white leading-none">Smart Notes</h2>
+                <p className="text-[10px] text-gray-400 mt-1">Digite calculos (ex: 10 + 20 =)</p>
              </div>
           </div>
-
-          {/* Footer info */}
-          <div className="px-6 pb-6 pt-2 flex justify-between text-xs text-gray-500 font-medium shrink-0">
-             <span>{content.length} caracteres</span>
-             <span className="flex items-center gap-1">
-               <Save className="w-3 h-3" /> Salvo automaticamente
-             </span>
+          
+          <div className="flex gap-2">
+            <button 
+              onClick={handleClear} 
+              className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-white/10 transition-colors"
+              title="Limpar"
+            >
+              <Eraser className="w-5 h-5 text-gray-400" />
+            </button>
+            <button 
+              onClick={handleClose} 
+              className="w-10 h-10 rounded-full bg-accent flex items-center justify-center hover:bg-accentDark transition-colors"
+            >
+              <X className="w-5 h-5 text-black" />
+            </button>
           </div>
-
         </div>
+
+        {/* Paper Area - flex-1 allows it to fill space or shrink if parent gets smaller (keyboard) */}
+        <div className="flex-1 min-h-0 px-2 pb-2">
+           <div className="w-full h-full bg-[#2c2c2e]/50 rounded-[2rem] p-4 relative overflow-hidden border border-white/5">
+              <textarea
+                ref={textareaRef}
+                value={content}
+                onChange={handleChange}
+                placeholder="Comece a digitar..."
+                className="w-full h-full bg-transparent text-white text-lg leading-relaxed outline-none resize-none placeholder-gray-600 font-medium scrollbar-thin scrollbar-thumb-gray-600"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+                autoFocus
+              />
+           </div>
+        </div>
+
+        {/* Footer info - shrink-0 ensures it stays visible */}
+        <div className="px-6 pb-6 pt-2 flex justify-between text-xs text-gray-500 font-medium shrink-0">
+           <span>{content.length} caracteres</span>
+           <span className="flex items-center gap-1">
+             <Save className="w-3 h-3" /> Salvo automaticamente
+           </span>
+        </div>
+
       </div>
     </div>
   );
