@@ -83,6 +83,7 @@ export interface LongTermTransaction {
   installmentsPaid: number; // How many have been paid
   monthlyAmount?: number; // Current/Active monthly value for unpaid installments
   installmentsHistory?: Record<number, number>; // Map of index -> specific amount paid (history)
+  installmentsDates?: Record<number, string>; // Map of index -> specific date (override)
 }
 
 export interface AppNotification {
