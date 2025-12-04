@@ -78,15 +78,26 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
   };
 
   return (
-    <div className="fixed inset-0 z-[80] overflow-hidden bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full h-full flex items-start justify-center p-4 pt-24 sm:items-center sm:pt-4">
-        {/* 
-          Container:
-          - h-[500px]: Fixed height matching AddAccountModal feel.
-          - max-w-sm: Matches width of other modals.
-          - pt-24 (mobile): Anchors modal to top-mid to avoid keyboard jumping
-        */}
-        <div className="bg-[#1c1c1e] w-full max-w-sm h-[500px] rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col transition-all overflow-hidden shrink-0">
+    <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-sm animate-in fade-in duration-200 overflow-hidden">
+      {/* 
+        Layout Strategy:
+        - Mobile: Absolute positioning from top (top-24). This detaches it from the flex flow relative to viewport height,
+          preventing 'jumps' when the keyboard resizes the viewport. It strictly anchors to the top visual edge.
+        - Desktop (sm): Flex centering for standard modal behavior.
+      */}
+      <div className="w-full h-full relative sm:flex sm:items-center sm:justify-center">
+        
+        <div className="
+          absolute top-24 left-0 right-0 mx-auto
+          sm:static sm:mx-0 sm:mt-0
+          bg-[#1c1c1e] 
+          w-full max-w-sm 
+          h-[500px] 
+          rounded-[2.5rem] 
+          shadow-2xl border border-white/5 
+          flex flex-col 
+          overflow-hidden
+        ">
           
           {/* Header */}
           <div className="flex justify-between items-center p-6 pb-4 shrink-0">
