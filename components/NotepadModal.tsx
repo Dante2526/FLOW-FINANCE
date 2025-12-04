@@ -88,11 +88,11 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1c1c1e] w-full max-w-lg h-[80dvh] rounded-[2.5rem] p-1 shadow-2xl border border-white/5 relative flex flex-col">
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-[#1c1c1e] w-full max-w-lg h-[85dvh] sm:h-[80dvh] rounded-t-[2.5rem] rounded-b-none sm:rounded-[2.5rem] p-1 shadow-2xl border border-white/5 relative flex flex-col">
         
         {/* Header (Integrated into the card look) */}
-        <div className="flex justify-between items-center p-5 pb-2">
+        <div className="flex justify-between items-center p-5 pb-2 shrink-0">
           <div className="flex items-center gap-3">
              <div className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center border border-white/5">
                 <NotebookPen className="w-5 h-5 text-yellow-500" />
@@ -133,8 +133,8 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
            />
         </div>
 
-        {/* Footer info */}
-        <div className="px-6 pb-4 pt-1 flex justify-between text-xs text-gray-500 font-medium">
+        {/* Footer info - Added Safe Area handling for Bottom Sheet mode */}
+        <div className="px-6 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4 pt-1 flex justify-between text-xs text-gray-500 font-medium shrink-0">
            <span>{content.length} caracteres</span>
            <span className="flex items-center gap-1">
              <Save className="w-3 h-3" /> Salvo automaticamente
