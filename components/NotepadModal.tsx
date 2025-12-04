@@ -80,9 +80,8 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      {/* Adjusted height classes: h-[70vh] for mobile to account for keyboard, 80dvh for desktop */}
-      <div className="bg-[#1c1c1e] w-full max-w-lg h-[70vh] sm:h-[80dvh] rounded-t-[2.5rem] sm:rounded-[2.5rem] p-1 shadow-2xl border border-white/5 relative flex flex-col transition-all">
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-[#1c1c1e] w-full max-w-lg h-[80vh] rounded-[2.5rem] p-1 shadow-2xl border border-white/5 relative flex flex-col transition-all">
         
         {/* Header (Integrated into the card look) */}
         <div className="flex justify-between items-center p-5 pb-2">
@@ -127,7 +126,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
         </div>
 
         {/* Footer info - Pushed up slightly to avoid bottom bezel overlapping on mobile */}
-        <div className="px-6 pb-6 sm:pb-4 pt-1 flex justify-between text-xs text-gray-500 font-medium">
+        <div className="px-6 pb-6 pt-1 flex justify-between text-xs text-gray-500 font-medium">
            <span>{content.length} caracteres</span>
            <span className="flex items-center gap-1">
              <Save className="w-3 h-3" /> Salvo automaticamente
