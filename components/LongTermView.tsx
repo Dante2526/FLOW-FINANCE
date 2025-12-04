@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Wallet, Plus, ChevronLeft, Calendar, Trash2, Check, Edit2 } from 'lucide-react';
+import { Wallet, Plus, ChevronLeft, Calendar, Trash2, Edit2 } from 'lucide-react';
 import { LongTermTransaction } from '../types';
 
 interface Props {
@@ -403,26 +404,24 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                   </span>
                 </div>
                 
-                {/* Value Column + Edit Button */}
-                <div className="flex justify-center items-center border-l border-white/5 h-full relative px-1">
-                   {/* Clickable Area for Editing (Date & Value) */}
-                   <div className="flex items-center gap-1 z-10 w-full justify-center">
-                       <span className={`text-xs font-bold ${isPaid ? 'text-white' : 'text-gray-300'}`}>
-                         R$ {amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                       </span>
-                       
-                       {/* Always visible edit button for explicit editing */}
-                       <button 
-                          onClick={(e) => {
-                              e.stopPropagation();
-                              openEditInstallmentModal(index, amount, rawDate);
-                          }}
-                          className="p-1 hover:bg-white/20 rounded-md transition-colors ml-1"
-                          title="Editar data e valor"
-                       >
-                          <Edit2 className={`w-3 h-3 ${isPaid ? 'text-white' : 'text-gray-400'}`} />
-                       </button>
-                   </div>
+                {/* Value Column + Edit Button (Corrected Overlap) */}
+                <div className="relative flex justify-center items-center border-l border-white/5 h-full px-1">
+                   {/* Centered Text */}
+                   <span className={`text-xs font-bold ${isPaid ? 'text-white' : 'text-gray-300'}`}>
+                     R$ {amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                   </span>
+                   
+                   {/* Absolute Edit Button - Right Aligned & Visible on Hover */}
+                   <button 
+                      onClick={(e) => {
+                          e.stopPropagation();
+                          openEditInstallmentModal(index, amount, rawDate);
+                      }}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 bg-[#1c1c1e]/80 hover:bg-white/20 rounded-md transition-all opacity-0 group-hover:opacity-100 z-10"
+                      title="Editar data e valor"
+                   >
+                      <Edit2 className={`w-3 h-3 ${isPaid ? 'text-white' : 'text-gray-400'}`} />
+                   </button>
                 </div>
               </div>
             );
