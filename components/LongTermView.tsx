@@ -369,26 +369,26 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                 </div>
                 
                 {/* Value Column */}
-                <div className={`flex flex-col justify-center items-center h-full relative px-1 group/col border-l ${isPaid ? 'border-white/10' : 'border-white/5'}`}>
-                   <div className="flex items-center gap-1 z-10">
+                <div className={`flex flex-col justify-center items-center h-full relative px-1 border-l ${isPaid ? 'border-white/10' : 'border-white/5'}`}>
+                   <div className="flex items-center gap-1">
                        <span className={`text-xs font-bold ${isPaid ? 'text-white' : 'text-gray-300'}`}>
                          R$ {amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                        </span>
                        {isPaid && <Check className="w-3 h-3 text-white" />}
                    </div>
-                   
-                   {/* Specific Edit Button - MATCHING HEADER STYLE (Top Right) */}
-                   <button 
-                      onClick={(e) => {
-                          e.stopPropagation();
-                          openEditInstallmentModal(index, amount);
-                      }}
-                      className="absolute top-0 right-0 p-2 opacity-0 group-hover/col:opacity-100 transition-opacity hover:bg-black/20 rounded-bl-xl z-20"
-                      title="Editar valor desta parcela"
-                   >
-                      <Edit2 className="w-3 h-3 text-white" />
-                   </button>
                 </div>
+
+                {/* Specific Edit Button - ABSOLUTE TOP RIGHT OF THE ROW CONTAINER */}
+                <button 
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        openEditInstallmentModal(index, amount);
+                    }}
+                    className="absolute top-0 right-0 p-3 opacity-50 hover:opacity-100 transition-opacity hover:bg-black/20 rounded-bl-xl rounded-tr-2xl z-20"
+                    title="Editar valor desta parcela"
+                >
+                    <Edit2 className="w-3 h-3 text-white" />
+                </button>
               </div>
             );
           })}
