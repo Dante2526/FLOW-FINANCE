@@ -32,13 +32,11 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
     }
   };
 
-  // The Magic Logic: Detect Math patterns ending in "="
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newVal = e.target.value;
     
-    // We only trigger calculation if the last character typed was "="
+    // Logic for Math patterns ending in "="
     if (newVal.length > content.length && newVal.endsWith('=')) {
-      
       const lines = newVal.split('\n');
       const lastLine = lines[lines.length - 1];
       
@@ -81,10 +79,16 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1c1c1e] w-full max-w-sm h-[60vh] rounded-[2.5rem] p-1 shadow-2xl border border-white/5 relative flex flex-col transition-all">
+      {/* 
+        Container:
+        - h-[500px]: Altura base similar ao modal de Nova Fonte de Renda preenchido.
+        - max-h-[90dvh]: Garante que nunca ultrapasse 90% da altura visível (útil quando teclado abre).
+        - flex flex-col: Permite que o conteúdo interno encolha/cresça.
+      */}
+      <div className="bg-[#1c1c1e] w-full max-w-sm h-[500px] max-h-[90dvh] rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col transition-all overflow-hidden">
         
-        {/* Header (Integrated into the card look) */}
-        <div className="flex justify-between items-center p-5 pb-2">
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 pb-4 shrink-0">
           <div className="flex items-center gap-3">
              <div className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center border border-white/5">
                 <NotebookPen className="w-5 h-5 text-yellow-500" />
@@ -112,21 +116,23 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
           </div>
         </div>
 
-        {/* Paper Area */}
-        <div className="flex-1 bg-[#2c2c2e]/50 m-2 rounded-[2rem] p-4 relative overflow-hidden border border-white/5">
-           <textarea
-             ref={textareaRef}
-             value={content}
-             onChange={handleChange}
-             placeholder="Comece a digitar..."
-             className="w-full h-full bg-transparent text-white text-lg leading-relaxed outline-none resize-none placeholder-gray-600 font-medium"
-             style={{ fontFamily: 'Inter, sans-serif' }}
-             autoFocus
-           />
+        {/* Paper Area - flex-1 allows it to fill space or shrink if parent gets smaller (keyboard) */}
+        <div className="flex-1 min-h-0 px-2 pb-2">
+           <div className="w-full h-full bg-[#2c2c2e]/50 rounded-[2rem] p-4 relative overflow-hidden border border-white/5">
+              <textarea
+                ref={textareaRef}
+                value={content}
+                onChange={handleChange}
+                placeholder="Comece a digitar..."
+                className="w-full h-full bg-transparent text-white text-lg leading-relaxed outline-none resize-none placeholder-gray-600 font-medium scrollbar-thin scrollbar-thumb-gray-600"
+                style={{ fontFamily: 'Inter, sans-serif' }}
+                autoFocus
+              />
+           </div>
         </div>
 
-        {/* Footer info - Pushed up slightly to avoid bottom bezel overlapping on mobile */}
-        <div className="px-6 pb-6 pt-1 flex justify-between text-xs text-gray-500 font-medium">
+        {/* Footer info - shrink-0 ensures it stays visible */}
+        <div className="px-6 pb-6 pt-2 flex justify-between text-xs text-gray-500 font-medium shrink-0">
            <span>{content.length} caracteres</span>
            <span className="flex items-center gap-1">
              <Save className="w-3 h-3" /> Salvo automaticamente
