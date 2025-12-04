@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Wallet, Plus, ChevronLeft, Calendar, Trash2, Edit2 } from 'lucide-react';
+import { Wallet, Plus, ChevronLeft, Calendar, Trash2, Check, Edit2 } from 'lucide-react';
 import { LongTermTransaction } from '../types';
 
 interface Props {
@@ -28,12 +27,8 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
 
   // Edit Value States
   const [editMonthlyValue, setEditMonthlyValue] = useState('');
-  
-  // Specific Installment Edit States (Amount & Date)
   const [editInstallmentValue, setEditInstallmentValue] = useState('');
-  const [editInstallmentDate, setEditInstallmentDate] = useState('');
   const [editingInstallmentIndex, setEditingInstallmentIndex] = useState<number | null>(null);
-  
   const [editTitleValue, setEditTitleValue] = useState('');
   const [editTotalValue, setEditTotalValue] = useState('');
 
@@ -105,33 +100,9 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
       return item.monthlyAmount ?? (item.totalAmount / item.installmentsCount);
   };
 
-  // Calculate the RAW date object for a specific installment
-  const getInstallmentDateRaw = (item: LongTermTransaction, index: number): Date => {
-    // Check for override date first
-    if (item.installmentsDates && item.installmentsDates[index]) {
-       // Assuming stored as YYYY-MM-DD string or similar ISO
-       // We add T00:00:00 to prevent timezone shifts when parsing YYYY-MM-DD
-       const dateStr = item.installmentsDates[index].includes('T') 
-          ? item.installmentsDates[index] 
-          : item.installmentsDates[index] + 'T00:00:00';
-       return new Date(dateStr);
-    }
-    
-    // Default calculation
-    const date = new Date(item.startDate);
-    // Add T00:00:00 if startDate was YYYY-MM-DD
-    if (!item.startDate.includes('T')) {
-       // Safe adjust for default start date
-       const parts = item.startDate.split('-');
-       date.setFullYear(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    }
-    
+  const getInstallmentDate = (start: string, index: number) => {
+    const date = new Date(start);
     date.setMonth(date.getMonth() + index);
-    return date;
-  };
-
-  const getInstallmentDateDisplay = (item: LongTermTransaction, index: number) => {
-    const date = getInstallmentDateRaw(item, index);
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
@@ -145,6 +116,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
     // If clicking the last paid item, uncheck it (go back one step)
     if (targetPaid === currentPaid) {
       newItem.installmentsPaid = currentPaid - 1;
+      // We do NOT delete history here anymore, so manual edits persist even if unchecked
     } else {
       // Forward progress: Set paid to this row (and all before it implied)
       newItem.installmentsPaid = targetPaid;
@@ -169,7 +141,10 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
       newItem.monthlyAmount = newMonthlyAmount;
 
       // BACKFILL HISTORY:
+      // For all currently paid installments, if they don't have a history entry, 
+      // save the OLD monthly amount. This preserves the "value that was before".
       const newHistory = { ...(newItem.installmentsHistory || {}) };
+      
       for (let i = 0; i < newItem.installmentsPaid; i++) {
           if (newHistory[i] === undefined) {
               newHistory[i] = oldMonthlyAmount;
@@ -194,7 +169,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
       setEditMonthlyValue('');
   };
 
-  const handleSaveInstallmentData = (e: React.FormEvent) => {
+  const handleSaveInstallmentValue = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedItem || editingInstallmentIndex === null || !editInstallmentValue) return;
 
@@ -202,23 +177,17 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
     const newAmount = parseFloat(cleanVal);
     
     const newItem = { ...selectedItem };
-    
-    // Save Amount Override
     const newHistory = { ...(newItem.installmentsHistory || {}) };
+    
+    // Save specific override
     newHistory[editingInstallmentIndex] = newAmount;
     newItem.installmentsHistory = newHistory;
-
-    // Save Date Override
-    const newDates = { ...(newItem.installmentsDates || {}) };
-    newDates[editingInstallmentIndex] = editInstallmentDate; // ISO string YYYY-MM-DD
-    newItem.installmentsDates = newDates;
 
     onEdit(newItem);
     setSelectedItem(newItem);
     setIsEditInstallmentOpen(false);
     setEditingInstallmentIndex(null);
     setEditInstallmentValue('');
-    setEditInstallmentDate('');
   };
 
   const handleSaveTitle = (e: React.FormEvent) => {
@@ -261,10 +230,9 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
       setIsEditMonthlyOpen(true);
   };
 
-  const openEditInstallmentModal = (index: number, currentAmount: number, currentDate: Date) => {
+  const openEditInstallmentModal = (index: number, currentAmount: number) => {
       setEditingInstallmentIndex(index);
       setEditInstallmentValue(currentAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-      setEditInstallmentDate(currentDate.toISOString().split('T')[0]); // YYYY-MM-DD
       setIsEditInstallmentOpen(true);
   };
 
@@ -307,7 +275,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                   {selectedItem.title}
                </h2>
              </div>
-             <p className="text-xs text-gray-400">Clique na parcela para pagar</p>
+             <p className="text-xs text-gray-400">Clique nos blocos para editar valores</p>
           </div>
 
           <button 
@@ -366,7 +334,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
           {/* Sub Header */}
           <div className="col-span-3 grid grid-cols-4 bg-orange-600 h-10 items-center px-2">
             <span className="text-[10px] font-bold text-black text-center border-r border-black/10 h-full flex items-center justify-center">PARCELA</span>
-            <span className="text-[10px] font-bold text-black text-center col-span-2 border-r border-black/10 h-full flex items-center justify-center">DATA DE PAGAMENTO</span>
+            <span className="text-[10px] font-bold text-black text-center col-span-2 border-r border-black/10 h-full flex items-center justify-center">DATA VENCIMENTO</span>
             <span className="text-[10px] font-bold text-black text-center h-full flex items-center justify-center">VALOR</span>
           </div>
         </div>
@@ -376,51 +344,46 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
           {Array.from({ length: selectedItem.installmentsCount }).map((_, index) => {
             const isPaid = index < selectedItem.installmentsPaid;
             const amount = getInstallmentAmount(selectedItem, index);
-            const rawDate = getInstallmentDateRaw(selectedItem, index);
-            const dateDisplay = getInstallmentDateDisplay(selectedItem, index);
             
             return (
               <div 
                 key={index}
-                className={`grid grid-cols-4 items-center h-14 px-2 transition-colors border-b border-black/20 group relative ${
-                  isPaid ? 'bg-green-600' : 'bg-[#2c2c2e]'
+                onClick={() => toggleInstallment(index)}
+                className={`grid grid-cols-4 items-center h-14 px-2 cursor-pointer transition-colors border-b border-black/20 group relative ${
+                  isPaid ? 'bg-green-600' : 'bg-[#2c2c2e] hover:bg-[#3a3a3c]'
                 }`}
               >
-                {/* Number (Toggle Paid Click Area) */}
-                <div 
-                   onClick={() => toggleInstallment(index)}
-                   className="flex justify-center h-full items-center cursor-pointer active:brightness-110"
-                >
+                {/* Number */}
+                <div className="flex justify-center">
                   <span className={`font-bold ${isPaid ? 'text-white' : 'text-accent'}`}>{index + 1}º</span>
                 </div>
                 
-                {/* Date (Toggle Paid Click Area) */}
-                <div 
-                   onClick={() => toggleInstallment(index)}
-                   className="col-span-2 flex justify-center border-l border-white/5 h-full items-center cursor-pointer active:brightness-110"
-                >
+                {/* Date */}
+                <div className="col-span-2 flex justify-center border-l border-white/5 h-full items-center">
                   <span className={`text-sm ${isPaid ? 'text-white font-medium' : 'text-gray-400'}`}>
-                    {dateDisplay}
+                    {getInstallmentDate(selectedItem.startDate, index)}
                   </span>
                 </div>
                 
-                {/* Value Column + Edit Button (Corrected Overlap) */}
-                <div className="relative flex justify-center items-center border-l border-white/5 h-full px-1">
-                   {/* Centered Text */}
-                   <span className={`text-xs font-bold ${isPaid ? 'text-white' : 'text-gray-300'}`}>
-                     R$ {amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                   </span>
+                {/* Value Column */}
+                <div className="flex flex-col justify-center items-center border-l border-white/5 h-full relative px-1 group/col">
+                   <div className="flex items-center gap-1 z-10">
+                       <span className={`text-xs font-bold ${isPaid ? 'text-white' : 'text-gray-300'}`}>
+                         R$ {amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                       </span>
+                       {isPaid && <Check className="w-3 h-3 text-white" />}
+                   </div>
                    
-                   {/* Absolute Edit Button - Right Aligned & Visible on Hover */}
+                   {/* Specific Edit Button - Visible on column hover */}
                    <button 
                       onClick={(e) => {
                           e.stopPropagation();
-                          openEditInstallmentModal(index, amount, rawDate);
+                          openEditInstallmentModal(index, amount);
                       }}
-                      className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 bg-[#1c1c1e]/80 hover:bg-white/20 rounded-md transition-all opacity-0 group-hover:opacity-100 z-10"
-                      title="Editar data e valor"
+                      className="absolute inset-0 flex items-center justify-end pr-2 opacity-0 group-hover/col:opacity-100 transition-opacity bg-black/20"
+                      title="Editar valor desta parcela"
                    >
-                      <Edit2 className={`w-3 h-3 ${isPaid ? 'text-white' : 'text-gray-400'}`} />
+                      <Edit2 className="w-3 h-3 text-white" />
                    </button>
                 </div>
               </div>
@@ -560,7 +523,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
             </div>
          )}
 
-         {/* Edit Specific Installment Modal (Date & Value) */}
+         {/* Edit Specific Installment Modal */}
          {isEditInstallmentOpen && (
             <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4 max-h-[90dvh] overflow-y-auto no-scrollbar">
@@ -568,11 +531,10 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                         Editar Parcela {editingInstallmentIndex !== null ? editingInstallmentIndex + 1 : ''}
                     </h3>
                     <p className="text-xs text-gray-400 text-center -mt-2">
-                        Altere o valor ou a data desta parcela específica.
+                        Altere o valor apenas desta parcela.
                     </p>
                     
-                    <form onSubmit={handleSaveInstallmentData} className="flex flex-col gap-4 mt-2">
-                        {/* Amount */}
+                    <form onSubmit={handleSaveInstallmentValue} className="flex flex-col gap-4 mt-2">
                         <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-accent">R$</span>
                             <input 
@@ -581,26 +543,11 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                                 value={editInstallmentValue}
                                 onChange={(e) => handleAmountChange(e, setEditInstallmentValue)}
                                 className="w-full bg-[#2c2c2e] text-white text-2xl font-bold py-3 pl-12 pr-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center"
+                                autoFocus
                                 autoComplete="off"
                             />
                         </div>
-
-                        {/* Date */}
-                        <div className="flex flex-col gap-1">
-                            <label className="text-xs text-gray-400 ml-2 font-bold uppercase">Data de Pagamento</label>
-                            <div className="relative">
-                                <input 
-                                    type="date" 
-                                    value={editInstallmentDate}
-                                    onChange={(e) => setEditInstallmentDate(e.target.value)}
-                                    className="w-full bg-[#2c2c2e] text-white p-3 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 font-bold text-center"
-                                    required
-                                />
-                                <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
-                            </div>
-                        </div>
-
-                        <div className="flex gap-2 mt-2">
+                        <div className="flex gap-2">
                             <button 
                                 type="button" 
                                 onClick={() => {
