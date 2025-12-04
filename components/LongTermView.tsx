@@ -384,7 +384,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                         e.stopPropagation();
                         openEditInstallmentModal(index, amount);
                     }}
-                    className="absolute top-0 right-0 p-3 opacity-50 hover:opacity-100 transition-opacity hover:bg-black/20 rounded-bl-xl rounded-tr-2xl z-20"
+                    className="absolute top-1.5 right-1.5 z-20 opacity-50 hover:opacity-100 transition-opacity"
                     title="Editar valor desta parcela"
                 >
                     <Edit2 className="w-3 h-3 text-white" />
