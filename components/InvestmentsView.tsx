@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { TrendingUp, Plus, PieChart, Building, Trash2, Edit2, Settings2, X, RefreshCw } from 'lucide-react';
 import { Investment } from '../types';
@@ -13,6 +12,8 @@ interface Props {
   onBack: () => void;
   cdiRate: number;
   onUpdateCdiRate: (rate: number) => void;
+  isPro?: boolean;
+  onOpenProModal?: () => void;
 }
 
 interface SwipeableItemProps {
@@ -185,7 +186,7 @@ const SwipeableInvestmentItem: React.FC<SwipeableItemProps> = ({ inv, onEdit, on
 };
 
 
-const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete, onBack, cdiRate, onUpdateCdiRate }) => {
+const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete, onBack, cdiRate, onUpdateCdiRate, isPro = false, onOpenProModal }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
 
@@ -406,6 +407,8 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
         onClose={() => setIsAddModalOpen(false)}
         onSave={handleSaveInvestment}
         investmentToEdit={editingInvestment}
+        isPro={isPro}
+        onOpenProModal={onOpenProModal}
       />
 
       {/* CDI Edit Modal */}
@@ -450,4 +453,3 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
 };
 
 export default InvestmentsView;
-    

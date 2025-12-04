@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -1090,6 +1089,8 @@ const App: React.FC = () => {
               setAppTheme(theme);
               setCurrentView('home');
             }}
+            isPro={!!userProfile.isPro}
+            onOpenProModal={() => setIsProModalOpen(true)}
           />
         );
       case 'long-term':
@@ -1111,6 +1112,8 @@ const App: React.FC = () => {
              onBack={() => setCurrentView('home')}
              cdiRate={cdiRate}
              onUpdateCdiRate={setCdiRate}
+             isPro={!!userProfile.isPro}
+             onOpenProModal={() => setIsProModalOpen(true)}
           />
         );
       case 'home':

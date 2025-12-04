@@ -1,33 +1,37 @@
-
 import React, { useState } from 'react';
-import { Palette, Check } from 'lucide-react';
+import { Palette, Check, Lock, Crown } from 'lucide-react';
 import { AppTheme } from '../types';
 
 interface Props {
   currentThemeId: string;
   onSaveTheme: (theme: AppTheme) => void;
+  isPro: boolean;
+  onOpenProModal: () => void;
 }
 
-export const AVAILABLE_THEMES: AppTheme[] = [
-  // Warm / Energetic
+// Extended interface internally to handle UI logic
+interface ThemeOption extends AppTheme {
+  isPro?: boolean;
+}
+
+export const AVAILABLE_THEMES: ThemeOption[] = [
+  // FREE THEMES (4)
   { id: 'sunset-orange', name: 'Sunset', primary: '#f97316', secondary: '#ea580c' },
   { id: 'cyber-yellow', name: 'Cyber', primary: '#eab308', secondary: '#ca8a04' },
   { id: 'crimson-red', name: 'Crimson', primary: '#ef4444', secondary: '#dc2626' },
-  
-  // Cool / Tech
   { id: 'emerald-green', name: 'Emerald', primary: '#10b981', secondary: '#059669' },
-  { id: 'neon-lime', name: 'Neon', primary: '#84cc16', secondary: '#65a30d' },
-  { id: 'ocean-blue', name: 'Ocean', primary: '#3b82f6', secondary: '#2563eb' },
-  { id: 'royal-purple', name: 'Royal', primary: '#a855f7', secondary: '#9333ea' },
   
-  // Soft / Feminine / Elegant
-  { id: 'hot-pink', name: 'Barbie', primary: '#ec4899', secondary: '#db2777' },
-  { id: 'rose-gold', name: 'Rose', primary: '#f43f5e', secondary: '#e11d48' },
-  { id: 'lavender', name: 'Soft', primary: '#d8b4fe', secondary: '#c084fc' },
-  { id: 'aqua', name: 'Aqua', primary: '#22d3ee', secondary: '#0891b2' },
+  // PRO THEMES (7)
+  { id: 'neon-lime', name: 'Neon', primary: '#84cc16', secondary: '#65a30d', isPro: true },
+  { id: 'ocean-blue', name: 'Ocean', primary: '#3b82f6', secondary: '#2563eb', isPro: true },
+  { id: 'royal-purple', name: 'Royal', primary: '#a855f7', secondary: '#9333ea', isPro: true },
+  { id: 'hot-pink', name: 'Barbie', primary: '#ec4899', secondary: '#db2777', isPro: true },
+  { id: 'rose-gold', name: 'Rose', primary: '#f43f5e', secondary: '#e11d48', isPro: true },
+  { id: 'lavender', name: 'Soft', primary: '#d8b4fe', secondary: '#c084fc', isPro: true },
+  { id: 'aqua', name: 'Aqua', primary: '#22d3ee', secondary: '#0891b2', isPro: true },
 ];
 
-const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme }) => {
+const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onOpenProModal }) => {
   const [selectedThemeId, setSelectedThemeId] = useState(currentThemeId);
 
   const handleConfirm = () => {
@@ -35,6 +39,14 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme }) => {
     if (theme) {
       onSaveTheme(theme);
     }
+  };
+
+  const handleThemeClick = (theme: ThemeOption) => {
+    if (theme.isPro && !isPro) {
+      onOpenProModal();
+      return;
+    }
+    setSelectedThemeId(theme.id);
   };
 
   return (
@@ -47,7 +59,14 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme }) => {
         </div>
         <div>
           <h2 className="text-2xl font-bold text-white">Configuração</h2>
-          <p className="text-gray-400 text-sm">Personalize sua experiência</p>
+          <div className="flex items-center gap-2">
+             <p className="text-gray-400 text-sm">Personalize sua experiência</p>
+             {isPro && (
+                <span className="bg-yellow-500/20 text-yellow-500 text-[10px] font-bold px-2 py-0.5 rounded-full border border-yellow-500/50 flex items-center gap-1">
+                  <Crown className="w-3 h-3 fill-yellow-500" /> PRO ATIVO
+                </span>
+             )}
+          </div>
         </div>
       </div>
 
@@ -58,33 +77,44 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme }) => {
         <div className="grid grid-cols-2 gap-4">
           {AVAILABLE_THEMES.map((theme) => {
             const isActive = selectedThemeId === theme.id;
+            const isLocked = theme.isPro && !isPro;
             
             return (
               <button
                 key={theme.id}
-                onClick={() => setSelectedThemeId(theme.id)}
+                onClick={() => handleThemeClick(theme)}
                 className={`relative h-24 rounded-[1.5rem] flex items-center justify-between px-5 transition-all duration-200 border-2 overflow-hidden group ${
                   isActive 
                     ? 'border-white bg-[#1c1c1e]' 
-                    : 'border-transparent bg-[#1c1c1e] hover:bg-[#2c2c2e]'
+                    : isLocked
+                      ? 'border-transparent bg-[#1c1c1e]/50 opacity-60'
+                      : 'border-transparent bg-[#1c1c1e] hover:bg-[#2c2c2e]'
                 }`}
               >
                 {/* Side Color Bar */}
                 <div 
-                  className="absolute left-0 top-0 bottom-0 w-2" 
+                  className={`absolute left-0 top-0 bottom-0 w-2 ${isLocked ? 'grayscale' : ''}`} 
                   style={{ backgroundColor: theme.primary }}
                 />
                 
-                <span className={`font-bold text-lg ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
-                  {theme.name}
-                </span>
+                <div className="flex flex-col items-start">
+                  <span className={`font-bold text-lg ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
+                    {theme.name}
+                  </span>
+                  {theme.isPro && (
+                     <span className="text-[9px] font-bold text-yellow-500 flex items-center gap-1">
+                        <Crown className="w-3 h-3 fill-yellow-500" /> PRO
+                     </span>
+                  )}
+                </div>
 
-                {/* Circle Indicator */}
+                {/* Indicator (Check or Lock) */}
                 <div 
                   className={`w-8 h-8 rounded-full shadow-lg flex items-center justify-center transition-transform ${isActive ? 'scale-110' : 'scale-100'}`}
-                  style={{ backgroundColor: isActive ? theme.primary : '#2c2c2e' }}
+                  style={{ backgroundColor: isActive ? theme.primary : (isLocked ? '#2c2c2e' : '#2c2c2e') }}
                 >
                   {isActive && <Check className="w-5 h-5 text-black" strokeWidth={3} />}
+                  {!isActive && isLocked && <Lock className="w-4 h-4 text-yellow-500" />}
                 </div>
               </button>
             );

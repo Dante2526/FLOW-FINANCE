@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { X, Check, TrendingUp, Building, Layers, Search } from 'lucide-react';
+import { X, Check, TrendingUp, Building, Layers, Search, Lock } from 'lucide-react';
 import { Investment, InvestmentType } from '../types';
 
 interface Props {
@@ -8,9 +7,11 @@ interface Props {
   onClose: () => void;
   onSave: (inv: Omit<Investment, 'id'>) => void;
   investmentToEdit?: Investment | null;
+  isPro?: boolean;
+  onOpenProModal?: () => void;
 }
 
-const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investmentToEdit }) => {
+const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investmentToEdit, isPro = false, onOpenProModal }) => {
   const [name, setName] = useState('');
   const [institution, setInstitution] = useState('');
   const [type, setType] = useState<InvestmentType>('cdi');
@@ -61,6 +62,14 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
     }
   };
 
+  const handleTypeSelect = (newType: InvestmentType) => {
+    if (newType === 'fii' && !isPro) {
+      if (onOpenProModal) onOpenProModal();
+      return;
+    }
+    setType(newType);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !amount) return;
@@ -106,7 +115,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
            <div className="grid grid-cols-2 gap-3 p-1 bg-[#2c2c2e] rounded-2xl">
               <button 
                 type="button"
-                onClick={() => setType('cdi')}
+                onClick={() => handleTypeSelect('cdi')}
                 className={`flex flex-col items-center justify-center p-3 rounded-xl transition-all ${
                   type === 'cdi' 
                     ? 'bg-[#3a3a3c] text-emerald-500 ring-emerald-500 ring-1 shadow-lg' 
@@ -116,15 +125,21 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
                 <TrendingUp className="w-5 h-5 mb-1" />
                 <span className="text-[10px] font-bold uppercase">Renda Fixa / CDI</span>
               </button>
+              
               <button 
                 type="button"
-                onClick={() => setType('fii')}
-                className={`flex flex-col items-center justify-center p-3 rounded-xl transition-all ${
+                onClick={() => handleTypeSelect('fii')}
+                className={`relative flex flex-col items-center justify-center p-3 rounded-xl transition-all ${
                   type === 'fii' 
                     ? 'bg-[#3a3a3c] text-blue-400 shadow-lg ring-1 ring-blue-500/20' 
                     : 'text-gray-500 hover:bg-[#3a3a3c]/50'
                 }`}
               >
+                {!isPro && (
+                   <div className="absolute top-2 right-2">
+                      <Lock className="w-3 h-3 text-yellow-500" />
+                   </div>
+                )}
                 <Building className="w-5 h-5 mb-1" />
                 <span className="text-[10px] font-bold uppercase">Fundo Imob (FII)</span>
               </button>
