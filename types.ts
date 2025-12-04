@@ -65,6 +65,7 @@ export interface UserProfile {
   subtitle: string;
   avatarUrl: string;
   isPro?: boolean; // New PRO status flag
+  subscriptionExpiry?: string; // ISO Date string for subscription expiration
 }
 
 export interface AppTheme {

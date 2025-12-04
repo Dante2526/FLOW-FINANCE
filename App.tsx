@@ -349,7 +349,17 @@ const App: React.FC = () => {
   const applyData = (data: any) => {
       if (data.profile) {
         let profile = data.profile;
-        // Enforce VIP Status
+        
+        // Subscription Expiry Check
+        if (profile.isPro && profile.subscriptionExpiry) {
+           const expiryDate = new Date(profile.subscriptionExpiry);
+           const now = new Date();
+           if (now > expiryDate) {
+              profile = { ...profile, isPro: false, subscriptionExpiry: undefined };
+           }
+        }
+
+        // Enforce VIP Status (Factory Premium overrides expiry)
         if (currentUserEmail && VIP_EMAILS.includes(currentUserEmail.toLowerCase())) {
            profile = { ...profile, isPro: true };
         }
@@ -1078,8 +1088,44 @@ const App: React.FC = () => {
   };
 
   const handleProUpgrade = () => {
-    // Simulate upgrade
-    setUserProfile(prev => ({ ...prev, isPro: true }));
+    const amount = 5.00;
+    const now = new Date();
+    // Expiry: Current date + 30 days
+    const expiryDate = new Date(now);
+    expiryDate.setDate(now.getDate() + 30); 
+
+    // 1. Create Transaction for the Subscription
+    const newTx: Transaction = {
+        id: Date.now().toString(),
+        name: 'Assinatura PRO',
+        amount: amount,
+        type: 'subscription',
+        logoType: 'generic', 
+        paymentMethod: 'card',
+        paid: true,
+        date: now.toISOString().split('T')[0], // YYYY-MM-DD
+        month: activeMonthSummary.month,
+        year: activeMonthSummary.year
+    };
+
+    setTransactions(prev => [newTx, ...prev]);
+
+    // Update Month Total to include the subscription cost
+    setMonths(prev => prev.map(m => {
+        if (m.month === activeMonthSummary.month && m.year === activeMonthSummary.year) {
+            return { ...m, total: m.total + amount };
+        }
+        return m;
+    }));
+
+    // 2. Update Profile with Pro status and expiry
+    const updatedProfile = {
+        ...userProfile,
+        isPro: true,
+        subscriptionExpiry: expiryDate.toISOString()
+    };
+    setUserProfile(updatedProfile);
+
     setIsProModalOpen(false);
   };
 

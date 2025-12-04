@@ -14,10 +14,15 @@ interface Props {
 
 // "Bonecos" / Character style avatars
 const PRESET_AVATARS = [
-  // FREE (First 4)
+  // FREE - New Custom Requests (First 2)
+  // Mulher morena, cabelo ondulado
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Maria&skinColor=ac6651&hair=long04&hairColor=3e2723",
+  // Homem moreno, cabelo bem curto
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Pedro&skinColor=ac6651&hair=short01&hairColor=000000",
+  // FREE - Originals (Next 4)
   "https://api.dicebear.com/9.x/adventurer/svg?seed=Felix",
   "https://api.dicebear.com/9.x/adventurer/svg?seed=Aneka",
-  "https://api.dicebear.com/9.x/adventurer/svg?seed=Milo",
+  "https://api.dicebear.com/9.x/adventurer/svg?seed=Milo&hairColor=000000",
   "https://api.dicebear.com/9.x/adventurer/svg?seed=Lyla",
   // PRO (Last 8)
   "https://api.dicebear.com/9.x/adventurer/svg?seed=Ginger",
@@ -57,7 +62,8 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
   };
 
   const handleAvatarSelect = (url: string, index: number) => {
-    const isPremium = index >= 4;
+    // Updated logic: First 6 are free (2 new + 4 original), rest are PRO
+    const isPremium = index >= 6;
     if (isPremium && !currentProfile.isPro) {
       // Shake animation or visual feedback could go here
       return;
@@ -122,7 +128,8 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
             
             <div className="flex gap-3 p-1 pb-4 overflow-x-auto no-scrollbar">
               {PRESET_AVATARS.map((url, index) => {
-                const isPremium = index >= 4;
+                // Updated logic: First 6 are free
+                const isPremium = index >= 6;
                 const isLocked = isPremium && !currentProfile.isPro;
                 const isSelected = avatarUrl === url;
 
