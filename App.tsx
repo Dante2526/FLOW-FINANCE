@@ -18,9 +18,11 @@ import SettingsView, { AVAILABLE_THEMES } from './components/SettingsView';
 import LongTermView from './components/LongTermView';
 import InvestmentsView from './components/InvestmentsView';
 import LoginScreen from './components/LoginScreen';
+import ProModal from './components/ProModal'; // Import ProModal
 import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification } from './types';
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { IconBell, IconMore } from './components/Icons';
+import { Crown } from 'lucide-react';
 
 // Supabase Services (Migrated from Firebase)
 import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges } from './services/supabase';
@@ -96,7 +98,8 @@ const MOCK_CONTACTS: Contact[] = [
 const INITIAL_PROFILE: UserProfile = {
   name: '',
   subtitle: '',
-  avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix'
+  avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix',
+  isPro: false
 };
 
 // Helper: Parse Date String to determine month
@@ -173,6 +176,7 @@ const App: React.FC = () => {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+  const [isProModalOpen, setIsProModalOpen] = useState(false); // PRO Modal
   
   // --- DATA STATES ---
   const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_PROFILE);
@@ -208,7 +212,6 @@ const App: React.FC = () => {
   const prevCdiRef = useRef<number>(11.25);
 
   // --- CURRENT STATE REFS FOR REALTIME PROTECTION ---
-  // We use these to check if local state is "ahead" of saved state (dirty)
   const currentStateRef = useRef({
     transactions,
     accounts,
@@ -248,7 +251,8 @@ const App: React.FC = () => {
       isNotepadOpen || 
       isCalendarOpen || 
       isNotificationOpen || 
-      isAnalyticsOpen;
+      isAnalyticsOpen ||
+      isProModalOpen;
 
     if (isAnyModalOpen) {
       document.body.style.overflow = 'hidden';
@@ -262,7 +266,7 @@ const App: React.FC = () => {
   }, [
     isAddTransactionOpen, isAddAccountOpen, isCalculatorOpen, 
     isProfileModalOpen, isNotepadOpen, isCalendarOpen, 
-    isNotificationOpen, isAnalyticsOpen
+    isNotificationOpen, isAnalyticsOpen, isProModalOpen
   ]);
 
   // --- DATA LOADING EFFECT (Supabase with LocalStorage Fallback) ---
@@ -294,13 +298,11 @@ const App: React.FC = () => {
     if (currentUserEmail) {
       setIsLoadingData(true);
 
-      // CRITICAL: Check if we have pending syncs (Local data is newer than Cloud)
       const isSyncDirty = loadData(STORAGE_KEYS.IS_SYNC_DIRTY, false);
 
       if (isSyncDirty) {
         console.log("Local changes pending (Quota/Network Error). Loading from LocalStorage to prevent overwrite.");
         loadLocalData();
-        // Allow the useEffect save hooks to eventually sync this when they run
         setIsLoadingData(false);
       } else {
         loadUserData(currentUserEmail)
@@ -309,13 +311,12 @@ const App: React.FC = () => {
               applyData(data);
             } else {
               console.log("No remote data found, starting fresh.");
-              loadLocalData(); // Try local if remote is empty
+              loadLocalData(); 
             }
           })
           .catch(err => {
             console.error("Error loading data from Cloud, using LocalStorage fallback:", err);
             loadLocalData();
-            // If cloud failed (e.g. Quota), mark as dirty so we trust LocalStorage next load
             saveData(STORAGE_KEYS.IS_SYNC_DIRTY, true);
           })
           .finally(() => setIsLoadingData(false));
@@ -328,13 +329,12 @@ const App: React.FC = () => {
     }
   }, [currentUserEmail]);
 
-  // --- REALTIME SUBSCRIPTION EFFECT (NOVO) ---
+  // --- REALTIME SUBSCRIPTION EFFECT ---
   useEffect(() => {
     if (!currentUserEmail) return;
 
     console.log("Iniciando escuta Realtime para:", currentUserEmail);
     const unsubscribe = subscribeToUserChanges(currentUserEmail, (newData) => {
-      // Aqui usamos a função segura que checa conflitos antes de aplicar
       applyDataSafe(newData);
     });
 
@@ -344,7 +344,6 @@ const App: React.FC = () => {
   }, [currentUserEmail]);
 
   const applyData = (data: any) => {
-      // Direct apply without checks (used for initial load)
       if (data.profile) {
         setUserProfile(data.profile);
         prevProfileRef.current = JSON.stringify(data.profile);
@@ -384,7 +383,6 @@ const App: React.FC = () => {
       if (data.months && data.months.length > 0) {
         const sorted = sortMonths(data.months);
         setMonths(sorted);
-        // Only set active month if not already set, or if it's initial load
         if (activeMonthId === SYSTEM_INITIAL_MONTH.id || activeMonthId === '1') {
            setActiveMonthId(sorted[sorted.length - 1].id);
         }
@@ -403,45 +401,30 @@ const App: React.FC = () => {
 
   // Safe apply function for Realtime updates
   const applyDataSafe = (data: any) => {
-      console.log('Realtime update received. Checking for local conflicts...');
-
-      // Helper: Check if local state is different from what we last saved.
-      // If it IS different, it means the user is typing/editing and hasn't saved yet.
-      // We should NOT overwrite their work with the incoming server data.
-      
-      // 1. Transactions
+      // Logic same as provided previously
       const currentTxStr = JSON.stringify(currentStateRef.current.transactions);
       if (currentTxStr === prevTransactionsRef.current) {
         if (data.transactions && JSON.stringify(data.transactions) !== currentTxStr) {
            setTransactions(data.transactions);
            prevTransactionsRef.current = JSON.stringify(data.transactions);
         }
-      } else {
-        console.log('Skipping Transactions update - Local changes pending.');
       }
 
-      // 2. Accounts
       const currentAccStr = JSON.stringify(currentStateRef.current.accounts);
       if (currentAccStr === prevAccountsRef.current) {
          if (data.accounts && JSON.stringify(data.accounts) !== currentAccStr) {
             setAccounts(data.accounts);
             prevAccountsRef.current = JSON.stringify(data.accounts);
          }
-      } else {
-         console.log('Skipping Accounts update - Local changes pending.');
       }
 
-      // 3. Notepad
       if (currentStateRef.current.notepadContent === prevNotepadRef.current) {
          if (data.notepadContent !== undefined && data.notepadContent !== currentStateRef.current.notepadContent) {
             setNotepadContent(data.notepadContent);
             prevNotepadRef.current = data.notepadContent;
          }
-      } else {
-         console.log('Skipping Notepad update - Local changes pending.');
       }
 
-      // 4. Investments
       const currentInvStr = JSON.stringify(currentStateRef.current.investments);
       if (currentInvStr === prevInvestmentsRef.current) {
          if (data.investments && JSON.stringify(data.investments) !== currentInvStr) {
@@ -450,7 +433,6 @@ const App: React.FC = () => {
          }
       }
 
-      // 5. Long Term
       const currentLTStr = JSON.stringify(currentStateRef.current.longTermTransactions);
       if (currentLTStr === prevLongTermRef.current) {
          if (data.longTerm && JSON.stringify(data.longTerm) !== currentLTStr) {
@@ -459,7 +441,6 @@ const App: React.FC = () => {
          }
       }
 
-      // 6. Profile
       const currentProfileStr = JSON.stringify(currentStateRef.current.userProfile);
       if (currentProfileStr === prevProfileRef.current) {
          if (data.profile && JSON.stringify(data.profile) !== currentProfileStr) {
@@ -468,7 +449,6 @@ const App: React.FC = () => {
          }
       }
 
-      // 7. Theme
       const currentThemeStr = JSON.stringify(currentStateRef.current.appTheme);
       if (currentThemeStr === prevThemeRef.current) {
          if (data.theme && JSON.stringify(data.theme) !== currentThemeStr) {
@@ -478,7 +458,6 @@ const App: React.FC = () => {
          }
       }
 
-      // 8. Months
       const currentMonthsStr = JSON.stringify(currentStateRef.current.months);
       if (currentMonthsStr === prevMonthsRef.current) {
          if (data.months && JSON.stringify(data.months) !== currentMonthsStr) {
@@ -488,7 +467,6 @@ const App: React.FC = () => {
          }
       }
       
-      // 9. Notifications (Usually safe to update, but sticking to pattern)
       const currentNotifStr = JSON.stringify(currentStateRef.current.notifications);
       if (currentNotifStr === prevNotificationsRef.current) {
          if (data.notifications && JSON.stringify(data.notifications) !== currentNotifStr) {
@@ -497,7 +475,6 @@ const App: React.FC = () => {
          }
       }
       
-      // 10. CDI
       if (currentStateRef.current.cdiRate === prevCdiRef.current) {
          if (data.cdiRate !== undefined && data.cdiRate !== currentStateRef.current.cdiRate) {
              setCdiRate(data.cdiRate);
@@ -506,26 +483,23 @@ const App: React.FC = () => {
       }
   };
 
-  // --- SAVING EFFECTS WITH DEBOUNCE (Supabase + LocalStorage) ---
+  // --- SAVING EFFECTS WITH DEBOUNCE ---
   const DEBOUNCE_DELAY = 1500;
 
-  // Helper to handle Sync Status
   const handleSyncResult = (success: boolean) => {
     if (success) {
       saveData(STORAGE_KEYS.IS_SYNC_DIRTY, false);
     } else {
-      // If save failed (e.g. Quota), mark as dirty so we trust LocalStorage next load
       saveData(STORAGE_KEYS.IS_SYNC_DIRTY, true);
     }
   };
 
+  // Transactions Save
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(transactions);
-      
       if (currentStr !== prevTransactionsRef.current) {
         saveData(STORAGE_KEYS.TRANSACTIONS, transactions);
-        
         const timer = setTimeout(async () => {
           const success = await saveCollection(currentUserEmail, "transactions", transactions);
           handleSyncResult(success);
@@ -536,13 +510,12 @@ const App: React.FC = () => {
     }
   }, [transactions, currentUserEmail, isLoadingData]);
 
+  // Accounts Save
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(accounts);
-      
       if (currentStr !== prevAccountsRef.current) {
         saveData(STORAGE_KEYS.ACCOUNTS, accounts);
-        
         const timer = setTimeout(async () => {
           const success = await saveCollection(currentUserEmail, "accounts", accounts);
           handleSyncResult(success);
@@ -553,13 +526,12 @@ const App: React.FC = () => {
     }
   }, [accounts, currentUserEmail, isLoadingData]);
 
+  // Investments Save
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(investments);
-      
       if (currentStr !== prevInvestmentsRef.current) {
         saveData(STORAGE_KEYS.INVESTMENTS, investments);
-        
         const timer = setTimeout(async () => {
           const success = await saveCollection(currentUserEmail, "investments", investments);
           handleSyncResult(success);
@@ -570,13 +542,12 @@ const App: React.FC = () => {
     }
   }, [investments, currentUserEmail, isLoadingData]);
 
+  // Long Term Save
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(longTermTransactions);
-      
       if (currentStr !== prevLongTermRef.current) {
         saveData(STORAGE_KEYS.LONG_TERM_TRANSACTIONS, longTermTransactions);
-        
         const timer = setTimeout(async () => {
           const success = await saveCollection(currentUserEmail, "longTerm", longTermTransactions);
           handleSyncResult(success);
@@ -587,13 +558,12 @@ const App: React.FC = () => {
     }
   }, [longTermTransactions, currentUserEmail, isLoadingData]);
 
+  // Notifications Save
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(notifications);
-
       if (currentStr !== prevNotificationsRef.current) {
         saveData(STORAGE_KEYS.NOTIFICATIONS, notifications);
-        
         const timer = setTimeout(async () => {
           const success = await saveCollection(currentUserEmail, "notifications", notifications);
           handleSyncResult(success);
@@ -604,13 +574,12 @@ const App: React.FC = () => {
     }
   }, [notifications, currentUserEmail, isLoadingData]);
 
+  // User Profile Save
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(userProfile);
-
       if (currentStr !== prevProfileRef.current) {
         saveData(STORAGE_KEYS.USER_PROFILE, userProfile);
-        
         const timer = setTimeout(async () => {
            const success = await saveUserField(currentUserEmail, "profile", userProfile);
            handleSyncResult(success);
@@ -621,7 +590,7 @@ const App: React.FC = () => {
     }
   }, [userProfile, currentUserEmail, isLoadingData]);
 
-  // THEME EFFECT
+  // Theme Save
   useEffect(() => {
     const root = document.documentElement;
     root.style.setProperty('--color-accent', appTheme.primary);
@@ -638,13 +607,12 @@ const App: React.FC = () => {
     }
   }, [appTheme, currentUserEmail, isLoadingData]);
 
+  // Months Save
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
        const currentStr = JSON.stringify(months);
-       
        if (currentStr !== prevMonthsRef.current) {
          saveData(STORAGE_KEYS.MONTHS, months);
-         
          const timer = setTimeout(async () => {
            const success = await saveUserField(currentUserEmail, "months", months);
            handleSyncResult(success);
@@ -655,11 +623,11 @@ const App: React.FC = () => {
     }
   }, [months, currentUserEmail, isLoadingData]);
 
+  // Notepad Save
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
       if (notepadContent !== prevNotepadRef.current) {
         saveData(STORAGE_KEYS.NOTEPAD_CONTENT, notepadContent);
-        
         const timer = setTimeout(async () => {
           const success = await saveUserField(currentUserEmail, "notepadContent", notepadContent);
           handleSyncResult(success);
@@ -670,6 +638,7 @@ const App: React.FC = () => {
     }
   }, [notepadContent, currentUserEmail, isLoadingData]);
 
+  // CDI Save
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
       if (cdiRate !== prevCdiRef.current) {
@@ -685,11 +654,9 @@ const App: React.FC = () => {
   
   const filteredTransactions = useMemo(() => {
     if (!activeMonthSummary) return [];
-    
     return transactions.filter(tx => {
       const txMonth = tx.month || getMonthFromDateStr(tx.date);
       const txYear = tx.year || getYearFromDateStr(tx.date, activeMonthSummary.year);
-      
       return txMonth === activeMonthSummary.month && txYear === activeMonthSummary.year;
     });
   }, [transactions, activeMonthSummary]);
@@ -697,14 +664,13 @@ const App: React.FC = () => {
   // --- FILTER ACCOUNTS BY ACTIVE MONTH ---
   const filteredAccounts = useMemo(() => {
     if (!activeMonthSummary) return [];
-
     return accounts.filter(acc => {
       if (!acc.month && !acc.year) return true;
       return acc.month === activeMonthSummary.month && acc.year === activeMonthSummary.year;
     });
   }, [accounts, activeMonthSummary]);
 
-  // --- PROFIT CALCULATION LOGIC ---
+  // --- PROFIT CALCULATION ---
   const profitBalance = useMemo(() => {
     const totalAccounts = filteredAccounts.reduce((acc, account) => acc + account.balance, 0);
     const totalExpenses = filteredTransactions.reduce((acc, tx) => acc + tx.amount, 0);
@@ -727,7 +693,6 @@ const App: React.FC = () => {
           isDueToday = true;
         } else {
           const parts = tx.date.split(' ');
-          // Handle "08 Dez" style
           if (parts.length >= 2 && !tx.date.includes('-')) {
              const day = parseInt(parts[0]);
              const monthStr = parts[1].toLowerCase().slice(0, 3);
@@ -741,7 +706,6 @@ const App: React.FC = () => {
                 }
              }
           }
-          // Handle "2025-12-08" style
           else if (tx.date.match(/^\d{4}-\d{2}-\d{2}/)) {
              const d = new Date(tx.date.split(' ')[0] + 'T00:00:00');
              if (d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()) {
@@ -761,7 +725,6 @@ const App: React.FC = () => {
                type: 'alert'
              });
 
-             // System Notification - Updated for Android Status Bar compatibility
              if ('Notification' in window && Notification.permission === 'granted') {
                try {
                  const iconUrl = 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b';
@@ -799,7 +762,6 @@ const App: React.FC = () => {
   
   const handleLogin = async (email: string, name?: string) => {
     try {
-      // REQUEST PERMISSION IMMEDIATELY ON LOGIN/REGISTER CLICK
       let permissionGranted = false;
       if ('Notification' in window) {
         if (Notification.permission === 'default') {
@@ -810,23 +772,18 @@ const App: React.FC = () => {
         }
       }
 
-      // Perform Auth
       if (name) {
-        // Registration Mode
         await registerUser(email, name, {
           months: [SYSTEM_INITIAL_MONTH],
           cdiRate: 11.25
         });
       } else {
-        // Login Mode
         await loginUser(email);
       }
       
-      // If success, set session
       saveData(STORAGE_KEYS.USER_SESSION, email);
       setCurrentUserEmail(email);
 
-      // AUTOMATIC PUSH SUBSCRIPTION AFTER LOGIN (If permission granted)
       if (permissionGranted && 'serviceWorker' in navigator) {
          try {
              const registration = await navigator.serviceWorker.ready;
@@ -909,7 +866,6 @@ const App: React.FC = () => {
       return;
     }
 
-    // Create duplicate transactions for the next month
     const newTxs: Transaction[] = filteredTransactions.map(tx => {
        let newDateStr = '';
        const parts = tx.date.split(' ');
@@ -1059,14 +1015,25 @@ const App: React.FC = () => {
     setActiveMonthId(newMonths[newMonths.length - 1].id);
   };
 
+  // --- PRO LOGIC / CONTACTS CLICK ---
   const handleContactClick = (contact: Contact) => {
-    if (contact.id === '1') {
+    if (contact.id === '1') { // Notes
       setIsNotepadOpen(true);
-    } else if (contact.id === '2') {
+    } else if (contact.id === '2') { // Calendar
       setIsCalendarOpen(true);
-    } else if (contact.id === '3') {
+    } else if (contact.id === '3') { // Analytics (PRO)
+      if (!userProfile.isPro) {
+        setIsProModalOpen(true);
+        return;
+      }
       setIsAnalyticsOpen(true);
     }
+  };
+
+  const handleProUpgrade = () => {
+    // Simulate upgrade
+    setUserProfile(prev => ({ ...prev, isPro: true }));
+    setIsProModalOpen(false);
   };
 
   const handleSaveAccount = (name: string, balance: number, theme: CardTheme) => {
@@ -1157,13 +1124,21 @@ const App: React.FC = () => {
                 onClick={handleOpenProfile}
               >
                 <div className="relative">
-                  <div className="w-12 h-12 rounded-full border-2 border-transparent group-hover:border-accent transition-all overflow-hidden shadow-lg shadow-black/20">
+                  <div className={`w-12 h-12 rounded-full border-2 transition-all overflow-hidden shadow-lg shadow-black/20 ${userProfile.isPro ? 'border-yellow-500' : 'border-transparent group-hover:border-accent'}`}>
                      <img src={userProfile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                   </div>
+                  {userProfile.isPro && (
+                     <div className="absolute -bottom-1 -right-1 bg-yellow-500 rounded-full p-0.5 border-2 border-[#0a0a0b]">
+                        <Crown className="w-3 h-3 text-black fill-black" />
+                     </div>
+                  )}
                 </div>
                 <div className="flex flex-col">
                   <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Bem vindo,</span>
-                  <h1 className="text-white text-xl font-bold leading-none">{userProfile.name || 'Usuário'}</h1>
+                  <div className="flex items-center gap-1">
+                     <h1 className="text-white text-xl font-bold leading-none">{userProfile.name || 'Usuário'}</h1>
+                     {userProfile.isPro && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />}
+                  </div>
                 </div>
               </div>
               
@@ -1206,6 +1181,7 @@ const App: React.FC = () => {
                contacts={MOCK_CONTACTS} 
                onAddClick={handleOpenAddAccount}
                onContactClick={handleContactClick}
+               isPro={!!userProfile.isPro}
             />
 
             <TransactionSummary 
@@ -1310,6 +1286,12 @@ const App: React.FC = () => {
          onClose={handleCloseAnalytics}
          transactions={transactions}
          months={months}
+      />
+
+      <ProModal 
+        isOpen={isProModalOpen}
+        onClose={() => setIsProModalOpen(false)}
+        onUpgrade={handleProUpgrade}
       />
     </div>
   );

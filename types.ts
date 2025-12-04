@@ -64,6 +64,7 @@ export interface UserProfile {
   name: string;
   subtitle: string;
   avatarUrl: string;
+  isPro?: boolean; // New PRO status flag
 }
 
 export interface AppTheme {
