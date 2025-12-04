@@ -32,18 +32,10 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
     }
   };
 
-  // The Magic Logic: Detect Math patterns ending in "="
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newVal = e.target.value;
     
-    // We only trigger calculation if the last character typed was "="
-    // We compare lengths to ensure user is adding text, not deleting
     if (newVal.length > content.length && newVal.endsWith('=')) {
-      
-      // Attempt to find a math expression before the "="
-      // Looks for: Number (float/int) -> Operator -> Number -> =
-      // Captures things like: "100 + 50 =" or "50.5 * 2 ="
-      // Supports line breaks before the expression starts
       const lines = newVal.split('\n');
       const lastLine = lines[lines.length - 1];
       
@@ -51,7 +43,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
       const match = lastLine.match(regex);
 
       if (match) {
-        const num1Str = match[1].replace(/\./g, '').replace(',', '.'); // sanitize for JS math
+        const num1Str = match[1].replace(/\./g, '').replace(',', '.');
         const operator = match[2];
         const num2Str = match[3].replace(/\./g, '').replace(',', '.');
 
@@ -73,10 +65,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
         }
 
         if (validOperation && !isNaN(result)) {
-          // Format result back to PT-BR style
           const formattedResult = result.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-          
-          // Append the result to the text
           const newText = newVal + ' ' + formattedResult;
           setContent(newText);
           return;
@@ -88,16 +77,9 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      {/* 
-         Updated Height Logic:
-         - h-[85dvh]: Target height (large)
-         - max-h-full: STRICTLY constraint to current viewport height (handles keyboard opening on Android)
-         This ensures the title is never pushed off-screen.
-      */}
-      <div className="bg-[#1c1c1e] w-full max-w-lg h-[85dvh] max-h-full sm:h-[80dvh] rounded-t-[2.5rem] rounded-b-none sm:rounded-[2.5rem] p-1 shadow-2xl border border-white/5 relative flex flex-col transition-all">
+    <div className="fixed inset-0 z-[80] flex flex-col justify-end sm:justify-center items-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-[#1c1c1e] w-full max-w-lg h-[85%] max-h-full sm:h-[80dvh] sm:max-h-[800px] rounded-t-[2.5rem] rounded-b-none sm:rounded-[2.5rem] p-1 shadow-2xl border border-white/5 relative flex flex-col transition-all overflow-hidden">
         
-        {/* Header (Integrated into the card look) */}
         <div className="flex justify-between items-center p-5 pb-2 shrink-0">
           <div className="flex items-center gap-3">
              <div className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center border border-white/5">
@@ -126,7 +108,6 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
           </div>
         </div>
 
-        {/* Paper Area */}
         <div className="flex-1 bg-[#2c2c2e]/50 m-2 rounded-[2rem] p-4 relative overflow-hidden border border-white/5">
            <textarea
              ref={textareaRef}
@@ -139,7 +120,6 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
            />
         </div>
 
-        {/* Footer info - Added Safe Area handling for Bottom Sheet mode */}
         <div className="px-6 pb-[max(1rem,env(safe-area-inset-bottom))] sm:pb-4 pt-1 flex justify-between text-xs text-gray-500 font-medium shrink-0">
            <span>{content.length} caracteres</span>
            <span className="flex items-center gap-1">
