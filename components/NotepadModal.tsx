@@ -79,14 +79,14 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
 
   return (
     <div className="fixed inset-0 z-[80] overflow-y-auto bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="flex min-h-full items-center justify-center p-4">
+      <div className="flex min-h-full items-start justify-center p-4 pt-24 sm:items-center sm:pt-4">
         {/* 
           Container:
           - h-[500px]: Fixed height matching AddAccountModal feel.
           - max-w-sm: Matches width of other modals.
-          - No max-h restriction: Prevents squashing when keyboard opens.
+          - pt-24 (mobile): Anchors modal to top-mid to avoid keyboard jumping
         */}
-        <div className="bg-[#1c1c1e] w-full max-w-sm h-[500px] rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col transition-all overflow-hidden my-auto">
+        <div className="bg-[#1c1c1e] w-full max-w-sm h-[500px] rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col transition-all overflow-hidden">
           
           {/* Header */}
           <div className="flex justify-between items-center p-6 pb-4 shrink-0">
