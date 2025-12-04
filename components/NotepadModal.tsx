@@ -89,7 +89,13 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1c1c1e] w-full max-w-lg h-[85dvh] sm:h-[80dvh] rounded-t-[2.5rem] rounded-b-none sm:rounded-[2.5rem] p-1 shadow-2xl border border-white/5 relative flex flex-col">
+      {/* 
+         Updated Height Logic:
+         - h-[85dvh]: Target height (large)
+         - max-h-full: STRICTLY constraint to current viewport height (handles keyboard opening on Android)
+         This ensures the title is never pushed off-screen.
+      */}
+      <div className="bg-[#1c1c1e] w-full max-w-lg h-[85dvh] max-h-full sm:h-[80dvh] rounded-t-[2.5rem] rounded-b-none sm:rounded-[2.5rem] p-1 shadow-2xl border border-white/5 relative flex flex-col transition-all">
         
         {/* Header (Integrated into the card look) */}
         <div className="flex justify-between items-center p-5 pb-2 shrink-0">
