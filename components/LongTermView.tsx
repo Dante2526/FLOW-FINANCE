@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Wallet, Plus, ChevronLeft, Calendar, Trash2, Check, Edit2 } from 'lucide-react';
 import { LongTermTransaction } from '../types';
@@ -290,11 +291,11 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
         </div>
 
         {/* Summary Header Blocks (Spreadsheet Style) */}
-        <div className="grid grid-cols-3 gap-1 mb-6">
+        <div className="grid grid-cols-3 gap-1 mb-4">
           {/* Editable Monthly Value */}
           <button 
             onClick={openEditMonthlyModal}
-            className="bg-purple-600 rounded-tl-xl p-3 flex flex-col items-center justify-center text-center h-20 relative hover:bg-purple-500 transition-all active:scale-95 group"
+            className="bg-purple-600 rounded-2xl p-3 flex flex-col items-center justify-center text-center h-20 relative hover:bg-purple-500 transition-all active:scale-95 group shadow-lg shadow-purple-900/20"
           >
             <div className="absolute top-1.5 right-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
                  <Edit2 className="w-3 h-3 text-white" />
@@ -308,7 +309,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
           {/* Payment Status (Center) - Now Editable Title */}
           <button 
             onClick={openEditTitleModal}
-            className="bg-indigo-600 p-3 flex flex-col items-center justify-center text-center h-20 relative hover:bg-indigo-500 transition-all active:scale-95 group"
+            className="bg-indigo-600 p-3 rounded-2xl flex flex-col items-center justify-center text-center h-20 relative hover:bg-indigo-500 transition-all active:scale-95 group shadow-lg shadow-indigo-900/20"
           >
             <div className="absolute top-1.5 right-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
                  <Edit2 className="w-3 h-3 text-white" />
@@ -320,7 +321,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
           {/* Editable Total Value */}
           <button 
              onClick={openEditTotalModal}
-             className="bg-blue-600 rounded-tr-xl p-3 flex flex-col items-center justify-center text-center h-20 relative hover:bg-blue-500 transition-all active:scale-95 group"
+             className="bg-blue-600 rounded-2xl p-3 flex flex-col items-center justify-center text-center h-20 relative hover:bg-blue-500 transition-all active:scale-95 group shadow-lg shadow-blue-900/20"
           >
              <div className="absolute top-1.5 right-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
                  <Edit2 className="w-3 h-3 text-white" />
@@ -330,17 +331,17 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                R$ {selectedItem.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
              </span>
           </button>
+        </div>
           
-          {/* Sub Header */}
-          <div className="col-span-3 grid grid-cols-4 bg-orange-600 h-10 items-center px-2">
+        {/* Sub Header */}
+        <div className="grid grid-cols-4 bg-orange-600 h-10 items-center px-2 rounded-2xl mb-2 shadow-lg shadow-orange-900/20 z-10 relative select-none">
             <span className="text-[10px] font-bold text-black text-center border-r border-black/10 h-full flex items-center justify-center">PARCELA</span>
             <span className="text-[10px] font-bold text-black text-center col-span-2 border-r border-black/10 h-full flex items-center justify-center">DATA VENCIMENTO</span>
             <span className="text-[10px] font-bold text-black text-center h-full flex items-center justify-center">VALOR</span>
-          </div>
         </div>
 
-        {/* The Spreadsheet Grid */}
-        <div className="flex flex-col gap-[2px] bg-[#1c1c1e] rounded-b-xl overflow-hidden">
+        {/* The Spreadsheet Grid - Converted to Independent Cards */}
+        <div className="flex flex-col gap-2 pb-4">
           {Array.from({ length: selectedItem.installmentsCount }).map((_, index) => {
             const isPaid = index < selectedItem.installmentsPaid;
             const amount = getInstallmentAmount(selectedItem, index);
@@ -349,24 +350,26 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
               <div 
                 key={index}
                 onClick={() => toggleInstallment(index)}
-                className={`grid grid-cols-4 items-center h-14 px-2 cursor-pointer transition-colors border-b border-black/20 group relative ${
-                  isPaid ? 'bg-green-600' : 'bg-[#2c2c2e] hover:bg-[#3a3a3c]'
+                className={`grid grid-cols-4 items-center h-16 px-2 cursor-pointer transition-all group relative rounded-2xl shadow-sm select-none ${
+                  isPaid 
+                    ? 'bg-green-600 shadow-green-900/20' 
+                    : 'bg-[#1c1c1e] border border-white/5 hover:bg-[#2c2c2e]'
                 }`}
               >
                 {/* Number */}
                 <div className="flex justify-center">
-                  <span className={`font-bold ${isPaid ? 'text-white' : 'text-accent'}`}>{index + 1}º</span>
+                  <span className={`font-bold text-lg ${isPaid ? 'text-white' : 'text-accent'}`}>{index + 1}º</span>
                 </div>
                 
                 {/* Date */}
-                <div className="col-span-2 flex justify-center border-l border-white/5 h-full items-center">
+                <div className={`col-span-2 flex justify-center h-full items-center border-l ${isPaid ? 'border-white/10' : 'border-white/5'}`}>
                   <span className={`text-sm ${isPaid ? 'text-white font-medium' : 'text-gray-400'}`}>
                     {getInstallmentDate(selectedItem.startDate, index)}
                   </span>
                 </div>
                 
                 {/* Value Column */}
-                <div className="flex flex-col justify-center items-center border-l border-white/5 h-full relative px-1 group/col">
+                <div className={`flex flex-col justify-center items-center h-full relative px-1 group/col border-l ${isPaid ? 'border-white/10' : 'border-white/5'}`}>
                    <div className="flex items-center gap-1 z-10">
                        <span className={`text-xs font-bold ${isPaid ? 'text-white' : 'text-gray-300'}`}>
                          R$ {amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -380,7 +383,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                           e.stopPropagation();
                           openEditInstallmentModal(index, amount);
                       }}
-                      className="absolute inset-0 flex items-center justify-end pr-2 opacity-0 group-hover/col:opacity-100 transition-opacity bg-black/20"
+                      className="absolute inset-0 flex items-center justify-end pr-2 opacity-0 group-hover/col:opacity-100 transition-opacity bg-black/20 rounded-r-2xl"
                       title="Editar valor desta parcela"
                    >
                       <Edit2 className="w-3 h-3 text-white" />
@@ -392,7 +395,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
         </div>
 
         {/* Footer Summary */}
-        <div className="mt-4 flex rounded-xl overflow-hidden h-14 bg-[#1c1c1e] border border-white/5">
+        <div className="mt-2 flex rounded-2xl overflow-hidden h-14 bg-[#1c1c1e] border border-white/5 shadow-lg">
           <div className="flex-1 bg-green-600 flex items-center justify-center">
              <span className="font-bold text-black text-sm uppercase">JÁ FOI PAGO</span>
           </div>
