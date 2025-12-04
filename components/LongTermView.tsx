@@ -28,8 +28,12 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
 
   // Edit Value States
   const [editMonthlyValue, setEditMonthlyValue] = useState('');
+  
+  // Unified Installment Edit State (Value + Date)
   const [editInstallmentValue, setEditInstallmentValue] = useState('');
+  const [editInstallmentDate, setEditInstallmentDate] = useState('');
   const [editingInstallmentIndex, setEditingInstallmentIndex] = useState<number | null>(null);
+
   const [editTitleValue, setEditTitleValue] = useState('');
   const [editTotalValue, setEditTotalValue] = useState('');
 
@@ -101,10 +105,27 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
       return item.monthlyAmount ?? (item.totalAmount / item.installmentsCount);
   };
 
-  const getInstallmentDate = (start: string, index: number) => {
-    const date = new Date(start);
+  const getInstallmentDate = (item: LongTermTransaction, index: number) => {
+    // Check for specific date override first
+    if (item.installmentsDates && item.installmentsDates[index]) {
+       // Append T00:00:00 to ensure local date interpretation
+       const dateOverride = new Date(item.installmentsDates[index] + 'T00:00:00');
+       return dateOverride.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    // Default Calculation
+    const date = new Date(item.startDate + 'T00:00:00');
     date.setMonth(date.getMonth() + index);
     return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+  
+  const getRawInstallmentDate = (item: LongTermTransaction, index: number): string => {
+     if (item.installmentsDates && item.installmentsDates[index]) {
+        return item.installmentsDates[index];
+     }
+     const date = new Date(item.startDate + 'T00:00:00');
+     date.setMonth(date.getMonth() + index);
+     return date.toISOString().split('T')[0];
   };
 
   const toggleInstallment = (index: number) => {
@@ -170,25 +191,32 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
       setEditMonthlyValue('');
   };
 
-  const handleSaveInstallmentValue = (e: React.FormEvent) => {
+  const handleSaveInstallment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedItem || editingInstallmentIndex === null || !editInstallmentValue) return;
+    if (!selectedItem || editingInstallmentIndex === null || !editInstallmentValue || !editInstallmentDate) return;
 
+    // 1. Handle Amount
     const cleanVal = editInstallmentValue.replace(/\./g, '').replace(',', '.');
     const newAmount = parseFloat(cleanVal);
     
     const newItem = { ...selectedItem };
-    const newHistory = { ...(newItem.installmentsHistory || {}) };
     
-    // Save specific override
+    // Save amount override
+    const newHistory = { ...(newItem.installmentsHistory || {}) };
     newHistory[editingInstallmentIndex] = newAmount;
     newItem.installmentsHistory = newHistory;
+
+    // 2. Handle Date
+    const newDates = { ...(newItem.installmentsDates || {}) };
+    newDates[editingInstallmentIndex] = editInstallmentDate;
+    newItem.installmentsDates = newDates;
 
     onEdit(newItem);
     setSelectedItem(newItem);
     setIsEditInstallmentOpen(false);
     setEditingInstallmentIndex(null);
     setEditInstallmentValue('');
+    setEditInstallmentDate('');
   };
 
   const handleSaveTitle = (e: React.FormEvent) => {
@@ -221,7 +249,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
     setSelectedItem(newItem);
     setIsEditTotalOpen(false);
   };
-
+  
   // --- MODAL OPENERS ---
 
   const openEditMonthlyModal = () => {
@@ -231,9 +259,10 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
       setIsEditMonthlyOpen(true);
   };
 
-  const openEditInstallmentModal = (index: number, currentAmount: number) => {
+  const openEditInstallmentModal = (index: number, currentAmount: number, currentDateIso: string) => {
       setEditingInstallmentIndex(index);
       setEditInstallmentValue(currentAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      setEditInstallmentDate(currentDateIso);
       setIsEditInstallmentOpen(true);
   };
 
@@ -248,7 +277,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
     setEditTotalValue(selectedItem.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
     setIsEditTotalOpen(true);
   };
-
+  
   // --- DETAIL VIEW (SPREADSHEET) ---
   if (selectedItem) {
     const currentMonthlyValue = getCurrentMonthlyAmount(selectedItem);
@@ -336,7 +365,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
         {/* Sub Header */}
         <div className="grid grid-cols-4 bg-orange-600 h-10 items-center px-2 rounded-2xl mb-2 shadow-lg shadow-orange-900/20 z-10 relative select-none">
             <span className="text-[10px] font-bold text-black text-center border-r border-black/10 h-full flex items-center justify-center">PARCELA</span>
-            <span className="text-[10px] font-bold text-black text-center col-span-2 border-r border-black/10 h-full flex items-center justify-center">DATA VENCIMENTO</span>
+            <span className="text-[10px] font-bold text-black text-center col-span-2 border-r border-black/10 h-full flex items-center justify-center">DATA PAGAMENTO</span>
             <span className="text-[10px] font-bold text-black text-center h-full flex items-center justify-center">VALOR</span>
         </div>
 
@@ -345,6 +374,8 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
           {Array.from({ length: selectedItem.installmentsCount }).map((_, index) => {
             const isPaid = index < selectedItem.installmentsPaid;
             const amount = getInstallmentAmount(selectedItem, index);
+            const dateStr = getInstallmentDate(selectedItem, index);
+            const rawDateStr = getRawInstallmentDate(selectedItem, index);
             
             return (
               <div 
@@ -362,9 +393,9 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                 </div>
                 
                 {/* Date */}
-                <div className={`col-span-2 flex justify-center h-full items-center border-l ${isPaid ? 'border-white/10' : 'border-white/5'}`}>
+                <div className={`col-span-2 flex justify-center h-full items-center border-l relative ${isPaid ? 'border-white/10' : 'border-white/5'}`}>
                   <span className={`text-sm ${isPaid ? 'text-white font-medium' : 'text-gray-400'}`}>
-                    {getInstallmentDate(selectedItem.startDate, index)}
+                    {dateStr}
                   </span>
                 </div>
                 
@@ -378,14 +409,14 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                    </div>
                 </div>
 
-                {/* Specific Edit Button - ABSOLUTE TOP RIGHT OF THE ROW CONTAINER */}
+                {/* Specific Edit Button - ABSOLUTE TOP RIGHT OF THE ROW CONTAINER (Value + Date) */}
                 <button 
                     onClick={(e) => {
                         e.stopPropagation();
-                        openEditInstallmentModal(index, amount);
+                        openEditInstallmentModal(index, amount, rawDateStr);
                     }}
                     className="absolute top-1.5 right-1.5 z-20 opacity-50 hover:opacity-100 transition-opacity"
-                    title="Editar valor desta parcela"
+                    title="Editar valor e data"
                 >
                     <Edit2 className="w-3 h-3 text-white" />
                 </button>
@@ -526,30 +557,48 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
             </div>
          )}
 
-         {/* Edit Specific Installment Modal */}
+         {/* Edit Specific Installment Value AND Date Modal */}
          {isEditInstallmentOpen && (
             <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4 max-h-[90dvh] overflow-y-auto no-scrollbar">
                     <h3 className="text-lg font-bold text-white text-center">
                         Editar Parcela {editingInstallmentIndex !== null ? editingInstallmentIndex + 1 : ''}
                     </h3>
-                    <p className="text-xs text-gray-400 text-center -mt-2">
-                        Altere o valor apenas desta parcela.
-                    </p>
                     
-                    <form onSubmit={handleSaveInstallmentValue} className="flex flex-col gap-4 mt-2">
-                        <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-accent">R$</span>
-                            <input 
-                                type="text" 
-                                name="lt_installment_edit_hidden"
-                                value={editInstallmentValue}
-                                onChange={(e) => handleAmountChange(e, setEditInstallmentValue)}
-                                className="w-full bg-[#2c2c2e] text-white text-2xl font-bold py-3 pl-12 pr-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center"
-                                autoFocus
-                                autoComplete="off"
-                            />
+                    <form onSubmit={handleSaveInstallment} className="flex flex-col gap-4 mt-2">
+                        {/* Amount Input */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs text-gray-400 ml-2">Valor</label>
+                            <div className="relative">
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-accent">R$</span>
+                                <input 
+                                    type="text" 
+                                    name="lt_installment_edit_hidden"
+                                    value={editInstallmentValue}
+                                    onChange={(e) => handleAmountChange(e, setEditInstallmentValue)}
+                                    className="w-full bg-[#2c2c2e] text-white text-2xl font-bold py-3 pl-12 pr-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center"
+                                    autoFocus
+                                    autoComplete="off"
+                                />
+                            </div>
                         </div>
+
+                        {/* Date Input */}
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs text-gray-400 ml-2">Data Pagamento</label>
+                            <div className="relative">
+                                <input 
+                                    type="date" 
+                                    name="lt_installment_date_hidden"
+                                    value={editInstallmentDate}
+                                    onChange={(e) => setEditInstallmentDate(e.target.value)}
+                                    className="w-full bg-[#2c2c2e] text-white text-xl font-bold py-3 px-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center"
+                                    autoComplete="off"
+                                />
+                                <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-5 h-5" />
+                            </div>
+                        </div>
+
                         <div className="flex gap-2">
                             <button 
                                 type="button" 
@@ -572,7 +621,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                 </div>
             </div>
          )}
-
+         
       </div>
     );
   }
@@ -610,7 +659,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                    <div className="flex justify-between items-start mb-4">
                      <div>
                        <h3 className="text-lg font-bold text-white uppercase">{item.title}</h3>
-                       <span className="text-xs text-gray-400">Início: {new Date(item.startDate).toLocaleDateString('pt-BR')}</span>
+                       <span className="text-xs text-gray-400">Início: {new Date(item.startDate + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
                      </div>
                      <span className="text-xl font-bold text-accent">
                        R$ {item.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
