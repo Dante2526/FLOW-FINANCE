@@ -16,6 +16,9 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
   useEffect(() => {
     if (isOpen) {
       setContent(initialContent);
+      // Força a rolagem para o topo para evitar conflitos visuais com o fundo rolado
+      // e melhorar a experiência ao abrir o teclado virtual
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [isOpen, initialContent]);
 
