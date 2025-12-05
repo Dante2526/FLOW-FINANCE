@@ -25,7 +25,17 @@ import {
   Building,
   PieChart,
   Bitcoin,
-  Landmark
+  Landmark,
+  BookOpen,
+  Skull,
+  Lightbulb,
+  Dumbbell,
+  PawPrint,
+  Plane,
+  Gamepad2,
+  Gift,
+  Beer,
+  Scissors
 } from 'lucide-react';
 import { LogoType } from '../types';
 
@@ -203,7 +213,7 @@ export const TransactionIcon = ({ type }: { type: LogoType }) => {
     case 'food': return <GenericIcon icon={Utensils} bg="bg-orange-500" />;
     case 'transport': return <GenericIcon icon={Car} bg="bg-blue-600" />;
     
-    // New Icons
+    // New Icons (Existing)
     case 'motorcycle': return <GenericIcon icon={MotorcycleIcon} bg="bg-indigo-600" />;
     case 'insurance': return <GenericIcon icon={ShieldCheck} bg="bg-emerald-600" />;
     case 'wifi': return <GenericIcon icon={Wifi} bg="bg-sky-500" />;
@@ -211,8 +221,22 @@ export const TransactionIcon = ({ type }: { type: LogoType }) => {
     case 'rent': return <GenericIcon icon={Key} bg="bg-rose-500" />;
     case 'electricity': return <GenericIcon icon={Zap} bg="bg-yellow-500" />;
     
+    // New Icons (Requested & Extra)
+    case 'education': return <GenericIcon icon={BookOpen} bg="bg-indigo-500" />;
+    case 'funeral': return <GenericIcon icon={Skull} bg="bg-stone-600" />;
+    case 'project': return <GenericIcon icon={Lightbulb} bg="bg-yellow-400" />;
+    case 'health': return <GenericIcon icon={Dumbbell} bg="bg-rose-500" />;
+    case 'pet': return <GenericIcon icon={PawPrint} bg="bg-amber-600" />;
+    case 'travel': return <GenericIcon icon={Plane} bg="bg-sky-500" />;
+    
+    // New Additions (Games, Gift, Bar, Beauty)
+    case 'game': return <GenericIcon icon={Gamepad2} bg="bg-purple-600" />;
+    case 'gift': return <GenericIcon icon={Gift} bg="bg-pink-500" />;
+    case 'bar': return <GenericIcon icon={Beer} bg="bg-orange-700" />;
+    case 'beauty': return <GenericIcon icon={Scissors} bg="bg-fuchsia-600" />;
+
     case 'utility': return <GenericIcon icon={Zap} bg="bg-yellow-600" />;
     case 'home': return <GenericIcon icon={Home} bg="bg-teal-600" />;
-    case 'generic': default: return <GenericIcon icon={CreditCard} bg="bg-gray-700" />;
+    case 'generic': default: return <GenericIcon icon={CreditCard} bg="bg-gradient-to-br from-indigo-500 to-purple-500" />;
   }
 };

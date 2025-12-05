@@ -23,6 +23,19 @@ const PURCHASE_ICONS: { type: LogoType; label: string }[] = [
   { type: 'rent', label: 'Aluguel' },
   { type: 'home', label: 'Casa' },
   { type: 'utility', label: 'Contas' },
+  // New Items
+  { type: 'education', label: 'Estudos' },
+  { type: 'project', label: 'Projetos' },
+  { type: 'funeral', label: 'Funeral' },
+  { type: 'health', label: 'Saúde' },
+  { type: 'pet', label: 'Pets' },
+  { type: 'travel', label: 'Viagem' },
+  // Extra Additions
+  { type: 'game', label: 'Jogos' },
+  { type: 'gift', label: 'Presentes' },
+  { type: 'bar', label: 'Lazer' },
+  { type: 'beauty', label: 'Beleza' },
+  
   { type: 'generic', label: 'Outros' },
 ];
 

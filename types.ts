@@ -21,7 +21,17 @@ export type LogoType =
   | 'wifi'
   | 'mobile'
   | 'rent'
-  | 'electricity';
+  | 'electricity'
+  | 'education'
+  | 'funeral'
+  | 'project'
+  | 'health'
+  | 'pet'
+  | 'travel'
+  | 'game'
+  | 'gift'
+  | 'bar'
+  | 'beauty';
 
 export interface Transaction {
   id: string;
