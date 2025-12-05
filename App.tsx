@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -750,10 +749,11 @@ const App: React.FC = () => {
 
              if ('Notification' in window && Notification.permission === 'granted') {
                try {
-                 const iconUrl = 'https://api.dicebear.com/9.x/shapes/png?seed=FlowFinance&backgroundColor=0a0a0b';
+                 const iconUrl = window.location.origin + '/favicon.svg';
                  const options: any = {
                    body: `A conta ${tx.name} vence hoje. Valor: R$ ${tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
                    icon: iconUrl,
+                   badge: iconUrl, // Ensure status bar icon uses app logo
                    tag: `flow-finance-bill-${tx.id}`, 
                    requireInteraction: true,
                    vibrate: [200, 100, 200]
