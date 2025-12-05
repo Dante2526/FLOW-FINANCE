@@ -20,20 +20,32 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 // Helper para converter os dados do Supabase para o formato do App
 // Exportado para ser usado na subscrição Realtime
 export const normalizeUserData = (data: any) => {
-  return {
-    ...data,
-    longTerm: data.long_term || [],
-    notepadContent: data.notepad_content || '',
-    cdiRate: data.cdi_rate !== null ? data.cdi_rate : 11.25,
-    // Garante que arrays nunca sejam null
-    transactions: data.transactions || [],
-    accounts: data.accounts || [],
-    investments: data.investments || [],
-    notifications: data.notifications || [],
-    months: data.months || [],
-    profile: data.profile || {},
-    theme: data.theme || null // Garante leitura explícita do tema
+  const result: any = { ...data };
+
+  // Helper para atribuir apenas se a chave existir no objeto original
+  // Isso evita sobrescrever dados locais com [] quando o payload do Realtime é parcial (TOASTed)
+  const assignIfPresent = (targetKey: string, sourceKey: string, defaultVal: any) => {
+    if (sourceKey in data) {
+      result[targetKey] = data[sourceKey] || defaultVal;
+    }
   };
+
+  assignIfPresent('longTerm', 'long_term', []);
+  assignIfPresent('notepadContent', 'notepad_content', '');
+  
+  if ('cdi_rate' in data) {
+    result.cdiRate = data.cdi_rate !== null ? data.cdi_rate : 11.25;
+  }
+  
+  assignIfPresent('transactions', 'transactions', []);
+  assignIfPresent('accounts', 'accounts', []);
+  assignIfPresent('investments', 'investments', []);
+  assignIfPresent('notifications', 'notifications', []);
+  assignIfPresent('months', 'months', []);
+  assignIfPresent('profile', 'profile', {});
+  assignIfPresent('theme', 'theme', null);
+
+  return result;
 };
 
 // --- AUTH / USER MANAGEMENT ---
