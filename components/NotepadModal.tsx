@@ -81,11 +81,11 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       {/* 
         Container:
-        - h-[80dvh]: Matches other large modals like Privacy/Notification/Calendar feel.
-        - max-h-[90dvh]: Safety constraint.
+        - h-[520px]: Fixed height for stability across browsers (especially Samsung Internet with keyboard).
+        - max-h-[90dvh]: Prevents overflow on very small screens.
         - flex flex-col: Allows internal content scrolling.
       */}
-      <div className="bg-[#1c1c1e] w-full max-w-sm h-[80dvh] max-h-[90dvh] rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col transition-all overflow-hidden">
+      <div className="bg-[#1c1c1e] w-full max-w-sm h-[520px] max-h-[90dvh] rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col transition-all overflow-hidden">
         
         {/* Header - p-7 matches Analytics/Calendar */}
         <div className="flex justify-between items-center p-7 pb-4 shrink-0">
