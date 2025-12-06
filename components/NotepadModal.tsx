@@ -81,20 +81,21 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       {/* 
         Container:
-        - h-[500px]: Altura base similar ao modal de Nova Fonte de Renda preenchido.
-        - max-h-[90dvh]: Garante que nunca ultrapasse 90% da altura visível (útil quando teclado abre).
-        - flex flex-col: Permite que o conteúdo interno encolha/cresça.
+        - h-[80dvh]: Matches other large modals like Privacy/Notification/Calendar feel.
+        - max-h-[90dvh]: Safety constraint.
+        - flex flex-col: Allows internal content scrolling.
       */}
-      <div className="bg-[#1c1c1e] w-full max-w-sm h-[500px] max-h-[90dvh] rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col transition-all overflow-hidden">
+      <div className="bg-[#1c1c1e] w-full max-w-sm h-[80dvh] max-h-[90dvh] rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col transition-all overflow-hidden">
         
-        {/* Header */}
-        <div className="flex justify-between items-center p-6 pb-4 shrink-0">
+        {/* Header - p-7 matches Analytics/Calendar */}
+        <div className="flex justify-between items-center p-7 pb-4 shrink-0">
           <div className="flex items-center gap-3">
              <div className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center border border-white/5">
                 <NotebookPen className="w-5 h-5 text-yellow-500" />
              </div>
              <div>
-                <h2 className="text-xl font-bold text-white leading-none">Smart Notes</h2>
+                {/* text-lg matches Analytics/Calendar titles */}
+                <h2 className="text-lg font-bold text-white leading-none">Smart Notes</h2>
                 <p className="text-[10px] text-gray-400 mt-1">Digite calculos (ex: 10 + 20 =)</p>
              </div>
           </div>
@@ -116,7 +117,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
           </div>
         </div>
 
-        {/* Paper Area - flex-1 allows it to fill space or shrink if parent gets smaller (keyboard) */}
+        {/* Paper Area - flex-1 allows it to fill space */}
         <div className="flex-1 min-h-0 px-2 pb-2">
            <div className="w-full h-full bg-[#2c2c2e]/50 rounded-[2rem] p-4 relative overflow-hidden border border-white/5">
               <textarea

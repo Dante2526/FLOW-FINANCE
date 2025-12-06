@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { TrendingUp, Plus, PieChart, Building, Trash2, Edit2, Settings2, X, RefreshCw } from 'lucide-react';
 import { Investment } from '../types';
@@ -318,7 +319,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
           <TrendingUp className="w-6 h-6 text-accent" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-white">Carteira</h2>
+          <h2 className="text-2xl font-bold text-white">Investimentos</h2>
           <button 
              onClick={openCdiModal}
              className="text-accent text-sm font-medium flex items-center gap-1 hover:text-white transition-colors cursor-pointer group"

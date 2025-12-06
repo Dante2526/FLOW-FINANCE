@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
-import { Palette, Check, Lock, Crown } from 'lucide-react';
+import { Palette, Check, Lock, Crown, Shield, ChevronRight } from 'lucide-react';
 import { AppTheme } from '../types';
+import PrivacyPolicyModal from './PrivacyPolicyModal';
 
 interface Props {
   currentThemeId: string;
@@ -33,6 +35,7 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
 
 const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onOpenProModal }) => {
   const [selectedThemeId, setSelectedThemeId] = useState(currentThemeId);
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
 
   const handleConfirm = () => {
     const theme = AVAILABLE_THEMES.find(t => t.id === selectedThemeId);
@@ -71,10 +74,10 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
       </div>
 
       {/* Theme Selection - Native Scroll */}
-      <div className="pb-32">
+      <div className="pb-40">
         <h3 className="text-gray-400 text-sm font-bold ml-2 mb-4 uppercase tracking-wider">Cores do Sistema</h3>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 mb-8">
           {AVAILABLE_THEMES.map((theme) => {
             const isActive = selectedThemeId === theme.id;
             const isLocked = theme.isPro && !isPro;
@@ -120,6 +123,29 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
             );
           })}
         </div>
+
+        {/* Privacy Policy Link */}
+        <div className="px-1">
+           <button 
+             onClick={() => setIsPrivacyOpen(true)}
+             className="w-full bg-[#1c1c1e] hover:bg-[#2c2c2e] border border-white/5 rounded-2xl p-4 flex items-center justify-between group transition-colors"
+           >
+              <div className="flex items-center gap-3">
+                 <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-gray-400" />
+                 </div>
+                 <div className="text-left">
+                    <span className="text-white font-bold text-sm block">Política de Privacidade</span>
+                    <span className="text-gray-500 text-xs">Termos de uso e dados</span>
+                 </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
+           </button>
+           
+           <p className="text-center text-[10px] text-gray-600 mt-6 pb-4">
+              Flow Finance v1.2.0 • Build 2025
+           </p>
+        </div>
       </div>
 
       {/* Confirm Button - Fixed at bottom of view area */}
@@ -137,6 +163,8 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
           <Check className="w-5 h-5" />
         </button>
       </div>
+
+      <PrivacyPolicyModal isOpen={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} />
 
     </div>
   );

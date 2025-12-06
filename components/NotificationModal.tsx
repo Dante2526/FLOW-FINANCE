@@ -130,6 +130,16 @@ const NotificationModal: React.FC<Props> = ({
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/\D/g, '');
+    if (!rawValue) {
+      setAmount('');
+      return;
+    }
+    const amountValue = parseFloat(rawValue) / 100;
+    setAmount(amountValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  };
+
   const handleShare = async () => {
     if (!recipientName) return;
 
@@ -313,11 +323,12 @@ const NotificationModal: React.FC<Props> = ({
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-500 font-bold text-sm">R$</span>
                     <input 
-                      type="number"
+                      type="text"
+                      inputMode="numeric"
                       name="notification_amount_hidden"
                       value={amount}
-                      onChange={(e) => setAmount(e.target.value)} 
-                      placeholder="0.00"
+                      onChange={handleAmountChange} 
+                      placeholder="0,00"
                       className="w-full bg-[#2c2c2e] text-white p-3 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 font-bold text-base"
                       autoComplete="off"
                       data-lpignore="true"

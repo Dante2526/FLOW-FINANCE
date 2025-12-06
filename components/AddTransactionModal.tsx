@@ -99,7 +99,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
 
   useEffect(() => {
     if (isOpen && transactionToEdit) {
-      setAmount(transactionToEdit.amount.toString());
+      setAmount(transactionToEdit.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       setName(transactionToEdit.name.toUpperCase());
       setSelectedIcon(transactionToEdit.logoType);
       setType(transactionToEdit.type as 'purchase' | 'subscription');
@@ -142,6 +142,17 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
     }
   }, [type, visibleIcons, isOpen, selectedIcon]);
 
+  // Currency Handler
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/\D/g, '');
+    if (!rawValue) {
+      setAmount('');
+      return;
+    }
+    const amountValue = parseFloat(rawValue) / 100;
+    setAmount(amountValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  };
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -159,9 +170,12 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
        finalDateString = date;
     }
 
+    // Parse amount from string "1.000,00" to float
+    const parsedAmount = parseFloat(amount.replace(/\./g, '').replace(',', '.'));
+
     onSave({
       name,
-      amount: parseFloat(amount),
+      amount: parsedAmount,
       type,
       paymentMethod: transactionToEdit?.paymentMethod || 'card', 
       logoType: selectedIcon,
@@ -204,11 +218,12 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-accent">R$</span>
               <input 
-                type="number" 
+                type="text" 
+                inputMode="numeric"
                 name="transaction_amount_hidden"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
+                onChange={handleAmountChange}
+                placeholder="0,00"
                 className="w-full bg-[#2c2c2e] text-white text-3xl font-bold py-4 pl-14 pr-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600"
                 required
                 autoComplete="off"

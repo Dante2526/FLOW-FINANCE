@@ -1,12 +1,17 @@
 
 import React, { useState, useRef } from 'react';
 import { Account, CardTheme } from '../types';
-import { Trash2, Edit2 } from 'lucide-react';
+import { Trash2, Edit2, GripVertical } from 'lucide-react';
 
 interface Props {
   account: Account;
   onDelete: (id: string) => void;
   onEdit: (account: Account) => void;
+  // DnD Props
+  draggable?: boolean;
+  onDragStart?: (id: string) => void;
+  onDragEnter?: (id: string) => void;
+  onDragEnd?: () => void;
 }
 
 const getThemeStyles = (theme: CardTheme) => {
@@ -39,7 +44,15 @@ const getLabelStyles = (theme: CardTheme) => {
   }
 };
 
-const SecondaryCard: React.FC<Props> = ({ account, onDelete, onEdit }) => {
+const SecondaryCard: React.FC<Props> = ({ 
+  account, 
+  onDelete, 
+  onEdit,
+  draggable,
+  onDragStart,
+  onDragEnter,
+  onDragEnd
+}) => {
   const [offsetX, setOffsetX] = useState(0);
   
   // Refs to track gestures
@@ -53,7 +66,12 @@ const SecondaryCard: React.FC<Props> = ({ account, onDelete, onEdit }) => {
   const labelClass = getLabelStyles(account.colorTheme);
 
   // Unified Handler Logic
-  const handleStart = (clientX: number, clientY: number) => {
+  const handleStart = (clientX: number, clientY: number, target: EventTarget | null) => {
+    // Prevent swipe logic if user touches the drag handle
+    if (target && (target as HTMLElement).closest('.drag-handle')) {
+        return;
+    }
+
     startX.current = clientX;
     startY.current = clientY;
     startOffset.current = offsetX;
@@ -110,12 +128,12 @@ const SecondaryCard: React.FC<Props> = ({ account, onDelete, onEdit }) => {
   };
 
   // Touch Handlers
-  const onTouchStart = (e: React.TouchEvent) => handleStart(e.touches[0].clientX, e.touches[0].clientY);
+  const onTouchStart = (e: React.TouchEvent) => handleStart(e.touches[0].clientX, e.touches[0].clientY, e.target);
   const onTouchMove = (e: React.TouchEvent) => handleMove(e.touches[0].clientX, e.touches[0].clientY);
   const onTouchEnd = () => handleEnd();
 
   // Mouse Handlers
-  const onMouseDown = (e: React.MouseEvent) => handleStart(e.clientX, e.clientY);
+  const onMouseDown = (e: React.MouseEvent) => handleStart(e.clientX, e.clientY, e.target);
   const onMouseMove = (e: React.MouseEvent) => {
     if (isDragging.current) {
       if (interactionType.current === 'swipe') {
@@ -129,8 +147,25 @@ const SecondaryCard: React.FC<Props> = ({ account, onDelete, onEdit }) => {
     if (isDragging.current) handleEnd();
   };
 
+  // Native DnD Handlers
+  const handleDragStart = (e: React.DragEvent) => {
+     // Ensure only the handle triggers, though we set draggable on the handle mostly.
+     // But React event needs to bubble from handle to here if we put handler on wrapper.
+     // Let's rely on standard logic.
+     if (onDragStart) onDragStart(account.id);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+     if (onDragEnter) onDragEnter(account.id);
+  };
+
   return (
-    <div className="relative mb-4 w-full h-40 rounded-[2.5rem] overflow-hidden select-none cursor-grab active:cursor-grabbing">
+    <div 
+      className="relative mb-4 w-full h-40 rounded-[2.5rem] overflow-hidden select-none"
+      onDragEnter={handleDragEnter}
+      onDragOver={(e) => e.preventDefault()}
+      onDragEnd={onDragEnd}
+    >
       {/* Background Layer */}
       <div className={`absolute inset-0 flex justify-between transition-all duration-200 ${offsetX === 0 ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
         
@@ -156,7 +191,7 @@ const SecondaryCard: React.FC<Props> = ({ account, onDelete, onEdit }) => {
 
       {/* Foreground Card */}
       <div 
-        className={`relative w-full h-full rounded-[2.5rem] p-6 flex flex-col justify-center shadow-lg shadow-black/20 border transition-transform duration-200 ease-out z-10 touch-pan-y ${themeClass}`}
+        className={`relative w-full h-full rounded-[2.5rem] p-6 shadow-lg shadow-black/20 border transition-transform duration-200 ease-out z-10 touch-pan-y ${themeClass}`}
         style={{ transform: `translateX(${offsetX}px)` }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
@@ -166,12 +201,30 @@ const SecondaryCard: React.FC<Props> = ({ account, onDelete, onEdit }) => {
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseLeave}
       >
-        <span className={`text-lg uppercase tracking-wide mb-2 ${labelClass}`}>
-          {account.name}
-        </span>
-        <h2 className="text-4xl font-bold tracking-tight drop-shadow-sm">
-          R$ {account.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </h2>
+        <div className="flex h-full items-center justify-between">
+            <div className="flex flex-col justify-center">
+                <span className={`text-lg uppercase tracking-wide mb-2 ${labelClass}`}>
+                {account.name}
+                </span>
+                <h2 className="text-4xl font-bold tracking-tight drop-shadow-sm">
+                R$ {account.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </h2>
+            </div>
+
+            {/* Drag Handle - Right Side */}
+            {draggable && (
+                <div 
+                    className="drag-handle p-4 -mr-4 cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100 transition-opacity"
+                    draggable={true}
+                    onDragStart={handleDragStart}
+                    onDragEnd={onDragEnd}
+                    // Prevent propagation to swipe handlers
+                    onMouseDown={(e) => e.stopPropagation()} 
+                >
+                    <GripVertical className="w-6 h-6 text-white/70" />
+                </div>
+            )}
+        </div>
       </div>
     </div>
   );

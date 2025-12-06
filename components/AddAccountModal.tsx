@@ -30,7 +30,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
   useEffect(() => {
     if (isOpen && accountToEdit) {
       setName(accountToEdit.name);
-      setBalance(accountToEdit.balance.toString());
+      setBalance(accountToEdit.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       setSelectedTheme(accountToEdit.colorTheme);
     } else if (isOpen && !accountToEdit) {
       // Reset if opening in create mode
@@ -42,12 +42,25 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
 
   if (!isOpen) return null;
 
+  const handleBalanceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawValue = e.target.value.replace(/\D/g, '');
+    if (!rawValue) {
+      setBalance('');
+      return;
+    }
+    const amountValue = parseFloat(rawValue) / 100;
+    setBalance(amountValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return;
 
-    // Default to 0 if balance is empty
-    const finalBalance = balance ? parseFloat(balance) : 0;
+    // Parse back to float
+    let finalBalance = 0;
+    if (balance) {
+       finalBalance = parseFloat(balance.replace(/\./g, '').replace(',', '.'));
+    }
 
     onSave(name, finalBalance, selectedTheme);
     
@@ -95,11 +108,12 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-accent">R$</span>
               <input 
-                type="number" 
+                type="text" 
+                inputMode="numeric"
                 name="account_balance_hidden"
                 value={balance}
-                onChange={(e) => setBalance(e.target.value)}
-                placeholder="0.00"
+                onChange={handleBalanceChange}
+                placeholder="0,00"
                 className="w-full bg-[#2c2c2e] text-white text-3xl font-bold py-4 pl-14 pr-4 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600"
                 autoComplete="off"
                 data-lpignore="true"

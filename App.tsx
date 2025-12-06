@@ -199,6 +199,10 @@ const App: React.FC = () => {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
 
+  // --- DRAG AND DROP REFS ---
+  const dragItem = useRef<string | null>(null);
+  const dragOverItem = useRef<string | null>(null);
+
   // --- REFS FOR CHANGE DETECTION (PREVENT WRITE-ON-LOAD) ---
   const prevTransactionsRef = useRef<string>('');
   const prevAccountsRef = useRef<string>('');
@@ -906,6 +910,39 @@ const App: React.FC = () => {
   const handleCloseNotification = () => setIsNotificationOpen(false);
   const handleCloseAnalytics = () => setIsAnalyticsOpen(false);
 
+  // --- REORDER LOGIC ---
+  const handleAccountReorder = (draggedId: string, targetId: string) => {
+    if (draggedId === targetId) return;
+
+    // Find indices in the main accounts array
+    const draggedIndex = accounts.findIndex(a => a.id === draggedId);
+    const targetIndex = accounts.findIndex(a => a.id === targetId);
+
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    const newAccounts = [...accounts];
+    const [reorderedItem] = newAccounts.splice(draggedIndex, 1);
+    newAccounts.splice(targetIndex, 0, reorderedItem);
+
+    setAccounts(newAccounts);
+  };
+
+  const handleDragStart = (id: string) => {
+    dragItem.current = id;
+  };
+
+  const handleDragEnter = (id: string) => {
+    dragOverItem.current = id;
+    if (dragItem.current && dragItem.current !== id) {
+       handleAccountReorder(dragItem.current, id);
+    }
+  };
+
+  const handleDragEnd = () => {
+    dragItem.current = null;
+    dragOverItem.current = null;
+  };
+
   // --- DUPLICATE MONTH LOGIC ---
   const handleDuplicateMonth = () => {
     const currentSummary = activeMonthSummary;
@@ -1270,6 +1307,10 @@ const App: React.FC = () => {
                      account={acc} 
                      onDelete={handleDeleteAccount}
                      onEdit={handleEditAccount}
+                     onDragStart={handleDragStart}
+                     onDragEnter={handleDragEnter}
+                     onDragEnd={handleDragEnd}
+                     draggable
                    />
                  ))
                }
