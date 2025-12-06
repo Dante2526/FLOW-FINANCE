@@ -6,8 +6,6 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = 'https://xfsmdidfccgptfzjhhui.supabase.co'.trim();
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmc21kaWRmY2NncHRmempoaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3MTQ0NjAsImV4cCI6MjA4MDI5MDQ2MH0.4oFJ_L7fdjw2ttYtTko8EdTVhDpBtM5WWXQM4_N7zTU'.trim();
 
-const VIP_EMAILS = ['naylanmoreira350@gmail.com', 'lopesisa40@gmail.com'];
-
 // Configurações importantes para evitar erros de "Failed to fetch" e persistência
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
@@ -79,7 +77,6 @@ export const loginUser = async (email: string) => {
 
 export const registerUser = async (email: string, name: string, initialData: any) => {
   const normalizedEmail = email.toLowerCase().trim();
-  const isVip = VIP_EMAILS.includes(normalizedEmail);
 
   // Verifica se usuário já existe
   const { data: existingUser, error: checkError } = await supabase
@@ -110,7 +107,7 @@ export const registerUser = async (email: string, name: string, initialData: any
         name: name.toUpperCase(),
         subtitle: '',
         avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix',
-        isPro: isVip // Define PRO automaticamente se for VIP
+        isPro: false // Padrão é false, controle via BD ou Compra
       },
       months: initialData.months || [],
       cdi_rate: initialData.cdiRate || 11.25

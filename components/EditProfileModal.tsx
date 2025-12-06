@@ -56,7 +56,8 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
       name,
       subtitle: '', 
       avatarUrl: avatarUrl,
-      isPro: currentProfile.isPro // Mantém o status atual (gerenciado pelo App)
+      isPro: currentProfile.isPro, // Mantém o status atual (gerenciado pelo App)
+      subscriptionExpiry: currentProfile.subscriptionExpiry // Mantém a data de expiração
     });
     onClose();
   };

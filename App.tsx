@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -25,9 +26,6 @@ import { Crown } from 'lucide-react';
 
 // Supabase Services (Migrated from Firebase)
 import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, deleteUser } from './services/supabase';
-
-// VIP Emails List - Premium de fábrica
-const VIP_EMAILS = ['naylanmoreira350@gmail.com', 'lopesisa40@gmail.com'];
 
 // Constants
 const MONTH_NAMES = [
@@ -350,18 +348,22 @@ const App: React.FC = () => {
         let profile = data.profile;
         
         // Subscription Expiry Check
+        // If "isPro" is true in the DB but "subscriptionExpiry" is present and past, we disable it.
+        // If "subscriptionExpiry" is missing/null, it is considered a Permanent PRO (Admin manual override).
         if (profile.isPro && profile.subscriptionExpiry) {
            const expiryDate = new Date(profile.subscriptionExpiry);
            const now = new Date();
            if (now > expiryDate) {
+              console.log("Assinatura expirada. Revertendo para Free.");
               profile = { ...profile, isPro: false, subscriptionExpiry: undefined };
+              
+              // Force save immediately to ensure DB reflects the expired state
+              if (currentUserEmail) {
+                  saveUserField(currentUserEmail, "profile", profile); 
+              }
            }
         }
 
-        // Enforce VIP Status (Factory Premium overrides expiry)
-        if (currentUserEmail && VIP_EMAILS.includes(currentUserEmail.toLowerCase())) {
-           profile = { ...profile, isPro: true };
-        }
         setUserProfile(profile);
         prevProfileRef.current = JSON.stringify(profile);
       }
@@ -462,10 +464,16 @@ const App: React.FC = () => {
       if (currentProfileStr === prevProfileRef.current) {
          if (data.profile && JSON.stringify(data.profile) !== currentProfileStr) {
              let profile = data.profile;
-             // Enforce VIP Status on realtime update too
-             if (currentUserEmail && VIP_EMAILS.includes(currentUserEmail.toLowerCase())) {
-                profile = { ...profile, isPro: true };
+             
+             // Check expiry on update
+             if (profile.isPro && profile.subscriptionExpiry) {
+                 const expiryDate = new Date(profile.subscriptionExpiry);
+                 const now = new Date();
+                 if (now > expiryDate) {
+                    profile = { ...profile, isPro: false, subscriptionExpiry: undefined };
+                 }
              }
+
              setUserProfile(profile);
              prevProfileRef.current = JSON.stringify(profile);
          }
