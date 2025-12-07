@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Eraser, NotebookPen, Bug } from 'lucide-react';
+import { X, Save, Eraser, NotebookPen } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -13,9 +13,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
   const [content, setContent] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  // Debug & Layout Logic state
-  const [debugInfo, setDebugInfo] = useState('');
-  // Initialize with a safe default, will be overridden by JS
+  // Initialize with a safe default, will be overridden by JS logic
   const [dynamicMaxHeight, setDynamicMaxHeight] = useState<string | number>('85vh');
 
   useEffect(() => {
@@ -36,17 +34,11 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
       if (vv) {
         // Current visible height (e.g., screen height minus keyboard)
         const height = vv.height;
-        // Top offset (scrolled amount)
-        const offsetTop = vv.offsetTop; 
-        
-        setDebugInfo(`VV: ${height.toFixed(0)} | Win: ${window.innerHeight} | Top: ${offsetTop.toFixed(0)}`);
         
         // We set the modal's max-height to be slightly less than the visible area
         // to ensure the header and footer remain visible.
         // Subtracting 20px provides a small safety margin.
         setDynamicMaxHeight(height - 20); 
-      } else {
-        setDebugInfo(`Win: ${window.innerHeight} (No VisualViewport API)`);
       }
     };
 
@@ -196,21 +188,13 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
              </div>
           </div>
 
-          {/* Footer info & Debug Log */}
+          {/* Footer info */}
           <div className="px-6 pb-6 pt-2 shrink-0 flex flex-col gap-1">
              <div className="flex justify-between text-xs text-gray-500 font-medium">
                <span>{content.length} caracteres</span>
                <span className="flex items-center gap-1">
                  <Save className="w-3 h-3" /> Salvo auto
                </span>
-             </div>
-             
-             {/* DEBUG BAR (Temporary) */}
-             <div className="mt-2 p-1.5 bg-black/40 rounded-lg border border-white/5 flex items-center justify-center gap-2">
-                <Bug className="w-3 h-3 text-red-500" />
-                <span className="text-[9px] font-mono text-gray-400 truncate max-w-full">
-                  {debugInfo}
-                </span>
              </div>
           </div>
 
