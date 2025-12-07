@@ -78,13 +78,19 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+      style={{ 
+        paddingTop: 'max(1rem, env(safe-area-inset-top))',
+        paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' 
+      }}
+    >
       {/* 
-         - h-[550px]: Base preferred height (looks good on desktop/keyboard closed).
-         - max-h-[80dvh]: CRITICAL FIX. 'dvh' respects the mobile keyboard area. 
-           If keyboard opens, 80dvh is small enough to fit content without pushing header off-screen.
+         - h-[550px]: Preferred height for Desktop/Good Mobile conditions.
+         - max-h-[70dvh]: Reduced from 80dvh to 70dvh. This creates a larger safety margin (15% top/bottom) 
+           specifically to accommodate Samsung Internet's stacked UI bars (Favorites + Address).
       */}
-      <div className="bg-[#1c1c1e] w-full max-w-sm h-[550px] max-h-[80dvh] rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col transition-all overflow-hidden">
+      <div className="bg-[#1c1c1e] w-full max-w-sm h-[550px] max-h-[70dvh] rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col transition-all overflow-hidden">
         
         {/* Header - p-7 matches Analytics/Calendar */}
         <div className="flex justify-between items-center p-7 pb-4 shrink-0">
