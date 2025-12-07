@@ -80,11 +80,11 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       {/* 
-         - h-[550px]: Fixed height for consistency (matches approximate "marvelous" size).
-         - max-h-[85vh]: Ensures it shrinks on small screens/keyboard open without using dvh which glitches on some Androids.
-         - w-full max-w-sm: Standard width constraints.
+         - h-[550px]: Base preferred height (looks good on desktop/keyboard closed).
+         - max-h-[80dvh]: CRITICAL FIX. 'dvh' respects the mobile keyboard area. 
+           If keyboard opens, 80dvh is small enough to fit content without pushing header off-screen.
       */}
-      <div className="bg-[#1c1c1e] w-full max-w-sm h-[550px] max-h-[85vh] rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col transition-all overflow-hidden">
+      <div className="bg-[#1c1c1e] w-full max-w-sm h-[550px] max-h-[80dvh] rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col transition-all overflow-hidden">
         
         {/* Header - p-7 matches Analytics/Calendar */}
         <div className="flex justify-between items-center p-7 pb-4 shrink-0">
@@ -115,7 +115,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
           </div>
         </div>
 
-        {/* Paper Area */}
+        {/* Paper Area - flex-1 allows it to shrink when the modal shrinks due to keyboard */}
         <div className="flex-1 min-h-0 px-2 pb-2">
            <div className="w-full h-full bg-[#2c2c2e]/50 rounded-[2rem] p-4 relative overflow-hidden border border-white/5">
               <textarea
