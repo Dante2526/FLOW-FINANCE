@@ -84,7 +84,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
 
       {/* Scrollable Content Wrapper */}
       <div 
-        className="flex min-h-full items-center justify-center p-4 text-center"
+        className="flex min-h-full p-4 text-center"
         style={{ 
           paddingTop: 'max(1rem, env(safe-area-inset-top))',
           paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' 
@@ -92,11 +92,12 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
       >
         {/* 
            Modal Container
+           - m-auto: Safely centers item in flex container but allows top-scroll if overflow (fixes keyboard pushing issue)
            - h-[550px]: Target height
-           - max-h-[80dvh]: Constraints for mobile (dvh handles address bars better)
+           - max-h-[85vh]: Use standard VH to respect Android Keyboard resize (dvh ignores keyboard often)
            - relative: Stacks above backdrop
         */}
-        <div className="relative bg-[#1c1c1e] w-full max-w-sm h-[550px] max-h-[80dvh] rounded-[2.5rem] shadow-2xl border border-white/5 flex flex-col overflow-hidden text-left transition-all">
+        <div className="relative m-auto bg-[#1c1c1e] w-full max-w-sm h-[550px] max-h-[85vh] rounded-[2.5rem] shadow-2xl border border-white/5 flex flex-col overflow-hidden text-left transition-all">
           
           {/* Header */}
           <div className="flex justify-between items-center p-7 pb-4 shrink-0">
