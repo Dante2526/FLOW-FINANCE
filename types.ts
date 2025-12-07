@@ -76,6 +76,7 @@ export interface UserProfile {
   avatarUrl: string;
   isPro?: boolean; // New PRO status flag
   subscriptionExpiry?: string; // ISO Date string for subscription expiration
+  twoFactorEnabled?: boolean; // New 2FA Security Flag
 }
 
 export interface AppTheme {

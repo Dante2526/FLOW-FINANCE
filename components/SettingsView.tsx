@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { Palette, Check, Lock, Crown, Shield, ChevronRight } from 'lucide-react';
-import { AppTheme } from '../types';
+import { Palette, Check, Lock, Crown, Shield, ChevronRight, ShieldCheck } from 'lucide-react';
+import { AppTheme, UserProfile } from '../types';
 import PrivacyPolicyModal from './PrivacyPolicyModal';
 
 interface Props {
@@ -9,6 +9,8 @@ interface Props {
   onSaveTheme: (theme: AppTheme) => void;
   isPro: boolean;
   onOpenProModal: () => void;
+  userProfile: UserProfile;
+  onUpdateProfile: (profile: UserProfile) => void;
 }
 
 // Extended interface internally to handle UI logic
@@ -33,7 +35,7 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
   { id: 'aqua', name: 'Aqua', primary: '#22d3ee', secondary: '#0891b2', isPro: true },
 ];
 
-const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onOpenProModal }) => {
+const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onOpenProModal, userProfile, onUpdateProfile }) => {
   const [selectedThemeId, setSelectedThemeId] = useState(currentThemeId);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
 
@@ -50,6 +52,13 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
       return;
     }
     setSelectedThemeId(theme.id);
+  };
+
+  const toggleTwoFactor = () => {
+    onUpdateProfile({
+      ...userProfile,
+      twoFactorEnabled: !userProfile.twoFactorEnabled
+    });
   };
 
   return (
@@ -74,54 +83,85 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
       </div>
 
       {/* Theme Selection - Native Scroll */}
-      <div className="pb-40">
-        <h3 className="text-gray-400 text-sm font-bold ml-2 mb-4 uppercase tracking-wider">Cores do Sistema</h3>
+      <div className="pb-40 space-y-8">
         
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          {AVAILABLE_THEMES.map((theme) => {
-            const isActive = selectedThemeId === theme.id;
-            const isLocked = theme.isPro && !isPro;
-            
-            return (
-              <button
-                key={theme.id}
-                onClick={() => handleThemeClick(theme)}
-                className={`relative h-24 rounded-[1.5rem] flex items-center justify-between px-5 transition-all duration-200 border-2 overflow-hidden group ${
-                  isActive 
-                    ? 'border-white bg-[#1c1c1e]' 
-                    : isLocked
-                      ? 'border-transparent bg-[#1c1c1e]/50 opacity-60'
-                      : 'border-transparent bg-[#1c1c1e] hover:bg-[#2c2c2e]'
-                }`}
-              >
-                {/* Side Color Bar */}
-                <div 
-                  className={`absolute left-0 top-0 bottom-0 w-2 ${isLocked ? 'grayscale' : ''}`} 
-                  style={{ backgroundColor: theme.primary }}
-                />
-                
-                <div className="flex flex-col items-start">
-                  <span className={`font-bold text-lg ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
-                    {theme.name}
-                  </span>
-                  {theme.isPro && (
-                     <span className="text-[9px] font-bold text-yellow-500 flex items-center gap-1">
-                        <Crown className="w-3 h-3 fill-yellow-500" /> PRO
-                     </span>
-                  )}
-                </div>
-
-                {/* Indicator (Check or Lock) */}
-                <div 
-                  className={`w-8 h-8 rounded-full shadow-lg flex items-center justify-center transition-transform ${isActive ? 'scale-110' : 'scale-100'}`}
-                  style={{ backgroundColor: isActive ? theme.primary : (isLocked ? '#2c2c2e' : '#2c2c2e') }}
+        {/* Themes Section */}
+        <div>
+          <h3 className="text-gray-400 text-sm font-bold ml-2 mb-4 uppercase tracking-wider">Cores do Sistema</h3>
+          <div className="grid grid-cols-2 gap-4">
+            {AVAILABLE_THEMES.map((theme) => {
+              const isActive = selectedThemeId === theme.id;
+              const isLocked = theme.isPro && !isPro;
+              
+              return (
+                <button
+                  key={theme.id}
+                  onClick={() => handleThemeClick(theme)}
+                  className={`relative h-24 rounded-[1.5rem] flex items-center justify-between px-5 transition-all duration-200 border-2 overflow-hidden group ${
+                    isActive 
+                      ? 'border-white bg-[#1c1c1e]' 
+                      : isLocked
+                        ? 'border-transparent bg-[#1c1c1e]/50 opacity-60'
+                        : 'border-transparent bg-[#1c1c1e] hover:bg-[#2c2c2e]'
+                  }`}
                 >
-                  {isActive && <Check className="w-5 h-5 text-black" strokeWidth={3} />}
-                  {!isActive && isLocked && <Lock className="w-4 h-4 text-yellow-500" />}
-                </div>
-              </button>
-            );
-          })}
+                  {/* Side Color Bar */}
+                  <div 
+                    className={`absolute left-0 top-0 bottom-0 w-2 ${isLocked ? 'grayscale' : ''}`} 
+                    style={{ backgroundColor: theme.primary }}
+                  />
+                  
+                  <div className="flex flex-col items-start">
+                    <span className={`font-bold text-lg ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
+                      {theme.name}
+                    </span>
+                    {theme.isPro && (
+                      <span className="text-[9px] font-bold text-yellow-500 flex items-center gap-1">
+                          <Crown className="w-3 h-3 fill-yellow-500" /> PRO
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Indicator (Check or Lock) */}
+                  <div 
+                    className={`w-8 h-8 rounded-full shadow-lg flex items-center justify-center transition-transform ${isActive ? 'scale-110' : 'scale-100'}`}
+                    style={{ backgroundColor: isActive ? theme.primary : (isLocked ? '#2c2c2e' : '#2c2c2e') }}
+                  >
+                    {isActive && <Check className="w-5 h-5 text-black" strokeWidth={3} />}
+                    {!isActive && isLocked && <Lock className="w-4 h-4 text-yellow-500" />}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Security Section */}
+        <div>
+          <h3 className="text-gray-400 text-sm font-bold ml-2 mb-4 uppercase tracking-wider">Segurança</h3>
+          <div className="bg-[#1c1c1e] rounded-[1.5rem] p-5 border border-white/5 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+               <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                  <ShieldCheck className="w-5 h-5 text-blue-500" />
+               </div>
+               <div>
+                 <h4 className="text-white font-bold text-base">Autenticação de 2 Fatores</h4>
+                 <p className="text-[10px] text-gray-500">Exigir código por e-mail ao entrar.</p>
+               </div>
+            </div>
+            
+            {/* Toggle Switch */}
+            <button 
+               onClick={toggleTwoFactor}
+               className={`w-12 h-7 rounded-full p-1 transition-colors duration-300 relative ${
+                 userProfile.twoFactorEnabled ? 'bg-accent' : 'bg-[#2c2c2e] border border-white/10'
+               }`}
+            >
+               <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
+                 userProfile.twoFactorEnabled ? 'translate-x-5' : 'translate-x-0'
+               }`} />
+            </button>
+          </div>
         </div>
 
         {/* Privacy Policy Link */}
@@ -148,7 +188,7 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
         </div>
       </div>
 
-      {/* Confirm Button - Fixed at bottom of view area */}
+      {/* Confirm Theme Button - Fixed at bottom of view area */}
       <div className="fixed bottom-28 left-0 right-0 px-4 flex justify-center pointer-events-none z-50">
         <button 
           onClick={handleConfirm}

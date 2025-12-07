@@ -99,7 +99,8 @@ const INITIAL_PROFILE: UserProfile = {
   name: '',
   subtitle: '',
   avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix',
-  isPro: false
+  isPro: false,
+  twoFactorEnabled: false
 };
 
 // Helper: Parse Date String to determine month
@@ -1230,6 +1231,8 @@ const App: React.FC = () => {
             }}
             isPro={!!userProfile.isPro}
             onOpenProModal={() => setIsProModalOpen(true)}
+            userProfile={userProfile}
+            onUpdateProfile={(p) => setUserProfile(p)}
           />
         );
       case 'long-term':

@@ -135,6 +135,23 @@ export const deleteUser = async (email: string) => {
   }
 };
 
+// --- 2FA / OTP HELPERS ---
+
+export const sendAuthOtp = async (email: string) => {
+  const { error } = await supabase.auth.signInWithOtp({ email });
+  if (error) throw error;
+};
+
+export const verifyAuthOtp = async (email: string, token: string) => {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: 'email',
+  });
+  if (error) throw error;
+  return data;
+};
+
 // --- REALTIME SUBSCRIPTION ---
 
 export const subscribeToUserChanges = (email: string, onUpdate: (data: any) => void) => {
