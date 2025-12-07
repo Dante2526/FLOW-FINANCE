@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Eraser, NotebookPen } from 'lucide-react';
+import { X, Save, Eraser, NotebookPen, Bug } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -12,12 +12,58 @@ interface Props {
 const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave }) => {
   const [content, setContent] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Debug & Layout Logic state
+  const [debugInfo, setDebugInfo] = useState('');
+  // Initialize with a safe default, will be overridden by JS
+  const [dynamicMaxHeight, setDynamicMaxHeight] = useState<string | number>('85vh');
 
   useEffect(() => {
     if (isOpen) {
       setContent(initialContent);
     }
   }, [isOpen, initialContent]);
+
+  // --- LOGIC FOR SAMSUNG INTERNET / ANDROID KEYBOARD ---
+  // Uses the VisualViewport API to determine the actual visible height 
+  // when the virtual keyboard is up, which CSS 'vh' often gets wrong on Android.
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleVisualResize = () => {
+      const vv = window.visualViewport;
+      
+      if (vv) {
+        // Current visible height (e.g., screen height minus keyboard)
+        const height = vv.height;
+        // Top offset (scrolled amount)
+        const offsetTop = vv.offsetTop; 
+        
+        setDebugInfo(`VV: ${height.toFixed(0)} | Win: ${window.innerHeight} | Top: ${offsetTop.toFixed(0)}`);
+        
+        // We set the modal's max-height to be slightly less than the visible area
+        // to ensure the header and footer remain visible.
+        // Subtracting 20px provides a small safety margin.
+        setDynamicMaxHeight(height - 20); 
+      } else {
+        setDebugInfo(`Win: ${window.innerHeight} (No VisualViewport API)`);
+      }
+    };
+
+    // Add listeners for resizing and scrolling of the visual viewport
+    window.visualViewport?.addEventListener('resize', handleVisualResize);
+    window.visualViewport?.addEventListener('scroll', handleVisualResize);
+    window.addEventListener('resize', handleVisualResize);
+    
+    // Execute immediately to set initial size
+    handleVisualResize();
+
+    return () => {
+      window.visualViewport?.removeEventListener('resize', handleVisualResize);
+      window.visualViewport?.removeEventListener('scroll', handleVisualResize);
+      window.removeEventListener('resize', handleVisualResize);
+    };
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -84,7 +130,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
 
       {/* Scrollable Content Wrapper */}
       <div 
-        className="flex min-h-full p-4 text-center"
+        className="flex min-h-full p-4 text-center pointer-events-none"
         style={{ 
           paddingTop: 'max(1rem, env(safe-area-inset-top))',
           paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' 
@@ -92,12 +138,19 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
       >
         {/* 
            Modal Container
-           - m-auto: Safely centers item in flex container but allows top-scroll if overflow (fixes keyboard pushing issue)
-           - h-[550px]: Target height
-           - max-h-[85vh]: Use standard VH to respect Android Keyboard resize (dvh ignores keyboard often)
-           - relative: Stacks above backdrop
+           - pointer-events-auto: Re-enable clicks since wrapper disabled them
+           - m-auto: Centers the modal vertically/horizontally in available space, 
+             but allows it to stick to top if height is constrained.
+           - height: 550px (Base preference)
+           - maxHeight: Controlled via JS (dynamicMaxHeight) to fit above keyboard
         */}
-        <div className="relative m-auto bg-[#1c1c1e] w-full max-w-sm h-[550px] max-h-[85vh] rounded-[2.5rem] shadow-2xl border border-white/5 flex flex-col overflow-hidden text-left transition-all">
+        <div 
+          className="pointer-events-auto relative m-auto bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] shadow-2xl border border-white/5 flex flex-col overflow-hidden text-left transition-all"
+          style={{ 
+            height: 550, 
+            maxHeight: typeof dynamicMaxHeight === 'number' ? `${dynamicMaxHeight}px` : dynamicMaxHeight 
+          }}
+        >
           
           {/* Header */}
           <div className="flex justify-between items-center p-7 pb-4 shrink-0">
@@ -107,7 +160,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
                </div>
                <div>
                   <h2 className="text-lg font-bold text-white leading-none">Smart Notes</h2>
-                  <p className="text-[10px] text-gray-400 mt-1">Digite calculos (ex: 10 + 20 =)</p>
+                  <p className="text-[10px] text-gray-400 mt-1">Calculadora de texto</p>
                </div>
             </div>
             
@@ -128,7 +181,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
             </div>
           </div>
 
-          {/* Paper Area - flex-1 allows shrinking */}
+          {/* Paper Area */}
           <div className="flex-1 min-h-0 px-2 pb-2">
              <div className="w-full h-full bg-[#2c2c2e]/50 rounded-[2rem] p-4 relative overflow-hidden border border-white/5">
                 <textarea
@@ -143,12 +196,22 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
              </div>
           </div>
 
-          {/* Footer info */}
-          <div className="px-6 pb-6 pt-2 flex justify-between text-xs text-gray-500 font-medium shrink-0">
-             <span>{content.length} caracteres</span>
-             <span className="flex items-center gap-1">
-               <Save className="w-3 h-3" /> Salvo automaticamente
-             </span>
+          {/* Footer info & Debug Log */}
+          <div className="px-6 pb-6 pt-2 shrink-0 flex flex-col gap-1">
+             <div className="flex justify-between text-xs text-gray-500 font-medium">
+               <span>{content.length} caracteres</span>
+               <span className="flex items-center gap-1">
+                 <Save className="w-3 h-3" /> Salvo auto
+               </span>
+             </div>
+             
+             {/* DEBUG BAR (Temporary) */}
+             <div className="mt-2 p-1.5 bg-black/40 rounded-lg border border-white/5 flex items-center justify-center gap-2">
+                <Bug className="w-3 h-3 text-red-500" />
+                <span className="text-[9px] font-mono text-gray-400 truncate max-w-full">
+                  {debugInfo}
+                </span>
+             </div>
           </div>
 
         </div>
