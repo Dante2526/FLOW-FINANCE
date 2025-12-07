@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Mail, ArrowRight, ShieldCheck, User, KeyRound, ChevronLeft } from 'lucide-react';
+import { Mail, ArrowRight, ShieldCheck, User, KeyRound, ChevronLeft, AlertCircle } from 'lucide-react';
 
 interface Props {
   onLogin: (email: string, name?: string) => Promise<void>;
@@ -77,8 +77,8 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
       await sendAuthOtp(email);
       setStep('otp');
       setError('');
-      // Inicia um cooldown padrão de 30s após sucesso
-      setResendTimer(30);
+      // Inicia um cooldown mais seguro de 60s (padrão Supabase é restrito)
+      setResendTimer(60);
     } catch (err: any) {
       console.error(err);
       const msg = err.message || 'Erro ao enviar código.';
@@ -90,7 +90,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
          if (match) {
             setResendTimer(parseInt(match[1]));
          } else {
-            setResendTimer(30);
+            setResendTimer(60);
          }
       }
     } finally {
@@ -273,13 +273,19 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                  <p className="text-xs sm:text-sm text-gray-500">
                     Enviamos um código para <strong>{email}</strong>
                  </p>
+                 
+                 {/* Spam Warning */}
+                 <div className="mt-2 flex items-center gap-2 bg-yellow-500/10 text-yellow-500 px-3 py-1.5 rounded-lg border border-yellow-500/20">
+                    <AlertCircle className="w-3 h-3" />
+                    <p className="text-[10px] font-bold uppercase">Verifique a caixa de Spam</p>
+                 </div>
                </div>
 
                <form onSubmit={handleVerifyCode} className="flex flex-col gap-4">
                   <div className="flex flex-col gap-1">
                      <div className="relative group">
                         <div className="relative flex items-center bg-[#0a0a0b] border border-white/10 rounded-2xl overflow-hidden focus-within:border-accent transition-colors h-14 justify-center">
-                           <div className="absolute left-4 text-gray-400 pointer-events-none">
+                           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
                               <KeyRound className="w-5 h-5" />
                            </div>
                            <input 
@@ -289,7 +295,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                              value={otpCode}
                              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                              placeholder="000000"
-                             className="w-full bg-transparent text-white text-center p-4 outline-none placeholder-gray-700 font-mono text-2xl tracking-widest font-bold"
+                             className="w-full bg-transparent text-white text-center p-4 pl-12 outline-none placeholder-gray-700 font-mono text-2xl tracking-widest font-bold"
                              autoFocus
                            />
                         </div>
