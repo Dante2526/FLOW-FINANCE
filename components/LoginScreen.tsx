@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
-import { Mail, ArrowRight, ShieldCheck, User, Key, ArrowLeft } from 'lucide-react';
-import { loginUser, sendAuthOtp, verifyAuthOtp } from '../services/supabase';
+import { Mail, ArrowRight, ShieldCheck, User } from 'lucide-react';
 
 interface Props {
   onLogin: (email: string, name?: string) => Promise<void>;
@@ -34,10 +33,6 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  // 2FA States
-  const [isTwoFactorMode, setIsTwoFactorMode] = useState(false);
-  const [otpCode, setOtpCode] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,51 +48,14 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
       setError('Por favor, informe seu nome.');
       return;
     }
-    
-    if (isTwoFactorMode && !otpCode) {
-      setError('Informe o código de verificação.');
-      return;
-    }
 
     setIsLoading(true);
 
     try {
       if (mode === 'register') {
-        // Register bypasses 2FA check initially
         await onLogin(email, name);
       } else {
-        if (isTwoFactorMode) {
-          // Verify OTP
-          try {
-             await verifyAuthOtp(email, otpCode);
-             // Success - Proceed to App Login
-             await onLogin(email);
-          } catch (otpError: any) {
-             setError('Código inválido ou expirado.');
-             setIsLoading(false);
-             return;
-          }
-        } else {
-          // Step 1: Check User Existence & 2FA Status
-          // We call `loginUser` here just to peek at the profile data
-          const user = await loginUser(email); 
-          
-          if (user?.profile?.twoFactorEnabled) {
-            // 2FA is Enabled: Send OTP and switch UI
-            try {
-              await sendAuthOtp(email);
-              setIsTwoFactorMode(true);
-              setIsLoading(false);
-              // Do not call onLogin yet
-            } catch (sendError: any) {
-              setError('Erro ao enviar código: ' + sendError.message);
-              setIsLoading(false);
-            }
-          } else {
-            // No 2FA: Proceed to Login
-            await onLogin(email);
-          }
-        }
+        await onLogin(email);
       }
     } catch (err: any) {
       console.error(err);
@@ -108,14 +66,6 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
 
   const toggleMode = () => {
     setMode(prev => prev === 'login' ? 'register' : 'login');
-    setError('');
-    setIsTwoFactorMode(false);
-    setOtpCode('');
-  };
-
-  const handleBackFrom2FA = () => {
-    setIsTwoFactorMode(false);
-    setOtpCode('');
     setError('');
   };
 
@@ -148,23 +98,17 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
         <div className={`bg-[#1c1c1e]/80 backdrop-blur-xl border border-white/5 ${mode === 'register' ? 'p-6 py-5' : 'p-6 sm:p-8'} rounded-[2rem] shadow-2xl w-full flex flex-col justify-center transition-all duration-300`}>
            <div className="mb-6 flex flex-col gap-1 items-center text-center">
              <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">
-                {isTwoFactorMode 
-                   ? 'Verificação de Segurança'
-                   : (mode === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta')
-                }
+                {mode === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta'}
              </h2>
-             <p className="text-xs sm:text-sm text-gray-500 max-w-[250px]">
-                {isTwoFactorMode 
-                   ? `Insira o código enviado para ${email}`
-                   : (mode === 'login' ? 'Entre para acessar suas finanças.' : 'Comece a controlar seu dinheiro hoje.')
-                }
+             <p className="text-xs sm:text-sm text-gray-500">
+                {mode === 'login' ? 'Entre para acessar suas finanças.' : 'Comece a controlar seu dinheiro hoje.'}
              </p>
            </div>
 
            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               
-              {/* Name Input (Register Only) */}
-              {mode === 'register' && !isTwoFactorMode && (
+              {/* Name Input */}
+              {mode === 'register' && (
                 <div className="flex flex-col gap-1 animate-in slide-in-from-top-2 fade-in duration-300">
                    <div className="relative group">
                       <div className="relative flex items-center bg-[#0a0a0b] border border-white/10 rounded-2xl overflow-hidden focus-within:border-accent transition-colors h-12">
@@ -184,50 +128,27 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                 </div>
               )}
 
-              {/* Email Input (Hidden or Disabled in 2FA Mode) */}
-              {!isTwoFactorMode ? (
-                  <div className="flex flex-col gap-1">
-                     <div className="relative group">
-                        <div className="relative flex items-center bg-[#0a0a0b] border border-white/10 rounded-2xl overflow-hidden focus-within:border-accent transition-colors h-12">
-                           <div className="pl-4 text-gray-400">
-                              <Mail className="w-5 h-5" />
-                           </div>
-                           <input 
-                             type="email" 
-                             value={email}
-                             onChange={(e) => setEmail(e.target.value)}
-                             placeholder="seu@email.com"
-                             className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium"
-                             autoComplete="email"
-                             autoFocus={mode === 'login'}
-                           />
-                        </div>
-                     </div>
-                  </div>
-              ) : (
-                  // OTP Input
-                  <div className="flex flex-col gap-1 animate-in slide-in-from-right-4 fade-in duration-300">
-                     <div className="relative group">
-                        <div className="relative flex items-center bg-[#0a0a0b] border border-white/10 rounded-2xl overflow-hidden focus-within:border-accent transition-colors h-12">
-                           <div className="pl-4 text-gray-400">
-                              <Key className="w-5 h-5" />
-                           </div>
-                           <input 
-                             type="text" 
-                             value={otpCode}
-                             onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                             placeholder="000000"
-                             className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-bold tracking-widest text-center text-lg"
-                             inputMode="numeric"
-                             autoFocus
-                             autoComplete="one-time-code"
-                           />
-                        </div>
-                     </div>
-                  </div>
-              )}
+              {/* Email Input */}
+              <div className="flex flex-col gap-1">
+                 <div className="relative group">
+                    <div className="relative flex items-center bg-[#0a0a0b] border border-white/10 rounded-2xl overflow-hidden focus-within:border-accent transition-colors h-12">
+                       <div className="pl-4 text-gray-400">
+                          <Mail className="w-5 h-5" />
+                       </div>
+                       <input 
+                         type="email" 
+                         value={email}
+                         onChange={(e) => setEmail(e.target.value)}
+                         placeholder="seu@email.com"
+                         className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium"
+                         autoComplete="email"
+                         autoFocus={mode === 'login'}
+                       />
+                    </div>
+                 </div>
+              </div>
 
-              {error && <p className="text-red-500 text-xs ml-1 text-center">{error}</p>}
+              {error && <p className="text-red-500 text-xs ml-1">{error}</p>}
 
               <button 
                 type="submit"
@@ -238,10 +159,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                   <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <>
-                    {isTwoFactorMode 
-                       ? 'Verificar Código' 
-                       : (mode === 'login' ? 'Entrar' : 'Criar Conta')
-                    }
+                    {mode === 'login' ? 'Entrar' : 'Criar Conta'}
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </>
                 )}
@@ -249,35 +167,23 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
 
            </form>
            
-           {/* Secondary Actions */}
+           {/* Toggle Mode */}
            <div className={`${mode === 'register' ? 'mt-4' : 'mt-6'} flex justify-center transition-all`}>
-             {isTwoFactorMode ? (
-                 <button 
-                    onClick={handleBackFrom2FA}
-                    className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-1"
-                 >
-                   <ArrowLeft className="w-3 h-3" />
-                   Voltar para e-mail
-                 </button>
-             ) : (
-                 <button 
-                    onClick={toggleMode}
-                    className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors underline decoration-transparent hover:decoration-white/30 underline-offset-4"
-                 >
-                   {mode === 'login' 
-                     ? 'Não tem uma conta? Cadastre-se' 
-                     : 'Já possui conta? Fazer Login'}
-                 </button>
-             )}
+             <button 
+                onClick={toggleMode}
+                className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors underline decoration-transparent hover:decoration-white/30 underline-offset-4"
+             >
+               {mode === 'login' 
+                 ? 'Não tem uma conta? Cadastre-se' 
+                 : 'Já possui conta? Fazer Login'}
+             </button>
            </div>
 
            {/* Security Badge */}
            <div className={`${mode === 'register' ? 'mt-4' : 'mt-8'} flex justify-center transition-all`}>
               <div className="flex items-center gap-2 bg-[#0a0a0b]/50 px-3 py-1.5 rounded-full border border-white/5">
                   <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">
-                      {isTwoFactorMode ? 'Protegido por 2FA' : 'Sem senha · Acesso Seguro'}
-                  </span>
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Sem senha · Acesso Seguro</span>
               </div>
            </div>
 
