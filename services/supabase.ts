@@ -2,26 +2,22 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Configuração do Projeto Flow Finance
-// ID CORRIGIDO (extraído do payload do JWT fornecido)
 const SUPABASE_URL = 'https://xfsmdidfccgptfzjhhui.supabase.co'.trim();
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmc21kaWRmY2NncHRmempoaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3MTQ0NjAsImV4cCI6MjA4MDI5MDQ2MH0.4oFJ_L7fdjw2ttYtTko8EdTVhDpBtM5WWXQM4_N7zTU'.trim();
 
-// Configurações importantes para evitar erros de "Failed to fetch" e persistência
+// Configurações simples
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
-    persistSession: false, // Desativa persistência pois usamos login personalizado
+    persistSession: false, 
     autoRefreshToken: false,
     detectSessionInUrl: false
   }
 });
 
 // Helper para converter os dados do Supabase para o formato do App
-// Exportado para ser usado na subscrição Realtime
 export const normalizeUserData = (data: any) => {
   const result: any = { ...data };
 
-  // Helper para atribuir apenas se a chave existir no objeto original
-  // Isso evita sobrescrever dados locais com [] quando o payload do Realtime é parcial (TOASTed)
   const assignIfPresent = (targetKey: string, sourceKey: string, defaultVal: any) => {
     if (sourceKey in data) {
       result[targetKey] = data[sourceKey] || defaultVal;
@@ -46,12 +42,12 @@ export const normalizeUserData = (data: any) => {
   return result;
 };
 
-// --- AUTH / USER MANAGEMENT ---
+// --- AUTH / USER MANAGEMENT (SIMPLIFIED - NO RLS) ---
 
 export const loginUser = async (email: string) => {
   const normalizedEmail = email.toLowerCase().trim();
   
-  // Busca direta na tabela users (Login sem senha)
+  // Busca direta na tabela users (Login sem senha, sem Magic Link)
   const { data, error } = await supabase
     .from('users')
     .select('*')
@@ -60,10 +56,10 @@ export const loginUser = async (email: string) => {
 
   if (error) {
     console.error("Erro Supabase Login:", error);
-    // Se o erro for de conexão, lança mensagem amigável
     if (error.message && (error.message.includes('fetch') || error.message.includes('network'))) {
-       throw new Error("Erro de conexão. Verifique sua internet ou o ID do projeto.");
+       throw new Error("Erro de conexão. Verifique sua internet.");
     }
+    // Se não encontrou (código PGRST116), lançamos erro específico
     throw new Error("Usuário não encontrado. Verifique o e-mail ou crie uma conta.");
   }
   
@@ -71,7 +67,6 @@ export const loginUser = async (email: string) => {
     throw new Error("Usuário não encontrado.");
   }
 
-  // Normaliza os dados do banco (snake_case) para o app (camelCase)
   return normalizeUserData(data);
 };
 
@@ -83,21 +78,20 @@ export const registerUser = async (email: string, name: string, initialData: any
     .from('users')
     .select('email')
     .eq('email', normalizedEmail)
-    .maybeSingle(); // maybeSingle evita erro se não encontrar
+    .maybeSingle();
 
   if (checkError && !checkError.message.includes('JSON')) {
      console.error("Erro verificação registro:", checkError);
      if (checkError.message.includes('fetch')) {
-       throw new Error("Erro de conexão ao verificar usuário. Tente novamente.");
+       throw new Error("Erro de conexão ao verificar usuário.");
      }
-     throw new Error("Erro ao verificar usuário: " + checkError.message);
   }
 
   if (existingUser) {
     throw new Error("Este e-mail já possui cadastro.");
   }
 
-  // Cria o usuário
+  // Cria o usuário diretamente
   const { error } = await supabase
     .from('users')
     .insert({
@@ -107,7 +101,7 @@ export const registerUser = async (email: string, name: string, initialData: any
         name: name.toUpperCase(),
         subtitle: '',
         avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix',
-        isPro: false // Padrão é false, controle via BD ou Compra
+        isPro: false 
       },
       months: initialData.months || [],
       cdi_rate: initialData.cdiRate || 11.25
@@ -140,9 +134,6 @@ export const deleteUser = async (email: string) => {
 export const subscribeToUserChanges = (email: string, onUpdate: (data: any) => void) => {
   const normalizedEmail = email.toLowerCase().trim();
 
-  // Cria um canal específico para este usuário
-  // Isso diz ao Supabase: "Me avise quando houver UPDATE na tabela 'users'
-  // MAS APENAS se o 'email' for igual ao meu e-mail".
   const channel = supabase
     .channel(`user-updates-${normalizedEmail}`)
     .on(
@@ -154,16 +145,13 @@ export const subscribeToUserChanges = (email: string, onUpdate: (data: any) => v
         filter: `email=eq.${normalizedEmail}` 
       },
       (payload) => {
-        // payload.new contém a nova linha inteira do banco de dados (snake_case)
         if (payload.new) {
-          // Normaliza os dados para camelCase e envia para o callback do React
           onUpdate(normalizeUserData(payload.new));
         }
       }
     )
     .subscribe();
 
-  // Retorna função de limpeza para parar de escutar quando sair
   return () => {
     supabase.removeChannel(channel);
   };
@@ -174,7 +162,6 @@ export const subscribeToUserChanges = (email: string, onUpdate: (data: any) => v
 export const saveCollection = async (userId: string, collectionName: string, dataArray: any[]): Promise<boolean> => {
   const normalizedEmail = userId.toLowerCase().trim();
   
-  // Mapeia nomes das coleções do frontend para colunas do banco
   let dbColumn = collectionName;
   if (collectionName === 'longTerm') dbColumn = 'long_term';
 
@@ -193,12 +180,10 @@ export const saveCollection = async (userId: string, collectionName: string, dat
 export const saveUserField = async (userId: string, field: string, data: any): Promise<boolean> => {
   const normalizedEmail = userId.toLowerCase().trim();
   
-  // Mapeia campos camelCase para snake_case do banco
   let dbColumn = field;
   if (field === 'notepadContent') dbColumn = 'notepad_content';
   if (field === 'cdiRate') dbColumn = 'cdi_rate';
   if (field === 'pushSubscription') dbColumn = 'push_subscription';
-  // O campo 'theme' já é igual no banco, então passa direto
 
   const { error } = await supabase
     .from('users')
@@ -213,17 +198,6 @@ export const saveUserField = async (userId: string, field: string, data: any): P
 };
 
 export const loadUserData = async (userId: string) => {
-  const normalizedEmail = userId.toLowerCase().trim();
-  
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('email', normalizedEmail)
-    .single();
-
-  if (error || !data) {
-    return null;
-  }
-
-  return normalizeUserData(data);
+  // Apenas um wrapper para o loginUser, pois a lógica é a mesma sem RLS
+  return loginUser(userId);
 };

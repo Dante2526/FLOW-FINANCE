@@ -76,8 +76,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
       <div className="absolute top-[-20%] left-[-20%] w-[500px] h-[500px] bg-accent/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-20%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
 
-      {/* Main Content Wrapper - Flex 1 to push footer down, centered */}
-      {/* Dynamic Gap: Reduced gap on Register mode to save vertical space */}
+      {/* Main Content Wrapper */}
       <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-md relative z-10 ${mode === 'register' ? 'gap-4' : 'gap-6'} animate-in fade-in slide-in-from-bottom-8 duration-700 min-h-0`}>
         
         {/* Brand / Logo Area */}
@@ -94,7 +93,6 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
         </div>
 
         {/* Login/Register Card */}
-        {/* Dynamic Padding: Reduced vertical padding on Register mode */}
         <div className={`bg-[#1c1c1e]/80 backdrop-blur-xl border border-white/5 ${mode === 'register' ? 'p-6 py-5' : 'p-6 sm:p-8'} rounded-[2rem] shadow-2xl w-full flex flex-col justify-center transition-all duration-300`}>
            <div className="mb-6 flex flex-col gap-1 items-center text-center">
              <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">
@@ -148,7 +146,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                  </div>
               </div>
 
-              {error && <p className="text-red-500 text-xs ml-1">{error}</p>}
+              {error && <p className="text-red-500 text-xs ml-1 text-center">{error}</p>}
 
               <button 
                 type="submit"
@@ -183,7 +181,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
            <div className={`${mode === 'register' ? 'mt-4' : 'mt-8'} flex justify-center transition-all`}>
               <div className="flex items-center gap-2 bg-[#0a0a0b]/50 px-3 py-1.5 rounded-full border border-white/5">
                   <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Sem senha · Acesso Seguro</span>
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Sem senha · Acesso Direto</span>
               </div>
            </div>
 
@@ -191,7 +189,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
 
       </div>
       
-      {/* Footer Area - Always at bottom outside card */}
+      {/* Footer Area */}
       <div className="w-full flex flex-col items-center gap-3 relative z-10 flex-shrink-0 pb-6 pt-2">
          <p className="text-[10px] text-gray-600">© 2025 Flow Finance</p>
       </div>

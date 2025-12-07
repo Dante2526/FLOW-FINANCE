@@ -18,13 +18,13 @@ import SettingsView, { AVAILABLE_THEMES } from './components/SettingsView';
 import LongTermView from './components/LongTermView';
 import InvestmentsView from './components/InvestmentsView';
 import LoginScreen from './components/LoginScreen';
-import ProModal from './components/ProModal'; // Import ProModal
+import ProModal from './components/ProModal'; 
 import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification } from './types';
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { IconBell, IconMore } from './components/Icons';
 import { Crown } from 'lucide-react';
 
-// Supabase Services (Migrated from Firebase)
+// Supabase Services (Simplified)
 import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, deleteUser } from './services/supabase';
 
 // Constants
@@ -89,9 +89,9 @@ const SYSTEM_INITIAL_MONTH: MonthSummary = {
 
 // Mock Data for Contacts (Static)
 const MOCK_CONTACTS: Contact[] = [
-  { id: '1', name: 'Notas', imageUrl: '' }, // Notes / Smart Notepad
-  { id: '2', name: 'Calendário', imageUrl: '' }, // Calendar
-  { id: '3', name: 'Análise', imageUrl: '' }, // Analytics
+  { id: '1', name: 'Notas', imageUrl: '' }, 
+  { id: '2', name: 'Calendário', imageUrl: '' }, 
+  { id: '3', name: 'Análise', imageUrl: '' }, 
 ];
 
 // Initial Profile
@@ -106,19 +106,16 @@ const INITIAL_PROFILE: UserProfile = {
 const getMonthFromDateStr = (dateStr: string): string => {
   if (!dateStr) return '';
   
-  // "Hoje ..." -> Current real month
   if (dateStr.toLowerCase().includes('hoje')) {
     return MONTH_NAMES[new Date().getMonth()];
   }
 
-  // "24 Jan ..."
   const parts = dateStr.split(' ');
   if (parts.length >= 2 && !dateStr.includes('-')) {
-    const code = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase(); // Ensure title case "Jan"
+    const code = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase(); 
     return SHORT_CODE_TO_FULL[code] || '';
   }
 
-  // ISO "YYYY-MM-DD"
   if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
     const d = new Date(dateStr.split(' ')[0] + 'T00:00:00');
     return MONTH_NAMES[d.getMonth()];
@@ -129,14 +126,10 @@ const getMonthFromDateStr = (dateStr: string): string => {
 
 // Helper: Get Year from Date String
 const getYearFromDateStr = (dateStr: string, activeYearContext?: string): string => {
-  // If "Hoje", it's definitely current year
   if (dateStr.toLowerCase().includes('hoje')) return new Date().getFullYear().toString();
   
-  // If ISO, extract year
   if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) return dateStr.split('-')[0];
   
-  // For "24 Jan", we have ambiguity.
-  // We prefer the context year if it matches the month flow.
   if (activeYearContext) return activeYearContext;
 
   return new Date().getFullYear().toString();
@@ -176,7 +169,7 @@ const App: React.FC = () => {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
-  const [isProModalOpen, setIsProModalOpen] = useState(false); // PRO Modal
+  const [isProModalOpen, setIsProModalOpen] = useState(false); 
   
   // --- DATA STATES ---
   const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_PROFILE);
@@ -350,24 +343,16 @@ const App: React.FC = () => {
   const applyData = (data: any) => {
       if (data.profile) {
         let profile = data.profile;
-        
-        // Subscription Expiry Check
-        // If "isPro" is true in the DB but "subscriptionExpiry" is present and past, we disable it.
-        // If "subscriptionExpiry" is missing/null, it is considered a Permanent PRO (Admin manual override).
         if (profile.isPro && profile.subscriptionExpiry) {
            const expiryDate = new Date(profile.subscriptionExpiry);
            const now = new Date();
            if (now > expiryDate) {
-              console.log("Assinatura expirada. Revertendo para Free.");
               profile = { ...profile, isPro: false, subscriptionExpiry: undefined };
-              
-              // Force save immediately to ensure DB reflects the expired state
               if (currentUserEmail) {
                   saveUserField(currentUserEmail, "profile", profile); 
               }
            }
         }
-
         setUserProfile(profile);
         prevProfileRef.current = JSON.stringify(profile);
       }
@@ -424,7 +409,6 @@ const App: React.FC = () => {
 
   // Safe apply function for Realtime updates
   const applyDataSafe = (data: any) => {
-      // Logic same as provided previously
       const currentTxStr = JSON.stringify(currentStateRef.current.transactions);
       if (currentTxStr === prevTransactionsRef.current) {
         if (data.transactions && JSON.stringify(data.transactions) !== currentTxStr) {
@@ -468,8 +452,6 @@ const App: React.FC = () => {
       if (currentProfileStr === prevProfileRef.current) {
          if (data.profile && JSON.stringify(data.profile) !== currentProfileStr) {
              let profile = data.profile;
-             
-             // Check expiry on update
              if (profile.isPro && profile.subscriptionExpiry) {
                  const expiryDate = new Date(profile.subscriptionExpiry);
                  const now = new Date();
@@ -477,7 +459,6 @@ const App: React.FC = () => {
                     profile = { ...profile, isPro: false, subscriptionExpiry: undefined };
                  }
              }
-
              setUserProfile(profile);
              prevProfileRef.current = JSON.stringify(profile);
          }
@@ -765,7 +746,7 @@ const App: React.FC = () => {
                  const options: any = {
                    body: `A conta ${tx.name} vence hoje. Valor: R$ ${tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
                    icon: iconUrl,
-                   badge: iconUrl, // Ensure status bar icon uses app logo
+                   badge: iconUrl,
                    tag: `flow-finance-bill-${tx.id}`, 
                    requireInteraction: true,
                    vibrate: [200, 100, 200]
@@ -861,7 +842,6 @@ const App: React.FC = () => {
              setIsLoadingData(true);
              await deleteUser(currentUserEmail);
              
-             // Cleanup Local Storage
              localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
              localStorage.removeItem(STORAGE_KEYS.ACCOUNTS);
              localStorage.removeItem(STORAGE_KEYS.MONTHS);
@@ -914,7 +894,6 @@ const App: React.FC = () => {
   const handleAccountReorder = (draggedId: string, targetId: string) => {
     if (draggedId === targetId) return;
 
-    // Find indices in the main accounts array
     const draggedIndex = accounts.findIndex(a => a.id === draggedId);
     const targetIndex = accounts.findIndex(a => a.id === targetId);
 
