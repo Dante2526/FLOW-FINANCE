@@ -1,6 +1,6 @@
 
-import React, { useState } from 'react';
-import { Mail, ArrowRight, ShieldCheck, User } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mail, ArrowRight, ShieldCheck, User, KeyRound, ChevronLeft } from 'lucide-react';
 
 interface Props {
   onLogin: (email: string, name?: string) => Promise<void>;
@@ -29,13 +29,34 @@ const FlowLogo = ({ className }: { className?: string }) => (
 
 const LoginScreen: React.FC<Props> = ({ onLogin }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [step, setStep] = useState<'email' | 'otp'>('email');
+  
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Timer para evitar spam no botão de reenvio
+  const [resendTimer, setResendTimer] = useState(0);
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  const handleSendCode = async (e?: React.FormEvent | React.MouseEvent) => {
+    if (e) e.preventDefault();
+    
+    // Se o timer estiver ativo, não faz nada
+    if (resendTimer > 0) return;
+
     setError('');
 
     // Validação Básica
@@ -52,6 +73,48 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
+      const { sendAuthOtp } = await import('../services/supabase');
+      await sendAuthOtp(email);
+      setStep('otp');
+      setError('');
+      // Inicia um cooldown padrão de 30s após sucesso
+      setResendTimer(30);
+    } catch (err: any) {
+      console.error(err);
+      const msg = err.message || 'Erro ao enviar código.';
+      setError(msg);
+
+      // Se o erro for de Rate Limit (contém "Aguarde Xs"), ativa o timer com o tempo retornado
+      if (msg.includes('Aguarde') && msg.includes('s')) {
+         const match = msg.match(/(\d+)s/);
+         if (match) {
+            setResendTimer(parseInt(match[1]));
+         } else {
+            setResendTimer(30);
+         }
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    
+    if (otpCode.length !== 6) {
+      setError('O código deve ter exatamente 6 dígitos.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { verifyAuthOtp } = await import('../services/supabase');
+      // 1. Verifica o código no Supabase Auth
+      await verifyAuthOtp(email, otpCode);
+      
+      // 2. Prossegue com a lógica do App (Sync de dados ou Criação)
       if (mode === 'register') {
         await onLogin(email, name);
       } else {
@@ -59,14 +122,24 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
       }
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Ocorreu um erro ao conectar.');
+      setError(err.message || 'Erro de verificação. Tente novamente.');
       setIsLoading(false);
     }
   };
 
   const toggleMode = () => {
     setMode(prev => prev === 'login' ? 'register' : 'login');
+    setStep('email');
     setError('');
+    setOtpCode('');
+    setResendTimer(0);
+  };
+
+  const handleBackToEmail = () => {
+    setStep('email');
+    setOtpCode('');
+    setError('');
+    // Não zeramos o timer aqui propositalmente para manter o cooldown se o usuário voltar rápido
   };
 
   return (
@@ -77,111 +150,187 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
       <div className="absolute bottom-[-20%] right-[-20%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
 
       {/* Main Content Wrapper */}
-      <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-md relative z-10 ${mode === 'register' ? 'gap-4' : 'gap-6'} animate-in fade-in slide-in-from-bottom-8 duration-700 min-h-0`}>
+      <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-md relative z-10 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700 min-h-0`}>
         
         {/* Brand / Logo Area */}
-        <div className={`flex flex-col items-center text-center gap-1 flex-shrink-0 transition-all ${mode === 'register' ? 'scale-90' : 'scale-100'}`}>
+        <div className={`flex flex-col items-center text-center gap-1 flex-shrink-0 transition-all ${step === 'otp' ? 'scale-75 mb-4' : 'scale-100'}`}>
           <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#1c1c1e] rounded-2xl sm:rounded-3xl flex items-center justify-center border border-white/5 shadow-2xl shadow-accent/10 mb-2 group">
              <div className="relative">
                 <FlowLogo className="w-8 h-8 sm:w-10 sm:h-10 text-accent group-hover:scale-110 transition-transform duration-500" />
              </div>
           </div>
-          <div>
-            <h1 className="text-2xl sm:text-4xl font-bold text-white tracking-tight leading-none">Flow Finance</h1>
-            <p className="text-gray-400 text-xs sm:text-sm mt-1">Controle financeiro inteligente.</p>
-          </div>
+          {step === 'email' && (
+            <div className="items-center flex flex-col">
+              <h1 className="text-2xl sm:text-4xl font-bold text-white tracking-tight leading-none text-center">Flow Finance</h1>
+              <p className="text-gray-400 text-xs sm:text-sm mt-1 text-center">Controle financeiro inteligente.</p>
+            </div>
+          )}
         </div>
 
         {/* Login/Register Card */}
-        <div className={`bg-[#1c1c1e]/80 backdrop-blur-xl border border-white/5 ${mode === 'register' ? 'p-6 py-5' : 'p-6 sm:p-8'} rounded-[2rem] shadow-2xl w-full flex flex-col justify-center transition-all duration-300`}>
-           <div className="mb-6 flex flex-col gap-1 items-center text-center">
-             <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">
-                {mode === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta'}
-             </h2>
-             <p className="text-xs sm:text-sm text-gray-500">
-                {mode === 'login' ? 'Entre para acessar suas finanças.' : 'Comece a controlar seu dinheiro hoje.'}
-             </p>
-           </div>
-
-           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              
-              {/* Name Input */}
-              {mode === 'register' && (
-                <div className="flex flex-col gap-1 animate-in slide-in-from-top-2 fade-in duration-300">
-                   <div className="relative group">
-                      <div className="relative flex items-center bg-[#0a0a0b] border border-white/10 rounded-2xl overflow-hidden focus-within:border-accent transition-colors h-12">
-                         <div className="pl-4 text-gray-400">
-                            <User className="w-5 h-5" />
-                         </div>
-                         <input 
-                           type="text" 
-                           value={name}
-                           onChange={(e) => setName(e.target.value)}
-                           placeholder="Seu Nome"
-                           className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium capitalize"
-                           autoFocus={mode === 'register'}
-                         />
-                      </div>
-                   </div>
-                </div>
-              )}
-
-              {/* Email Input */}
-              <div className="flex flex-col gap-1">
-                 <div className="relative group">
-                    <div className="relative flex items-center bg-[#0a0a0b] border border-white/10 rounded-2xl overflow-hidden focus-within:border-accent transition-colors h-12">
-                       <div className="pl-4 text-gray-400">
-                          <Mail className="w-5 h-5" />
-                       </div>
-                       <input 
-                         type="email" 
-                         value={email}
-                         onChange={(e) => setEmail(e.target.value)}
-                         placeholder="seu@email.com"
-                         className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium"
-                         autoComplete="email"
-                         autoFocus={mode === 'login'}
-                       />
-                    </div>
-                 </div>
-              </div>
-
-              {error && <p className="text-red-500 text-xs ml-1 text-center">{error}</p>}
-
-              <button 
-                type="submit"
-                disabled={isLoading}
-                className="w-full h-14 bg-accent text-black rounded-2xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-accentDark transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 shadow-lg shadow-accent/20 group mt-2"
-              >
-                {isLoading ? (
-                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    {mode === 'login' ? 'Entrar' : 'Criar Conta'}
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </>
-                )}
-              </button>
-
-           </form>
+        <div className={`bg-[#1c1c1e]/80 backdrop-blur-xl border border-white/5 p-6 sm:p-8 rounded-[2rem] shadow-2xl w-full flex flex-col justify-center transition-all duration-300 relative overflow-hidden`}>
            
-           {/* Toggle Mode */}
-           <div className={`${mode === 'register' ? 'mt-4' : 'mt-6'} flex justify-center transition-all`}>
-             <button 
-                onClick={toggleMode}
-                className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors underline decoration-transparent hover:decoration-white/30 underline-offset-4"
-             >
-               {mode === 'login' 
-                 ? 'Não tem uma conta? Cadastre-se' 
-                 : 'Já possui conta? Fazer Login'}
-             </button>
-           </div>
+           {/* Step 1: Email Form */}
+           {step === 'email' && (
+             <div className="animate-in fade-in slide-in-from-right-8 duration-300">
+                <div className="mb-6 flex flex-col gap-1 items-center text-center">
+                  <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">
+                      {mode === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta'}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-gray-500">
+                      {mode === 'login' ? 'Entre para acessar suas finanças.' : 'Comece a controlar seu dinheiro hoje.'}
+                  </p>
+                </div>
+
+                <form onSubmit={handleSendCode} className="flex flex-col gap-4">
+                    
+                    {/* Name Input */}
+                    {mode === 'register' && (
+                      <div className="flex flex-col gap-1 animate-in slide-in-from-top-2 fade-in duration-300">
+                        <div className="relative group">
+                            <div className="relative flex items-center bg-[#0a0a0b] border border-white/10 rounded-2xl overflow-hidden focus-within:border-accent transition-colors h-12">
+                              <div className="pl-4 text-gray-400">
+                                  <User className="w-5 h-5" />
+                              </div>
+                              <input 
+                                type="text" 
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="Seu Nome"
+                                className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium capitalize"
+                              />
+                            </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Email Input */}
+                    <div className="flex flex-col gap-1">
+                      <div className="relative group">
+                          <div className="relative flex items-center bg-[#0a0a0b] border border-white/10 rounded-2xl overflow-hidden focus-within:border-accent transition-colors h-12">
+                            <div className="pl-4 text-gray-400">
+                                <Mail className="w-5 h-5" />
+                            </div>
+                            <input 
+                              type="email" 
+                              value={email}
+                              onChange={(e) => setEmail(e.target.value)}
+                              placeholder="seu@email.com"
+                              className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium"
+                              autoComplete="email"
+                              autoFocus
+                            />
+                          </div>
+                      </div>
+                    </div>
+
+                    {error && <p className="text-red-500 text-xs text-center">{error}</p>}
+
+                    <button 
+                      type="submit"
+                      disabled={isLoading || resendTimer > 0}
+                      className="w-full h-14 bg-accent text-black rounded-2xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-accentDark transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 shadow-lg shadow-accent/20 group mt-2"
+                    >
+                      {isLoading ? (
+                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      ) : resendTimer > 0 ? (
+                        <span className="text-sm">Aguarde {resendTimer}s</span>
+                      ) : (
+                        <>
+                          {mode === 'login' ? 'Entrar' : 'Criar Conta'}
+                          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        </>
+                      )}
+                    </button>
+                </form>
+
+                {/* Toggle Mode */}
+                <div className={`${mode === 'register' ? 'mt-4' : 'mt-6'} flex justify-center transition-all`}>
+                  <button 
+                      onClick={toggleMode}
+                      className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors underline decoration-transparent hover:decoration-white/30 underline-offset-4"
+                  >
+                    {mode === 'login' 
+                      ? 'Não tem uma conta? Cadastre-se' 
+                      : 'Já possui conta? Fazer Login'}
+                  </button>
+                </div>
+             </div>
+           )}
+
+           {/* Step 2: OTP Form */}
+           {step === 'otp' && (
+             <div className="animate-in fade-in slide-in-from-right-8 duration-300">
+               
+               <button onClick={handleBackToEmail} className="flex items-center gap-1 text-gray-500 hover:text-white mb-4 text-xs transition-colors">
+                  <ChevronLeft className="w-4 h-4" /> Voltar
+               </button>
+
+               <div className="mb-6 flex flex-col gap-1 items-center text-center">
+                 <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">
+                    Verificar Código
+                 </h2>
+                 <p className="text-xs sm:text-sm text-gray-500">
+                    Enviamos um código para <strong>{email}</strong>
+                 </p>
+               </div>
+
+               <form onSubmit={handleVerifyCode} className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-1">
+                     <div className="relative group">
+                        <div className="relative flex items-center bg-[#0a0a0b] border border-white/10 rounded-2xl overflow-hidden focus-within:border-accent transition-colors h-14 justify-center">
+                           <div className="absolute left-4 text-gray-400 pointer-events-none">
+                              <KeyRound className="w-5 h-5" />
+                           </div>
+                           <input 
+                             type="text" 
+                             inputMode="numeric"
+                             maxLength={6}
+                             value={otpCode}
+                             onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                             placeholder="000000"
+                             className="w-full bg-transparent text-white text-center p-4 outline-none placeholder-gray-700 font-mono text-2xl tracking-widest font-bold"
+                             autoFocus
+                           />
+                        </div>
+                     </div>
+                  </div>
+
+                  {error && <p className="text-red-500 text-xs text-center">{error}</p>}
+
+                  <button 
+                    type="submit"
+                    disabled={isLoading || otpCode.length !== 6}
+                    className="w-full h-14 bg-accent text-black rounded-2xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-accentDark transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 shadow-lg shadow-accent/20 group mt-2"
+                  >
+                    {isLoading ? (
+                      <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        Verificar
+                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                      </>
+                    )}
+                  </button>
+               </form>
+               
+               <div className="mt-6 flex justify-center">
+                 <button 
+                    onClick={(e) => handleSendCode(e)} // Resend
+                    disabled={resendTimer > 0 || isLoading}
+                    className={`text-xs transition-colors ${resendTimer > 0 ? 'text-gray-600 cursor-not-allowed' : 'text-gray-500 hover:text-accent'}`}
+                 >
+                   {resendTimer > 0 ? `Aguarde ${resendTimer}s para reenviar` : 'Não recebeu? Reenviar código'}
+                 </button>
+               </div>
+             </div>
+           )}
 
            {/* Security Badge */}
-           <div className={`${mode === 'register' ? 'mt-4' : 'mt-8'} flex justify-center transition-all`}>
+           <div className={`mt-8 flex justify-center transition-all`}>
               <div className="flex items-center gap-2 bg-[#0a0a0b]/50 px-3 py-1.5 rounded-full border border-white/5">
                   <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Sem senha · Acesso Direto</span>
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">SEM SENHA · ACESSO SEGURO</span>
               </div>
            </div>
 

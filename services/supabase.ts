@@ -42,12 +42,56 @@ export const normalizeUserData = (data: any) => {
   return result;
 };
 
-// --- AUTH / USER MANAGEMENT (SIMPLIFIED - NO RLS) ---
+// --- AUTH HELPERS (OTP) ---
+
+export const sendAuthOtp = async (email: string) => {
+  const normalizedEmail = email.toLowerCase().trim();
+  const { error } = await supabase.auth.signInWithOtp({
+    email: normalizedEmail,
+  });
+
+  if (error) {
+    console.error("Erro ao enviar OTP:", error.message);
+    
+    // Tratamento específico para Rate Limit (Muitas tentativas)
+    if (error.message.includes("security purposes") || error.status === 429) {
+       const match = error.message.match(/after (\d+) seconds/);
+       const seconds = match ? match[1] : null;
+       
+       if (seconds) {
+         throw new Error(`Muitas tentativas. Aguarde ${seconds}s para tentar novamente.`);
+       } else {
+         throw new Error("Muitas tentativas. Aguarde um momento.");
+       }
+    }
+
+    throw new Error("Falha ao enviar código. Verifique o e-mail.");
+  }
+  return true;
+};
+
+export const verifyAuthOtp = async (email: string, token: string) => {
+  const normalizedEmail = email.toLowerCase().trim();
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: normalizedEmail,
+    token,
+    type: 'email',
+  });
+
+  if (error) {
+    console.error("Erro ao verificar OTP:", error);
+    throw new Error("Código inválido ou expirado.");
+  }
+  
+  return data;
+};
+
+// --- USER MANAGEMENT ---
 
 export const loginUser = async (email: string) => {
   const normalizedEmail = email.toLowerCase().trim();
   
-  // Busca direta na tabela users (Login sem senha, sem Magic Link)
+  // Busca direta na tabela users
   const { data, error } = await supabase
     .from('users')
     .select('*')
@@ -82,9 +126,6 @@ export const registerUser = async (email: string, name: string, initialData: any
 
   if (checkError && !checkError.message.includes('JSON')) {
      console.error("Erro verificação registro:", checkError);
-     if (checkError.message.includes('fetch')) {
-       throw new Error("Erro de conexão ao verificar usuário.");
-     }
   }
 
   if (existingUser) {
@@ -127,6 +168,16 @@ export const deleteUser = async (email: string) => {
     console.error("Erro ao deletar usuário:", error);
     throw new Error("Erro ao excluir conta: " + error.message);
   }
+};
+
+// --- HELPER DE AUTENTICAÇÃO ANÔNIMA PARA SYNC ---
+const ensureAuth = async () => {
+  // Se já estiver logado via OTP, não faz nada
+  if (supabase.auth.getSession()) return;
+  
+  // Fallback para acesso anônimo se necessário
+  // (Nota: se você estiver usando OTP, o ideal é usar a sessão do usuário)
+  // Mas mantemos a compatibilidade caso a sessão expire e o app use localStorage
 };
 
 // --- REALTIME SUBSCRIPTION ---
@@ -198,6 +249,5 @@ export const saveUserField = async (userId: string, field: string, data: any): P
 };
 
 export const loadUserData = async (userId: string) => {
-  // Apenas um wrapper para o loginUser, pois a lógica é a mesma sem RLS
   return loginUser(userId);
 };
