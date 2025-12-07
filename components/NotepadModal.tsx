@@ -80,12 +80,11 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       {/* 
-        Container:
-        - h-[80%]: Percentage based height is more robust on Samsung Internet/Mobile Keyboards than fixed px or dvh.
-        - max-h-[90dvh]: Safety cap.
-        - min-h-[400px]: Prevents it from becoming unusable on very small resizing.
+         - h-[550px]: Fixed height for consistency (matches approximate "marvelous" size).
+         - max-h-[85vh]: Ensures it shrinks on small screens/keyboard open without using dvh which glitches on some Androids.
+         - w-full max-w-sm: Standard width constraints.
       */}
-      <div className="bg-[#1c1c1e] w-full max-w-sm h-[80%] min-h-[400px] max-h-[90dvh] rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col transition-all overflow-hidden">
+      <div className="bg-[#1c1c1e] w-full max-w-sm h-[550px] max-h-[85vh] rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col transition-all overflow-hidden">
         
         {/* Header - p-7 matches Analytics/Calendar */}
         <div className="flex justify-between items-center p-7 pb-4 shrink-0">
@@ -94,7 +93,6 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
                 <NotebookPen className="w-5 h-5 text-yellow-500" />
              </div>
              <div>
-                {/* text-lg matches Analytics/Calendar titles */}
                 <h2 className="text-lg font-bold text-white leading-none">Smart Notes</h2>
                 <p className="text-[10px] text-gray-400 mt-1">Digite calculos (ex: 10 + 20 =)</p>
              </div>
@@ -117,7 +115,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
           </div>
         </div>
 
-        {/* Paper Area - flex-1 allows it to fill space */}
+        {/* Paper Area */}
         <div className="flex-1 min-h-0 px-2 pb-2">
            <div className="w-full h-full bg-[#2c2c2e]/50 rounded-[2rem] p-4 relative overflow-hidden border border-white/5">
               <textarea
@@ -132,7 +130,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
            </div>
         </div>
 
-        {/* Footer info - shrink-0 ensures it stays visible */}
+        {/* Footer info */}
         <div className="px-6 pb-6 pt-2 flex justify-between text-xs text-gray-500 font-medium shrink-0">
            <span>{content.length} caracteres</span>
            <span className="flex items-center gap-1">
