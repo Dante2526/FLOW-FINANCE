@@ -798,6 +798,7 @@ const App: React.FC = () => {
       }
       
       saveData(STORAGE_KEYS.USER_SESSION, email);
+      saveData(STORAGE_KEYS.KNOWN_USER_EMAIL, email); // Mark as known user
       setCurrentUserEmail(email);
 
       if (permissionGranted && 'serviceWorker' in navigator) {
@@ -853,6 +854,7 @@ const App: React.FC = () => {
              localStorage.removeItem(STORAGE_KEYS.CDI_RATE);
              localStorage.removeItem(STORAGE_KEYS.NOTEPAD_CONTENT);
              localStorage.removeItem(STORAGE_KEYS.IS_SYNC_DIRTY);
+             localStorage.removeItem(STORAGE_KEYS.KNOWN_USER_EMAIL); // Forget user
              
              handleLogout();
              alert("Conta excluída com sucesso.");

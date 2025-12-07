@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Mail, ArrowRight, ShieldCheck, User, KeyRound, ChevronLeft, AlertCircle } from 'lucide-react';
+import { loadData, STORAGE_KEYS } from '../services/storage';
 
 interface Props {
   onLogin: (email: string, name?: string) => Promise<void>;
@@ -73,6 +73,16 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
+      // Verifica configurações de segurança
+      const requireOtp = loadData(STORAGE_KEYS.SETTINGS_REQUIRE_OTP, true);
+      const knownEmail = loadData(STORAGE_KEYS.KNOWN_USER_EMAIL, '');
+
+      // Se OTP estiver desativado E o email for conhecido (seguro), entra direto
+      if (mode === 'login' && !requireOtp && email.toLowerCase().trim() === knownEmail.toLowerCase().trim()) {
+         await onLogin(email);
+         return; // Interrompe o fluxo para não enviar OTP
+      }
+
       const { sendAuthOtp } = await import('../services/supabase');
       await sendAuthOtp(email);
       setStep('otp');
@@ -289,13 +299,17 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                               <KeyRound className="w-5 h-5" />
                            </div>
                            <input 
+                             id="otp-input"
+                             name="one-time-code"
                              type="text" 
                              inputMode="numeric"
+                             pattern="\d*"
+                             autoComplete="one-time-code"
                              maxLength={6}
                              value={otpCode}
                              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
                              placeholder="000000"
-                             className="w-full bg-transparent text-white text-center p-4 pl-12 outline-none placeholder-gray-700 font-mono text-2xl tracking-widest font-bold"
+                             className="w-full bg-transparent text-white text-center p-4 px-12 outline-none placeholder-gray-700 font-mono text-2xl tracking-widest font-bold"
                              autoFocus
                            />
                         </div>

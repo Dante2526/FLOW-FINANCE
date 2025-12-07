@@ -13,6 +13,8 @@ export const STORAGE_KEYS = {
   NOTEPAD_CONTENT: 'flow_notepad_content',
   USER_SESSION: 'flow_user_session',
   IS_SYNC_DIRTY: 'flow_is_sync_dirty', // New key to track if local data is ahead of cloud
+  SETTINGS_REQUIRE_OTP: 'flow_settings_require_otp',
+  KNOWN_USER_EMAIL: 'flow_known_user_email',
 };
 
 // Generic load function

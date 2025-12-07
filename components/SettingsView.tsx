@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
-import { Palette, Check, Lock, Crown, Shield, ChevronRight } from 'lucide-react';
+import { Palette, Check, Lock, Crown, Shield, ChevronRight, KeyRound, ToggleLeft, ToggleRight } from 'lucide-react';
 import { AppTheme } from '../types';
 import PrivacyPolicyModal from './PrivacyPolicyModal';
+import { loadData, saveData, STORAGE_KEYS } from '../services/storage';
 
 interface Props {
   currentThemeId: string;
@@ -36,6 +37,7 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
 const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onOpenProModal }) => {
   const [selectedThemeId, setSelectedThemeId] = useState(currentThemeId);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [requireOtp, setRequireOtp] = useState(() => loadData(STORAGE_KEYS.SETTINGS_REQUIRE_OTP, true));
 
   const handleConfirm = () => {
     const theme = AVAILABLE_THEMES.find(t => t.id === selectedThemeId);
@@ -50,6 +52,12 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
       return;
     }
     setSelectedThemeId(theme.id);
+  };
+
+  const toggleOtp = () => {
+    const newValue = !requireOtp;
+    setRequireOtp(newValue);
+    saveData(STORAGE_KEYS.SETTINGS_REQUIRE_OTP, newValue);
   };
 
   return (
@@ -122,6 +130,23 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
               </button>
             );
           })}
+        </div>
+
+        {/* Security Section */}
+        <h3 className="text-gray-400 text-sm font-bold ml-2 mb-4 uppercase tracking-wider">Segurança</h3>
+        <div className="bg-[#1c1c1e] rounded-[1.5rem] p-4 flex items-center justify-between border border-white/5 mb-8">
+            <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
+                    <KeyRound className="w-5 h-5 text-blue-500" />
+                </div>
+                <div>
+                    <span className="text-white font-bold block text-sm">Exigir Código por E-mail</span>
+                    <span className="text-xs text-gray-500">Solicitar OTP ao fazer login</span>
+                </div>
+            </div>
+            <button onClick={toggleOtp} className="text-accent active:scale-95 transition-transform">
+                {requireOtp ? <ToggleRight className="w-10 h-10" /> : <ToggleLeft className="w-10 h-10 text-gray-600" />}
+            </button>
         </div>
 
         {/* Privacy Policy Link */}
