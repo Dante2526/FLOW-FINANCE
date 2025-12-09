@@ -156,6 +156,8 @@ const App: React.FC = () => {
     return loadData(STORAGE_KEYS.USER_SESSION, null);
   });
   const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
+  // NEW: Track if Supabase session has been checked/restored
+  const [isSessionReady, setIsSessionReady] = useState(false);
 
   // View State
   const [currentView, setCurrentView] = useState<AppView>('home');
@@ -171,22 +173,21 @@ const App: React.FC = () => {
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false); 
   
-  // --- DATA STATES ---
-  const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_PROFILE);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [months, setMonths] = useState<MonthSummary[]>([SYSTEM_INITIAL_MONTH]);
-  const [longTermTransactions, setLongTermTransactions] = useState<LongTermTransaction[]>([]);
-  const [investments, setInvestments] = useState<Investment[]>([]);
-  const [notepadContent, setNotepadContent] = useState<string>('');
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  
+  // --- DATA STATES (Initialized from LocalStorage for Instant Access) ---
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => loadData(STORAGE_KEYS.USER_PROFILE, INITIAL_PROFILE));
+  const [transactions, setTransactions] = useState<Transaction[]>(() => loadData(STORAGE_KEYS.TRANSACTIONS, []));
+  const [accounts, setAccounts] = useState<Account[]>(() => loadData(STORAGE_KEYS.ACCOUNTS, []));
+  const [months, setMonths] = useState<MonthSummary[]>(() => loadData(STORAGE_KEYS.MONTHS, [SYSTEM_INITIAL_MONTH]));
+  const [longTermTransactions, setLongTermTransactions] = useState<LongTermTransaction[]>(() => loadData(STORAGE_KEYS.LONG_TERM_TRANSACTIONS, []));
+  const [investments, setInvestments] = useState<Investment[]>(() => loadData(STORAGE_KEYS.INVESTMENTS, []));
+  const [notepadContent, setNotepadContent] = useState<string>(() => loadData(STORAGE_KEYS.NOTEPAD_CONTENT, ''));
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => loadData(STORAGE_KEYS.NOTIFICATIONS, []));
+  const [cdiRate, setCdiRate] = useState<number>(() => loadData(STORAGE_KEYS.CDI_RATE, 11.25));
+
   const [appTheme, setAppTheme] = useState<AppTheme>(() => {
     return loadData(STORAGE_KEYS.APP_THEME, AVAILABLE_THEMES[0]);
   });
   
-  const [cdiRate, setCdiRate] = useState<number>(11.25); 
-
   const [activeMonthId, setActiveMonthId] = useState<string>(SYSTEM_INITIAL_MONTH.id);
   
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
@@ -197,16 +198,16 @@ const App: React.FC = () => {
   const dragOverItem = useRef<string | null>(null);
 
   // --- REFS FOR CHANGE DETECTION (PREVENT WRITE-ON-LOAD) ---
-  const prevTransactionsRef = useRef<string>('');
-  const prevAccountsRef = useRef<string>('');
-  const prevInvestmentsRef = useRef<string>('');
-  const prevLongTermRef = useRef<string>('');
-  const prevNotificationsRef = useRef<string>('');
-  const prevProfileRef = useRef<string>('');
-  const prevThemeRef = useRef<string>('');
-  const prevMonthsRef = useRef<string>('');
-  const prevNotepadRef = useRef<string>('');
-  const prevCdiRef = useRef<number>(11.25);
+  const prevTransactionsRef = useRef<string>(JSON.stringify(transactions));
+  const prevAccountsRef = useRef<string>(JSON.stringify(accounts));
+  const prevInvestmentsRef = useRef<string>(JSON.stringify(investments));
+  const prevLongTermRef = useRef<string>(JSON.stringify(longTermTransactions));
+  const prevNotificationsRef = useRef<string>(JSON.stringify(notifications));
+  const prevProfileRef = useRef<string>(JSON.stringify(userProfile));
+  const prevThemeRef = useRef<string>(JSON.stringify(appTheme));
+  const prevMonthsRef = useRef<string>(JSON.stringify(months));
+  const prevNotepadRef = useRef<string>(notepadContent);
+  const prevCdiRef = useRef<number>(cdiRate);
 
   // --- CURRENT STATE REFS FOR REALTIME PROTECTION ---
   const currentStateRef = useRef({
@@ -237,6 +238,45 @@ const App: React.FC = () => {
       cdiRate
     };
   });
+
+  // --- INITIALIZE ACTIVE MONTH ID BASED ON LOADED MONTHS ---
+  useEffect(() => {
+    // Only run once on mount if we haven't set a meaningful ID yet
+    if (activeMonthId === SYSTEM_INITIAL_MONTH.id && months.length > 0) {
+       const sorted = sortMonths(months);
+       if (sorted.length > 0) {
+          setActiveMonthId(sorted[sorted.length - 1].id);
+       }
+    }
+  }, []); // Run once on mount
+
+  // --- AUTH CHECK EFFECT (Fixes RLS issues) ---
+  useEffect(() => {
+    const initAuth = async () => {
+      // Check for active session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email) {
+        console.log("Supabase Session Restored:", session.user.email);
+        setCurrentUserEmail(session.user.email);
+        saveData(STORAGE_KEYS.USER_SESSION, session.user.email);
+      } else {
+        console.log("No active session found on init.");
+      }
+      setIsSessionReady(true);
+    };
+
+    initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+       if (session?.user?.email) {
+          setCurrentUserEmail(session.user.email);
+          saveData(STORAGE_KEYS.USER_SESSION, session.user.email);
+          setIsSessionReady(true);
+       }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // --- SCROLL LOCK EFFECT ---
   useEffect(() => {
@@ -292,43 +332,39 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    if (currentUserEmail) {
-      setIsLoadingData(true);
+    // Only proceed if we have an email AND session check is complete
+    // This prevents RLS blocking before token is ready
+    if (!currentUserEmail || !isSessionReady) return;
 
-      const isSyncDirty = loadData(STORAGE_KEYS.IS_SYNC_DIRTY, false);
+    setIsLoadingData(true);
 
-      if (isSyncDirty) {
-        console.log("Local changes pending (Quota/Network Error). Loading from LocalStorage to prevent overwrite.");
-        loadLocalData();
-        setIsLoadingData(false);
-      } else {
-        loadUserData(currentUserEmail)
-          .then((data) => {
-            if (data) {
-              applyData(data);
-            } else {
-              console.log("No remote data found, starting fresh.");
-              loadLocalData(); 
-            }
-          })
-          .catch(err => {
-            console.error("Error loading data from Cloud, using LocalStorage fallback:", err);
-            loadLocalData();
-            saveData(STORAGE_KEYS.IS_SYNC_DIRTY, true);
-          })
-          .finally(() => setIsLoadingData(false));
-      }
+    const isSyncDirty = loadData(STORAGE_KEYS.IS_SYNC_DIRTY, false);
+
+    if (isSyncDirty) {
+      console.log("Local changes pending (Quota/Network Error). Using LocalStorage to prevent overwrite.");
+      // We already loaded local data on init, just stop loading spinner
+      setIsLoadingData(false);
     } else {
-      setTransactions([]);
-      setAccounts([]);
-      setMonths([SYSTEM_INITIAL_MONTH]);
-      setUserProfile(INITIAL_PROFILE);
+      loadUserData(currentUserEmail)
+        .then((data) => {
+          if (data) {
+            applyData(data);
+          } else {
+            console.log("No remote data found, keeping local data.");
+          }
+        })
+        .catch(err => {
+          console.error("Error loading data from Cloud, using LocalStorage fallback:", err);
+          // Fallback is already loaded via useState initializers
+          saveData(STORAGE_KEYS.IS_SYNC_DIRTY, true);
+        })
+        .finally(() => setIsLoadingData(false));
     }
-  }, [currentUserEmail]);
+  }, [currentUserEmail, isSessionReady]);
 
   // --- REALTIME SUBSCRIPTION EFFECT ---
   useEffect(() => {
-    if (!currentUserEmail) return;
+    if (!currentUserEmail || !isSessionReady) return;
 
     console.log("Iniciando escuta Realtime para:", currentUserEmail);
     const unsubscribe = subscribeToUserChanges(currentUserEmail, (newData) => {
@@ -338,7 +374,7 @@ const App: React.FC = () => {
     return () => {
       unsubscribe();
     };
-  }, [currentUserEmail]);
+  }, [currentUserEmail, isSessionReady]);
 
   const applyData = (data: any) => {
       if (data.profile) {
@@ -391,14 +427,11 @@ const App: React.FC = () => {
       if (data.months && data.months.length > 0) {
         const sorted = sortMonths(data.months);
         setMonths(sorted);
+        // Only switch active month if we are currently on the default/system one
         if (activeMonthId === SYSTEM_INITIAL_MONTH.id || activeMonthId === '1') {
            setActiveMonthId(sorted[sorted.length - 1].id);
         }
         prevMonthsRef.current = JSON.stringify(sorted);
-      } else {
-        setMonths([SYSTEM_INITIAL_MONTH]);
-        setActiveMonthId(SYSTEM_INITIAL_MONTH.id);
-        prevMonthsRef.current = JSON.stringify([SYSTEM_INITIAL_MONTH]);
       }
       
       if (data.cdiRate !== undefined) {
@@ -1329,8 +1362,10 @@ const App: React.FC = () => {
     return <LoginScreen onLogin={handleLogin} />;
   }
 
-  // Initial Loading State
-  if (isLoadingData) {
+  // Initial Loading State (only show if no local data AND waiting for cloud)
+  // With useState initializers, we usually have data immediately.
+  // But if we want to show a spinner during sync:
+  if (isLoadingData && transactions.length === 0 && accounts.length === 0) {
     return (
       <div className="min-h-screen bg-[#0a0a0b] flex flex-col items-center justify-center gap-4">
         <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
