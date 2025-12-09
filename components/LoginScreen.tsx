@@ -8,7 +8,7 @@ interface Props {
 }
 
 // Custom SVG Logo matching the brand (F with dots)
-const FlowLogo = ({ className }: { className?: string }) => (
+export const FlowLogo = ({ className }: { className?: string }) => (
   <svg 
     viewBox="0 0 24 24" 
     fill="currentColor" 

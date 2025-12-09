@@ -17,7 +17,7 @@ import AnalyticsModal from './components/AnalyticsModal';
 import SettingsView, { AVAILABLE_THEMES } from './components/SettingsView';
 import LongTermView from './components/LongTermView';
 import InvestmentsView from './components/InvestmentsView';
-import LoginScreen from './components/LoginScreen';
+import LoginScreen, { FlowLogo } from './components/LoginScreen';
 import ProModal from './components/ProModal'; 
 import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification } from './types';
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
@@ -149,6 +149,18 @@ const sortMonths = (monthsList: MonthSummary[]) => {
     return monthIndexA - monthIndexB;
   });
 };
+
+// --- SPLASH SCREEN COMPONENT ---
+const SplashScreen = () => (
+  <div className="fixed inset-0 bg-[#0a0a0b] flex flex-col items-center justify-center z-[100] animate-out fade-out duration-700">
+    <div className="w-20 h-20 bg-[#1c1c1e] rounded-3xl flex items-center justify-center border border-white/5 shadow-2xl shadow-accent/10 mb-6 animate-pulse">
+       <div className="relative">
+          <FlowLogo className="w-10 h-10 text-accent" />
+       </div>
+    </div>
+    <h1 className="text-2xl font-bold text-white tracking-tight animate-pulse">Flow Finance</h1>
+  </div>
+);
 
 const App: React.FC = () => {
   // --- AUTH STATE ---
@@ -1369,13 +1381,22 @@ const App: React.FC = () => {
   };
 
   // --- CSS VARIABLES ---
+  
+  // RENDER LOGIC WITH SPLASH SCREEN TO PREVENT FLICKER
+  
+  // 1. If we are still checking the session and don't have a local user, show splash
+  // This covers the split second where Supabase is verifying token
+  if (!isSessionReady && !currentUserEmail) {
+      return <SplashScreen />;
+  }
+
+  // 2. If check is done (or timed out) and still no user, show login
   if (!currentUserEmail) {
     return <LoginScreen onLogin={handleLogin} />;
   }
 
+  // 3. Otherwise show App
   // Initial Loading State (only show if no local data AND waiting for cloud)
-  // With useState initializers, we usually have data immediately.
-  // But if we want to show a spinner during sync:
   if (isLoadingData && transactions.length === 0 && accounts.length === 0) {
     return (
       <div className="min-h-screen bg-[#0a0a0b] flex flex-col items-center justify-center gap-4">
