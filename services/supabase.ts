@@ -10,7 +10,8 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true, 
     autoRefreshToken: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    storage: localStorage // Explicitly use localStorage to fix reload disconnects
   }
 });
 
@@ -201,7 +202,15 @@ export const subscribeToUserChanges = (email: string, onUpdate: (data: any) => v
         }
       }
     )
-    .subscribe();
+    .subscribe((status) => {
+      console.log(`[Realtime] Status para ${normalizedEmail}:`, status);
+      if (status === 'SUBSCRIBED') {
+         console.log("Conectado para receber atualizações em tempo real.");
+      }
+      if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+         console.warn("Desconectado do Realtime. O app tentará reconectar...");
+      }
+    });
 
   return () => {
     supabase.removeChannel(channel);

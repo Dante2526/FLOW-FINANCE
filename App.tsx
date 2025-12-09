@@ -254,7 +254,12 @@ const App: React.FC = () => {
   useEffect(() => {
     const initAuth = async () => {
       // Check for active session
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+         console.warn("Session check warning:", error.message);
+      }
+
       if (session?.user?.email) {
         console.log("Supabase Session Restored:", session.user.email);
         setCurrentUserEmail(session.user.email);
@@ -267,8 +272,14 @@ const App: React.FC = () => {
 
     initAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-       if (session?.user?.email) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+       console.log(`Auth State Change: ${event}`);
+       
+       if (event === 'SIGNED_OUT') {
+         setCurrentUserEmail(null);
+         localStorage.removeItem(STORAGE_KEYS.USER_SESSION);
+         setIsSessionReady(true); 
+       } else if (session?.user?.email) {
           setCurrentUserEmail(session.user.email);
           saveData(STORAGE_KEYS.USER_SESSION, session.user.email);
           setIsSessionReady(true);
