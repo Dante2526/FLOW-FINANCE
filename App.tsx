@@ -468,6 +468,8 @@ const App: React.FC = () => {
   };
 
   // Safe apply function for Realtime updates
+  // NOTE: We update prev...Ref here to signify that this state change
+  // came from the server, so the Save Effects should skip sending it back.
   const applyDataSafe = (data: any) => {
       const currentTxStr = JSON.stringify(currentStateRef.current.transactions);
       if (currentTxStr === prevTransactionsRef.current) {
@@ -569,12 +571,20 @@ const App: React.FC = () => {
     }
   };
 
+  // IMPORTANT FIX: Separate LocalStorage Save from Cloud Sync.
+  // We ALWAYS save to LocalStorage to ensure UI consistency on reload.
+  // We ONLY sync to Cloud if the change didn't come from the Cloud (checked via prevRef).
+
   // Transactions Save
   useEffect(() => {
+    if (!isLoadingData) {
+       saveData(STORAGE_KEYS.TRANSACTIONS, transactions);
+    }
+    
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(transactions);
+      // Only sync if current state is different from the last known synced state
       if (currentStr !== prevTransactionsRef.current) {
-        saveData(STORAGE_KEYS.TRANSACTIONS, transactions);
         const timer = setTimeout(async () => {
           const success = await saveCollection(currentUserEmail, "transactions", transactions);
           handleSyncResult(success);
@@ -587,10 +597,13 @@ const App: React.FC = () => {
 
   // Accounts Save
   useEffect(() => {
+    if (!isLoadingData) {
+       saveData(STORAGE_KEYS.ACCOUNTS, accounts);
+    }
+
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(accounts);
       if (currentStr !== prevAccountsRef.current) {
-        saveData(STORAGE_KEYS.ACCOUNTS, accounts);
         const timer = setTimeout(async () => {
           const success = await saveCollection(currentUserEmail, "accounts", accounts);
           handleSyncResult(success);
@@ -603,10 +616,13 @@ const App: React.FC = () => {
 
   // Investments Save
   useEffect(() => {
+    if (!isLoadingData) {
+       saveData(STORAGE_KEYS.INVESTMENTS, investments);
+    }
+
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(investments);
       if (currentStr !== prevInvestmentsRef.current) {
-        saveData(STORAGE_KEYS.INVESTMENTS, investments);
         const timer = setTimeout(async () => {
           const success = await saveCollection(currentUserEmail, "investments", investments);
           handleSyncResult(success);
@@ -619,10 +635,13 @@ const App: React.FC = () => {
 
   // Long Term Save
   useEffect(() => {
+    if (!isLoadingData) {
+       saveData(STORAGE_KEYS.LONG_TERM_TRANSACTIONS, longTermTransactions);
+    }
+
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(longTermTransactions);
       if (currentStr !== prevLongTermRef.current) {
-        saveData(STORAGE_KEYS.LONG_TERM_TRANSACTIONS, longTermTransactions);
         const timer = setTimeout(async () => {
           const success = await saveCollection(currentUserEmail, "longTerm", longTermTransactions);
           handleSyncResult(success);
@@ -635,10 +654,13 @@ const App: React.FC = () => {
 
   // Notifications Save
   useEffect(() => {
+    if (!isLoadingData) {
+       saveData(STORAGE_KEYS.NOTIFICATIONS, notifications);
+    }
+
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(notifications);
       if (currentStr !== prevNotificationsRef.current) {
-        saveData(STORAGE_KEYS.NOTIFICATIONS, notifications);
         const timer = setTimeout(async () => {
           const success = await saveCollection(currentUserEmail, "notifications", notifications);
           handleSyncResult(success);
@@ -651,10 +673,13 @@ const App: React.FC = () => {
 
   // User Profile Save
   useEffect(() => {
+    if (!isLoadingData) {
+       saveData(STORAGE_KEYS.USER_PROFILE, userProfile);
+    }
+
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(userProfile);
       if (currentStr !== prevProfileRef.current) {
-        saveData(STORAGE_KEYS.USER_PROFILE, userProfile);
         const timer = setTimeout(async () => {
            const success = await saveUserField(currentUserEmail, "profile", userProfile);
            handleSyncResult(success);
@@ -684,10 +709,13 @@ const App: React.FC = () => {
 
   // Months Save
   useEffect(() => {
+    if (!isLoadingData) {
+       saveData(STORAGE_KEYS.MONTHS, months);
+    }
+
     if (currentUserEmail && !isLoadingData) {
        const currentStr = JSON.stringify(months);
        if (currentStr !== prevMonthsRef.current) {
-         saveData(STORAGE_KEYS.MONTHS, months);
          const timer = setTimeout(async () => {
            const success = await saveUserField(currentUserEmail, "months", months);
            handleSyncResult(success);
@@ -700,9 +728,12 @@ const App: React.FC = () => {
 
   // Notepad Save
   useEffect(() => {
+    if (!isLoadingData) {
+       saveData(STORAGE_KEYS.NOTEPAD_CONTENT, notepadContent);
+    }
+
     if (currentUserEmail && !isLoadingData) {
       if (notepadContent !== prevNotepadRef.current) {
-        saveData(STORAGE_KEYS.NOTEPAD_CONTENT, notepadContent);
         const timer = setTimeout(async () => {
           const success = await saveUserField(currentUserEmail, "notepadContent", notepadContent);
           handleSyncResult(success);
@@ -715,9 +746,12 @@ const App: React.FC = () => {
 
   // CDI Save
   useEffect(() => {
+    if (!isLoadingData) {
+       saveData(STORAGE_KEYS.CDI_RATE, cdiRate);
+    }
+
     if (currentUserEmail && !isLoadingData) {
       if (cdiRate !== prevCdiRef.current) {
-        saveData(STORAGE_KEYS.CDI_RATE, cdiRate);
         saveUserField(currentUserEmail, "cdiRate", cdiRate);
         prevCdiRef.current = cdiRate;
       }
