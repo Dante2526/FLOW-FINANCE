@@ -25,7 +25,7 @@ import { IconBell, IconMore } from './components/Icons';
 import { Crown } from 'lucide-react';
 
 // Supabase Services (Simplified)
-import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, deleteUser } from './services/supabase';
+import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, deleteUser, supabase } from './services/supabase';
 
 // Constants
 const MONTH_NAMES = [
@@ -828,8 +828,9 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     localStorage.removeItem(STORAGE_KEYS.USER_SESSION);
+    await supabase.auth.signOut();
     setCurrentUserEmail(null);
     setIsProfileModalOpen(false);
   };
@@ -856,7 +857,7 @@ const App: React.FC = () => {
              localStorage.removeItem(STORAGE_KEYS.IS_SYNC_DIRTY);
              localStorage.removeItem(STORAGE_KEYS.KNOWN_USER_EMAIL); // Forget user
              
-             handleLogout();
+             await handleLogout();
              alert("Conta excluída com sucesso.");
           } catch (error: any) {
              console.error(error);
