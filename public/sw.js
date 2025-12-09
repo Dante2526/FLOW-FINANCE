@@ -1,3 +1,4 @@
+
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
@@ -13,7 +14,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: data.body || 'Você tem uma nova notificação.',
     icon: data.icon || '/favicon.svg',
-    badge: '/favicon.svg',
+    badge: '/notification-icon.svg',
     vibrate: [100, 50, 100],
     data: {
       url: data.url || '/'

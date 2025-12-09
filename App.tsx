@@ -279,11 +279,11 @@ const App: React.FC = () => {
       }
 
       if (session?.user?.email) {
-        console.log("Supabase Session Restored:", session.user.email);
+        // Logs removed for cleaner console
         setCurrentUserEmail(session.user.email);
         saveData(STORAGE_KEYS.USER_SESSION, session.user.email);
       } else {
-        console.log("No active session found on init.");
+        // Logs removed for cleaner console
       }
       setIsSessionReady(true);
     };
@@ -291,7 +291,7 @@ const App: React.FC = () => {
     initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-       console.log(`Auth State Change: ${event}`);
+       // Logs removed for cleaner console
        
        if (event === 'SIGNED_OUT') {
          setCurrentUserEmail(null);
@@ -370,7 +370,6 @@ const App: React.FC = () => {
     const isSyncDirty = loadData(STORAGE_KEYS.IS_SYNC_DIRTY, false);
 
     if (isSyncDirty) {
-      console.log("Local changes pending (Quota/Network Error). Using LocalStorage to prevent overwrite.");
       // We already loaded local data on init, just stop loading spinner
       setIsLoadingData(false);
     } else {
@@ -379,7 +378,7 @@ const App: React.FC = () => {
           if (data) {
             applyData(data);
           } else {
-            console.log("No remote data found, keeping local data.");
+            // No remote data found
           }
         })
         .catch(err => {
@@ -395,7 +394,6 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!currentUserEmail || !isSessionReady) return;
 
-    console.log("Iniciando escuta Realtime para:", currentUserEmail);
     const unsubscribe = subscribeToUserChanges(currentUserEmail, (newData) => {
       applyDataSafe(newData);
     });
@@ -805,10 +803,12 @@ const App: React.FC = () => {
              if ('Notification' in window && Notification.permission === 'granted') {
                try {
                  const iconUrl = window.location.origin + '/favicon.svg';
+                 const badgeUrl = window.location.origin + '/notification-icon.svg';
+                 
                  const options: any = {
                    body: `A conta ${tx.name} vence hoje. Valor: R$ ${tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
                    icon: iconUrl,
-                   badge: iconUrl,
+                   badge: badgeUrl,
                    tag: `flow-finance-bill-${tx.id}`, 
                    requireInteraction: true,
                    vibrate: [200, 100, 200]
