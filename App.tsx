@@ -167,7 +167,13 @@ const App: React.FC = () => {
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(() => {
     return loadData(STORAGE_KEYS.USER_SESSION, null);
   });
-  const [isLoadingData, setIsLoadingData] = useState<boolean>(false);
+  
+  // Initialize isLoadingData to TRUE if we have a session stored.
+  // This prevents the app from rendering the default state for a split second before fetching starts.
+  const [isLoadingData, setIsLoadingData] = useState<boolean>(() => {
+     return !!loadData(STORAGE_KEYS.USER_SESSION, null);
+  });
+
   // NEW: Track if Supabase session has been checked/restored
   const [isSessionReady, setIsSessionReady] = useState(false);
 
@@ -1382,9 +1388,12 @@ const App: React.FC = () => {
 
   // --- RENDER LOGIC WITH SPLASH SCREEN TO PREVENT FLICKER ---
   
-  // 1. Force Splash Screen until Supabase session is fully checked/restored.
-  // This prevents the "anonymous" / login screen flicker even if local data exists.
-  if (!isSessionReady) {
+  // 1. Force Splash Screen if:
+  //    a) Session check is not complete OR
+  //    b) User is logged in, data is loading, AND profile name is missing (to avoid default avatar flicker)
+  const shouldShowSplash = !isSessionReady || (currentUserEmail && isLoadingData && !userProfile.name);
+
+  if (shouldShowSplash) {
       return <SplashScreen />;
   }
 
