@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Mail, ArrowRight, ShieldCheck, User, KeyRound, ChevronLeft, AlertCircle } from 'lucide-react';
 import { loadData, STORAGE_KEYS } from '../services/storage';
@@ -73,21 +74,25 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
-      // Verifica configurações de segurança
-      const requireOtp = loadData(STORAGE_KEYS.SETTINGS_REQUIRE_OTP, true);
-      const knownEmail = loadData(STORAGE_KEYS.KNOWN_USER_EMAIL, '');
+      const { sendAuthOtp, supabase } = await import('../services/supabase');
+      
+      // RLS FIX: Check if we actually have a valid session before skipping OTP.
+      // We cannot rely on local storage settings (requireOtp=false) alone because RLS needs a valid server token.
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentSessionEmail = sessionData.session?.user?.email;
+      const isSessionValid = currentSessionEmail && currentSessionEmail.toLowerCase() === email.toLowerCase().trim();
 
-      // Se OTP estiver desativado E o email for conhecido (seguro), entra direto
-      if (mode === 'login' && !requireOtp && email.toLowerCase().trim() === knownEmail.toLowerCase().trim()) {
+      // If we have a valid session, we can proceed directly without OTP
+      if (mode === 'login' && isSessionValid) {
          await onLogin(email);
-         return; // Interrompe o fluxo para não enviar OTP
+         return; 
       }
 
-      const { sendAuthOtp } = await import('../services/supabase');
+      // If no valid session, we MUST send OTP to authenticate and get the token for RLS.
       await sendAuthOtp(email);
       setStep('otp');
       setError('');
-      // Inicia um cooldown mais seguro de 60s (padrão Supabase é restrito)
+      // Inicia um cooldown mais seguro de 60s
       setResendTimer(60);
     } catch (err: any) {
       console.error(err);
