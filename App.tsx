@@ -1380,17 +1380,15 @@ const App: React.FC = () => {
     }
   };
 
-  // --- CSS VARIABLES ---
+  // --- RENDER LOGIC WITH SPLASH SCREEN TO PREVENT FLICKER ---
   
-  // RENDER LOGIC WITH SPLASH SCREEN TO PREVENT FLICKER
-  
-  // 1. If we are still checking the session and don't have a local user, show splash
-  // This covers the split second where Supabase is verifying token
-  if (!isSessionReady && !currentUserEmail) {
+  // 1. Force Splash Screen until Supabase session is fully checked/restored.
+  // This prevents the "anonymous" / login screen flicker even if local data exists.
+  if (!isSessionReady) {
       return <SplashScreen />;
   }
 
-  // 2. If check is done (or timed out) and still no user, show login
+  // 2. If check is done and still no user, show login
   if (!currentUserEmail) {
     return <LoginScreen onLogin={handleLogin} />;
   }
