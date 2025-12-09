@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare, CloudLightning, Loader2, Check } from 'lucide-react';
 import { AppNotification } from '../types';
-import { saveUserField } from '../services/supabase';
+import { saveUserField, VAPID_PUBLIC_KEY } from '../services/supabase';
 
 interface Props {
   isOpen: boolean;
@@ -14,9 +13,6 @@ interface Props {
 }
 
 type TabType = 'inbox' | 'send';
-
-// VAPID Public Key provided by the user
-const VAPID_PUBLIC_KEY = 'BOabgmhdqm_B03NgjZgZUG4tT6whqH_sfr9-ZmMt1XY-lbI_ADbOzze9pRDU3tnj7oXttv01ZXcNKLhzeXlifC8';
 
 // Helper function to convert VAPID key
 function urlBase64ToUint8Array(base64String: string) {

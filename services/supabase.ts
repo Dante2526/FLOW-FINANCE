@@ -1,9 +1,15 @@
-
 import { createClient } from '@supabase/supabase-js';
 
-// Configuração do Projeto Flow Finance
+// --- CONFIGURAÇÃO DE SEGURANÇA ---
+// NOTA: As chaves abaixo são PÚBLICAS (Anon Key) e projetadas para uso no Frontend.
+// A segurança dos dados depende das regras de Row Level Security (RLS) configuradas no painel do Supabase.
+// NÃO substitua a 'SUPABASE_ANON_KEY' por uma chave 'SERVICE_ROLE' (Admin).
+
 const SUPABASE_URL = 'https://xfsmdidfccgptfzjhhui.supabase.co'.trim();
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmc21kaWRmY2NncHRmempoaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3MTQ0NjAsImV4cCI6MjA4MDI5MDQ2MH0.4oFJ_L7fdjw2ttYtTko8EdTVhDpBtM5WWXQM4_N7zTU'.trim();
+
+// Chave Pública para Push Notifications (Web Push)
+export const VAPID_PUBLIC_KEY = 'BOabgmhdqm_B03NgjZgZUG4tT6whqH_sfr9-ZmMt1XY-lbI_ADbOzze9pRDU3tnj7oXttv01ZXcNKLhzeXlifC8';
 
 // Configurações simples
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {

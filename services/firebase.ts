@@ -1,4 +1,3 @@
-
 import { initializeApp } from "firebase/app";
 import { 
   initializeFirestore,
@@ -12,6 +11,9 @@ import {
 } from "firebase/firestore";
 import { getAuth, signInAnonymously } from "firebase/auth";
 
+// NOTA: Estas configurações são PÚBLICAS e necessárias para conectar o cliente ao Firebase.
+// A segurança é garantida pelas 'Firestore Security Rules' no console do Firebase.
+// Certifique-se de que as regras permitam acesso apenas a usuários autenticados.
 const firebaseConfig = {
   apiKey: "AIzaSyDN569Gc_M1fnVKA165hdw1bAyliopiZag",
   authDomain: "flow-finance-42625.firebaseapp.com",
