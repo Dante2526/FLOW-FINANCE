@@ -358,6 +358,28 @@ const App: React.FC = () => {
     };
   }, [currentUserEmail, isSessionReady]);
 
+  // --- VISIBILITY REFRESH EFFECT (Mobile Background Fix) ---
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && currentUserEmail) {
+        // Force refresh when app returns to foreground
+        // This handles cases where WebSocket might have disconnected in background
+        loadUserData(currentUserEmail)
+          .then((data) => {
+            if (data) {
+              applyDataSafe(data);
+            }
+          })
+          .catch(err => console.error("Auto-refresh failed", err));
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [currentUserEmail]);
+
   const applyData = (data: any) => {
       if (data.profile) {
         let profile = data.profile;
