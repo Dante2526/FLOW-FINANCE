@@ -147,14 +147,12 @@ const sortMonths = (monthsList: MonthSummary[]) => {
 };
 
 // --- SPLASH SCREEN COMPONENT ---
+// Simplified to match native launch screen (Logo only, centered, no background box)
 const SplashScreen = () => (
-  <div className="fixed inset-0 bg-[#0a0a0b] flex flex-col items-center justify-center z-[100] animate-out fade-out duration-700">
-    <div className="w-20 h-20 bg-[#1c1c1e] rounded-3xl flex items-center justify-center border border-white/5 shadow-2xl shadow-accent/10 mb-6 animate-pulse">
-       <div className="relative">
-          <FlowLogo className="w-10 h-10 text-accent" />
-       </div>
+  <div className="fixed inset-0 bg-[#0a0a0b] flex items-center justify-center z-[100] animate-out fade-out duration-700">
+    <div className="animate-pulse">
+       <FlowLogo className="w-28 h-28 text-accent" />
     </div>
-    <h1 className="text-2xl font-bold text-white tracking-tight animate-pulse">Flow Finance</h1>
   </div>
 );
 
