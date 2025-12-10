@@ -147,11 +147,11 @@ const sortMonths = (monthsList: MonthSummary[]) => {
 };
 
 // --- SPLASH SCREEN COMPONENT ---
-// Simplified to match native launch screen (Logo only, centered, no background box)
+// Updated to mimic native Android Splash (Icon inside Dark Grey Squircle)
 const SplashScreen = () => (
   <div className="fixed inset-0 bg-[#0a0a0b] flex items-center justify-center z-[100] animate-out fade-out duration-700">
-    <div className="animate-pulse">
-       <FlowLogo className="w-28 h-28 text-accent" />
+    <div className="w-32 h-32 bg-[#1c1c1e] rounded-[2rem] flex items-center justify-center animate-pulse shadow-2xl shadow-black/20">
+       <FlowLogo className="w-24 h-24 text-accent" />
     </div>
   </div>
 );
