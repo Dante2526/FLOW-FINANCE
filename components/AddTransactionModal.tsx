@@ -30,11 +30,20 @@ const PURCHASE_ICONS: { type: LogoType; label: string }[] = [
   { type: 'health', label: 'Saúde' },
   { type: 'pet', label: 'Pets' },
   { type: 'travel', label: 'Viagem' },
-  // Extra Additions
+  
+  // Specific & Extras
+  { type: 'leisure', label: 'Lazer' },
+  { type: 'bar', label: 'Bar' },
   { type: 'game', label: 'Jogos' },
   { type: 'gift', label: 'Presentes' },
-  { type: 'bar', label: 'Lazer' },
-  { type: 'beauty', label: 'Beleza' },
+  
+  // Beauty & Wellness
+  { type: 'beauty', label: 'Salão' },
+  { type: 'makeup', label: 'Beleza Fem.' },
+  { type: 'aesthetic', label: 'Estética' },
+  
+  // Events
+  { type: 'wedding', label: 'Casamento' },
   
   { type: 'generic', label: 'Outros' },
 ];

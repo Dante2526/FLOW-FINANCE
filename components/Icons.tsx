@@ -35,7 +35,11 @@ import {
   Gamepad2,
   Gift,
   Beer,
-  Scissors
+  Scissors,
+  Palmtree,
+  Gem,
+  Sparkles,
+  Flower
 } from 'lucide-react';
 import { LogoType } from '../types';
 
@@ -234,6 +238,12 @@ export const TransactionIcon = ({ type }: { type: LogoType }) => {
     case 'gift': return <GenericIcon icon={Gift} bg="bg-pink-500" />;
     case 'bar': return <GenericIcon icon={Beer} bg="bg-orange-700" />;
     case 'beauty': return <GenericIcon icon={Scissors} bg="bg-fuchsia-600" />;
+    
+    // New Requests (Lazer, Casamento, Beleza Fem, Estetica)
+    case 'leisure': return <GenericIcon icon={Palmtree} bg="bg-lime-500" />;
+    case 'wedding': return <GenericIcon icon={Gem} bg="bg-rose-400" />;
+    case 'aesthetic': return <GenericIcon icon={Sparkles} bg="bg-cyan-400" />;
+    case 'makeup': return <GenericIcon icon={Flower} bg="bg-pink-400" />;
 
     case 'utility': return <GenericIcon icon={Zap} bg="bg-yellow-600" />;
     case 'home': return <GenericIcon icon={Home} bg="bg-teal-600" />;

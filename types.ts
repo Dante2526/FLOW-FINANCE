@@ -31,7 +31,11 @@ export type LogoType =
   | 'game'
   | 'gift'
   | 'bar'
-  | 'beauty';
+  | 'beauty'
+  | 'leisure'
+  | 'wedding'
+  | 'aesthetic'
+  | 'makeup';
 
 export interface Transaction {
   id: string;
