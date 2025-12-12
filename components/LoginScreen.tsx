@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, ArrowRight, ShieldCheck, User, KeyRound, ChevronLeft, AlertCircle } from 'lucide-react';
 import { loadData, STORAGE_KEYS } from '../services/storage';
+import { sendAuthOtp, verifyAuthOtp, supabase } from '../services/supabase';
 
 interface Props {
   onLogin: (email: string, name?: string) => Promise<void>;
@@ -74,8 +75,6 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
-      const { sendAuthOtp, supabase } = await import('../services/supabase');
-      
       // RLS FIX: Check if we actually have a valid session before skipping OTP.
       // We cannot rely on local storage settings (requireOtp=false) alone because RLS needs a valid server token.
       const { data: sessionData } = await supabase.auth.getSession();
@@ -125,7 +124,6 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     setIsLoading(true);
 
     try {
-      const { verifyAuthOtp } = await import('../services/supabase');
       // 1. Verifica o código no Supabase Auth
       await verifyAuthOtp(email, otpCode);
       
