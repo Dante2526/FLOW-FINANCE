@@ -110,7 +110,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
   useEffect(() => {
     if (isOpen && transactionToEdit) {
       setAmount(transactionToEdit.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-      setName(transactionToEdit.name.toUpperCase());
+      setName(transactionToEdit.name); // Removed explicit toUpperCase here to respect stored data style until edit
       setSelectedIcon(transactionToEdit.logoType);
       setType(transactionToEdit.type as 'purchase' | 'subscription');
       
@@ -184,7 +184,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
     const parsedAmount = parseFloat(amount.replace(/\./g, '').replace(',', '.'));
 
     onSave({
-      name,
+      name: name.toUpperCase(), // Convert to Uppercase ONLY on submit
       amount: parsedAmount,
       type,
       paymentMethod: transactionToEdit?.paymentMethod || 'card', 
@@ -249,7 +249,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
               type="text" 
               name="transaction_desc_hidden"
               value={name}
-              onChange={(e) => setName(e.target.value.toUpperCase())}
+              onChange={(e) => setName(e.target.value)}
               placeholder="DO QUE SE TRATA?"
               className="w-full bg-[#2c2c2e] text-white text-lg py-4 px-6 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600 uppercase"
               required
