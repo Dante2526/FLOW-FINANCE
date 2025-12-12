@@ -1,23 +1,26 @@
-import path from 'path';
-import { defineConfig, loadEnv } from 'vite';
+
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig(({ mode }) => {
-    const env = loadEnv(mode, '.', '');
-    return {
-      server: {
-        port: 3000,
-        host: '0.0.0.0',
-      },
-      plugins: [react()],
-      define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-      },
-      resolve: {
-        alias: {
-          '@': path.resolve(__dirname, '.'),
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  build: {
+    // Increase the warning limit slightly to reduce noise for moderate overages
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Core React dependencies
+          'vendor-react': ['react', 'react-dom'],
+          // UI Libraries
+          'vendor-ui': ['lucide-react'],
+          // Heavy Charting Library (only loaded when needed via lazy import)
+          'vendor-charts': ['recharts'],
+          // Backend Services
+          'vendor-backend': ['@supabase/supabase-js', 'firebase/app', 'firebase/auth', 'firebase/firestore']
         }
       }
-    };
+    }
+  }
 });

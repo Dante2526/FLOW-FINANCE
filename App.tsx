@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+
+import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
 import ContactsRow from './components/ContactsRow';
@@ -12,7 +13,8 @@ import EditProfileModal from './components/EditProfileModal';
 import NotepadModal from './components/NotepadModal';
 import { CalendarModal } from './components/CalendarModal';
 import NotificationModal from './components/NotificationModal';
-import AnalyticsModal from './components/AnalyticsModal';
+// AnalyticsModal is heavy (Recharts), so we lazy load it
+// import AnalyticsModal from './components/AnalyticsModal';
 import SettingsView, { AVAILABLE_THEMES } from './components/SettingsView';
 import LongTermView from './components/LongTermView';
 import InvestmentsView from './components/InvestmentsView';
@@ -21,10 +23,13 @@ import ProModal from './components/ProModal';
 import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification } from './types';
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { IconBell, IconMore } from './components/Icons';
-import { Crown } from 'lucide-react';
+import { Crown, Loader2 } from 'lucide-react';
 
 // Supabase Services (Simplified)
 import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, deleteUser, supabase, VAPID_PUBLIC_KEY } from './services/supabase';
+
+// Lazy Load Heavy Components
+const AnalyticsModal = React.lazy(() => import('./components/AnalyticsModal'));
 
 // Constants
 const MONTH_NAMES = [
@@ -1428,12 +1433,16 @@ const App: React.FC = () => {
         currentUserEmail={currentUserEmail}
       />
 
-      <AnalyticsModal 
-         isOpen={isAnalyticsOpen}
-         onClose={handleCloseAnalytics}
-         transactions={transactions}
-         months={months}
-      />
+      <Suspense fallback={null}>
+        {isAnalyticsOpen && (
+          <AnalyticsModal 
+             isOpen={isAnalyticsOpen}
+             onClose={handleCloseAnalytics}
+             transactions={transactions}
+             months={months}
+          />
+        )}
+      </Suspense>
 
       <ProModal 
         isOpen={isProModalOpen}
