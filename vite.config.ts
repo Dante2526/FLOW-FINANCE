@@ -5,20 +5,45 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: {
+    // Exclude dependencies served via CDN to prevent "failed to resolve" errors in Dev
+    exclude: [
+      'react',
+      'react-dom',
+      'react-dom/client',
+      'lucide-react',
+      'recharts',
+      '@supabase/supabase-js',
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore'
+    ]
+  },
   build: {
-    // Increase the warning limit slightly to reduce noise for moderate overages
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
+      // Externalize dependencies in Production Build
+      external: [
+        'react',
+        'react-dom',
+        'react-dom/client',
+        'lucide-react',
+        'recharts',
+        '@supabase/supabase-js',
+        'firebase/app',
+        'firebase/auth',
+        'firebase/firestore'
+      ],
       output: {
-        manualChunks: {
-          // Core React dependencies
-          'vendor-react': ['react', 'react-dom'],
-          // UI Libraries
-          'vendor-ui': ['lucide-react'],
-          // Heavy Charting Library (only loaded when needed via lazy import)
-          'vendor-charts': ['recharts'],
-          // Backend Services
-          'vendor-backend': ['@supabase/supabase-js', 'firebase/app', 'firebase/auth', 'firebase/firestore']
+        globals: {
+          react: 'React',
+          'react-dom': 'ReactDOM',
+          'lucide-react': 'LucideReact',
+          'recharts': 'Recharts',
+          '@supabase/supabase-js': 'Supabase',
+          'firebase/app': 'firebase',
+          'firebase/auth': 'firebaseAuth',
+          'firebase/firestore': 'firebaseFirestore'
         }
       }
     }

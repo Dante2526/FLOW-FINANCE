@@ -28,6 +28,7 @@ const PURCHASE_ICONS: { type: LogoType; label: string }[] = [
   { type: 'project', label: 'Projetos' },
   { type: 'funeral', label: 'Funeral' },
   { type: 'health', label: 'Saúde' },
+  { type: 'medicine', label: 'Remédio' },
   { type: 'pet', label: 'Pets' },
   { type: 'travel', label: 'Viagem' },
   

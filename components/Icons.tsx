@@ -39,7 +39,8 @@ import {
   Palmtree,
   Gem,
   Sparkles,
-  Flower
+  Flower,
+  Pill
 } from 'lucide-react';
 import { LogoType } from '../types';
 
@@ -244,6 +245,8 @@ export const TransactionIcon = ({ type }: { type: LogoType }) => {
     case 'wedding': return <GenericIcon icon={Gem} bg="bg-rose-400" />;
     case 'aesthetic': return <GenericIcon icon={Sparkles} bg="bg-cyan-400" />;
     case 'makeup': return <GenericIcon icon={Flower} bg="bg-pink-400" />;
+    
+    case 'medicine': return <GenericIcon icon={Pill} bg="bg-teal-500" />;
 
     case 'utility': return <GenericIcon icon={Zap} bg="bg-yellow-600" />;
     case 'home': return <GenericIcon icon={Home} bg="bg-teal-600" />;
