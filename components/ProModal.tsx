@@ -37,7 +37,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade }) => {
   // Timer Logic
   useEffect(() => {
     let interval: any;
-    // Timer runs on BOTH payment and verify steps now
+    // O timer deve rodar tanto na etapa de pagamento quanto na de verificação
     if (isOpen && (step === 'payment' || step === 'verify') && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft((prev) => prev - 1);
@@ -288,7 +288,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade }) => {
                      <ScanLine className="w-8 h-8 text-blue-500" />
                   </div>
 
-                  {/* Visual Timer (Added here too) */}
+                  {/* Visual Timer (Também presente aqui) */}
                   <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full mb-4 font-mono font-bold text-sm ${
                       timeLeft < 60 ? 'bg-red-500/10 text-red-500 animate-pulse' : 'bg-yellow-500/10 text-yellow-500'
                   }`}>

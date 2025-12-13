@@ -1,11 +1,8 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Initialize the API client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
+// Placeholder for advice, currently disabled as per previous file content
 export const getFinancialAdvice = async (query: string, contextData: any): Promise<string> => {
-  // Placeholder for advice, currently disabled as per previous file content
   return "Funcionalidade de IA desativada.";
 };
 
@@ -24,6 +21,9 @@ export const getFinancialAdvice = async (query: string, contextData: any): Promi
  */
 export const verifyPaymentReceipt = async (base64Image: string): Promise<{ valid: boolean; reason: string }> => {
   try {
+    // Initialize the API client HERE instead of globally to prevent crashes on app load
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
     // Remove header if present (data:image/jpeg;base64,)
     const cleanBase64 = base64Image.split(',')[1] || base64Image;
     
