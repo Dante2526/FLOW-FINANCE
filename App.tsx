@@ -1131,7 +1131,7 @@ const App: React.FC = () => {
   };
 
   const handleProUpgrade = () => {
-    const amount = 5.00;
+    const amount = 7.00; // Updated price to match QR Code
     const now = new Date();
     // Expiry: Current date + 30 days
     const expiryDate = new Date(now);
@@ -1144,7 +1144,7 @@ const App: React.FC = () => {
         amount: amount,
         type: 'subscription',
         logoType: 'generic', 
-        paymentMethod: 'card',
+        paymentMethod: 'pix', // Assumed PIX since that's the modal
         paid: true,
         date: now.toISOString().split('T')[0], // YYYY-MM-DD
         month: activeMonthSummary.month,
