@@ -54,8 +54,24 @@ const BalanceCard: React.FC<Props> = ({
      if (onDragEnter && id) onDragEnter(id);
   };
 
+  // Touch Handler for Mobile Drag Simulation
+  const handleTouchMove = (e: React.TouchEvent) => {
+    // Rely on touch-action: none for scroll prevention
+    const touch = e.touches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    const cardRow = element?.closest('[data-card-id]');
+    
+    if (cardRow) {
+      const targetId = cardRow.getAttribute('data-card-id');
+      if (targetId && targetId !== id && onDragEnter) {
+         onDragEnter(targetId);
+      }
+    }
+  };
+
   return (
     <div 
+      data-card-id={id}
       className="relative w-full bg-accent rounded-[2.5rem] p-6 text-white flex flex-col justify-between min-h-[220px] shadow-lg shadow-accent/20 mb-4"
       onDragEnter={handleDragEnter}
       onDragOver={(e) => e.preventDefault()}
@@ -83,7 +99,16 @@ const BalanceCard: React.FC<Props> = ({
              draggable={true}
              onDragStart={handleDragStart}
              onDragEnd={onDragEnd}
-             onTouchStart={(e) => e.stopPropagation()}
+             // Manual Touch Handlers for Mobile
+             onTouchStart={(e) => {
+                e.stopPropagation();
+                if (onDragStart && id) onDragStart(id);
+             }}
+             onTouchMove={handleTouchMove}
+             onTouchEnd={(e) => {
+                e.stopPropagation();
+                if (onDragEnd) onDragEnd();
+             }}
            >
              <GripVertical className="w-6 h-6 text-white" />
            </div>

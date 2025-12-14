@@ -155,8 +155,23 @@ const SecondaryCard: React.FC<Props> = ({
      if (onDragEnter) onDragEnter(account.id);
   };
 
+  // Manual Touch Move for Android
+  const handleManualTouchMove = (e: React.TouchEvent) => {
+     const touch = e.touches[0];
+     const element = document.elementFromPoint(touch.clientX, touch.clientY);
+     const cardRow = element?.closest('[data-card-id]');
+     
+     if (cardRow) {
+        const targetId = cardRow.getAttribute('data-card-id');
+        if (targetId && targetId !== account.id && onDragEnter) {
+           onDragEnter(targetId);
+        }
+     }
+  };
+
   return (
     <div 
+      data-card-id={account.id}
       className="relative mb-4 w-full h-40 rounded-[2.5rem] overflow-hidden select-none"
       onDragEnter={handleDragEnter}
       onDragOver={(e) => e.preventDefault()}
@@ -217,7 +232,19 @@ const SecondaryCard: React.FC<Props> = ({
                     onDragEnd={onDragEnd}
                     // Prevent propagation to swipe handlers
                     onMouseDown={(e) => e.stopPropagation()} 
-                    onTouchStart={(e) => e.stopPropagation()}
+                    // Manual Touch Handling for Android
+                    onTouchStart={(e) => {
+                        e.stopPropagation();
+                        if (onDragStart) onDragStart(account.id);
+                    }}
+                    onTouchMove={(e) => {
+                        e.stopPropagation();
+                        handleManualTouchMove(e);
+                    }}
+                    onTouchEnd={(e) => {
+                        e.stopPropagation();
+                        if (onDragEnd) onDragEnd();
+                    }}
                 >
                     <GripVertical className="w-6 h-6 text-white/70" />
                 </div>
