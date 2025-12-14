@@ -1,32 +1,105 @@
 
-import React from 'react';
-import { Plus, Copy, Calculator } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Copy, Calculator, GripVertical, Eye, EyeOff } from 'lucide-react';
 
 interface Props {
   balance: number;
   onAddClick: () => void;
   onDuplicateClick: () => void;
   onCalculatorClick: () => void;
+  // DnD Props
+  id?: string;
+  draggable?: boolean;
+  onDragStart?: (id: string) => void;
+  onDragEnter?: (id: string) => void;
+  onDragEnd?: () => void;
 }
 
-const BalanceCard: React.FC<Props> = ({ balance, onAddClick, onDuplicateClick, onCalculatorClick }) => {
+const BalanceCard: React.FC<Props> = ({ 
+  balance, 
+  onAddClick, 
+  onDuplicateClick, 
+  onCalculatorClick,
+  id = 'balance-card',
+  draggable,
+  onDragStart,
+  onDragEnter,
+  onDragEnd
+}) => {
+  // State for balance visibility
+  const [isVisible, setIsVisible] = useState(() => {
+    try {
+      const saved = localStorage.getItem('flow_balance_visible');
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const toggleVisibility = () => {
+    const newState = !isVisible;
+    setIsVisible(newState);
+    localStorage.setItem('flow_balance_visible', JSON.stringify(newState));
+  };
+
   // Format the balance to maintain the visual style (large integer, smaller decimals)
   const formattedBalance = balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const [integerPart, decimalPart] = formattedBalance.split(',');
 
+  // Native DnD Handlers
+  const handleDragStart = (e: React.DragEvent) => {
+     if (onDragStart && id) onDragStart(id);
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+     if (onDragEnter && id) onDragEnter(id);
+  };
+
   return (
-    <div className="relative w-full bg-accent rounded-[2.5rem] p-6 text-white flex flex-col justify-between min-h-[220px] shadow-lg shadow-accent/20">
+    <div 
+      className="relative w-full bg-accent rounded-[2.5rem] p-6 text-white flex flex-col justify-between min-h-[220px] shadow-lg shadow-accent/20 mb-4"
+      onDragEnter={handleDragEnter}
+      onDragOver={(e) => e.preventDefault()}
+      onDragEnd={onDragEnd}
+    >
       
       {/* Header of Card */}
       <div className="flex justify-between items-start">
-        <span className="text-lg font-extrabold text-white drop-shadow-sm tracking-wide">LUCRO</span>
+        <div className="flex items-center gap-3">
+          <span className="text-lg font-extrabold text-white drop-shadow-sm tracking-wide">LUCRO</span>
+          <button 
+            onClick={toggleVisibility}
+            className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors active:scale-95 flex items-center justify-center backdrop-blur-sm"
+            title={isVisible ? "Esconder saldo" : "Mostrar saldo"}
+          >
+            {isVisible ? <Eye className="w-4 h-4 text-white" /> : <EyeOff className="w-4 h-4 text-white" />}
+          </button>
+        </div>
+        
+        {/* Drag Handle */}
+        {draggable && (
+           <div 
+             className="p-2 -mt-2 -mr-2 cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100 transition-opacity"
+             draggable={true}
+             onDragStart={handleDragStart}
+             onDragEnd={onDragEnd}
+           >
+             <GripVertical className="w-6 h-6 text-white" />
+           </div>
+        )}
       </div>
 
       {/* Main Balance */}
       <div className="mt-2 mb-6">
-        <h1 className="text-4xl font-bold tracking-tight drop-shadow-md">
-          R$ {integerPart}<span className="text-3xl text-white">,{decimalPart}</span>
-        </h1>
+        {isVisible ? (
+          <h1 className="text-4xl font-bold tracking-tight drop-shadow-md">
+            R$ {integerPart}<span className="text-3xl text-white">,{decimalPart}</span>
+          </h1>
+        ) : (
+          <h1 className="text-4xl font-bold tracking-tight drop-shadow-md opacity-80">
+            R$ ••••
+          </h1>
+        )}
       </div>
 
       {/* Action Buttons Row */}

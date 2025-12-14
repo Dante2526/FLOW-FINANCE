@@ -103,6 +103,8 @@ const INITIAL_PROFILE: UserProfile = {
   isPro: false
 };
 
+const BALANCE_CARD_ID = 'balance-card';
+
 // Helper: Parse Date String to determine month
 const getMonthFromDateStr = (dateStr: string): string => {
   if (!dateStr) return '';
@@ -198,8 +200,11 @@ const App: React.FC = () => {
   const [longTermTransactions, setLongTermTransactions] = useState<LongTermTransaction[]>([]);
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [notepadContent, setNotepadContent] = useState<string>('');
+  const [notepadDrawing, setNotepadDrawing] = useState<string | null>(null); // New Drawing State
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [cdiRate, setCdiRate] = useState<number>(11.25);
+  // NEW: Dashboard Card Order
+  const [dashboardOrder, setDashboardOrder] = useState<string[]>([BALANCE_CARD_ID]);
 
   const [appTheme, setAppTheme] = useState<AppTheme>(() => {
     return loadData(STORAGE_KEYS.APP_THEME, AVAILABLE_THEMES[0]);
@@ -224,7 +229,9 @@ const App: React.FC = () => {
   const prevThemeRef = useRef<string>(JSON.stringify(appTheme));
   const prevMonthsRef = useRef<string>(JSON.stringify(months));
   const prevNotepadRef = useRef<string>(notepadContent);
+  const prevDrawingRef = useRef<string | null>(notepadDrawing);
   const prevCdiRef = useRef<number>(cdiRate);
+  const prevDashboardOrderRef = useRef<string>(JSON.stringify(dashboardOrder));
 
   // --- CURRENT STATE REFS FOR REALTIME PROTECTION ---
   const currentStateRef = useRef({
@@ -237,7 +244,9 @@ const App: React.FC = () => {
     appTheme,
     months,
     notepadContent,
-    cdiRate
+    notepadDrawing,
+    cdiRate,
+    dashboardOrder
   });
 
   // Update current state ref on every render
@@ -252,7 +261,9 @@ const App: React.FC = () => {
       appTheme,
       months,
       notepadContent,
-      cdiRate
+      notepadDrawing,
+      cdiRate,
+      dashboardOrder
     };
   });
 
@@ -266,6 +277,60 @@ const App: React.FC = () => {
        }
     }
   }, []); // Run once on mount
+
+  // --- FILTER TRANSACTIONS BY ACTIVE MONTH ---
+  const activeMonthSummary = months.find(m => m.id === activeMonthId) || months[0];
+  
+  const filteredTransactions = useMemo(() => {
+    if (!activeMonthSummary) return [];
+    return transactions.filter(tx => {
+      const txMonth = tx.month || getMonthFromDateStr(tx.date);
+      const txYear = tx.year || getYearFromDateStr(tx.date, activeMonthSummary.year);
+      return txMonth === activeMonthSummary.month && txYear === activeMonthSummary.year;
+    });
+  }, [transactions, activeMonthSummary]);
+
+  // --- FILTER ACCOUNTS BY ACTIVE MONTH ---
+  const filteredAccounts = useMemo(() => {
+    if (!activeMonthSummary) return [];
+    return accounts.filter(acc => {
+      if (!acc.month && !acc.year) return true;
+      return acc.month === activeMonthSummary.month && acc.year === activeMonthSummary.year;
+    });
+  }, [accounts, activeMonthSummary]);
+
+  // --- SYNC DASHBOARD ORDER WITH ACCOUNTS ---
+  // Ensures all visible accounts are in the order list, and 'balance-card' is present.
+  useEffect(() => {
+     // Only run if we have data loaded
+     if (accounts.length > 0 || months.length > 0) {
+        const currentAccountIds = new Set(filteredAccounts.map(a => a.id));
+        let newOrder = [...dashboardOrder];
+
+        // 1. Ensure 'balance-card' is present
+        if (!newOrder.includes(BALANCE_CARD_ID)) {
+           newOrder.unshift(BALANCE_CARD_ID);
+        }
+
+        // 2. Add any new/visible accounts that aren't in the order yet
+        const missingIds = filteredAccounts
+          .map(a => a.id)
+          .filter(id => !newOrder.includes(id));
+        
+        if (missingIds.length > 0) {
+           newOrder = [...newOrder, ...missingIds];
+        }
+
+        // 3. Clean up: Only keep IDs that are 'balance-card' OR exist in global accounts list.
+        // This keeps the order clean but preserves order for accounts not currently visible (e.g. other months).
+        const globalIds = new Set(accounts.map(a => a.id));
+        newOrder = newOrder.filter(id => id === BALANCE_CARD_ID || globalIds.has(id));
+
+        if (JSON.stringify(newOrder) !== JSON.stringify(dashboardOrder)) {
+           setDashboardOrder(newOrder);
+        }
+     }
+  }, [filteredAccounts, accounts]);
 
   // --- AUTH CHECK EFFECT (Fixes RLS issues) ---
   useEffect(() => {
@@ -422,9 +487,14 @@ const App: React.FC = () => {
          prevThemeRef.current = JSON.stringify(data.theme);
       }
       
-      if (data.notepadContent) {
+      if (data.notepadContent !== undefined) {
         setNotepadContent(data.notepadContent);
         prevNotepadRef.current = data.notepadContent;
+      }
+
+      if (data.notepadDrawing !== undefined) {
+        setNotepadDrawing(data.notepadDrawing);
+        prevDrawingRef.current = data.notepadDrawing;
       }
 
       if (data.months && data.months.length > 0) {
@@ -440,6 +510,11 @@ const App: React.FC = () => {
       if (data.cdiRate !== undefined) {
         setCdiRate(data.cdiRate);
         prevCdiRef.current = data.cdiRate;
+      }
+
+      if (data.dashboardOrder && Array.isArray(data.dashboardOrder)) {
+         setDashboardOrder(data.dashboardOrder);
+         prevDashboardOrderRef.current = JSON.stringify(data.dashboardOrder);
       }
   };
 
@@ -467,6 +542,13 @@ const App: React.FC = () => {
          if (data.notepadContent !== undefined && data.notepadContent !== currentStateRef.current.notepadContent) {
             setNotepadContent(data.notepadContent);
             prevNotepadRef.current = data.notepadContent;
+         }
+      }
+
+      if (currentStateRef.current.notepadDrawing === prevDrawingRef.current) {
+         if (data.notepadDrawing !== undefined && data.notepadDrawing !== currentStateRef.current.notepadDrawing) {
+            setNotepadDrawing(data.notepadDrawing);
+            prevDrawingRef.current = data.notepadDrawing;
          }
       }
 
@@ -532,6 +614,14 @@ const App: React.FC = () => {
          if (data.cdiRate !== undefined && data.cdiRate !== currentStateRef.current.cdiRate) {
              setCdiRate(data.cdiRate);
              prevCdiRef.current = data.cdiRate;
+         }
+      }
+
+      const currentOrderStr = JSON.stringify(currentStateRef.current.dashboardOrder);
+      if (currentOrderStr === prevDashboardOrderRef.current) {
+         if (data.dashboardOrder && JSON.stringify(data.dashboardOrder) !== currentOrderStr) {
+            setDashboardOrder(data.dashboardOrder);
+            prevDashboardOrderRef.current = JSON.stringify(data.dashboardOrder);
          }
       }
   };
@@ -658,15 +748,26 @@ const App: React.FC = () => {
   // Notepad Save
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
-      if (notepadContent !== prevNotepadRef.current) {
+      // Check both content and drawing
+      const isContentChanged = notepadContent !== prevNotepadRef.current;
+      const isDrawingChanged = notepadDrawing !== prevDrawingRef.current;
+
+      if (isContentChanged || isDrawingChanged) {
         const timer = setTimeout(async () => {
-          await saveUserField(currentUserEmail, "notepadContent", notepadContent);
-          prevNotepadRef.current = notepadContent;
+          // We can save both calls, or optimize. Supabase handles concurrent writes well.
+          if (isContentChanged) {
+             await saveUserField(currentUserEmail, "notepadContent", notepadContent);
+             prevNotepadRef.current = notepadContent;
+          }
+          if (isDrawingChanged) {
+             await saveUserField(currentUserEmail, "notepadDrawing", notepadDrawing);
+             prevDrawingRef.current = notepadDrawing;
+          }
         }, 2000); 
         return () => clearTimeout(timer);
       }
     }
-  }, [notepadContent, currentUserEmail, isLoadingData]);
+  }, [notepadContent, notepadDrawing, currentUserEmail, isLoadingData]);
 
   // CDI Save
   useEffect(() => {
@@ -678,26 +779,19 @@ const App: React.FC = () => {
     }
   }, [cdiRate, currentUserEmail, isLoadingData]);
 
-   // --- FILTER TRANSACTIONS BY ACTIVE MONTH ---
-  const activeMonthSummary = months.find(m => m.id === activeMonthId) || months[0];
-  
-  const filteredTransactions = useMemo(() => {
-    if (!activeMonthSummary) return [];
-    return transactions.filter(tx => {
-      const txMonth = tx.month || getMonthFromDateStr(tx.date);
-      const txYear = tx.year || getYearFromDateStr(tx.date, activeMonthSummary.year);
-      return txMonth === activeMonthSummary.month && txYear === activeMonthSummary.year;
-    });
-  }, [transactions, activeMonthSummary]);
-
-  // --- FILTER ACCOUNTS BY ACTIVE MONTH ---
-  const filteredAccounts = useMemo(() => {
-    if (!activeMonthSummary) return [];
-    return accounts.filter(acc => {
-      if (!acc.month && !acc.year) return true;
-      return acc.month === activeMonthSummary.month && acc.year === activeMonthSummary.year;
-    });
-  }, [accounts, activeMonthSummary]);
+  // Dashboard Order Save
+  useEffect(() => {
+    if (currentUserEmail && !isLoadingData) {
+      const currentStr = JSON.stringify(dashboardOrder);
+      if (currentStr !== prevDashboardOrderRef.current) {
+        const timer = setTimeout(async () => {
+          await saveCollection(currentUserEmail, "dashboardOrder", dashboardOrder);
+          prevDashboardOrderRef.current = currentStr;
+        }, DEBOUNCE_DELAY);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [dashboardOrder, currentUserEmail, isLoadingData]);
 
   // --- PROFIT CALCULATION ---
   const profitBalance = useMemo(() => {
@@ -870,8 +964,10 @@ const App: React.FC = () => {
              localStorage.removeItem(STORAGE_KEYS.INVESTMENTS);
              localStorage.removeItem(STORAGE_KEYS.CDI_RATE);
              localStorage.removeItem(STORAGE_KEYS.NOTEPAD_CONTENT);
+             localStorage.removeItem(STORAGE_KEYS.NOTEPAD_DRAWING);
              localStorage.removeItem(STORAGE_KEYS.IS_SYNC_DIRTY);
-             localStorage.removeItem(STORAGE_KEYS.KNOWN_USER_EMAIL); // Forget user
+             localStorage.removeItem(STORAGE_KEYS.KNOWN_USER_EMAIL);
+             localStorage.removeItem(STORAGE_KEYS.DASHBOARD_ORDER);
              
              await handleLogout();
              alert("Conta excluída com sucesso.");
@@ -910,33 +1006,30 @@ const App: React.FC = () => {
   const handleCloseAnalytics = () => setIsAnalyticsOpen(false);
 
   // --- REORDER LOGIC ---
-  const handleAccountReorder = (draggedId: string, targetId: string) => {
-    if (draggedId === targetId) return;
-
-    const draggedIndex = accounts.findIndex(a => a.id === draggedId);
-    const targetIndex = accounts.findIndex(a => a.id === targetId);
-
-    if (draggedIndex === -1 || targetIndex === -1) return;
-
-    const newAccounts = [...accounts];
-    const [reorderedItem] = newAccounts.splice(draggedIndex, 1);
-    newAccounts.splice(targetIndex, 0, reorderedItem);
-
-    setAccounts(newAccounts);
-  };
-
-  const handleDragStart = (id: string) => {
+  const handleCardDragStart = (id: string) => {
     dragItem.current = id;
   };
 
-  const handleDragEnter = (id: string) => {
-    dragOverItem.current = id;
-    if (dragItem.current && dragItem.current !== id) {
-       handleAccountReorder(dragItem.current, id);
+  const handleCardDragEnter = (targetId: string) => {
+    if (dragItem.current && dragItem.current !== targetId) {
+       const draggedId = dragItem.current;
+       
+       setDashboardOrder(prev => {
+          const newOrder = [...prev];
+          const draggedIndex = newOrder.indexOf(draggedId);
+          const targetIndex = newOrder.indexOf(targetId);
+          
+          if (draggedIndex !== -1 && targetIndex !== -1) {
+             newOrder.splice(draggedIndex, 1);
+             newOrder.splice(targetIndex, 0, draggedId);
+             return newOrder;
+          }
+          return prev;
+       });
     }
   };
 
-  const handleDragEnd = () => {
+  const handleCardDragEnd = () => {
     dragItem.current = null;
     dragOverItem.current = null;
   };
@@ -1287,31 +1380,44 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Main Balance Card */}
-            <div className="mb-6">
-              <BalanceCard 
-                balance={profitBalance} 
-                onAddClick={handleOpenAddTransaction}
-                onDuplicateClick={handleDuplicateMonth}
-                onCalculatorClick={handleOpenCalculator}
-              />
-            </div>
-
-            {/* Secondary Cards (Accounts) */}
-            <div className="mb-0">
-               {filteredAccounts.map(acc => (
-                   <SecondaryCard 
-                     key={acc.id} 
-                     account={acc} 
-                     onDelete={handleDeleteAccount}
-                     onEdit={handleEditAccount}
-                     onDragStart={handleDragStart}
-                     onDragEnter={handleDragEnter}
-                     onDragEnd={handleDragEnd}
-                     draggable
-                   />
-                 ))
-               }
+            {/* Draggable Cards Section */}
+            <div className="flex flex-col gap-4 mb-6">
+               {dashboardOrder.map((id) => {
+                  if (id === BALANCE_CARD_ID) {
+                     return (
+                        <BalanceCard 
+                           key={id}
+                           id={id}
+                           balance={profitBalance} 
+                           onAddClick={handleOpenAddTransaction}
+                           onDuplicateClick={handleDuplicateMonth}
+                           onCalculatorClick={handleOpenCalculator}
+                           draggable
+                           onDragStart={handleCardDragStart}
+                           onDragEnter={handleCardDragEnter}
+                           onDragEnd={handleCardDragEnd}
+                        />
+                     );
+                  }
+                  
+                  const account = filteredAccounts.find(a => a.id === id);
+                  if (account) {
+                     return (
+                        <SecondaryCard 
+                           key={account.id} 
+                           account={account} 
+                           onDelete={handleDeleteAccount}
+                           onEdit={handleEditAccount}
+                           draggable
+                           onDragStart={handleCardDragStart}
+                           onDragEnter={handleCardDragEnter}
+                           onDragEnd={handleCardDragEnd}
+                        />
+                     );
+                  }
+                  
+                  return null;
+               })}
             </div>
 
             <ContactsRow 
@@ -1414,7 +1520,11 @@ const App: React.FC = () => {
         isOpen={isNotepadOpen}
         onClose={handleCloseNotepad}
         initialContent={notepadContent}
-        onSave={(content) => setNotepadContent(content)}
+        initialDrawing={notepadDrawing}
+        onSave={(content, drawing) => {
+           setNotepadContent(content);
+           setNotepadDrawing(drawing);
+        }}
       />
 
       <CalendarModal 

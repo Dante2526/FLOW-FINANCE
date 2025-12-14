@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 // --- CONFIGURAÇÃO DE SEGURANÇA ---
@@ -33,6 +34,8 @@ export const normalizeUserData = (data: any) => {
 
   assignIfPresent('longTerm', 'long_term', []);
   assignIfPresent('notepadContent', 'notepad_content', '');
+  // First try to get drawing from direct column
+  assignIfPresent('notepadDrawing', 'notepad_drawing', null); 
   
   if ('cdi_rate' in data) {
     result.cdiRate = data.cdi_rate !== null ? data.cdi_rate : 11.25;
@@ -45,6 +48,20 @@ export const normalizeUserData = (data: any) => {
   assignIfPresent('months', 'months', []);
   assignIfPresent('profile', 'profile', {});
   assignIfPresent('theme', 'theme', null);
+  
+  // Fallback: Check profile for notepadDrawing if not found in root column
+  if (!result.notepadDrawing && data.profile && data.profile.notepadDrawing) {
+     result.notepadDrawing = data.profile.notepadDrawing;
+  }
+  
+  // Try to find dashboardOrder in column first, then fallback to profile
+  if ('dashboard_order' in data && data.dashboard_order && Array.isArray(data.dashboard_order) && data.dashboard_order.length > 0) {
+     result.dashboardOrder = data.dashboard_order;
+  } else if (data.profile && data.profile.dashboardOrder) {
+     result.dashboardOrder = data.profile.dashboardOrder;
+  } else {
+     result.dashboardOrder = [];
+  }
 
   return result;
 };
@@ -177,16 +194,6 @@ export const deleteUser = async (email: string) => {
   }
 };
 
-// --- HELPER DE AUTENTICAÇÃO ANÔNIMA PARA SYNC ---
-const ensureAuth = async () => {
-  // Se já estiver logado via OTP, não faz nada
-  if (supabase.auth.getSession()) return;
-  
-  // Fallback para acesso anônimo se necessário
-  // (Nota: se você estiver usando OTP, o ideal é usar a sessão do usuário)
-  // Mas mantemos a compatibilidade caso a sessão expire e o app use localStorage
-};
-
 // --- REALTIME SUBSCRIPTION ---
 
 export const subscribeToUserChanges = (email: string, onUpdate: (data: any) => void) => {
@@ -228,41 +235,117 @@ export const subscribeToUserChanges = (email: string, onUpdate: (data: any) => v
 export const saveCollection = async (userId: string, collectionName: string, dataArray: any[]): Promise<boolean> => {
   const normalizedEmail = userId.toLowerCase().trim();
   
+  // SPECIAL HANDLING FOR DASHBOARD ORDER:
+  // Since 'dashboard_order' might not exist as a column in the schema,
+  // we store it inside the 'profile' JSONB column to avoid schema errors.
+  if (collectionName === 'dashboardOrder') {
+     try {
+       // 1. Fetch current profile to avoid overwriting other fields
+       const { data: userData, error: fetchError } = await supabase
+         .from('users')
+         .select('profile')
+         .eq('email', normalizedEmail)
+         .single();
+       
+       if (fetchError) {
+         console.error(`Error fetching profile for dashboardOrder:`, fetchError.message);
+         return false;
+       }
+
+       const currentProfile = userData?.profile || {};
+       const updatedProfile = { ...currentProfile, dashboardOrder: dataArray };
+
+       // 2. Save updated profile
+       const { error: updateError } = await supabase
+         .from('users')
+         .update({ profile: updatedProfile })
+         .eq('email', normalizedEmail);
+
+       if (updateError) {
+         console.error(`Error saving dashboardOrder to profile:`, updateError.message);
+         return false;
+       }
+       return true;
+
+     } catch (err: any) {
+       console.error("Exception saving dashboardOrder:", err.message || err);
+       return false;
+     }
+  }
+
+  // STANDARD HANDLING FOR OTHER COLLECTIONS
   let dbColumn = collectionName;
   if (collectionName === 'longTerm') dbColumn = 'long_term';
 
-  const { error } = await supabase
-    .from('users')
-    .update({ [dbColumn]: dataArray })
-    .eq('email', normalizedEmail);
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ [dbColumn]: dataArray })
+      .eq('email', normalizedEmail);
 
-  if (error) {
-    console.error(`Error saving ${collectionName}:`, error);
+    if (error) {
+      console.error(`Error saving ${collectionName} to Supabase:`, error.message);
+      return false;
+    }
+    return true;
+
+  } catch (error: any) {
+    console.error(`Error saving ${collectionName}:`, error.message || error);
     return false;
   }
-  return true;
 };
 
 export const saveUserField = async (userId: string, field: string, data: any): Promise<boolean> => {
   const normalizedEmail = userId.toLowerCase().trim();
   
+  // SPECIAL HANDLING: notepadDrawing (save to profile JSONB)
+  // This avoids errors if the 'notepad_drawing' column does not exist in the DB schema
+  if (field === 'notepadDrawing') {
+    try {
+      const { data: userData, error: fetchError } = await supabase
+        .from('users')
+        .select('profile')
+        .eq('email', normalizedEmail)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const currentProfile = userData?.profile || {};
+      const updatedProfile = { ...currentProfile, notepadDrawing: data };
+
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ profile: updatedProfile })
+        .eq('email', normalizedEmail);
+
+      if (updateError) throw updateError;
+      return true;
+    } catch (err: any) {
+      console.error(`Error saving notepadDrawing to profile:`, err.message);
+      return false;
+    }
+  }
+
+  // Standard Column Mapping
   let dbColumn = field;
   if (field === 'notepadContent') dbColumn = 'notepad_content';
   if (field === 'cdiRate') dbColumn = 'cdi_rate';
   if (field === 'pushSubscription') dbColumn = 'push_subscription';
-
+  
+  // If we reach here with 'notepadDrawing' (fallback) or other fields
   const { error } = await supabase
     .from('users')
     .update({ [dbColumn]: data })
     .eq('email', normalizedEmail);
 
   if (error) {
-    console.error(`Error saving field ${field}:`, error);
+    console.error(`Error saving field ${field}:`, error.message);
     return false;
   }
   return true;
 };
 
+// Modified loadUserData to fetch all necessary fields/sub-collections logic if simulated
 export const loadUserData = async (userId: string) => {
   return loginUser(userId);
 };

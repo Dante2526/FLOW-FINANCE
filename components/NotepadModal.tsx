@@ -1,55 +1,120 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Eraser, NotebookPen } from 'lucide-react';
+import { X, Save, Eraser, NotebookPen, PenTool, Type, Trash2, Undo2, Keyboard } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   initialContent: string;
-  onSave: (content: string) => void;
+  initialDrawing: string | null;
+  onSave: (content: string, drawing: string | null) => void;
 }
 
-const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave }) => {
+const COLORS = [
+  { id: 'white', value: '#ffffff' },
+  { id: 'yellow', value: '#facc15' },
+  { id: 'blue', value: '#3b82f6' },
+  { id: 'green', value: '#22c55e' },
+  { id: 'red', value: '#ef4444' },
+];
+
+type Tool = 'cursor' | 'pen' | 'eraser';
+
+const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initialDrawing, onSave }) => {
   const [content, setContent] = useState('');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  
-  // Initialize with a safe default, will be overridden by JS logic
   const [dynamicMaxHeight, setDynamicMaxHeight] = useState<string | number>('85vh');
+  
+  // Tool State
+  const [activeTool, setActiveTool] = useState<Tool>('cursor'); // 'cursor' allows typing, others draw
+  const [strokeColor, setStrokeColor] = useState('#ffffff');
+  const [lineWidth, setLineWidth] = useState(3);
+  
+  // Clear Confirmation State
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  // Drawing States
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [canvasData, setCanvasData] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
       setContent(initialContent);
+      setCanvasData(initialDrawing);
+      setActiveTool('cursor');
+      setShowClearConfirm(false);
     }
-  }, [isOpen, initialContent]);
+  }, [isOpen, initialContent, initialDrawing]);
 
-  // --- LOGIC FOR SAMSUNG INTERNET / ANDROID KEYBOARD ---
-  // Uses the VisualViewport API to determine the actual visible height 
-  // when the virtual keyboard is up, which CSS 'vh' often gets wrong on Android.
+  // Auto-reset confirmation button after 3 seconds
+  useEffect(() => {
+    if (showClearConfirm) {
+      const timer = setTimeout(() => setShowClearConfirm(false), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showClearConfirm]);
+
+  // Initial Canvas Setup & Resize Handler
+  useEffect(() => {
+    if (isOpen && containerRef.current && canvasRef.current) {
+        const canvas = canvasRef.current;
+        const container = containerRef.current;
+        const ctx = canvas.getContext('2d');
+        
+        const setCanvasSize = () => {
+            // Save current content before resize
+            const savedData = canvas.toDataURL();
+            
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            
+            if (ctx) {
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                
+                // Restore drawing
+                const img = new Image();
+                img.src = savedData !== 'data:,' ? savedData : (canvasData || '');
+                img.onload = () => {
+                    ctx.drawImage(img, 0, 0);
+                };
+            }
+        };
+
+        // Initial Set
+        const rect = container.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        
+        // Load Initial Drawing if exists
+        if (canvasData && ctx) {
+             const img = new Image();
+             img.src = canvasData;
+             img.onload = () => {
+                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+             };
+        }
+
+        window.addEventListener('resize', setCanvasSize);
+        return () => window.removeEventListener('resize', setCanvasSize);
+    }
+  }, [isOpen]); 
+
+  // Visual Viewport Fix for Mobile Keyboards
   useEffect(() => {
     if (!isOpen) return;
-
     const handleVisualResize = () => {
       const vv = window.visualViewport;
-      
       if (vv) {
-        // Current visible height (e.g., screen height minus keyboard)
-        const height = vv.height;
-        
-        // We set the modal's max-height to be slightly less than the visible area
-        // to ensure the header and footer remain visible.
-        // Subtracting 20px provides a small safety margin.
-        setDynamicMaxHeight(height - 20); 
+        setDynamicMaxHeight(vv.height - 20); 
       }
     };
-
-    // Add listeners for resizing and scrolling of the visual viewport
     window.visualViewport?.addEventListener('resize', handleVisualResize);
     window.visualViewport?.addEventListener('scroll', handleVisualResize);
     window.addEventListener('resize', handleVisualResize);
-    
-    // Execute immediately to set initial size
     handleVisualResize();
-
     return () => {
       window.visualViewport?.removeEventListener('resize', handleVisualResize);
       window.visualViewport?.removeEventListener('scroll', handleVisualResize);
@@ -59,68 +124,111 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
 
   if (!isOpen) return null;
 
+  const saveCanvas = () => {
+    if (canvasRef.current) {
+      const dataUrl = canvasRef.current.toDataURL('image/png');
+      setCanvasData(dataUrl);
+      return dataUrl;
+    }
+    return canvasData;
+  };
+
   const handleClose = () => {
-    onSave(content);
+    const finalDrawing = saveCanvas();
+    onSave(content, finalDrawing);
     onClose();
   };
 
   const handleClear = () => {
-    if (confirm('Tem certeza que deseja limpar tudo?')) {
-      setContent('');
-    }
+     // Clear Text
+     setContent('');
+     
+     // Clear Canvas
+     const canvas = canvasRef.current;
+     if (canvas) {
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+           ctx.clearRect(0, 0, canvas.width, canvas.height);
+           ctx.beginPath(); // Reset paths
+        }
+     }
+     
+     // Clear State
+     setCanvasData(null);
+     setShowClearConfirm(false);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newVal = e.target.value;
-    
-    // Logic for Math patterns ending in "="
-    if (newVal.length > content.length && newVal.endsWith('=')) {
-      const lines = newVal.split('\n');
-      const lastLine = lines[lines.length - 1];
-      
-      const regex = /([\d.,]+)\s*([\+\-\*\/])\s*([\d.,]+)\s*=$/;
-      const match = lastLine.match(regex);
+  // --- DRAWING HANDLERS ---
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+     if (activeTool === 'cursor' || !canvasRef.current) return;
+     const canvas = canvasRef.current;
+     const ctx = canvas.getContext('2d');
+     if (!ctx) return;
 
-      if (match) {
-        const num1Str = match[1].replace(/\./g, '').replace(',', '.'); 
-        const operator = match[2];
-        const num2Str = match[3].replace(/\./g, '').replace(',', '.');
+     setIsDrawing(true);
+     
+     const rect = canvas.getBoundingClientRect();
+     let clientX, clientY;
+     
+     if ('touches' in e) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+     } else {
+        clientX = (e as React.MouseEvent).clientX;
+        clientY = (e as React.MouseEvent).clientY;
+     }
 
-        const n1 = parseFloat(num1Str);
-        const n2 = parseFloat(num2Str);
+     ctx.beginPath();
+     ctx.moveTo(clientX - rect.left, clientY - rect.top);
+     
+     if (activeTool === 'eraser') {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.lineWidth = 25;
+     } else {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.strokeStyle = strokeColor;
+        ctx.lineWidth = lineWidth;
+     }
+  };
 
-        let result = 0;
-        let validOperation = true;
+  const draw = (e: React.MouseEvent | React.TouchEvent) => {
+     if (!isDrawing || activeTool === 'cursor' || !canvasRef.current) return;
+     const canvas = canvasRef.current;
+     const ctx = canvas.getContext('2d');
+     if (!ctx) return;
 
-        switch (operator) {
-          case '+': result = n1 + n2; break;
-          case '-': result = n1 - n2; break;
-          case '*': result = n1 * n2; break;
-          case '/': 
-            if (n2 !== 0) result = n1 / n2; 
-            else validOperation = false;
-            break;
-          default: validOperation = false;
+     const rect = canvas.getBoundingClientRect();
+     let clientX, clientY;
+     
+     if ('touches' in e) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+     } else {
+        clientX = (e as React.MouseEvent).clientX;
+        clientY = (e as React.MouseEvent).clientY;
+     }
+
+     ctx.lineTo(clientX - rect.left, clientY - rect.top);
+     ctx.stroke();
+  };
+
+  const stopDrawing = () => {
+     if (isDrawing) {
+        setIsDrawing(false);
+        if (canvasRef.current) {
+            setCanvasData(canvasRef.current.toDataURL());
         }
+     }
+  };
 
-        if (validOperation && !isNaN(result)) {
-          const formattedResult = result.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
-          const newText = newVal + ' ' + formattedResult;
-          setContent(newText);
-          return;
-        }
-      }
-    }
-
-    setContent(newVal);
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setContent(e.target.value);
   };
 
   return (
     <div className="fixed inset-0 z-[80] overflow-y-auto animate-in fade-in duration-200">
-      {/* Fixed Backdrop Layer */}
       <div className="fixed inset-0 bg-black/80 backdrop-blur-sm" onClick={handleClose} />
 
-      {/* Scrollable Content Wrapper */}
       <div 
         className="flex min-h-full p-4 text-center pointer-events-none"
         style={{ 
@@ -128,42 +236,46 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
           paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' 
         }}
       >
-        {/* 
-           Modal Container
-           - pointer-events-auto: Re-enable clicks since wrapper disabled them
-           - m-auto: Centers the modal vertically/horizontally in available space, 
-             but allows it to stick to top if height is constrained.
-           - height: 550px (Base preference)
-           - maxHeight: Controlled via JS (dynamicMaxHeight) to fit above keyboard
-        */}
         <div 
           className="pointer-events-auto relative m-auto bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] shadow-2xl border border-white/5 flex flex-col overflow-hidden text-left transition-all"
           style={{ 
-            height: 550, 
+            height: 600, 
             maxHeight: typeof dynamicMaxHeight === 'number' ? `${dynamicMaxHeight}px` : dynamicMaxHeight 
           }}
         >
           
           {/* Header */}
-          <div className="flex justify-between items-center p-7 pb-4 shrink-0">
+          <div className="flex justify-between items-center p-5 shrink-0 bg-[#1c1c1e] z-20 border-b border-white/5">
             <div className="flex items-center gap-3">
                <div className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center border border-white/5">
                   <NotebookPen className="w-5 h-5 text-yellow-500" />
                </div>
                <div>
-                  <h2 className="text-lg font-bold text-white leading-none">Smart Notes</h2>
-                  <p className="text-[10px] text-gray-400 mt-1">Calculadora de texto</p>
+                  <h2 className="text-lg font-bold text-white leading-none">Bloco de Notas</h2>
+                  <p className="text-[10px] text-gray-400 mt-1">Texto e Desenho livres</p>
                </div>
             </div>
             
             <div className="flex gap-2">
               <button 
-                onClick={handleClear} 
-                className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-white/10 transition-colors"
-                title="Limpar"
+                onClick={() => {
+                   if (showClearConfirm) handleClear();
+                   else setShowClearConfirm(true);
+                }}
+                className={`h-10 rounded-full flex items-center justify-center transition-all ${
+                   showClearConfirm 
+                     ? 'bg-red-500 w-auto px-3' 
+                     : 'bg-[#2c2c2e] w-10 hover:bg-white/10'
+                }`}
+                title="Limpar Tudo"
               >
-                <Eraser className="w-5 h-5 text-gray-400" />
+                {showClearConfirm ? (
+                   <span className="text-white text-xs font-bold whitespace-nowrap">Confirmar?</span>
+                ) : (
+                   <Trash2 className="w-5 h-5 text-gray-400" />
+                )}
               </button>
+              
               <button 
                 onClick={handleClose} 
                 className="w-10 h-10 rounded-full bg-accent flex items-center justify-center hover:bg-accentDark transition-colors"
@@ -173,29 +285,117 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, onSave
             </div>
           </div>
 
-          {/* Paper Area */}
-          <div className="flex-1 min-h-0 px-2 pb-2">
-             <div className="w-full h-full bg-[#2c2c2e]/50 rounded-[2rem] p-4 relative overflow-hidden border border-white/5">
+          {/* Combined Content Area */}
+          <div className="flex-1 min-h-0 px-2 py-2 relative">
+             <div className="w-full h-full bg-[#2c2c2e]/50 rounded-[2rem] relative overflow-hidden border border-white/5" ref={containerRef}>
+                
+                {/* 
+                   Layer 1: Text Area (Base)
+                */}
                 <textarea
-                  ref={textareaRef}
                   value={content}
-                  onChange={handleChange}
-                  placeholder="Comece a digitar..."
-                  className="w-full h-full bg-transparent text-white text-lg leading-relaxed outline-none resize-none placeholder-gray-600 font-medium scrollbar-thin scrollbar-thumb-gray-600"
+                  onChange={handleTextChange}
+                  placeholder="Digite suas anotações aqui..."
+                  className="w-full h-full absolute inset-0 bg-transparent text-white text-lg leading-relaxed outline-none resize-none placeholder-gray-600 font-medium scrollbar-thin scrollbar-thumb-gray-600 p-5 z-0"
                   style={{ fontFamily: 'Inter, sans-serif' }}
-                  autoFocus
+                  disabled={activeTool !== 'cursor'} 
                 />
+
+                {/* 
+                   Layer 2: Canvas (Overlay)
+                */}
+                <canvas
+                   ref={canvasRef}
+                   onMouseDown={startDrawing}
+                   onMouseMove={draw}
+                   onMouseUp={stopDrawing}
+                   onMouseLeave={stopDrawing}
+                   onTouchStart={startDrawing}
+                   onTouchMove={draw}
+                   onTouchEnd={stopDrawing}
+                   className={`absolute inset-0 z-10 ${activeTool === 'cursor' ? 'pointer-events-none' : 'cursor-crosshair touch-none'}`}
+                />
+
              </div>
           </div>
 
-          {/* Footer info */}
-          <div className="px-6 pb-6 pt-2 shrink-0 flex flex-col gap-1">
-             <div className="flex justify-between text-xs text-gray-500 font-medium">
-               <span>{content.length} caracteres</span>
-               <span className="flex items-center gap-1">
-                 <Save className="w-3 h-3" /> Salvo auto
-               </span>
+          {/* Unified Toolbar */}
+          <div className="p-4 shrink-0 bg-[#1c1c1e] border-t border-white/5 flex flex-col gap-3">
+             
+             {/* Tool Selector */}
+             <div className="flex bg-[#2c2c2e] p-1.5 rounded-2xl gap-2">
+                <button 
+                  onClick={() => setActiveTool('cursor')}
+                  className={`flex-1 h-12 rounded-xl flex items-center justify-center gap-2 transition-all ${
+                     activeTool === 'cursor' 
+                     ? 'bg-white text-black shadow-lg font-bold' 
+                     : 'text-gray-500 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                   <Keyboard className="w-5 h-5" />
+                   <span className="text-xs">Digitar</span>
+                </button>
+                
+                <button 
+                  onClick={() => setActiveTool('pen')}
+                  className={`flex-1 h-12 rounded-xl flex items-center justify-center gap-2 transition-all ${
+                     activeTool === 'pen' 
+                     ? 'bg-accent text-black shadow-lg font-bold' 
+                     : 'text-gray-500 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                   <PenTool className="w-5 h-5" />
+                   <span className="text-xs">Desenhar</span>
+                </button>
+
+                <button 
+                  onClick={() => setActiveTool('eraser')}
+                  className={`w-14 h-12 rounded-xl flex items-center justify-center transition-all ${
+                     activeTool === 'eraser' 
+                     ? 'bg-gray-600 text-white shadow-lg' 
+                     : 'text-gray-500 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                   <Eraser className="w-5 h-5" />
+                </button>
              </div>
+
+             {/* Color Palette (Visible when Drawing) */}
+             {activeTool === 'pen' && (
+                <div className="flex justify-between items-center px-2 animate-in slide-in-from-bottom-2 fade-in">
+                   {COLORS.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => setStrokeColor(c.value)}
+                        className={`w-8 h-8 rounded-full border-2 transition-transform ${strokeColor === c.value ? 'scale-125 border-white ring-2 ring-black/50' : 'border-transparent scale-100 hover:scale-110'}`}
+                        style={{ backgroundColor: c.value }}
+                      />
+                   ))}
+                   {/* Line Width Indicator */}
+                   <div className="w-px h-6 bg-gray-700 mx-2" />
+                   <div className="flex gap-2">
+                      {[3, 6, 9].map((w) => (
+                         <button 
+                           key={w}
+                           onClick={() => setLineWidth(w)}
+                           className={`w-8 h-8 rounded-full bg-[#2c2c2e] flex items-center justify-center ${lineWidth === w ? 'ring-1 ring-white' : ''}`}
+                         >
+                            <div className="bg-white rounded-full" style={{ width: w + 2, height: w + 2 }} />
+                         </button>
+                      ))}
+                   </div>
+                </div>
+             )}
+
+             {/* Helper Text */}
+             {activeTool === 'cursor' && (
+                <div className="flex justify-center items-center gap-2 pb-1">
+                   <p className="text-[10px] text-gray-500">
+                      Modo Digitação: O desenho ficará por cima do texto.
+                   </p>
+                </div>
+             )}
+
           </div>
 
         </div>

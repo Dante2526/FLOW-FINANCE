@@ -11,10 +11,12 @@ export const STORAGE_KEYS = {
   INVESTMENTS: 'flow_investments',
   CDI_RATE: 'flow_cdi_rate',
   NOTEPAD_CONTENT: 'flow_notepad_content',
+  NOTEPAD_DRAWING: 'flow_notepad_drawing', // New Key
   USER_SESSION: 'flow_user_session',
   IS_SYNC_DIRTY: 'flow_is_sync_dirty', // New key to track if local data is ahead of cloud
   SETTINGS_REQUIRE_OTP: 'flow_settings_require_otp',
   KNOWN_USER_EMAIL: 'flow_known_user_email',
+  DASHBOARD_ORDER: 'flow_dashboard_order',
 };
 
 // Generic load function
