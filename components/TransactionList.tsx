@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Transaction } from '../types';
 import { TransactionIcon } from './Icons';
-import { Trash2, Edit2, Check, CreditCard, QrCode } from 'lucide-react';
+import { Trash2, Edit2, Check, CreditCard, QrCode, RotateCcw } from 'lucide-react';
 
 interface Props {
   transactions: Transaction[];
@@ -53,6 +53,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
   const startY = useRef<number | null>(null); // Track vertical start
   const startOffset = useRef(0);
   const isDragging = useRef(false);
+  const hasDragged = useRef(false); // Track if a drag actually occurred
   const interactionType = useRef<'scroll' | 'swipe' | null>(null); // Lock direction
 
   // Unified Handler Logic
@@ -61,6 +62,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
     startY.current = clientY;
     startOffset.current = offsetX;
     isDragging.current = true;
+    hasDragged.current = false;
     interactionType.current = null; // Reset lock
   };
 
@@ -96,6 +98,11 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
       if (newOffset > 100) setOffsetX(100);
       else if (newOffset < -100) setOffsetX(-100);
       else setOffsetX(newOffset);
+      
+      // Mark as dragged if moved significantly
+      if (Math.abs(diffX) > 5) {
+        hasDragged.current = true;
+      }
     }
   };
 
@@ -137,19 +144,33 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
     if (isDragging.current) handleEnd();
   };
 
+  const handleClick = () => {
+    // If swiped open, close it
+    if (offsetX !== 0) {
+      setOffsetX(0);
+      return;
+    }
+    // If it was a clean click (no drag), edit
+    if (!hasDragged.current) {
+      onEdit(tx);
+    }
+  };
+
   return (
     <div className="relative mb-3 h-24 rounded-2xl bg-[#1c1c1e] overflow-hidden select-none cursor-grab active:cursor-grabbing">
       {/* Background (Buttons) */}
       <div className={`absolute inset-0 flex justify-between rounded-2xl transition-all duration-200 ${offsetX === 0 ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
-         {/* Left Side (Edit) - Visible when swiping Right */}
+         {/* Left Side (Pay/Unpay) - Visible when swiping Right */}
          <button
           onClick={() => {
-             onEdit(tx);
+             onToggleStatus(tx.id);
              setOffsetX(0);
           }}
-          className="w-20 h-full flex items-center justify-center bg-yellow-600 text-white hover:bg-yellow-700 transition-colors pl-2"
+          className={`w-20 h-full flex items-center justify-center text-white transition-colors pl-2 ${
+            tx.paid ? 'bg-gray-600 hover:bg-gray-700' : 'bg-green-600 hover:bg-green-700'
+          }`}
         >
-          <Edit2 className="w-6 h-6" />
+          {tx.paid ? <RotateCcw className="w-6 h-6" /> : <Check className="w-6 h-6" />}
         </button>
 
         {/* Right Side (Delete) - Visible when swiping Left */}
@@ -172,6 +193,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseLeave}
+        onClick={handleClick}
       >
         <div className="flex items-center gap-3 pointer-events-none flex-1 min-w-0">
           {/* Logo */}
