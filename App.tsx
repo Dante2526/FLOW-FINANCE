@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef, Suspense, useCallback } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -1391,7 +1390,7 @@ const App: React.FC = () => {
             </div>
 
             {/* Draggable Cards Section */}
-            <div className="flex flex-col gap-4 mb-6">
+            <div className="flex flex-col gap-2 mb-6">
                {dashboardItems.map((id) => {
                   if (id === BALANCE_CARD_ID) {
                      return (

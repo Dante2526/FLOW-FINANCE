@@ -172,7 +172,7 @@ const SecondaryCard: React.FC<Props> = ({
   return (
     <div 
       data-card-id={account.id}
-      className="relative mb-4 w-full h-40 rounded-[2.5rem] overflow-hidden select-none"
+      className="relative w-full h-40 rounded-[2.5rem] overflow-hidden select-none"
       onDragEnter={handleDragEnter}
       onDragOver={(e) => e.preventDefault()}
       onDragEnd={onDragEnd}
