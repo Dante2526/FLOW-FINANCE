@@ -192,6 +192,18 @@ const App: React.FC = () => {
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false); 
   
+  // Computed Modal State (for scroll lock)
+  const isAnyModalOpen = 
+    isAddTransactionOpen || 
+    isAddAccountOpen || 
+    isCalculatorOpen || 
+    isProfileModalOpen || 
+    isNotepadOpen || 
+    isCalendarOpen || 
+    isNotificationOpen || 
+    isAnalyticsOpen ||
+    isProModalOpen;
+
   // --- DATA STATES (Initialized EMPTY for Realtime DB Source) ---
   const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_PROFILE);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -360,34 +372,6 @@ const App: React.FC = () => {
 
     return () => subscription.unsubscribe();
   }, []);
-
-  // --- SCROLL LOCK EFFECT ---
-  useEffect(() => {
-    const isAnyModalOpen = 
-      isAddTransactionOpen || 
-      isAddAccountOpen || 
-      isCalculatorOpen || 
-      isProfileModalOpen || 
-      isNotepadOpen || 
-      isCalendarOpen || 
-      isNotificationOpen || 
-      isAnalyticsOpen ||
-      isProModalOpen;
-
-    if (isAnyModalOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [
-    isAddTransactionOpen, isAddAccountOpen, isCalculatorOpen, 
-    isProfileModalOpen, isNotepadOpen, isCalendarOpen, 
-    isNotificationOpen, isAnalyticsOpen, isProModalOpen
-  ]);
 
   // --- DATA LOADING EFFECT (Pure Cloud) ---
   useEffect(() => {
@@ -1499,9 +1483,11 @@ const App: React.FC = () => {
     );
   }
 
+  // --- MAIN RENDER ---
+  // Apply overflow-hidden conditionally based on modal state to lock background scroll
   return (
     <div 
-      className="min-h-[100dvh] bg-[#0a0a0b] text-white px-2 pt-4 pb-24 font-sans selection:bg-accent selection:text-black"
+      className={`h-full overflow-y-auto bg-[#0a0a0b] text-white px-2 pt-4 pb-24 font-sans selection:bg-accent selection:text-black no-scrollbar ${isAnyModalOpen ? 'overflow-hidden' : ''}`}
       style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
     >
       {renderView()}
