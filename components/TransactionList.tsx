@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Transaction } from '../types';
 import { TransactionIcon } from './Icons';
@@ -275,7 +276,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
 
 const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onToggleStatus, onTogglePaymentMethod }) => {
   return (
-    <div className="mt-6 flex flex-col pb-32">
+    <div className="mt-6 flex flex-col">
       <h2 className="text-xl font-medium text-gray-400 mb-4 pl-1">CONTAS</h2>
       
       {transactions.map((tx) => (

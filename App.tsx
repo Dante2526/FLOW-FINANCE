@@ -1487,7 +1487,7 @@ const App: React.FC = () => {
   // Apply overflow-hidden conditionally based on modal state to lock background scroll
   return (
     <div 
-      className={`h-full overflow-y-auto bg-[#0a0a0b] text-white px-2 pt-4 pb-24 font-sans selection:bg-accent selection:text-black no-scrollbar ${isAnyModalOpen ? 'overflow-hidden' : ''}`}
+      className={`h-full overflow-y-auto bg-[#0a0a0b] text-white px-2 pt-4 pb-32 font-sans selection:bg-accent selection:text-black no-scrollbar ${isAnyModalOpen ? 'overflow-hidden' : ''}`}
       style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
     >
       {renderView()}

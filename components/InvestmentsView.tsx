@@ -311,7 +311,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
 
   // --- LIST VIEW ---
   return (
-    <div className="flex flex-col h-full animate-in fade-in duration-300 pb-28">
+    <div className="flex flex-col h-full animate-in fade-in duration-300">
       
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
