@@ -54,13 +54,19 @@
         font-family: 'Inter', sans-serif;
         overscroll-behavior-y: none; /* Prevents pull-to-refresh on mobile app feel */
       }
-      /* Hide scrollbar for clean UI */
-      .no-scrollbar::-webkit-scrollbar {
-        display: none;
+
+      /* Globally hide scrollbars for all elements */
+      * {
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
       }
-      .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
+      
+      /* Hide scrollbar for Chrome, Safari and Opera */
+      *::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+        background: transparent;
       }
       
       /* Disable text selection for app-like feel */
