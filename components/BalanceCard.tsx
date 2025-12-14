@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Plus, Copy, Calculator, GripVertical, Eye, EyeOff } from 'lucide-react';
 
@@ -79,10 +78,12 @@ const BalanceCard: React.FC<Props> = ({
         {/* Drag Handle */}
         {draggable && (
            <div 
-             className="p-2 -mt-2 -mr-2 cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100 transition-opacity"
+             className="p-2 -mt-2 -mr-2 cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100 transition-opacity touch-none"
+             style={{ touchAction: 'none' }}
              draggable={true}
              onDragStart={handleDragStart}
              onDragEnd={onDragEnd}
+             onTouchStart={(e) => e.stopPropagation()}
            >
              <GripVertical className="w-6 h-6 text-white" />
            </div>

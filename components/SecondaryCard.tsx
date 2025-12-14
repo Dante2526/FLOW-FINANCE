@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Account, CardTheme } from '../types';
 import { Trash2, Edit2, GripVertical } from 'lucide-react';
@@ -211,12 +210,14 @@ const SecondaryCard: React.FC<Props> = ({
             {/* Drag Handle - Right Side */}
             {draggable && (
                 <div 
-                    className="drag-handle p-4 -mr-4 cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100 transition-opacity"
+                    className="drag-handle p-4 -mr-4 cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100 transition-opacity touch-none"
+                    style={{ touchAction: 'none' }}
                     draggable={true}
                     onDragStart={handleDragStart}
                     onDragEnd={onDragEnd}
                     // Prevent propagation to swipe handlers
                     onMouseDown={(e) => e.stopPropagation()} 
+                    onTouchStart={(e) => e.stopPropagation()}
                 >
                     <GripVertical className="w-6 h-6 text-white/70" />
                 </div>
