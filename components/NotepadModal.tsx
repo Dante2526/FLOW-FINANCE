@@ -189,6 +189,9 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
      if (scrollContainerRef.current) {
         setTotalHeight(scrollContainerRef.current.clientHeight);
      }
+
+     // AUTO-SAVE: Trigger save immediately after clearing
+     onSave('', null);
   };
 
   // --- DRAWING HANDLERS ---
@@ -253,14 +256,21 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
      if (isDrawing) {
         setIsDrawing(false);
         if (canvasRef.current) {
-            setCanvasData(canvasRef.current.toDataURL());
+            const newData = canvasRef.current.toDataURL('image/png');
+            setCanvasData(newData);
+            // AUTO-SAVE: Trigger save immediately after stroke ends
+            onSave(content, newData);
         }
      }
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value);
-    // adjustHeight called via useEffect on content change
+    const newContent = e.target.value;
+    setContent(newContent);
+    // AUTO-SAVE: Trigger save on text change
+    // Note: We use the current canvasData state or check Ref if valid
+    const currentDrawing = canvasRef.current ? canvasRef.current.toDataURL('image/png') : canvasData;
+    onSave(newContent, currentDrawing);
   };
 
   return (
