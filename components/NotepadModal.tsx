@@ -45,9 +45,9 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
 
   // Drawing States
   const [isDrawing, setIsDrawing] = useState(false);
-  const [canvasData, setCanvasData] = useState<string | null>(null);
+  const [canvasData, setCanvasData] = useState<string | null>(initialDrawing);
 
-  // Buffer to preserve drawing during resize
+  // Buffer to preserve drawing during height expansion
   const savedImageDataRef = useRef<ImageData | null>(null);
 
   // --- INITIALIZATION ---
@@ -57,8 +57,14 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
       setCanvasData(initialDrawing);
       setActiveTool('cursor');
       setShowClearConfirm(false);
-      // Reset height calculation on open
-      setTimeout(adjustHeight, 100); 
+      
+      // Measure width immediately
+      if (scrollContainerRef.current) {
+        setContainerWidth(scrollContainerRef.current.clientWidth);
+      }
+      
+      // Reset height calculation on open with a slight delay for layout
+      setTimeout(adjustHeight, 50); 
     }
   }, [isOpen, initialContent, initialDrawing]);
 
@@ -80,24 +86,27 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
     const newHeight = Math.max(minHeight, currentScrollHeight);
 
     if (newHeight !== totalHeight) {
-       // SAVE CANVAS DATA BEFORE RESIZE
+       // SAVE CANVAS DATA BEFORE RESIZE (Height change clears canvas)
        if (canvasRef.current) {
          const ctx = canvasRef.current.getContext('2d');
-         if (ctx) {
-           savedImageDataRef.current = ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height);
+         if (ctx && canvasRef.current.width > 0 && canvasRef.current.height > 0) {
+            try {
+               savedImageDataRef.current = ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height);
+            } catch (e) {
+               console.warn("Failed to get image data", e);
+            }
          }
        }
        setTotalHeight(newHeight);
     }
   };
 
-  // Restore canvas data AFTER height change (Resize)
+  // Restore canvas pixels AFTER height change
   useLayoutEffect(() => {
      if (canvasRef.current && savedImageDataRef.current) {
         const ctx = canvasRef.current.getContext('2d');
         if (ctx) {
-           // We put the image data back. 
-           // Note: If width changed, this might clip, but for height growth it works perfectly.
+           // We put the image data back exactly where it was.
            ctx.putImageData(savedImageDataRef.current, 0, 0);
         }
      }
@@ -108,35 +117,41 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
      adjustHeight();
   }, [content]);
 
-  // --- WINDOW RESIZE & INITIAL LOAD ---
+  // --- WINDOW RESIZE OBSERVER ---
   useEffect(() => {
-    if (isOpen && scrollContainerRef.current) {
-        const updateDimensions = () => {
-            if (scrollContainerRef.current) {
-                const rect = scrollContainerRef.current.getBoundingClientRect();
-                setContainerWidth(rect.width);
-                // Also reset min-height base
-                adjustHeight(); 
+    if (!isOpen || !scrollContainerRef.current) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+            if (entry.contentRect.width > 0) {
+                setContainerWidth(entry.contentRect.width);
+                // Trigger height check in case width change affected text wrap
+                adjustHeight();
             }
-        };
-
-        // Initial measurement
-        updateDimensions();
-
-        // Restore initial drawing if any
-        if (canvasData && canvasRef.current) {
-             const ctx = canvasRef.current.getContext('2d');
-             const img = new Image();
-             img.src = canvasData;
-             img.onload = () => {
-                 if (ctx) ctx.drawImage(img, 0, 0, canvasRef.current!.width, canvasRef.current!.height);
-             };
         }
+    });
 
-        window.addEventListener('resize', updateDimensions);
-        return () => window.removeEventListener('resize', updateDimensions);
-    }
+    resizeObserver.observe(scrollContainerRef.current);
+    return () => resizeObserver.disconnect();
   }, [isOpen]);
+
+  // --- IMAGE RESTORATION ON LOAD/WIDTH CHANGE ---
+  useEffect(() => {
+     // This runs when the modal opens or width changes.
+     // We reload the saved "canvasData" (base64) string.
+     if (isOpen && containerWidth > 0 && canvasRef.current && canvasData) {
+         const ctx = canvasRef.current.getContext('2d');
+         const img = new Image();
+         img.src = canvasData;
+         img.onload = () => {
+             if (ctx && canvasRef.current) {
+                 // IMPORTANT: Draw 1:1 at (0,0). Do NOT stretch to fit width/height.
+                 // This ensures circles stay circles and alignment relative to top-left is preserved.
+                 ctx.drawImage(img, 0, 0);
+             }
+         };
+     }
+  }, [containerWidth, isOpen]); // Don't depend on canvasData to avoid overwrite loops while drawing
 
   // Visual Viewport Fix for Mobile Keyboards
   useEffect(() => {
@@ -185,13 +200,9 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
      setCanvasData(null);
      setShowClearConfirm(false);
      
-     // Reset height to minimum
      if (scrollContainerRef.current) {
         setTotalHeight(scrollContainerRef.current.clientHeight);
      }
-
-     // AUTO-SAVE: Trigger save immediately after clearing
-     onSave('', null);
   };
 
   // --- DRAWING HANDLERS ---
@@ -240,13 +251,6 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
      const ctx = canvasRef.current.getContext('2d');
      if (!ctx) return;
      
-     // Prevent scrolling while drawing
-     if ('touches' in e && e.cancelable) {
-        // Only prevent default if we are drawing, to allow scrolling when touching outside?
-        // Actually, if we are on the canvas and drawing, we want to stop scroll.
-        // But 'touch-action: none' css class handles this better than e.preventDefault().
-     }
-
      const { x, y } = getCoordinates(e);
      ctx.lineTo(x, y);
      ctx.stroke();
@@ -256,21 +260,13 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
      if (isDrawing) {
         setIsDrawing(false);
         if (canvasRef.current) {
-            const newData = canvasRef.current.toDataURL('image/png');
-            setCanvasData(newData);
-            // AUTO-SAVE: Trigger save immediately after stroke ends
-            onSave(content, newData);
+            setCanvasData(canvasRef.current.toDataURL());
         }
      }
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newContent = e.target.value;
-    setContent(newContent);
-    // AUTO-SAVE: Trigger save on text change
-    // Note: We use the current canvasData state or check Ref if valid
-    const currentDrawing = canvasRef.current ? canvasRef.current.toDataURL('image/png') : canvasData;
-    onSave(newContent, currentDrawing);
+    setContent(e.target.value);
   };
 
   return (
@@ -285,7 +281,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
         }}
       >
         <div 
-          className="pointer-events-auto relative m-auto bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] shadow-2xl border border-white/5 flex flex-col overflow-hidden text-left transition-all"
+          className="pointer-events-auto relative m-auto bg-[#1c1c1e] w-full max-w-md rounded-[2.5rem] shadow-2xl border border-white/5 flex flex-col overflow-hidden text-left transition-all"
           style={{ 
             height: 600, 
             maxHeight: typeof dynamicMaxHeight === 'number' ? `${dynamicMaxHeight}px` : dynamicMaxHeight 
