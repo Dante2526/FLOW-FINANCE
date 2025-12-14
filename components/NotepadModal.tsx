@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Save, Eraser, NotebookPen, PenTool, Type, Trash2, Undo2, Keyboard } from 'lucide-react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { X, Eraser, NotebookPen, PenTool, Trash2, Keyboard } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -25,82 +25,118 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
   const [dynamicMaxHeight, setDynamicMaxHeight] = useState<string | number>('85vh');
   
   // Tool State
-  const [activeTool, setActiveTool] = useState<Tool>('cursor'); // 'cursor' allows typing, others draw
+  const [activeTool, setActiveTool] = useState<Tool>('cursor');
   const [strokeColor, setStrokeColor] = useState('#ffffff');
   const [lineWidth, setLineWidth] = useState(3);
   
   // Clear Confirmation State
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  // Drawing States
+  // Layout & Resizing States
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const contentWrapperRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Height of the inner content (grows with text)
+  const [totalHeight, setTotalHeight] = useState(600); 
+  // Width of the container (for canvas resize)
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  // Drawing States
   const [isDrawing, setIsDrawing] = useState(false);
   const [canvasData, setCanvasData] = useState<string | null>(null);
 
+  // Buffer to preserve drawing during resize
+  const savedImageDataRef = useRef<ImageData | null>(null);
+
+  // --- INITIALIZATION ---
   useEffect(() => {
     if (isOpen) {
       setContent(initialContent);
       setCanvasData(initialDrawing);
       setActiveTool('cursor');
       setShowClearConfirm(false);
+      // Reset height calculation on open
+      setTimeout(adjustHeight, 100); 
     }
   }, [isOpen, initialContent, initialDrawing]);
 
-  // Auto-reset confirmation button after 3 seconds
-  useEffect(() => {
-    if (showClearConfirm) {
-      const timer = setTimeout(() => setShowClearConfirm(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [showClearConfirm]);
+  // --- HEIGHT ADJUSTMENT LOGIC ---
+  const adjustHeight = () => {
+    if (!textareaRef.current || !scrollContainerRef.current) return;
+    
+    const textarea = textareaRef.current;
+    
+    // Reset height temporarily to get the correct scrollHeight shrinkage
+    textarea.style.height = 'auto'; 
+    const currentScrollHeight = textarea.scrollHeight;
+    textarea.style.height = '100%'; // Revert to full height of wrapper
 
-  // Initial Canvas Setup & Resize Handler
+    // Minimum height is the visible container height
+    const minHeight = scrollContainerRef.current.clientHeight;
+    
+    // New height is strictly the content height or minHeight
+    const newHeight = Math.max(minHeight, currentScrollHeight);
+
+    if (newHeight !== totalHeight) {
+       // SAVE CANVAS DATA BEFORE RESIZE
+       if (canvasRef.current) {
+         const ctx = canvasRef.current.getContext('2d');
+         if (ctx) {
+           savedImageDataRef.current = ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height);
+         }
+       }
+       setTotalHeight(newHeight);
+    }
+  };
+
+  // Restore canvas data AFTER height change (Resize)
+  useLayoutEffect(() => {
+     if (canvasRef.current && savedImageDataRef.current) {
+        const ctx = canvasRef.current.getContext('2d');
+        if (ctx) {
+           // We put the image data back. 
+           // Note: If width changed, this might clip, but for height growth it works perfectly.
+           ctx.putImageData(savedImageDataRef.current, 0, 0);
+        }
+     }
+  }, [totalHeight]);
+
+  // Adjust height whenever content changes
   useEffect(() => {
-    if (isOpen && containerRef.current && canvasRef.current) {
-        const canvas = canvasRef.current;
-        const container = containerRef.current;
-        const ctx = canvas.getContext('2d');
-        
-        const setCanvasSize = () => {
-            // Save current content before resize
-            const savedData = canvas.toDataURL();
-            
-            const rect = container.getBoundingClientRect();
-            canvas.width = rect.width;
-            canvas.height = rect.height;
-            
-            if (ctx) {
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                
-                // Restore drawing
-                const img = new Image();
-                img.src = savedData !== 'data:,' ? savedData : (canvasData || '');
-                img.onload = () => {
-                    ctx.drawImage(img, 0, 0);
-                };
+     adjustHeight();
+  }, [content]);
+
+  // --- WINDOW RESIZE & INITIAL LOAD ---
+  useEffect(() => {
+    if (isOpen && scrollContainerRef.current) {
+        const updateDimensions = () => {
+            if (scrollContainerRef.current) {
+                const rect = scrollContainerRef.current.getBoundingClientRect();
+                setContainerWidth(rect.width);
+                // Also reset min-height base
+                adjustHeight(); 
             }
         };
 
-        // Initial Set
-        const rect = container.getBoundingClientRect();
-        canvas.width = rect.width;
-        canvas.height = rect.height;
-        
-        // Load Initial Drawing if exists
-        if (canvasData && ctx) {
+        // Initial measurement
+        updateDimensions();
+
+        // Restore initial drawing if any
+        if (canvasData && canvasRef.current) {
+             const ctx = canvasRef.current.getContext('2d');
              const img = new Image();
              img.src = canvasData;
              img.onload = () => {
-                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                 if (ctx) ctx.drawImage(img, 0, 0, canvasRef.current!.width, canvasRef.current!.height);
              };
         }
 
-        window.addEventListener('resize', setCanvasSize);
-        return () => window.removeEventListener('resize', setCanvasSize);
+        window.addEventListener('resize', updateDimensions);
+        return () => window.removeEventListener('resize', updateDimensions);
     }
-  }, [isOpen]); 
+  }, [isOpen]);
 
   // Visual Viewport Fix for Mobile Keyboards
   useEffect(() => {
@@ -113,12 +149,10 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
     };
     window.visualViewport?.addEventListener('resize', handleVisualResize);
     window.visualViewport?.addEventListener('scroll', handleVisualResize);
-    window.addEventListener('resize', handleVisualResize);
     handleVisualResize();
     return () => {
       window.visualViewport?.removeEventListener('resize', handleVisualResize);
       window.visualViewport?.removeEventListener('scroll', handleVisualResize);
-      window.removeEventListener('resize', handleVisualResize);
     };
   }, [isOpen]);
 
@@ -127,7 +161,6 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
   const saveCanvas = () => {
     if (canvasRef.current) {
       const dataUrl = canvasRef.current.toDataURL('image/png');
-      setCanvasData(dataUrl);
       return dataUrl;
     }
     return canvasData;
@@ -140,46 +173,54 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
   };
 
   const handleClear = () => {
-     // Clear Text
      setContent('');
-     
-     // Clear Canvas
      const canvas = canvasRef.current;
      if (canvas) {
         const ctx = canvas.getContext('2d');
         if (ctx) {
            ctx.clearRect(0, 0, canvas.width, canvas.height);
-           ctx.beginPath(); // Reset paths
+           ctx.beginPath();
         }
      }
-     
-     // Clear State
      setCanvasData(null);
      setShowClearConfirm(false);
+     
+     // Reset height to minimum
+     if (scrollContainerRef.current) {
+        setTotalHeight(scrollContainerRef.current.clientHeight);
+     }
   };
 
   // --- DRAWING HANDLERS ---
+  const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!canvasRef.current) return { x: 0, y: 0 };
+    const rect = canvasRef.current.getBoundingClientRect();
+    
+    let clientX, clientY;
+    if ('touches' in e) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+    } else {
+        clientX = (e as React.MouseEvent).clientX;
+        clientY = (e as React.MouseEvent).clientY;
+    }
+    
+    return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+    };
+  };
+
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
      if (activeTool === 'cursor' || !canvasRef.current) return;
-     const canvas = canvasRef.current;
-     const ctx = canvas.getContext('2d');
+     const ctx = canvasRef.current.getContext('2d');
      if (!ctx) return;
 
      setIsDrawing(true);
-     
-     const rect = canvas.getBoundingClientRect();
-     let clientX, clientY;
-     
-     if ('touches' in e) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-     } else {
-        clientX = (e as React.MouseEvent).clientX;
-        clientY = (e as React.MouseEvent).clientY;
-     }
+     const { x, y } = getCoordinates(e);
 
      ctx.beginPath();
-     ctx.moveTo(clientX - rect.left, clientY - rect.top);
+     ctx.moveTo(x, y);
      
      if (activeTool === 'eraser') {
         ctx.globalCompositeOperation = 'destination-out';
@@ -193,22 +234,18 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
 
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
      if (!isDrawing || activeTool === 'cursor' || !canvasRef.current) return;
-     const canvas = canvasRef.current;
-     const ctx = canvas.getContext('2d');
+     const ctx = canvasRef.current.getContext('2d');
      if (!ctx) return;
-
-     const rect = canvas.getBoundingClientRect();
-     let clientX, clientY;
      
-     if ('touches' in e) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-     } else {
-        clientX = (e as React.MouseEvent).clientX;
-        clientY = (e as React.MouseEvent).clientY;
+     // Prevent scrolling while drawing
+     if ('touches' in e && e.cancelable) {
+        // Only prevent default if we are drawing, to allow scrolling when touching outside?
+        // Actually, if we are on the canvas and drawing, we want to stop scroll.
+        // But 'touch-action: none' css class handles this better than e.preventDefault().
      }
 
-     ctx.lineTo(clientX - rect.left, clientY - rect.top);
+     const { x, y } = getCoordinates(e);
+     ctx.lineTo(x, y);
      ctx.stroke();
   };
 
@@ -223,6 +260,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setContent(e.target.value);
+    // adjustHeight called via useEffect on content change
   };
 
   return (
@@ -245,7 +283,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
         >
           
           {/* Header */}
-          <div className="flex justify-between items-center p-5 shrink-0 bg-[#1c1c1e] z-20 border-b border-white/5">
+          <div className="flex justify-between items-center p-5 shrink-0 bg-[#1c1c1e] z-20 border-b border-white/5 shadow-sm">
             <div className="flex items-center gap-3">
                <div className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center border border-white/5">
                   <NotebookPen className="w-5 h-5 text-yellow-500" />
@@ -285,27 +323,40 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
             </div>
           </div>
 
-          {/* Combined Content Area */}
-          <div className="flex-1 min-h-0 px-2 py-2 relative">
-             <div className="w-full h-full bg-[#2c2c2e]/50 rounded-[2rem] relative overflow-hidden border border-white/5" ref={containerRef}>
-                
-                {/* 
-                   Layer 1: Text Area (Base)
-                */}
+          {/* 
+             SCROLLABLE CONTAINER 
+             This div handles the scrolling for BOTH Text and Canvas 
+          */}
+          <div 
+            ref={scrollContainerRef}
+            className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden relative bg-[#2c2c2e]/50 scrollbar-thin scrollbar-thumb-gray-600"
+          >
+             {/* 
+                GROWING WRAPPER
+                This div grows to fit the text content. 
+                Both Textarea and Canvas are absolutely positioned to fill this wrapper.
+             */}
+             <div 
+                ref={contentWrapperRef}
+                className="relative w-full"
+                style={{ height: totalHeight }}
+             >
+                {/* Layer 1: Text Area */}
                 <textarea
+                  ref={textareaRef}
                   value={content}
                   onChange={handleTextChange}
                   placeholder="Digite suas anotações aqui..."
-                  className="w-full h-full absolute inset-0 bg-transparent text-white text-lg leading-relaxed outline-none resize-none placeholder-gray-600 font-medium scrollbar-thin scrollbar-thumb-gray-600 p-5 z-0"
+                  className="absolute inset-0 w-full h-full bg-transparent text-white text-lg leading-relaxed outline-none resize-none placeholder-gray-600 font-medium p-5 overflow-hidden z-0"
                   style={{ fontFamily: 'Inter, sans-serif' }}
                   disabled={activeTool !== 'cursor'} 
                 />
 
-                {/* 
-                   Layer 2: Canvas (Overlay)
-                */}
+                {/* Layer 2: Canvas */}
                 <canvas
                    ref={canvasRef}
+                   width={containerWidth}
+                   height={totalHeight}
                    onMouseDown={startDrawing}
                    onMouseMove={draw}
                    onMouseUp={stopDrawing}
@@ -315,12 +366,11 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
                    onTouchEnd={stopDrawing}
                    className={`absolute inset-0 z-10 ${activeTool === 'cursor' ? 'pointer-events-none' : 'cursor-crosshair touch-none'}`}
                 />
-
              </div>
           </div>
 
           {/* Unified Toolbar */}
-          <div className="p-4 shrink-0 bg-[#1c1c1e] border-t border-white/5 flex flex-col gap-3">
+          <div className="p-4 shrink-0 bg-[#1c1c1e] border-t border-white/5 flex flex-col gap-3 z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.3)]">
              
              {/* Tool Selector */}
              <div className="flex bg-[#2c2c2e] p-1.5 rounded-2xl gap-2">
@@ -391,7 +441,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
              {activeTool === 'cursor' && (
                 <div className="flex justify-center items-center gap-2 pb-1">
                    <p className="text-[10px] text-gray-500">
-                      Modo Digitação: O desenho ficará por cima do texto.
+                      Modo Digitação: O desenho acompanha o texto.
                    </p>
                 </div>
              )}
