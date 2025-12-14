@@ -133,4 +133,4 @@ const BalanceCard: React.FC<Props> = ({
   );
 };
 
-export default BalanceCard;
+export default React.memo(BalanceCard);

@@ -149,9 +149,6 @@ const SecondaryCard: React.FC<Props> = ({
 
   // Native DnD Handlers
   const handleDragStart = (e: React.DragEvent) => {
-     // Ensure only the handle triggers, though we set draggable on the handle mostly.
-     // But React event needs to bubble from handle to here if we put handler on wrapper.
-     // Let's rely on standard logic.
      if (onDragStart) onDragStart(account.id);
   };
 
@@ -230,4 +227,5 @@ const SecondaryCard: React.FC<Props> = ({
   );
 };
 
-export default SecondaryCard;
+// Memoize to prevent re-renders when other cards update
+export default React.memo(SecondaryCard);

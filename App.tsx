@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useMemo, useEffect, useRef, Suspense, useCallback } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
 import ContactsRow from './components/ContactsRow';
@@ -299,38 +299,37 @@ const App: React.FC = () => {
     });
   }, [accounts, activeMonthSummary]);
 
-  // --- SYNC DASHBOARD ORDER WITH ACCOUNTS ---
-  // Ensures all visible accounts are in the order list, and 'balance-card' is present.
-  useEffect(() => {
-     // Only run if we have data loaded
-     if (accounts.length > 0 || months.length > 0) {
-        const currentAccountIds = new Set(filteredAccounts.map(a => a.id));
-        let newOrder = [...dashboardOrder];
+  // --- DERIVED DASHBOARD ITEMS (Prevents Flickering & Disappearing) ---
+  // This computes the final render list on-the-fly without causing side-effects (re-renders).
+  const dashboardItems = useMemo(() => {
+    const items: string[] = [];
+    const orderSet = new Set(dashboardOrder);
+    
+    // 1. Add items from the known order (if they are visible/exist)
+    dashboardOrder.forEach(id => {
+      if (id === BALANCE_CARD_ID) {
+        items.push(id);
+      } else {
+        const exists = filteredAccounts.find(a => a.id === id);
+        if (exists) items.push(id);
+      }
+    });
 
-        // 1. Ensure 'balance-card' is present
-        if (!newOrder.includes(BALANCE_CARD_ID)) {
-           newOrder.unshift(BALANCE_CARD_ID);
-        }
+    // 2. Add "Orphan" items (Visible accounts NOT in the order list)
+    // This handles the "disappearing cards" bug by ensuring they are always appended.
+    filteredAccounts.forEach(a => {
+      if (!orderSet.has(a.id)) {
+        items.push(a.id);
+      }
+    });
+    
+    // 3. Ensure Balance Card is present
+    if (!items.includes(BALANCE_CARD_ID)) {
+      items.unshift(BALANCE_CARD_ID);
+    }
 
-        // 2. Add any new/visible accounts that aren't in the order yet
-        const missingIds = filteredAccounts
-          .map(a => a.id)
-          .filter(id => !newOrder.includes(id));
-        
-        if (missingIds.length > 0) {
-           newOrder = [...newOrder, ...missingIds];
-        }
-
-        // 3. Clean up: Only keep IDs that are 'balance-card' OR exist in global accounts list.
-        // This keeps the order clean but preserves order for accounts not currently visible (e.g. other months).
-        const globalIds = new Set(accounts.map(a => a.id));
-        newOrder = newOrder.filter(id => id === BALANCE_CARD_ID || globalIds.has(id));
-
-        if (JSON.stringify(newOrder) !== JSON.stringify(dashboardOrder)) {
-           setDashboardOrder(newOrder);
-        }
-     }
-  }, [filteredAccounts, accounts]);
+    return items;
+  }, [dashboardOrder, filteredAccounts]);
 
   // --- AUTH CHECK EFFECT (Fixes RLS issues) ---
   useEffect(() => {
@@ -512,9 +511,17 @@ const App: React.FC = () => {
         prevCdiRef.current = data.cdiRate;
       }
 
-      if (data.dashboardOrder && Array.isArray(data.dashboardOrder)) {
+      // Initial Sync of Dashboard Order
+      if (data.dashboardOrder && Array.isArray(data.dashboardOrder) && data.dashboardOrder.length > 0) {
          setDashboardOrder(data.dashboardOrder);
          prevDashboardOrderRef.current = JSON.stringify(data.dashboardOrder);
+      } else {
+         // Fallback: Create initial order if none exists
+         const initialOrder = [BALANCE_CARD_ID];
+         if (data.accounts) {
+            initialOrder.push(...data.accounts.map((a: Account) => a.id));
+         }
+         setDashboardOrder(initialOrder);
       }
   };
 
@@ -884,8 +891,49 @@ const App: React.FC = () => {
     return () => clearTimeout(timer);
   }, [transactions, currentUserEmail]); 
 
-  // --- Handlers ---
+  // --- Handlers (Memoized to prevent list flickering) ---
   
+  const handleDeleteAccount = useCallback((id: string) => {
+    setAccounts(prev => prev.filter(a => a.id !== id));
+    // Manually remove from order list to prevent sync issues/flicker
+    setDashboardOrder(prev => prev.filter(orderId => orderId !== id));
+  }, []);
+
+  const handleEditAccount = useCallback((account: Account) => {
+    setEditingAccount(account);
+    setIsAddAccountOpen(true);
+  }, []);
+
+  const handleCardDragStart = useCallback((id: string) => {
+    dragItem.current = id;
+  }, []);
+
+  const handleCardDragEnter = useCallback((targetId: string) => {
+    if (dragItem.current && dragItem.current !== targetId) {
+       const draggedId = dragItem.current;
+       
+       setDashboardOrder(prev => {
+          const newOrder = [...prev];
+          const draggedIndex = newOrder.indexOf(draggedId);
+          const targetIndex = newOrder.indexOf(targetId);
+          
+          if (draggedIndex !== -1 && targetIndex !== -1) {
+             newOrder.splice(draggedIndex, 1);
+             newOrder.splice(targetIndex, 0, draggedId);
+             return newOrder;
+          }
+          return prev;
+       });
+    }
+  }, []);
+
+  const handleCardDragEnd = useCallback(() => {
+    dragItem.current = null;
+    dragOverItem.current = null;
+  }, []);
+
+  // --- OTHER HANDLERS ---
+
   const handleLogin = async (email: string, name?: string) => {
     try {
       let permissionGranted = false;
@@ -1005,35 +1053,6 @@ const App: React.FC = () => {
   const handleCloseNotification = () => setIsNotificationOpen(false);
   const handleCloseAnalytics = () => setIsAnalyticsOpen(false);
 
-  // --- REORDER LOGIC ---
-  const handleCardDragStart = (id: string) => {
-    dragItem.current = id;
-  };
-
-  const handleCardDragEnter = (targetId: string) => {
-    if (dragItem.current && dragItem.current !== targetId) {
-       const draggedId = dragItem.current;
-       
-       setDashboardOrder(prev => {
-          const newOrder = [...prev];
-          const draggedIndex = newOrder.indexOf(draggedId);
-          const targetIndex = newOrder.indexOf(targetId);
-          
-          if (draggedIndex !== -1 && targetIndex !== -1) {
-             newOrder.splice(draggedIndex, 1);
-             newOrder.splice(targetIndex, 0, draggedId);
-             return newOrder;
-          }
-          return prev;
-       });
-    }
-  };
-
-  const handleCardDragEnd = () => {
-    dragItem.current = null;
-    dragOverItem.current = null;
-  };
-
   // --- DUPLICATE MONTH LOGIC ---
   const handleDuplicateMonth = () => {
     const currentSummary = activeMonthSummary;
@@ -1107,6 +1126,10 @@ const App: React.FC = () => {
     setTransactions(prev => [...newTxs, ...prev]); 
     setAccounts(prev => [...prev, ...newAccounts]);
     setActiveMonthId(newMonthSummary.id);
+    
+    // Add new account IDs to the order list
+    const newAccountIds = newAccounts.map(a => a.id);
+    setDashboardOrder(prev => [...prev, ...newAccountIds]);
   };
 
   const handleSaveTransaction = (txData: Omit<Transaction, 'id'>) => {
@@ -1273,14 +1296,16 @@ const App: React.FC = () => {
            name, 
            balance, 
            colorTheme: theme,
+           // Safe logic: Preserve existing month/year if present, otherwise set to current view context
            month: acc.month || activeMonthSummary?.month,
            year: acc.year || activeMonthSummary?.year
         } : acc
       ));
       setEditingAccount(null);
     } else {
+      const newId = Date.now().toString();
       const newAccount: Account = {
-        id: Date.now().toString(),
+        id: newId,
         name,
         balance,
         colorTheme: theme,
@@ -1288,16 +1313,17 @@ const App: React.FC = () => {
         year: activeMonthSummary?.year
       };
       setAccounts(prev => [...prev, newAccount]);
+      // Manually update order immediately to prevent sync flicker
+      setDashboardOrder(prev => {
+         // Insert after balance card (index 1) or at end
+         const newOrder = [...prev];
+         if (newOrder.includes(BALANCE_CARD_ID)) {
+            newOrder.splice(1, 0, newId);
+            return newOrder;
+         }
+         return [BALANCE_CARD_ID, newId, ...prev];
+      });
     }
-  };
-
-  const handleDeleteAccount = (id: string) => {
-    setAccounts(prev => prev.filter(a => a.id !== id));
-  };
-
-  const handleEditAccount = (account: Account) => {
-    setEditingAccount(account);
-    setIsAddAccountOpen(true);
   };
 
   const activeMonthContext = useMemo(() => {
@@ -1382,7 +1408,7 @@ const App: React.FC = () => {
 
             {/* Draggable Cards Section */}
             <div className="flex flex-col gap-4 mb-6">
-               {dashboardOrder.map((id) => {
+               {dashboardItems.map((id) => {
                   if (id === BALANCE_CARD_ID) {
                      return (
                         <BalanceCard 
