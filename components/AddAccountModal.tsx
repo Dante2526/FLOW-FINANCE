@@ -21,33 +21,42 @@ const THEMES: { id: CardTheme; color: string; label: string; isPro?: boolean }[]
 ];
 
 const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEdit, isPro = false, onOpenProModal }) => {
+  // We use a key on the form container to force a full re-render when the account changes.
+  // This ensures state is initialized correctly from props every time.
+  const formKey = isOpen ? (accountToEdit?.id || 'new_account') : 'closed';
+
+  return (
+    <div className={`fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity duration-200 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
+      <AccountForm 
+        key={formKey} // CRITICAL: This forces the component to reset completely when opening for a different account
+        onClose={onClose}
+        onSave={onSave}
+        accountToEdit={accountToEdit}
+        isPro={isPro}
+        onOpenProModal={onOpenProModal}
+      />
+    </div>
+  );
+};
+
+// Sub-component to isolate state and ensure clean initialization
+const AccountForm: React.FC<Omit<Props, 'isOpen'>> = ({ onClose, onSave, accountToEdit, isPro, onOpenProModal }) => {
   const [balance, setBalance] = useState('');
   const [name, setName] = useState('');
   const [selectedTheme, setSelectedTheme] = useState<CardTheme>('default');
   
-  // State to persist the ID being edited.
-  const [editingId, setEditingId] = useState<string | undefined>(undefined);
-
-  // Load data when entering edit mode
+  // Initialize state from props immediately on mount (guaranteed by the parent key)
   useEffect(() => {
-    if (isOpen) {
-      if (accountToEdit) {
-        // MODO EDIÇÃO
-        setEditingId(accountToEdit.id);
-        setName(accountToEdit.name);
-        setBalance(accountToEdit.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-        setSelectedTheme(accountToEdit.colorTheme);
-      } else {
-        // MODO CRIAÇÃO
-        setEditingId(undefined);
-        setName('');
-        setBalance('');
-        setSelectedTheme('default');
-      }
+    if (accountToEdit) {
+      setName(accountToEdit.name);
+      setBalance(accountToEdit.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      setSelectedTheme(accountToEdit.colorTheme);
+    } else {
+      setName('');
+      setBalance('');
+      setSelectedTheme('default');
     }
-  }, [isOpen, accountToEdit]);
-
-  if (!isOpen) return null;
+  }, [accountToEdit]); // Dependency on prop ensures updates if prop changes while open
 
   const handleBalanceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value.replace(/\D/g, '');
@@ -69,12 +78,10 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
        finalBalance = parseFloat(balance.replace(/\./g, '').replace(',', '.'));
     }
 
-    // ROBUST ID CHECK: Use stored state, fallback to prop if available.
-    // This ensures that even if state was somehow reset, we still have the prop ID during an edit session.
-    const finalId = editingId || accountToEdit?.id;
+    // Direct access to prop ensures we never lose the ID
+    const idToSave = accountToEdit?.id;
 
-    onSave(finalId, name, finalBalance, selectedTheme);
-    
+    onSave(idToSave, name, finalBalance, selectedTheme);
     onClose();
   };
 
@@ -87,13 +94,10 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
   };
 
   const isFormValid = name.length > 0;
-  
-  // Visual check for title
-  const isEditing = !!editingId || !!accountToEdit;
+  const isEditing = !!accountToEdit;
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-6 max-h-[90dvh] overflow-y-auto no-scrollbar">
+    <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-6 max-h-[90dvh] overflow-y-auto no-scrollbar animate-in fade-in zoom-in-95 duration-200">
         
         {/* Header */}
         <div className="flex justify-between items-center">
@@ -197,7 +201,6 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
           </button>
 
         </form>
-      </div>
     </div>
   );
 };
