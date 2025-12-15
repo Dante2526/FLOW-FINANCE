@@ -900,11 +900,20 @@ const App: React.FC = () => {
           const draggedIndex = newOrder.indexOf(draggedId);
           const targetIndex = newOrder.indexOf(targetId);
           
+          // Case 1: Reordering within the list
           if (draggedIndex !== -1 && targetIndex !== -1) {
              newOrder.splice(draggedIndex, 1);
              newOrder.splice(targetIndex, 0, draggedId);
              return newOrder;
           }
+          
+          // Case 2: Dragging an orphan (not in list) INTO a valid target (in list)
+          // This fixes the "drag stops working" issue for items that lost their place
+          if (draggedIndex === -1 && targetIndex !== -1) {
+             newOrder.splice(targetIndex, 0, draggedId);
+             return newOrder;
+          }
+
           return prev;
        });
     }
