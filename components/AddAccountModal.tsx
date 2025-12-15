@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Check, Lock, Crown } from 'lucide-react';
 import { CardTheme, Account } from '../types';
 
@@ -25,22 +25,26 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
   const [name, setName] = useState('');
   const [selectedTheme, setSelectedTheme] = useState<CardTheme>('default');
   
-  // State to hold the ID safely across renders
-  const [editingId, setEditingId] = useState<string | undefined>(undefined);
+  // USEREF: A maneira mais segura de manter o ID.
+  // Ele não perde o valor mesmo se o componente renderizar novamente.
+  const idRef = useRef<string | undefined>(undefined);
 
   // Load data when entering edit mode
   useEffect(() => {
-    if (isOpen && accountToEdit) {
-      setEditingId(accountToEdit.id); // Capture ID immediately
-      setName(accountToEdit.name);
-      setBalance(accountToEdit.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-      setSelectedTheme(accountToEdit.colorTheme);
-    } else if (isOpen && !accountToEdit) {
-      // Reset if opening in create mode
-      setEditingId(undefined);
-      setName('');
-      setBalance('');
-      setSelectedTheme('default');
+    if (isOpen) {
+      if (accountToEdit) {
+        // MODO EDIÇÃO: Grava o ID imediatamente na referência fixa
+        idRef.current = accountToEdit.id;
+        setName(accountToEdit.name);
+        setBalance(accountToEdit.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        setSelectedTheme(accountToEdit.colorTheme);
+      } else {
+        // MODO CRIAÇÃO: Limpa o ID
+        idRef.current = undefined;
+        setName('');
+        setBalance('');
+        setSelectedTheme('default');
+      }
     }
   }, [isOpen, accountToEdit]);
 
@@ -66,16 +70,11 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
        finalBalance = parseFloat(balance.replace(/\./g, '').replace(',', '.'));
     }
 
-    // Use the safely stored editingId. 
-    // If this is undefined, App treats it as Create. If it has a string, App treats it as Edit.
-    onSave(editingId, name, finalBalance, selectedTheme);
+    // Usa idRef.current para enviar o ID correto para o App.tsx
+    // Se idRef.current tiver valor, o App sabe que é Edição.
+    // Se for undefined, o App sabe que é Criação.
+    onSave(idRef.current, name, finalBalance, selectedTheme);
     
-    // Only reset if we are not editing (to prevent flickering before close)
-    if (!editingId) {
-      setBalance('');
-      setName('');
-      setSelectedTheme('default');
-    }
     onClose();
   };
 
@@ -89,6 +88,9 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
 
   const isFormValid = name.length > 0;
 
+  // Usa idRef para decidir o título (mais estável que prop direta na renderização)
+  const isEditing = !!idRef.current || !!accountToEdit;
+
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-6 max-h-[90dvh] overflow-y-auto no-scrollbar">
@@ -96,7 +98,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
         {/* Header */}
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold text-white">
-            {editingId ? 'Editar Fonte de Renda' : 'Nova Fonte de Renda'}
+            {isEditing ? 'Editar Fonte de Renda' : 'Nova Fonte de Renda'}
           </h2>
           <button 
             onClick={onClose} 
@@ -190,7 +192,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
             disabled={!isFormValid}
             className="w-full bg-accent text-black disabled:bg-surfaceLight disabled:text-gray-500 h-16 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-2 hover:bg-accentDark disabled:hover:bg-surfaceLight transition-colors mt-2"
           >
-            {editingId ? 'Salvar Alterações' : 'Criar Fonte de Renda'}
+            {isEditing ? 'Salvar Alterações' : 'Criar Fonte de Renda'}
             <Check className="w-5 h-5" />
           </button>
 
