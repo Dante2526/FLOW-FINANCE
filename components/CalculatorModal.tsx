@@ -15,21 +15,53 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
+  // Parse formatted string (PT-BR: 1.000,00) to JS Number
+  const parseDisplay = (val: string): number => {
+    // Remove dots, replace comma with dot
+    return parseFloat(val.replace(/\./g, '').replace(',', '.'));
+  };
+
+  // Format JS-like string or raw input to PT-BR display format
+  const formatRaw = (val: string): string => {
+    // Remove existing dots to get raw characters
+    const clean = val.replace(/\./g, '');
+    
+    // Split into integer and decimal parts
+    const parts = clean.split(',');
+    let intPart = parts[0];
+    const decPart = parts[1];
+
+    // Handle leading zeros
+    if (intPart === '') intPart = '0';
+    if (intPart.length > 1 && intPart.startsWith('0')) {
+        intPart = intPart.substring(1);
+    }
+
+    // Add thousands separator (dots)
+    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+    if (decPart !== undefined) {
+      return `${intPart},${decPart}`;
+    }
+    return intPart;
+  };
+
   const inputDigit = (digit: string) => {
     if (waitingForOperand) {
       setDisplay(digit);
       setWaitingForOperand(false);
     } else {
-      setDisplay(display === '0' ? digit : display + digit);
+      const newValue = display === '0' ? digit : display + digit;
+      setDisplay(formatRaw(newValue));
     }
   };
 
-  const inputDot = () => {
+  const inputComma = () => {
     if (waitingForOperand) {
-      setDisplay('0.');
+      setDisplay('0,');
       setWaitingForOperand(false);
-    } else if (display.indexOf('.') === -1) {
-      setDisplay(display + '.');
+    } else if (display.indexOf(',') === -1) {
+      setDisplay(display + ',');
     }
   };
 
@@ -46,17 +78,16 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
     if (display.length === 1) {
       setDisplay('0');
     } else {
-      setDisplay(display.slice(0, -1));
+      setDisplay(formatRaw(display.slice(0, -1)));
     }
   };
 
   const performOperation = (nextOperator: string) => {
-    const inputValue = parseFloat(display);
+    const inputValue = parseDisplay(display);
 
     if (previousValue === null) {
       setPreviousValue(inputValue);
     } else if (operator) {
-      // Allow changing operator if we haven't typed the next number yet
       if (waitingForOperand) {
         setOperator(nextOperator);
         return;
@@ -65,7 +96,10 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
       const currentValue = previousValue || 0;
       const newValue = calculate(currentValue, inputValue, operator);
       setPreviousValue(newValue);
-      setDisplay(String(newValue));
+      
+      // Format result for display (handling potential decimals from math)
+      // Math result has dots for decimals. Replace with comma for our formatter.
+      setDisplay(formatRaw(String(newValue).replace('.', ',')));
     }
 
     setWaitingForOperand(true);
@@ -85,10 +119,12 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const handleEquals = () => {
     if (!operator || previousValue === null) return;
     
-    const inputValue = parseFloat(display);
+    const inputValue = parseDisplay(display);
     const result = calculate(previousValue, inputValue, operator);
     
-    setDisplay(String(result));
+    // Format final result using LocaleString for best accuracy with dots/commas
+    setDisplay(result.toLocaleString('pt-BR', { maximumFractionDigits: 10 }));
+    
     setPreviousValue(null);
     setOperator(null);
     setWaitingForOperand(true);
@@ -97,7 +133,8 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const getHistoryDisplay = () => {
     if (previousValue === null) return '';
     const opDisplay = operator === '*' ? '×' : operator === '/' ? '÷' : operator;
-    return operator ? `${previousValue} ${opDisplay}` : '';
+    const formattedPrev = previousValue.toLocaleString('pt-BR', { maximumFractionDigits: 10 });
+    return operator ? `${formattedPrev} ${opDisplay}` : '';
   };
 
   const Button = ({ 
@@ -131,12 +168,6 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      {/* 
-        Adjusted container: 
-        - overflow-hidden (no scrolling)
-        - p-4 (compact padding)
-        - gap-3 (compact vertical spacing)
-      */}
       <div className="bg-[#1c1c1e] w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] p-4 shadow-2xl border border-white/5 relative flex flex-col gap-3 max-h-[95dvh] overflow-hidden">
         
         {/* Header */}
@@ -182,7 +213,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
             <Button label="2" onClick={() => inputDigit('2')} />
             <Button label="3" onClick={() => inputDigit('3')} />
             <Button label="0" onClick={() => inputDigit('0')} className="col-span-2 w-full" />
-            <Button label="." onClick={inputDot} />
+            <Button label="," onClick={inputComma} />
           </div>
           
           <Button 
