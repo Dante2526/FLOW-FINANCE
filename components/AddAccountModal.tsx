@@ -24,15 +24,20 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
   const [balance, setBalance] = useState('');
   const [name, setName] = useState('');
   const [selectedTheme, setSelectedTheme] = useState<CardTheme>('default');
+  
+  // State to hold the ID safely across renders
+  const [editingId, setEditingId] = useState<string | undefined>(undefined);
 
   // Load data when entering edit mode
   useEffect(() => {
     if (isOpen && accountToEdit) {
+      setEditingId(accountToEdit.id); // Capture ID immediately
       setName(accountToEdit.name);
       setBalance(accountToEdit.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       setSelectedTheme(accountToEdit.colorTheme);
     } else if (isOpen && !accountToEdit) {
       // Reset if opening in create mode
+      setEditingId(undefined);
       setName('');
       setBalance('');
       setSelectedTheme('default');
@@ -61,11 +66,12 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
        finalBalance = parseFloat(balance.replace(/\./g, '').replace(',', '.'));
     }
 
-    // Pass ID if editing, undefined if creating
-    onSave(accountToEdit?.id, name, finalBalance, selectedTheme);
+    // Use the safely stored editingId. 
+    // If this is undefined, App treats it as Create. If it has a string, App treats it as Edit.
+    onSave(editingId, name, finalBalance, selectedTheme);
     
     // Only reset if we are not editing (to prevent flickering before close)
-    if (!accountToEdit) {
+    if (!editingId) {
       setBalance('');
       setName('');
       setSelectedTheme('default');
@@ -90,7 +96,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
         {/* Header */}
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold text-white">
-            {accountToEdit ? 'Editar Fonte de Renda' : 'Nova Fonte de Renda'}
+            {editingId ? 'Editar Fonte de Renda' : 'Nova Fonte de Renda'}
           </h2>
           <button 
             onClick={onClose} 
@@ -184,7 +190,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
             disabled={!isFormValid}
             className="w-full bg-accent text-black disabled:bg-surfaceLight disabled:text-gray-500 h-16 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-2 hover:bg-accentDark disabled:hover:bg-surfaceLight transition-colors mt-2"
           >
-            {accountToEdit ? 'Salvar Alterações' : 'Criar Fonte de Renda'}
+            {editingId ? 'Salvar Alterações' : 'Criar Fonte de Renda'}
             <Check className="w-5 h-5" />
           </button>
 
