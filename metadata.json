@@ -1,5 +1,7 @@
 {
   "name": "Flow Finance",
   "description": "Um painel de controle financeiro de alta fidelidade com modo escuro, detalhes em laranja, visualização de despesas e insights financeiros.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "camera"
+  ]
 }

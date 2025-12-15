@@ -384,7 +384,8 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
     
     activeMonthId, 
     setActiveMonthId,
-    isLoadingData: profileQuery.isLoading || transactionsQuery.isLoading,
+    // Fix: Include monthsQuery.isLoading so UI waits for the correct month structure
+    isLoadingData: profileQuery.isLoading || transactionsQuery.isLoading || monthsQuery.isLoading,
 
     setUserProfile: (p: any) => {
        const newVal = typeof p === 'function' ? p(profileQuery.data?.profile || INITIAL_PROFILE) : p;

@@ -65,8 +65,8 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = React.
 
     // Direction Locking Logic
     if (interactionType.current === null) {
-      // Need a small threshold to decide
-      if (Math.abs(diffX) < 5 && Math.abs(diffY) < 5) return;
+      // Need a small threshold to decide - Increased to 10 for better scrolling UX
+      if (Math.abs(diffX) < 10 && Math.abs(diffY) < 10) return;
 
       // If vertical movement is greater than horizontal, it's a SCROLL
       if (Math.abs(diffY) > Math.abs(diffX)) {

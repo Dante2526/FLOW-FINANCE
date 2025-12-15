@@ -34,6 +34,12 @@ export const verifyAuthOtp = async (email: string, token: string) => {
 
 // --- USER & PROFILE (LEGACY + MIXED) ---
 
+// Helper to get User ID safely
+const getUserId = async () => {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user?.id;
+};
+
 export const loginUser = async (email: string) => {
   const normalizedEmail = email.toLowerCase().trim();
   const { data, error } = await supabase.from('users').select('*').eq('email', normalizedEmail).single();
@@ -56,13 +62,19 @@ export const loginUser = async (email: string) => {
 
 export const registerUser = async (email: string, name: string, initialData: any) => {
   const normalizedEmail = email.toLowerCase().trim();
+  const uid = await getUserId();
+
+  if (!uid) {
+    throw new Error("Sessão inválida para criar usuário. Tente fazer login novamente.");
+  }
   
   // Check existence
   const { data: existing } = await supabase.from('users').select('email').eq('email', normalizedEmail).maybeSingle();
   if (existing) throw new Error("E-mail já cadastrado.");
 
-  // Create User Entry
+  // Create User Entry - Explicitly including ID to satisfy potential RLS policies
   const { error } = await supabase.from('users').insert({
+    id: uid, // CRITICAL: Link public.users to auth.users
     email: normalizedEmail,
     name: name.toUpperCase(),
     profile: {
@@ -79,9 +91,8 @@ export const registerUser = async (email: string, name: string, initialData: any
 
   // If initialData has months, we should insert them into the 'months' table
   if (initialData.months && initialData.months.length > 0) {
-     // NOTE: We need the user ID. Registration via insert usually doesn't return UID easily if not using auth.signUp.
-     // In this app flow, we rely on subsequent login to get UID from auth session.
-     // For now, we skip auto-inserting months data until the user is authenticated contextually.
+     // Optional: Insert initial month immediately
+     // await apiMonths.add({ ...initialData.months[0] });
   }
 
   return { email: normalizedEmail, name };
@@ -120,11 +131,6 @@ export const saveUserField = async (email: string, field: string, data: any) => 
 
 
 // --- NORMALIZED DATA API (TRANSACTIONS, ACCOUNTS, ETC) ---
-
-const getUserId = async () => {
-  const { data } = await supabase.auth.getSession();
-  return data.session?.user?.id;
-};
 
 // 1. Transactions
 export const apiTransactions = {
@@ -280,7 +286,7 @@ export const apiLongTerm = {
        user_id: uid,
        title: lt.title,
        total_amount: lt.totalAmount,
-       installments_count: lt.installmentsCount,
+       installments_count: lt.installments_count,
        start_date: lt.startDate,
        installments_paid: lt.installmentsPaid,
        monthly_amount: lt.monthlyAmount,
