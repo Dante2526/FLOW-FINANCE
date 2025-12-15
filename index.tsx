@@ -2,6 +2,7 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { FinancialProvider } from './contexts/FinancialContext';
 
 // Register Service Worker for PWA capabilities and Android Notifications
 if ('serviceWorker' in navigator) {
@@ -29,6 +30,8 @@ if (!rootElement) {
 const root = createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <App />
+    <FinancialProvider>
+      <App />
+    </FinancialProvider>
   </React.StrictMode>
 );

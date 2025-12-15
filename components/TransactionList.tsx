@@ -3,6 +3,7 @@ import React, { useState, useRef } from 'react';
 import { Transaction } from '../types';
 import { TransactionIcon } from './Icons';
 import { Trash2, Edit2, Check, CreditCard, QrCode, RotateCcw } from 'lucide-react';
+import { formatDateDisplay } from '../utils/dateUtils';
 
 interface Props {
   transactions: Transaction[];
@@ -16,20 +17,6 @@ const typeTranslation = {
   purchase: 'Compra',
   subscription: 'Assinatura',
   transfer: 'Transferência'
-};
-
-const formatDateDisplay = (dateStr: string) => {
-  if (!dateStr) return '';
-  if (dateStr.toLowerCase().includes('hoje')) return 'Hoje';
-  
-  // Handle ISO YYYY-MM-DD
-  if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
-    const d = new Date(dateStr.split(' ')[0] + 'T00:00:00');
-    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
-  }
-  
-  // Handle "24 Jan"
-  return dateStr;
 };
 
 interface SwipeableTransactionItemProps {

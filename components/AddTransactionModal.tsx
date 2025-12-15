@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Check, Calendar } from 'lucide-react';
 import { LogoType, Transaction } from '../types';
 import { TransactionIcon } from './Icons';
+import { parseDateToISO, getTodayISO } from '../utils/dateUtils';
 
 interface Props {
   isOpen: boolean;
@@ -23,7 +24,6 @@ const PURCHASE_ICONS: { type: LogoType; label: string }[] = [
   { type: 'rent', label: 'Aluguel' },
   { type: 'home', label: 'Casa' },
   { type: 'utility', label: 'Contas' },
-  // New Items
   { type: 'education', label: 'Estudos' },
   { type: 'project', label: 'Projetos' },
   { type: 'funeral', label: 'Funeral' },
@@ -31,21 +31,14 @@ const PURCHASE_ICONS: { type: LogoType; label: string }[] = [
   { type: 'medicine', label: 'Remédio' },
   { type: 'pet', label: 'Pets' },
   { type: 'travel', label: 'Viagem' },
-  
-  // Specific & Extras
   { type: 'leisure', label: 'Lazer' },
   { type: 'bar', label: 'Bar' },
   { type: 'game', label: 'Jogos' },
   { type: 'gift', label: 'Presentes' },
-  
-  // Beauty & Wellness
   { type: 'beauty', label: 'Salão' },
   { type: 'makeup', label: 'Beleza Fem.' },
   { type: 'aesthetic', label: 'Estética' },
-  
-  // Events
   { type: 'wedding', label: 'Casamento' },
-  
   { type: 'generic', label: 'Outros' },
 ];
 
@@ -61,61 +54,23 @@ const SUBSCRIPTION_ICONS: { type: LogoType; label: string }[] = [
   { type: 'mercadolivre', label: 'Meli+' },
 ];
 
-const MONTH_MAP: Record<string, string> = {
-  'jan': '01', 'fev': '02', 'mar': '03', 'abr': '04', 'mai': '05', 'jun': '06',
-  'jul': '07', 'ago': '08', 'set': '09', 'out': '10', 'nov': '11', 'dez': '12'
-};
-
 const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transactionToEdit, activeMonthContext }) => {
   const [amount, setAmount] = useState('');
   const [name, setName] = useState('');
   const [type, setType] = useState<'purchase' | 'subscription'>('purchase');
   const [date, setDate] = useState('');
-  // Default icons based on initial type
   const [selectedIcon, setSelectedIcon] = useState<LogoType>('shopping');
 
-  // Determine which icon set to show
   const visibleIcons = type === 'subscription' ? SUBSCRIPTION_ICONS : PURCHASE_ICONS;
-
-  // Helper to parse "24 Dez" back to "YYYY-MM-DD"
-  const parseDateFromDisplay = (displayDate: string): string => {
-    try {
-      if (!displayDate) return new Date().toISOString().split('T')[0];
-      if (displayDate.toLowerCase().includes('hoje')) return new Date().toISOString().split('T')[0];
-      
-      // Handle "YYYY-MM-DD" format (already ISO)
-      if (displayDate.match(/^\d{4}-\d{2}-\d{2}/)) {
-          return displayDate.split(' ')[0];
-      }
-
-      // Handle "DD Mmm" format (e.g. "24 Jan")
-      const parts = displayDate.split(' ');
-      if (parts.length >= 2) {
-        const day = parts[0].padStart(2, '0');
-        const monthCode = parts[1].toLowerCase().substring(0, 3);
-        const month = MONTH_MAP[monthCode];
-        
-        if (month) {
-          // Use the Year from context if available, otherwise default to current year
-          const year = activeMonthContext ? activeMonthContext.year : new Date().getFullYear();
-          return `${year}-${month}-${day}`;
-        }
-      }
-      return new Date().toISOString().split('T')[0];
-    } catch (e) {
-      return new Date().toISOString().split('T')[0];
-    }
-  };
 
   useEffect(() => {
     if (isOpen && transactionToEdit) {
       setAmount(transactionToEdit.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-      setName(transactionToEdit.name); // Removed explicit toUpperCase here to respect stored data style until edit
+      setName(transactionToEdit.name);
       setSelectedIcon(transactionToEdit.logoType);
       setType(transactionToEdit.type as 'purchase' | 'subscription');
-      
-      // Use the helper to correctly set the date input value
-      setDate(parseDateFromDisplay(transactionToEdit.date));
+      // Use helper to ensure edit form gets "YYYY-MM-DD"
+      setDate(parseDateToISO(transactionToEdit.date, activeMonthContext?.year));
       
     } else if (isOpen && !transactionToEdit) {
       setAmount('');
@@ -123,36 +78,31 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
       setSelectedIcon('shopping');
       setType('purchase');
       
-      // Default to the 1st day of the ACTIVE month, not today (if contexts differ)
+      // Default Date Logic
       if (activeMonthContext) {
           const y = activeMonthContext.year;
           const m = String(activeMonthContext.monthIndex + 1).padStart(2, '0');
-          // If the active month is current month, use today. Else use 1st.
           const now = new Date();
           if (now.getMonth() === activeMonthContext.monthIndex && now.getFullYear() === activeMonthContext.year) {
-             setDate(now.toISOString().split('T')[0]);
+             setDate(getTodayISO());
           } else {
              setDate(`${y}-${m}-01`);
           }
       } else {
-          setDate(new Date().toISOString().split('T')[0]);
+          setDate(getTodayISO());
       }
     }
   }, [isOpen, transactionToEdit, activeMonthContext]);
 
-  // When type changes, reset icon to first of that list if not editing or if mismatched
+  // Icon switcher safety
   useEffect(() => {
     if (!isOpen) return;
-    
-    // Check if current icon exists in the new list
     const currentIconExists = visibleIcons.some(i => i.type === selectedIcon);
-    
     if (!currentIconExists) {
       setSelectedIcon(visibleIcons[0].type);
     }
   }, [type, visibleIcons, isOpen, selectedIcon]);
 
-  // Currency Handler
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value.replace(/\D/g, '');
     if (!rawValue) {
@@ -169,22 +119,21 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
     e.preventDefault();
     if (!amount || !name || !date) return;
 
-    // Check if selected date is today to use "Hoje"
-    const today = new Date().toISOString().split('T')[0];
+    // Check if selected date is today
+    const today = getTodayISO();
     let finalDateString = '';
     
     if (date === today) {
        finalDateString = `Hoje ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
     } else {
-       // IMPORTANT: Save as ISO YYYY-MM-DD to preserve year information for future dates
+       // Save as ISO
        finalDateString = date;
     }
 
-    // Parse amount from string "1.000,00" to float
     const parsedAmount = parseFloat(amount.replace(/\./g, '').replace(',', '.'));
 
     onSave({
-      name: name.toUpperCase(), // Convert to Uppercase ONLY on submit
+      name: name.toUpperCase(),
       amount: parsedAmount,
       type,
       paymentMethod: transactionToEdit?.paymentMethod || 'card', 
@@ -193,11 +142,6 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
       paid: transactionToEdit ? transactionToEdit.paid : false
     });
     
-    if (!transactionToEdit) {
-      setAmount('');
-      setName('');
-      setSelectedIcon('shopping');
-    }
     onClose();
   };
 
