@@ -309,57 +309,42 @@ const App: React.FC = () => {
     });
   }, [accounts, activeMonthSummary]);
 
-  // --- ROBUST DASHBOARD ITEMS CALCULATION ---
-  // This computes the final render list on-the-fly.
-  // It guarantees that everything in dashboardOrder is respected,
-  // AND anything that is missing (orphans) is appended at the end.
-  const dashboardItems = useMemo(() => {
-    // 1. Determine which accounts are actually visible right now (based on month filter)
-    const visibleAccountIds = new Set(filteredAccounts.map(a => a.id));
-    
-    // 2. Build the list starting with the persisted order
-    const items: string[] = [];
-    
-    // 2a. Always start with Balance Card if it's not in the order list for some reason
-    if (!dashboardOrder.includes(BALANCE_CARD_ID)) {
-       items.push(BALANCE_CARD_ID);
-    }
+  // --- INDEPENDENT RENDERING LOGIC (NO MORE DISAPPEARING CARDS) ---
+  // We sort the existing accounts based on the saved order.
+  // If an account is not in the order list, it goes to the end.
+  const sortedAccounts = useMemo(() => {
+    return [...filteredAccounts].sort((a, b) => {
+        const indexA = dashboardOrder.indexOf(a.id);
+        const indexB = dashboardOrder.indexOf(b.id);
 
-    // 2b. Add items from order if they are valid
-    dashboardOrder.forEach(id => {
-      if (id === BALANCE_CARD_ID) {
-         if (!items.includes(BALANCE_CARD_ID)) items.push(id);
-      } else if (visibleAccountIds.has(id)) {
-         items.push(id);
-      }
+        // If both are in the order list, sort by that order
+        if (indexA !== -1 && indexB !== -1) {
+            return indexA - indexB;
+        }
+        
+        // If A is in list but B is not, A comes first
+        if (indexA !== -1) return -1;
+        
+        // If B is in list but A is not, B comes first
+        if (indexB !== -1) return 1;
+
+        // If neither are in the list, keep original order (creation time)
+        return 0;
     });
-
-    // 3. Add Orphans (Visible accounts not in the order list)
-    // This catches new accounts or accounts that were somehow lost from the order state
-    const presentIds = new Set(items);
-    filteredAccounts.forEach(a => {
-      if (!presentIds.has(a.id)) {
-        items.push(a.id);
-      }
-    });
-
-    return items;
-  }, [dashboardOrder, filteredAccounts]);
+  }, [filteredAccounts, dashboardOrder]);
 
   // --- SYNC DASHBOARD ORDER ---
-  // If the computed items differ from the state (e.g. orphans added), update state.
+  // Ensures any new accounts (orphans) are eventually added to the persistent order
   useEffect(() => {
-     // We only update if there are NEW items (orphans) that need to be persisted.
-     // We do NOT remove items here to avoid fighting with sync or transient states.
      const currentSet = new Set(dashboardOrder);
-     const hasNewItems = dashboardItems.some(id => !currentSet.has(id));
+     const newIds = filteredAccounts
+        .map(a => a.id)
+        .filter(id => !currentSet.has(id));
      
-     if (hasNewItems) {
-        // Construct new order: Current Order + New Items
-        const newItems = dashboardItems.filter(id => !currentSet.has(id));
-        setDashboardOrder(prev => [...prev, ...newItems]);
+     if (newIds.length > 0) {
+        setDashboardOrder(prev => [...prev, ...newIds]);
      }
-  }, [dashboardItems, dashboardOrder]);
+  }, [filteredAccounts]); // Only run when accounts list changes
 
   // --- AUTH CHECK EFFECT (Fixes RLS issues) ---
   useEffect(() => {
@@ -1410,54 +1395,34 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Draggable Cards Section - NEW RENDER LOGIC */}
+            {/* Fixed Balance Card (Always First) */}
             <div className="flex flex-col gap-2 mb-6">
-               {/* 
-                  Iterate through the COMPUTED dashboardItems list.
-                  This ensures no item is left behind.
-               */}
-               {dashboardItems.map((id) => {
-                  
-                  // 1. Check if it's the Profit Card
-                  if (id === BALANCE_CARD_ID) {
-                     return (
-                        <BalanceCard 
-                           key={id}
-                           id={id}
-                           balance={profitBalance} 
-                           onAddClick={handleOpenAddTransaction}
-                           onDuplicateClick={handleDuplicateMonth}
-                           onCalculatorClick={handleOpenCalculator}
-                           draggable
-                           onDragStart={handleCardDragStart}
-                           onDragEnter={handleCardDragEnter}
-                           onDragEnd={handleCardDragEnd}
-                        />
-                     );
-                  }
-                  
-                  // 2. Try to find the account data for this ID
-                  // Note: we search in 'filteredAccounts' to ensure we only show accounts for this month
-                  const account = filteredAccounts.find(a => a.id === id);
-                  
-                  // 3. If account exists in current filter, render it.
-                  if (account) {
-                     return (
-                        <SecondaryCard 
-                           key={account.id} 
-                           account={account} 
-                           onDelete={handleDeleteAccount}
-                           onEdit={handleEditAccount}
-                           draggable
-                           onDragStart={handleCardDragStart}
-                           onDragEnter={handleCardDragEnter}
-                           onDragEnd={handleCardDragEnd}
-                        />
-                     );
-                  }
-                  
-                  return null;
-               })}
+                <BalanceCard 
+                    key={BALANCE_CARD_ID}
+                    id={BALANCE_CARD_ID}
+                    balance={profitBalance} 
+                    onAddClick={handleOpenAddTransaction}
+                    onDuplicateClick={handleDuplicateMonth}
+                    onCalculatorClick={handleOpenCalculator}
+                    draggable
+                    onDragStart={handleCardDragStart}
+                    onDragEnter={handleCardDragEnter}
+                    onDragEnd={handleCardDragEnd}
+                />
+
+                {/* Independent List of Accounts (Sorted by Dashboard Order) */}
+                {sortedAccounts.map((account) => (
+                    <SecondaryCard 
+                        key={account.id} 
+                        account={account} 
+                        onDelete={handleDeleteAccount}
+                        onEdit={handleEditAccount}
+                        draggable
+                        onDragStart={handleCardDragStart}
+                        onDragEnter={handleCardDragEnter}
+                        onDragEnd={handleCardDragEnd}
+                    />
+                ))}
             </div>
 
             <ContactsRow 
