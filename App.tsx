@@ -309,37 +309,57 @@ const App: React.FC = () => {
     });
   }, [accounts, activeMonthSummary]);
 
-  // --- SYNC DASHBOARD ORDER ---
-  // Ensure dashboardOrder always contains "balance-card" and any orphaned accounts
-  useEffect(() => {
-    setDashboardOrder(currentOrder => {
-      // 1. Identify all IDs that SHOULD be in the list (all accounts + balance)
-      // Note: We use ALL accounts here, not just filtered ones, to preserve global order
-      const allAccountIds = new Set(accounts.map(a => a.id));
-      
-      // 2. Filter existing order: Remove IDs that no longer exist (deleted accounts)
-      // Keep 'balance-card' always.
-      const cleanedOrder = currentOrder.filter(id => id === BALANCE_CARD_ID || allAccountIds.has(id));
-      
-      // 3. Find Orphans: Accounts that exist but are not in the order list
-      const existingInOrder = new Set(cleanedOrder);
-      const orphans = accounts.filter(a => !existingInOrder.has(a.id)).map(a => a.id);
-      
-      // 4. Combine: Cleaned Order + Orphans at the end
-      let finalOrder = [...cleanedOrder, ...orphans];
-      
-      // 5. Safety: Ensure Balance Card is present and usually first if list was empty
-      if (!finalOrder.includes(BALANCE_CARD_ID)) {
-        finalOrder = [BALANCE_CARD_ID, ...finalOrder];
-      }
+  // --- ROBUST DASHBOARD ITEMS CALCULATION ---
+  // This computes the final render list on-the-fly.
+  // It guarantees that everything in dashboardOrder is respected,
+  // AND anything that is missing (orphans) is appended at the end.
+  const dashboardItems = useMemo(() => {
+    // 1. Determine which accounts are actually visible right now (based on month filter)
+    const visibleAccountIds = new Set(filteredAccounts.map(a => a.id));
+    
+    // 2. Build the list starting with the persisted order
+    const items: string[] = [];
+    
+    // 2a. Always start with Balance Card if it's not in the order list for some reason
+    if (!dashboardOrder.includes(BALANCE_CARD_ID)) {
+       items.push(BALANCE_CARD_ID);
+    }
 
-      // 6. Only update if changed
-      if (JSON.stringify(finalOrder) !== JSON.stringify(currentOrder)) {
-        return finalOrder;
+    // 2b. Add items from order if they are valid
+    dashboardOrder.forEach(id => {
+      if (id === BALANCE_CARD_ID) {
+         if (!items.includes(BALANCE_CARD_ID)) items.push(id);
+      } else if (visibleAccountIds.has(id)) {
+         items.push(id);
       }
-      return currentOrder;
     });
-  }, [accounts]); // Dependency on ALL accounts, not just filtered
+
+    // 3. Add Orphans (Visible accounts not in the order list)
+    // This catches new accounts or accounts that were somehow lost from the order state
+    const presentIds = new Set(items);
+    filteredAccounts.forEach(a => {
+      if (!presentIds.has(a.id)) {
+        items.push(a.id);
+      }
+    });
+
+    return items;
+  }, [dashboardOrder, filteredAccounts]);
+
+  // --- SYNC DASHBOARD ORDER ---
+  // If the computed items differ from the state (e.g. orphans added), update state.
+  useEffect(() => {
+     // We only update if there are NEW items (orphans) that need to be persisted.
+     // We do NOT remove items here to avoid fighting with sync or transient states.
+     const currentSet = new Set(dashboardOrder);
+     const hasNewItems = dashboardItems.some(id => !currentSet.has(id));
+     
+     if (hasNewItems) {
+        // Construct new order: Current Order + New Items
+        const newItems = dashboardItems.filter(id => !currentSet.has(id));
+        setDashboardOrder(prev => [...prev, ...newItems]);
+     }
+  }, [dashboardItems, dashboardOrder]);
 
   // --- AUTH CHECK EFFECT (Fixes RLS issues) ---
   useEffect(() => {
@@ -499,7 +519,6 @@ const App: React.FC = () => {
          prevDashboardOrderRef.current = JSON.stringify(data.dashboardOrder);
       } else {
          // Fallback: Create initial order if none exists based on local data
-         // The useEffect above will clean this up if it misses anything
          const initialOrder = [BALANCE_CARD_ID];
          if (data.accounts) {
             initialOrder.push(...data.accounts.map((a: Account) => a.id));
@@ -1394,10 +1413,10 @@ const App: React.FC = () => {
             {/* Draggable Cards Section - NEW RENDER LOGIC */}
             <div className="flex flex-col gap-2 mb-6">
                {/* 
-                  Iterate through the MASTER ORDER list.
-                  This list defines the visual sequence.
+                  Iterate through the COMPUTED dashboardItems list.
+                  This ensures no item is left behind.
                */}
-               {dashboardOrder.map((id) => {
+               {dashboardItems.map((id) => {
                   
                   // 1. Check if it's the Profit Card
                   if (id === BALANCE_CARD_ID) {
@@ -1422,7 +1441,6 @@ const App: React.FC = () => {
                   const account = filteredAccounts.find(a => a.id === id);
                   
                   // 3. If account exists in current filter, render it.
-                  // If it doesn't exist (deleted or wrong month), render nothing.
                   if (account) {
                      return (
                         <SecondaryCard 
