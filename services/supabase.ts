@@ -2,352 +2,346 @@
 import { createClient } from '@supabase/supabase-js';
 
 // --- CONFIGURAÇÃO DE SEGURANÇA ---
-// NOTA: As chaves abaixo são PÚBLICAS (Anon Key) e projetadas para uso no Frontend.
-// A segurança dos dados depende das regras de Row Level Security (RLS) configuradas no painel do Supabase.
-// NÃO substitua a 'SUPABASE_ANON_KEY' por uma chave 'SERVICE_ROLE' (Admin).
-
 const SUPABASE_URL = 'https://xfsmdidfccgptfzjhhui.supabase.co'.trim();
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmc21kaWRmY2NncHRmempoaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3MTQ0NjAsImV4cCI6MjA4MDI5MDQ2MH0.4oFJ_L7fdjw2ttYtTko8EdTVhDpBtM5WWXQM4_N7zTU'.trim();
 
-// Chave Pública para Push Notifications (Web Push)
 export const VAPID_PUBLIC_KEY = 'BOabgmhdqm_B03NgjZgZUG4tT6whqH_sfr9-ZmMt1XY-lbI_ADbOzze9pRDU3tnj7oXttv01ZXcNKLhzeXlifC8';
 
-// Configurações simples
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true, 
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storage: localStorage // Explicitly use localStorage to fix reload disconnects
+    storage: localStorage 
   }
 });
 
-// Helper para converter os dados do Supabase para o formato do App
-export const normalizeUserData = (data: any) => {
-  const result: any = { ...data };
-
-  const assignIfPresent = (targetKey: string, sourceKey: string, defaultVal: any) => {
-    if (sourceKey in data) {
-      result[targetKey] = data[sourceKey] || defaultVal;
-    }
-  };
-
-  assignIfPresent('longTerm', 'long_term', []);
-  assignIfPresent('notepadContent', 'notepad_content', '');
-  // First try to get drawing from direct column
-  assignIfPresent('notepadDrawing', 'notepad_drawing', null); 
-  
-  if ('cdi_rate' in data) {
-    result.cdiRate = data.cdi_rate !== null ? data.cdi_rate : 11.25;
-  }
-  
-  assignIfPresent('transactions', 'transactions', []);
-  assignIfPresent('accounts', 'accounts', []);
-  assignIfPresent('investments', 'investments', []);
-  assignIfPresent('notifications', 'notifications', []);
-  assignIfPresent('months', 'months', []);
-  assignIfPresent('profile', 'profile', {});
-  assignIfPresent('theme', 'theme', null);
-  
-  // Fallback: Check profile for notepadDrawing if not found in root column
-  if (!result.notepadDrawing && data.profile && data.profile.notepadDrawing) {
-     result.notepadDrawing = data.profile.notepadDrawing;
-  }
-  
-  // Prioritize Profile dashboardOrder as it is the save target
-  if (data.profile && Array.isArray(data.profile.dashboardOrder)) {
-     result.dashboardOrder = data.profile.dashboardOrder;
-  } else if ('dashboard_order' in data && Array.isArray(data.dashboard_order)) {
-     result.dashboardOrder = data.dashboard_order;
-  } else {
-     // Default order will be handled by the hook
-     result.dashboardOrder = [];
-  }
-
-  return result;
-};
-
-// --- AUTH HELPERS (OTP) ---
+// --- AUTH ---
 
 export const sendAuthOtp = async (email: string) => {
   const normalizedEmail = email.toLowerCase().trim();
-  const { error } = await supabase.auth.signInWithOtp({
-    email: normalizedEmail,
-  });
-
-  if (error) {
-    console.error("Erro ao enviar OTP:", error.message);
-    
-    // Tratamento específico para Rate Limit (Muitas tentativas)
-    if (error.message.includes("security purposes") || error.status === 429) {
-       const match = error.message.match(/after (\d+) seconds/);
-       const seconds = match ? match[1] : null;
-       
-       if (seconds) {
-         throw new Error(`Muitas tentativas. Aguarde ${seconds}s para tentar novamente.`);
-       } else {
-         throw new Error("Muitas tentativas. Aguarde um momento.");
-       }
-    }
-
-    throw new Error("Falha ao enviar código. Verifique o e-mail.");
-  }
+  const { error } = await supabase.auth.signInWithOtp({ email: normalizedEmail });
+  if (error) throw error;
   return true;
 };
 
 export const verifyAuthOtp = async (email: string, token: string) => {
   const normalizedEmail = email.toLowerCase().trim();
-  const { data, error } = await supabase.auth.verifyOtp({
-    email: normalizedEmail,
-    token,
-    type: 'email',
-  });
-
-  if (error) {
-    console.error("Erro ao verificar OTP:", error);
-    throw new Error("Código inválido ou expirado.");
-  }
-  
+  const { data, error } = await supabase.auth.verifyOtp({ email: normalizedEmail, token, type: 'email' });
+  if (error) throw error;
   return data;
 };
 
-// --- USER MANAGEMENT ---
+// --- USER & PROFILE (LEGACY + MIXED) ---
 
 export const loginUser = async (email: string) => {
   const normalizedEmail = email.toLowerCase().trim();
+  const { data, error } = await supabase.from('users').select('*').eq('email', normalizedEmail).single();
   
-  // Busca direta na tabela users
-  const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('email', normalizedEmail)
-    .single();
-
-  if (error) {
-    console.error("Erro Supabase Login:", error);
-    if (error.message && (error.message.includes('fetch') || error.message.includes('network'))) {
-       throw new Error("Erro de conexão. Verifique sua internet.");
-    }
-    // Se não encontrou (código PGRST116), lançamos erro específico
-    throw new Error("Usuário não encontrado. Verifique o e-mail ou crie uma conta.");
-  }
+  if (error) throw new Error("Usuário não encontrado.");
   
-  if (!data) {
-    throw new Error("Usuário não encontrado.");
-  }
-
-  return normalizeUserData(data);
+  // Normalize just the profile part. Other data comes from tables now.
+  let profile = data.profile || {};
+  let dashboardOrder = profile.dashboardOrder || data.dashboard_order || [];
+  
+  return {
+    profile,
+    dashboardOrder,
+    theme: data.theme,
+    notepadContent: data.notepad_content,
+    notepadDrawing: data.notepad_drawing || (profile.notepadDrawing),
+    cdiRate: data.cdi_rate
+  };
 };
 
 export const registerUser = async (email: string, name: string, initialData: any) => {
   const normalizedEmail = email.toLowerCase().trim();
+  
+  // Check existence
+  const { data: existing } = await supabase.from('users').select('email').eq('email', normalizedEmail).maybeSingle();
+  if (existing) throw new Error("E-mail já cadastrado.");
 
-  // Verifica se usuário já existe
-  const { data: existingUser, error: checkError } = await supabase
-    .from('users')
-    .select('email')
-    .eq('email', normalizedEmail)
-    .maybeSingle();
-
-  if (checkError && !checkError.message.includes('JSON')) {
-     console.error("Erro verificação registro:", checkError);
-  }
-
-  if (existingUser) {
-    throw new Error("Este e-mail já possui cadastro.");
-  }
-
-  // Cria o usuário diretamente
-  const { error } = await supabase
-    .from('users')
-    .insert({
-      email: normalizedEmail,
+  // Create User Entry
+  const { error } = await supabase.from('users').insert({
+    email: normalizedEmail,
+    name: name.toUpperCase(),
+    profile: {
       name: name.toUpperCase(),
-      profile: {
-        name: name.toUpperCase(),
-        subtitle: '',
-        avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix',
-        isPro: false,
-        dashboardOrder: ['balance-card'] // Initial Order
-      },
-      months: initialData.months || [],
-      cdi_rate: initialData.cdiRate || 11.25
-    });
+      subtitle: '',
+      avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix',
+      isPro: false,
+      dashboardOrder: ['balance-card']
+    },
+    cdi_rate: 11.25
+  });
 
-  if (error) {
-    console.error("Erro criação usuário:", error);
-    throw new Error("Erro ao criar conta. Tente novamente.");
+  if (error) throw error;
+
+  // If initialData has months, we should insert them into the 'months' table
+  if (initialData.months && initialData.months.length > 0) {
+     // NOTE: We need the user ID. Registration via insert usually doesn't return UID easily if not using auth.signUp.
+     // In this app flow, we rely on subsequent login to get UID from auth session.
+     // For now, we skip auto-inserting months data until the user is authenticated contextually.
   }
 
   return { email: normalizedEmail, name };
 };
 
 export const deleteUser = async (email: string) => {
-  const normalizedEmail = email.toLowerCase().trim();
-  
-  const { error } = await supabase
-    .from('users')
-    .delete()
-    .eq('email', normalizedEmail);
-
-  if (error) {
-    console.error("Erro ao deletar usuário:", error);
-    throw new Error("Erro ao excluir conta: " + error.message);
-  }
+  // This might fail due to FK constraints if not cascading. 
+  // Assuming Supabase 'users' table deletion cascades or RLS handles it.
+  const { error } = await supabase.from('users').delete().eq('email', email);
+  if (error) throw error;
 };
 
-// --- REALTIME SUBSCRIPTION ---
+// --- GENERIC FIELD UPDATES (Profile, Theme, Notepad) ---
 
-export const subscribeToUserChanges = (email: string, onUpdate: (data: any) => void) => {
-  const normalizedEmail = email.toLowerCase().trim();
-
-  const channel = supabase
-    .channel(`user-updates-${normalizedEmail}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE', 
-        schema: 'public',
-        table: 'users',
-        filter: `email=eq.${normalizedEmail}` 
-      },
-      (payload) => {
-        if (payload.new) {
-          onUpdate(normalizeUserData(payload.new));
-        }
-      }
-    )
-    .subscribe((status) => {
-      console.log(`[Realtime] Status para ${normalizedEmail}:`, status);
-      if (status === 'SUBSCRIBED') {
-         console.log("Conectado para receber atualizações em tempo real.");
-      }
-      if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-         console.warn("Desconectado do Realtime. O app tentará reconectar...");
-      }
-    });
-
-  return () => {
-    supabase.removeChannel(channel);
-  };
-};
-
-// --- DATA SYNC ---
-
-export const saveCollection = async (userId: string, collectionName: string, dataArray: any[]): Promise<boolean> => {
-  const normalizedEmail = userId.toLowerCase().trim();
-  
-  // SPECIAL HANDLING FOR DASHBOARD ORDER:
-  // Since 'dashboard_order' might not exist as a column in the schema,
-  // we store it inside the 'profile' JSONB column to avoid schema errors.
-  if (collectionName === 'dashboardOrder') {
-     try {
-       // 1. Fetch current profile to avoid overwriting other fields
-       const { data: userData, error: fetchError } = await supabase
-         .from('users')
-         .select('profile')
-         .eq('email', normalizedEmail)
-         .single();
-       
-       if (fetchError) {
-         console.error(`Error fetching profile for dashboardOrder:`, fetchError.message);
-         return false;
-       }
-
-       const currentProfile = userData?.profile || {};
-       const updatedProfile = { ...currentProfile, dashboardOrder: dataArray };
-
-       // 2. Save updated profile
-       const { error: updateError } = await supabase
-         .from('users')
-         .update({ profile: updatedProfile })
-         .eq('email', normalizedEmail);
-
-       if (updateError) {
-         console.error(`Error saving dashboardOrder to profile:`, updateError.message);
-         return false;
-       }
-       return true;
-
-     } catch (err: any) {
-       console.error("Exception saving dashboardOrder:", err.message || err);
-       return false;
-     }
-  }
-
-  // STANDARD HANDLING FOR OTHER COLLECTIONS
-  let dbColumn = collectionName;
-  if (collectionName === 'longTerm') dbColumn = 'long_term';
-
-  try {
-    const { error } = await supabase
-      .from('users')
-      .update({ [dbColumn]: dataArray })
-      .eq('email', normalizedEmail);
-
-    if (error) {
-      console.error(`Error saving ${collectionName} to Supabase:`, error.message);
-      return false;
-    }
-    return true;
-
-  } catch (error: any) {
-    console.error(`Error saving ${collectionName}:`, error.message || error);
-    return false;
-  }
-};
-
-export const saveUserField = async (userId: string, field: string, data: any): Promise<boolean> => {
-  const normalizedEmail = userId.toLowerCase().trim();
-  
-  // SPECIAL HANDLING: notepadDrawing (save to profile JSONB)
-  // This avoids errors if the 'notepad_drawing' column does not exist in the DB schema
-  if (field === 'notepadDrawing') {
-    try {
-      const { data: userData, error: fetchError } = await supabase
-        .from('users')
-        .select('profile')
-        .eq('email', normalizedEmail)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      const currentProfile = userData?.profile || {};
-      const updatedProfile = { ...currentProfile, notepadDrawing: data };
-
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ profile: updatedProfile })
-        .eq('email', normalizedEmail);
-
-      if (updateError) throw updateError;
-      return true;
-    } catch (err: any) {
-      console.error(`Error saving notepadDrawing to profile:`, err.message);
-      return false;
-    }
-  }
-
-  // Standard Column Mapping
+export const saveUserField = async (email: string, field: string, data: any) => {
   let dbColumn = field;
+  // Map frontend field names to DB column names (legacy 'users' table)
   if (field === 'notepadContent') dbColumn = 'notepad_content';
+  if (field === 'notepadDrawing') dbColumn = 'notepad_drawing';
   if (field === 'cdiRate') dbColumn = 'cdi_rate';
-  if (field === 'pushSubscription') dbColumn = 'push_subscription';
-  
-  // If we reach here with 'notepadDrawing' (fallback) or other fields
-  const { error } = await supabase
-    .from('users')
-    .update({ [dbColumn]: data })
-    .eq('email', normalizedEmail);
 
-  if (error) {
-    console.error(`Error saving field ${field}:`, error.message);
-    return false;
+  if (field === 'profile' || field === 'dashboardOrder') {
+    // Complex merge for profile JSONB
+    const { data: userData } = await supabase.from('users').select('profile').eq('email', email).single();
+    const currentProfile = userData?.profile || {};
+    
+    let updatedProfile = field === 'profile' ? data : { ...currentProfile, [field]: data };
+    
+    const { error } = await supabase.from('users').update({ profile: updatedProfile }).eq('email', email);
+    return !error;
   }
-  return true;
+  
+  const { error } = await supabase.from('users').update({ [dbColumn]: data }).eq('email', email);
+  return !error;
 };
 
-// Modified loadUserData to fetch all necessary fields/sub-collections logic if simulated
-export const loadUserData = async (userId: string) => {
-  return loginUser(userId);
+
+// --- NORMALIZED DATA API (TRANSACTIONS, ACCOUNTS, ETC) ---
+
+const getUserId = async () => {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user?.id;
+};
+
+// 1. Transactions
+export const apiTransactions = {
+  list: async () => {
+    const { data, error } = await supabase.from('transactions').select('*');
+    if (error) throw error;
+    return data;
+  },
+  add: async (tx: any) => {
+    const uid = await getUserId();
+    const { data, error } = await supabase.from('transactions').insert([{ ...tx, user_id: uid }]).select().single();
+    if (error) throw error;
+    return data;
+  },
+  update: async (tx: any) => {
+    const { id, ...updates } = tx;
+    const { data, error } = await supabase.from('transactions').update(updates).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  },
+  delete: async (id: string) => {
+    const { error } = await supabase.from('transactions').delete().eq('id', id);
+    if (error) throw error;
+    return id;
+  },
+  bulkCreate: async (txs: any[]) => {
+    const uid = await getUserId();
+    const payload = txs.map(t => ({ ...t, user_id: uid }));
+    const { data, error } = await supabase.from('transactions').insert(payload).select();
+    if (error) throw error;
+    return data;
+  }
+};
+
+// 2. Accounts
+export const apiAccounts = {
+  list: async () => {
+    const { data, error } = await supabase.from('accounts').select('*');
+    if (error) throw error;
+    // Map snake_case to camelCase if needed, but for now we updated types to match or handle it in hook
+    // Actually, let's keep frontend types consistent. 
+    // DB: color_theme -> Frontend: colorTheme
+    return data.map((a: any) => ({ ...a, colorTheme: a.color_theme }));
+  },
+  add: async (acc: any) => {
+    const uid = await getUserId();
+    const payload = { ...acc, user_id: uid, color_theme: acc.colorTheme };
+    delete payload.colorTheme; // clean up
+    const { data, error } = await supabase.from('accounts').insert([payload]).select().single();
+    if (error) throw error;
+    return { ...data, colorTheme: data.color_theme };
+  },
+  update: async (acc: any) => {
+    const { id, colorTheme, ...rest } = acc;
+    const payload = { ...rest, color_theme: colorTheme };
+    const { data, error } = await supabase.from('accounts').update(payload).eq('id', id).select().single();
+    if (error) throw error;
+    return { ...data, colorTheme: data.color_theme };
+  },
+  delete: async (id: string) => {
+    const { error } = await supabase.from('accounts').delete().eq('id', id);
+    if (error) throw error;
+    return id;
+  },
+  bulkCreate: async (accs: any[]) => {
+    const uid = await getUserId();
+    const payload = accs.map(a => ({
+        ...a, user_id: uid, color_theme: a.colorTheme
+    }));
+    // Clean keys
+    payload.forEach(p => delete p.colorTheme);
+
+    const { data, error } = await supabase.from('accounts').insert(payload).select();
+    if (error) throw error;
+    return data.map((a: any) => ({ ...a, colorTheme: a.color_theme }));
+  }
+};
+
+// 3. Months
+export const apiMonths = {
+  list: async () => {
+    const { data, error } = await supabase.from('months').select('*');
+    if (error) throw error;
+    return data;
+  },
+  add: async (m: any) => {
+    const uid = await getUserId();
+    const { data, error } = await supabase.from('months').insert([{ ...m, user_id: uid }]).select().single();
+    if (error) throw error;
+    return data;
+  },
+  update: async (m: any) => {
+    const { id, ...updates } = m;
+    const { data, error } = await supabase.from('months').update(updates).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  },
+  delete: async (id: string) => {
+    const { error } = await supabase.from('months').delete().eq('id', id);
+    if (error) throw error;
+    return id;
+  }
+};
+
+// 4. Investments
+export const apiInvestments = {
+  list: async () => {
+    const { data, error } = await supabase.from('investments').select('*');
+    if (error) throw error;
+    return data.map((i: any) => ({ ...i, yieldRate: i.yield_rate }));
+  },
+  add: async (inv: any) => {
+    const uid = await getUserId();
+    const payload = { ...inv, user_id: uid, yield_rate: inv.yieldRate };
+    delete payload.yieldRate;
+    const { data, error } = await supabase.from('investments').insert([payload]).select().single();
+    if (error) throw error;
+    return { ...data, yieldRate: data.yield_rate };
+  },
+  update: async (inv: any) => {
+    const { id, yieldRate, ...rest } = inv;
+    const payload = { ...rest, yield_rate: yieldRate };
+    const { data, error } = await supabase.from('investments').update(payload).eq('id', id).select().single();
+    if (error) throw error;
+    return { ...data, yieldRate: data.yield_rate };
+  },
+  delete: async (id: string) => {
+    const { error } = await supabase.from('investments').delete().eq('id', id);
+    if (error) throw error;
+    return id;
+  }
+};
+
+// 5. Long Term
+export const apiLongTerm = {
+  list: async () => {
+    const { data, error } = await supabase.from('long_term').select('*');
+    if (error) throw error;
+    return data.map((l: any) => ({
+      ...l,
+      totalAmount: l.total_amount,
+      installmentsCount: l.installments_count,
+      startDate: l.start_date,
+      installmentsPaid: l.installments_paid,
+      monthlyAmount: l.monthly_amount,
+      installmentsHistory: l.installments_history,
+      installmentsDates: l.installments_dates
+    }));
+  },
+  add: async (lt: any) => {
+    const uid = await getUserId();
+    const payload = {
+       user_id: uid,
+       title: lt.title,
+       total_amount: lt.totalAmount,
+       installments_count: lt.installmentsCount,
+       start_date: lt.startDate,
+       installments_paid: lt.installmentsPaid,
+       monthly_amount: lt.monthlyAmount,
+       installments_history: lt.installmentsHistory,
+       installments_dates: lt.installmentsDates
+    };
+    const { data, error } = await supabase.from('long_term').insert([payload]).select().single();
+    if (error) throw error;
+    return { ...data, totalAmount: data.total_amount, installmentsCount: data.installments_count, startDate: data.start_date, installmentsPaid: data.installments_paid, monthlyAmount: data.monthly_amount, installmentsHistory: data.installments_history, installmentsDates: data.installments_dates };
+  },
+  update: async (lt: any) => {
+    const { id, totalAmount, installmentsCount, startDate, installmentsPaid, monthlyAmount, installmentsHistory, installmentsDates, ...rest } = lt;
+    const payload = {
+        ...rest,
+        total_amount: totalAmount,
+        installments_count: installmentsCount,
+        start_date: startDate,
+        installments_paid: installmentsPaid,
+        monthly_amount: monthlyAmount,
+        installments_history: installmentsHistory,
+        installments_dates: installmentsDates
+    };
+    const { data, error } = await supabase.from('long_term').update(payload).eq('id', id).select().single();
+    if (error) throw error;
+    return { ...data, totalAmount: data.total_amount, installmentsCount: data.installments_count, startDate: data.start_date, installmentsPaid: data.installments_paid, monthlyAmount: data.monthly_amount, installmentsHistory: data.installments_history, installmentsDates: data.installments_dates };
+  },
+  delete: async (id: string) => {
+    const { error } = await supabase.from('long_term').delete().eq('id', id);
+    if (error) throw error;
+    return id;
+  }
+};
+
+// 6. Notifications
+export const apiNotifications = {
+  list: async () => {
+    const { data, error } = await supabase.from('notifications').select('*');
+    if (error) throw error;
+    return data;
+  },
+  add: async (n: any) => {
+    const uid = await getUserId();
+    const { data, error } = await supabase.from('notifications').insert([{ ...n, user_id: uid }]).select().single();
+    if (error) throw error;
+    return data;
+  },
+  delete: async (id: string) => {
+    const { error } = await supabase.from('notifications').delete().eq('id', id);
+    if (error) throw error;
+    return id;
+  },
+  markRead: async (id: string) => {
+     // Not used individually much, usually bulk, but implemented
+     const { data, error } = await supabase.from('notifications').update({ read: true }).eq('id', id).select().single();
+     if (error) throw error;
+     return data;
+  },
+  markAllRead: async (ids: string[]) => {
+     // This needs a specific RPC or loop. For simplicity, we loop or use 'in'.
+     const { data, error } = await supabase.from('notifications').update({ read: true }).in('id', ids).select();
+     if (error) throw error;
+     return data;
+  }
 };

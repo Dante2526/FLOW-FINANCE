@@ -1,16 +1,16 @@
 
-import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Transaction, Account, MonthSummary, UserProfile, 
   LongTermTransaction, Investment, AppNotification, AppTheme 
 } from '../types';
-import { loadData, saveData, STORAGE_KEYS } from '../services/storage';
 import { 
-  loadUserData, saveCollection, saveUserField, 
-  subscribeToUserChanges 
+  loginUser, saveUserField, 
+  apiTransactions, apiAccounts, apiMonths, apiInvestments, apiLongTerm, apiNotifications 
 } from '../services/supabase';
 import { AVAILABLE_THEMES } from '../components/SettingsView';
-import { MONTH_NAMES, sortMonths } from '../utils/dateUtils';
+import { sortMonths, MONTH_NAMES } from '../utils/dateUtils';
 
 const SYSTEM_INITIAL_MONTH: MonthSummary = {
   id: '1',
@@ -29,395 +29,424 @@ const INITIAL_PROFILE: UserProfile = {
 const BALANCE_CARD_ID = 'balance-card';
 
 export const useFinancialData = (currentUserEmail: string | null, isSessionReady: boolean) => {
-  // --- STATE ---
-  const [isLoadingData, setIsLoadingData] = useState<boolean>(() => {
-     return !!loadData(STORAGE_KEYS.USER_SESSION, null);
-  });
-
-  const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_PROFILE);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [months, setMonths] = useState<MonthSummary[]>([SYSTEM_INITIAL_MONTH]);
-  const [longTermTransactions, setLongTermTransactions] = useState<LongTermTransaction[]>([]);
-  const [investments, setInvestments] = useState<Investment[]>([]);
-  const [notepadContent, setNotepadContent] = useState<string>('');
-  const [notepadDrawing, setNotepadDrawing] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [cdiRate, setCdiRate] = useState<number>(11.25);
-  const [dashboardOrder, setDashboardOrder] = useState<string[]>([BALANCE_CARD_ID]);
-  const [appTheme, setAppTheme] = useState<AppTheme>(() => {
-    return loadData(STORAGE_KEYS.APP_THEME, AVAILABLE_THEMES[0]);
-  });
-  
+  const queryClient = useQueryClient();
   const [activeMonthId, setActiveMonthId] = useState<string>(SYSTEM_INITIAL_MONTH.id);
+  
+  // Enabled flag for queries
+  const isEnabled = !!currentUserEmail && isSessionReady;
 
-  // --- REFS (For Debounce & Sync Protection) ---
-  const prevTransactionsRef = useRef<string>(JSON.stringify(transactions));
-  const prevAccountsRef = useRef<string>(JSON.stringify(accounts));
-  const prevInvestmentsRef = useRef<string>(JSON.stringify(investments));
-  const prevLongTermRef = useRef<string>(JSON.stringify(longTermTransactions));
-  const prevNotificationsRef = useRef<string>(JSON.stringify(notifications));
-  const prevProfileRef = useRef<string>(JSON.stringify(userProfile));
-  const prevThemeRef = useRef<string>(JSON.stringify(appTheme));
-  const prevMonthsRef = useRef<string>(JSON.stringify(months));
-  const prevNotepadRef = useRef<string>(notepadContent);
-  const prevDrawingRef = useRef<string | null>(notepadDrawing);
-  const prevCdiRef = useRef<number>(cdiRate);
-  const prevDashboardOrderRef = useRef<string>(JSON.stringify(dashboardOrder));
-
-  const currentStateRef = useRef({
-    transactions, accounts, investments, longTermTransactions, notifications,
-    userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder
+  // --- 1. USER PROFILE & SETTINGS QUERY ---
+  const profileQuery = useQuery({
+    queryKey: ['userProfile', currentUserEmail],
+    queryFn: () => loginUser(currentUserEmail!),
+    enabled: isEnabled,
+    staleTime: Infinity,
   });
 
-  // Update ref on render
-  useEffect(() => {
-    currentStateRef.current = {
-      transactions, accounts, investments, longTermTransactions, notifications,
-      userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder
-    };
-  });
+  const [appTheme, setAppTheme] = useState<AppTheme>(AVAILABLE_THEMES[0]);
 
-  // --- INITIAL MONTH LOGIC ---
   useEffect(() => {
-    if (activeMonthId === SYSTEM_INITIAL_MONTH.id && months.length > 0) {
-       const sorted = sortMonths(months);
-       if (sorted.length > 0) {
-          setActiveMonthId(sorted[sorted.length - 1].id);
-       }
+    if (profileQuery.data?.theme) {
+      setAppTheme(profileQuery.data.theme);
     }
-  }, []);
+  }, [profileQuery.data?.theme]);
 
-  // --- DATA LOADING & SYNC ---
-  const applyData = useCallback((data: any) => {
-      if (data.profile) {
-        let profile = data.profile;
-        // Check PRO expiry
-        if (profile.isPro && profile.subscriptionExpiry) {
-           const expiryDate = new Date(profile.subscriptionExpiry);
-           const now = new Date();
-           if (now > expiryDate) {
-              profile = { ...profile, isPro: false, subscriptionExpiry: undefined };
-              if (currentUserEmail) saveUserField(currentUserEmail, "profile", profile); 
-           }
-        }
-        setUserProfile(profile);
-        prevProfileRef.current = JSON.stringify(profile);
-      }
-      if (data.transactions) {
-        setTransactions(data.transactions);
-        prevTransactionsRef.current = JSON.stringify(data.transactions);
-      }
-      if (data.accounts) {
-        setAccounts(data.accounts);
-        prevAccountsRef.current = JSON.stringify(data.accounts);
-      }
-      if (data.investments) {
-        setInvestments(data.investments);
-        prevInvestmentsRef.current = JSON.stringify(data.investments);
-      }
-      if (data.longTerm) {
-        setLongTermTransactions(data.longTerm);
-        prevLongTermRef.current = JSON.stringify(data.longTerm);
-      }
-      if (data.notifications) {
-        setNotifications(data.notifications);
-        prevNotificationsRef.current = JSON.stringify(data.notifications);
-      }
-      if (data.theme) {
-         setAppTheme(data.theme);
-         saveData(STORAGE_KEYS.APP_THEME, data.theme);
-         prevThemeRef.current = JSON.stringify(data.theme);
-      }
-      if (data.notepadContent !== undefined) {
-        setNotepadContent(data.notepadContent);
-        prevNotepadRef.current = data.notepadContent;
-      }
-      if (data.notepadDrawing !== undefined) {
-        setNotepadDrawing(data.notepadDrawing);
-        prevDrawingRef.current = data.notepadDrawing;
-      }
-      if (data.months && data.months.length > 0) {
-        const sorted = sortMonths(data.months);
-        setMonths(sorted);
-        if (activeMonthId === SYSTEM_INITIAL_MONTH.id || activeMonthId === '1') {
-           setActiveMonthId(sorted[sorted.length - 1].id);
-        }
-        prevMonthsRef.current = JSON.stringify(sorted);
-      }
-      if (data.cdiRate !== undefined) {
-        setCdiRate(data.cdiRate);
-        prevCdiRef.current = data.cdiRate;
-      }
-      
-      // Order Handling - Prefer profile data, fall back to calculated list
-      if (data.dashboardOrder && Array.isArray(data.dashboardOrder) && data.dashboardOrder.length > 0) {
-         setDashboardOrder(data.dashboardOrder);
-         prevDashboardOrderRef.current = JSON.stringify(data.dashboardOrder);
-      } else if (data.accounts) {
-         // If no saved order, create default
-         const initialOrder = [BALANCE_CARD_ID, ...data.accounts.map((a: Account) => a.id)];
-         setDashboardOrder(initialOrder);
-         // Don't update ref yet to allow it to be saved as "dirty" later if needed
-      }
-  }, [activeMonthId, currentUserEmail]);
-
-  // Safe apply for Realtime (checks against current state to avoid loops)
-  const applyDataSafe = useCallback((data: any) => {
-      const state = currentStateRef.current;
-
-      const updateIfChanged = (key: keyof typeof state, dataKey: string, setter: Function, ref: React.MutableRefObject<any>, isJson = true) => {
-         const currentVal = isJson ? JSON.stringify(state[key]) : state[key];
-         const refVal = ref.current;
-         
-         if (currentVal === refVal) { // Only update if local state matches last known synced state (no local edits pending)
-            if (data[dataKey] !== undefined) {
-               const newDataStr = isJson ? JSON.stringify(data[dataKey]) : data[dataKey];
-               if (newDataStr !== currentVal) {
-                  setter(data[dataKey]);
-                  ref.current = newDataStr;
-               }
-            }
-         }
-      };
-
-      updateIfChanged('transactions', 'transactions', setTransactions, prevTransactionsRef);
-      updateIfChanged('accounts', 'accounts', setAccounts, prevAccountsRef);
-      updateIfChanged('investments', 'investments', setInvestments, prevInvestmentsRef);
-      updateIfChanged('longTermTransactions', 'longTerm', setLongTermTransactions, prevLongTermRef);
-      updateIfChanged('notifications', 'notifications', setNotifications, prevNotificationsRef);
-      updateIfChanged('months', 'months', (m: any) => setMonths(sortMonths(m)), prevMonthsRef);
-      
-      // Explicitly handle dashboardOrder with array check
-      if (data.dashboardOrder && Array.isArray(data.dashboardOrder) && data.dashboardOrder.length > 0) {
-         const currentOrderStr = JSON.stringify(state.dashboardOrder);
-         if (currentOrderStr === prevDashboardOrderRef.current) {
-             const newOrderStr = JSON.stringify(data.dashboardOrder);
-             if (newOrderStr !== currentOrderStr) {
-                 setDashboardOrder(data.dashboardOrder);
-                 prevDashboardOrderRef.current = newOrderStr;
-             }
-         }
-      }
-      
-      // Special Handling for Profile (Pro Expiry)
-      const currentProfileStr = JSON.stringify(state.userProfile);
-      if (currentProfileStr === prevProfileRef.current) {
-         if (data.profile && JSON.stringify(data.profile) !== currentProfileStr) {
-             let profile = data.profile;
-             if (profile.isPro && profile.subscriptionExpiry) {
-                 const expiryDate = new Date(profile.subscriptionExpiry);
-                 if (new Date() > expiryDate) {
-                    profile = { ...profile, isPro: false, subscriptionExpiry: undefined };
-                 }
-             }
-             setUserProfile(profile);
-             prevProfileRef.current = JSON.stringify(profile);
-         }
-      }
-
-      // Theme
-      const currentThemeStr = JSON.stringify(state.appTheme);
-      if (currentThemeStr === prevThemeRef.current) {
-         if (data.theme && JSON.stringify(data.theme) !== currentThemeStr) {
-             setAppTheme(data.theme);
-             saveData(STORAGE_KEYS.APP_THEME, data.theme);
-             prevThemeRef.current = JSON.stringify(data.theme);
-         }
-      }
-
-      // Notepad
-      if (state.notepadContent === prevNotepadRef.current) {
-         if (data.notepadContent !== undefined && data.notepadContent !== state.notepadContent) {
-            setNotepadContent(data.notepadContent);
-            prevNotepadRef.current = data.notepadContent;
-         }
-      }
-      if (state.notepadDrawing === prevDrawingRef.current) {
-         if (data.notepadDrawing !== undefined && data.notepadDrawing !== state.notepadDrawing) {
-            setNotepadDrawing(data.notepadDrawing);
-            prevDrawingRef.current = data.notepadDrawing;
-         }
-      }
-      
-      // CDI
-      if (state.cdiRate === prevCdiRef.current) {
-         if (data.cdiRate !== undefined && data.cdiRate !== state.cdiRate) {
-             setCdiRate(data.cdiRate);
-             prevCdiRef.current = data.cdiRate;
-         }
-      }
-  }, []);
-
-  // Load Initial Data
-  useEffect(() => {
-    if (!currentUserEmail || !isSessionReady) return;
-    setIsLoadingData(true);
-
-    loadUserData(currentUserEmail)
-      .then((data) => {
-        if (data) applyData(data);
-      })
-      .catch(err => console.error("Error loading data:", err))
-      .finally(() => setIsLoadingData(false));
-  }, [currentUserEmail, isSessionReady, applyData]);
-
-  // Realtime Subscription
-  useEffect(() => {
-    if (!currentUserEmail || !isSessionReady) return;
-    const unsubscribe = subscribeToUserChanges(currentUserEmail, applyDataSafe);
-    return () => { unsubscribe(); };
-  }, [currentUserEmail, isSessionReady, applyDataSafe]);
-
-  // Visibility Refresh
-  useEffect(() => {
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible' && currentUserEmail) {
-        loadUserData(currentUserEmail)
-          .then((data) => { if (data) applyDataSafe(data); })
-          .catch(console.error);
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [currentUserEmail, applyDataSafe]);
-
-  // --- SAVING EFFECTS (Debounced) ---
-  const DEBOUNCE_DELAY = 1500;
-
-  const createSaveEffect = (data: any, ref: React.MutableRefObject<any>, collectionName: string) => {
-    useEffect(() => {
-        if (currentUserEmail && !isLoadingData) {
-            const currentStr = typeof data === 'object' ? JSON.stringify(data) : data;
-            if (currentStr !== ref.current) {
-                const timer = setTimeout(async () => {
-                    if (collectionName === 'profile' || collectionName === 'theme' || collectionName === 'months' || collectionName.startsWith('notepad') || collectionName === 'cdiRate') {
-                        await saveUserField(currentUserEmail, collectionName, data);
-                    } else if (collectionName === 'dashboardOrder') {
-                        // Special save for order to profile structure
-                        await saveCollection(currentUserEmail, collectionName, data);
-                    } else {
-                        await saveCollection(currentUserEmail, collectionName, data);
-                    }
-                    ref.current = currentStr;
-                }, DEBOUNCE_DELAY);
-                return () => clearTimeout(timer);
-            }
-        }
-    }, [data, currentUserEmail, isLoadingData]);
-  };
-
-  createSaveEffect(transactions, prevTransactionsRef, 'transactions');
-  createSaveEffect(accounts, prevAccountsRef, 'accounts');
-  createSaveEffect(investments, prevInvestmentsRef, 'investments');
-  createSaveEffect(longTermTransactions, prevLongTermRef, 'longTerm');
-  createSaveEffect(notifications, prevNotificationsRef, 'notifications');
-  createSaveEffect(userProfile, prevProfileRef, 'profile');
-  createSaveEffect(months, prevMonthsRef, 'months');
-  createSaveEffect(dashboardOrder, prevDashboardOrderRef, 'dashboardOrder');
-  createSaveEffect(cdiRate, prevCdiRef, 'cdiRate');
-
-  // Notepad Save (Special Case for multiple fields)
-  useEffect(() => {
-    if (currentUserEmail && !isLoadingData) {
-      const isContentChanged = notepadContent !== prevNotepadRef.current;
-      const isDrawingChanged = notepadDrawing !== prevDrawingRef.current;
-
-      if (isContentChanged || isDrawingChanged) {
-        const timer = setTimeout(async () => {
-          if (isContentChanged) {
-             await saveUserField(currentUserEmail, "notepadContent", notepadContent);
-             prevNotepadRef.current = notepadContent;
-          }
-          if (isDrawingChanged) {
-             await saveUserField(currentUserEmail, "notepadDrawing", notepadDrawing);
-             prevDrawingRef.current = notepadDrawing;
-          }
-        }, 2000); 
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [notepadContent, notepadDrawing, currentUserEmail, isLoadingData]);
-
-  // Theme Local Storage Sync
   useEffect(() => {
     const root = document.documentElement;
     root.style.setProperty('--color-accent', appTheme.primary);
     root.style.setProperty('--color-accent-dark', appTheme.secondary);
-    saveData(STORAGE_KEYS.APP_THEME, appTheme);
-    
-    // Cloud sync handled by createSaveEffect above
   }, [appTheme]);
 
+  // --- 2. MAIN DATA QUERIES ---
 
-  // --- AUTO NOTIFICATIONS ---
+  const transactionsQuery = useQuery({
+    queryKey: ['transactions', currentUserEmail],
+    queryFn: apiTransactions.list,
+    enabled: isEnabled,
+    initialData: [],
+  });
+
+  const accountsQuery = useQuery({
+    queryKey: ['accounts', currentUserEmail],
+    queryFn: apiAccounts.list,
+    enabled: isEnabled,
+    initialData: [],
+  });
+
+  const monthsQuery = useQuery({
+    queryKey: ['months', currentUserEmail],
+    queryFn: async () => {
+       const data = await apiMonths.list();
+       return sortMonths(data.length > 0 ? data : [SYSTEM_INITIAL_MONTH]);
+    },
+    enabled: isEnabled,
+    initialData: [SYSTEM_INITIAL_MONTH],
+  });
+
+  const investmentsQuery = useQuery({
+    queryKey: ['investments', currentUserEmail],
+    queryFn: apiInvestments.list,
+    enabled: isEnabled,
+    initialData: [],
+  });
+
+  const longTermQuery = useQuery({
+    queryKey: ['longTerm', currentUserEmail],
+    queryFn: apiLongTerm.list,
+    enabled: isEnabled,
+    initialData: [],
+  });
+
+  const notificationsQuery = useQuery({
+    queryKey: ['notifications', currentUserEmail],
+    queryFn: apiNotifications.list,
+    enabled: isEnabled,
+    initialData: [],
+  });
+
+  // --- OPTIMISTIC UPDATE HELPERS ---
+
+  const onMutateOptimistic = async (queryKey: any[], updateFn: (old: any) => any) => {
+    // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+    await queryClient.cancelQueries({ queryKey });
+    // Snapshot the previous value
+    const previousData = queryClient.getQueryData(queryKey);
+    // Optimistically update to the new value
+    queryClient.setQueryData(queryKey, (old: any) => updateFn(old));
+    // Return a context object with the snapshotted value
+    return { previousData };
+  };
+
+  const onErrorRollback = (err: any, variables: any, context: any, queryKey: any[]) => {
+    // If the mutation fails, use the context returned from onMutate to roll back
+    if (context?.previousData) {
+      queryClient.setQueryData(queryKey, context.previousData);
+    }
+  };
+
+  const onSettledInvalidate = (queryKey: any[]) => {
+    // Always refetch after error or success:
+    queryClient.invalidateQueries({ queryKey });
+  };
+
+  // --- MUTATIONS (OPTIMISTIC) ---
+
+  // Transactions
+  const addTransactionMutation = useMutation({
+    mutationFn: apiTransactions.add,
+    onMutate: (newTx) => onMutateOptimistic(['transactions', currentUserEmail], (old) => {
+        const tempTx = { ...newTx, id: newTx.id || `temp-${Date.now()}` };
+        return [tempTx, ...old];
+    }),
+    onError: (err, newTx, context) => onErrorRollback(err, newTx, context, ['transactions', currentUserEmail]),
+    onSettled: () => onSettledInvalidate(['transactions', currentUserEmail])
+  });
+
+  const updateTransactionMutation = useMutation({
+    mutationFn: apiTransactions.update,
+    onMutate: (updatedTx) => onMutateOptimistic(['transactions', currentUserEmail], (old) => {
+        return old.map((t: Transaction) => t.id === updatedTx.id ? { ...t, ...updatedTx } : t);
+    }),
+    onError: (err, vars, context) => onErrorRollback(err, vars, context, ['transactions', currentUserEmail]),
+    onSettled: () => onSettledInvalidate(['transactions', currentUserEmail])
+  });
+
+  const deleteTransactionMutation = useMutation({
+    mutationFn: apiTransactions.delete,
+    onMutate: (id) => onMutateOptimistic(['transactions', currentUserEmail], (old) => {
+        return old.filter((t: Transaction) => t.id !== id);
+    }),
+    onError: (err, vars, context) => onErrorRollback(err, vars, context, ['transactions', currentUserEmail]),
+    onSettled: () => onSettledInvalidate(['transactions', currentUserEmail])
+  });
+
+  // Accounts
+  const addAccountMutation = useMutation({
+    mutationFn: apiAccounts.add,
+    onMutate: (newAcc) => onMutateOptimistic(['accounts', currentUserEmail], (old) => {
+        const tempAcc = { ...newAcc, id: newAcc.id || `temp-${Date.now()}` };
+        return [...old, tempAcc];
+    }),
+    onError: (err, vars, context) => onErrorRollback(err, vars, context, ['accounts', currentUserEmail]),
+    onSettled: () => onSettledInvalidate(['accounts', currentUserEmail])
+  });
+
+  const updateAccountMutation = useMutation({
+    mutationFn: apiAccounts.update,
+    onMutate: (updatedAcc) => onMutateOptimistic(['accounts', currentUserEmail], (old) => {
+        return old.map((a: Account) => a.id === updatedAcc.id ? { ...a, ...updatedAcc } : a);
+    }),
+    onError: (err, vars, context) => onErrorRollback(err, vars, context, ['accounts', currentUserEmail]),
+    onSettled: () => onSettledInvalidate(['accounts', currentUserEmail])
+  });
+
+  const deleteAccountMutation = useMutation({
+    mutationFn: apiAccounts.delete,
+    onMutate: (id) => onMutateOptimistic(['accounts', currentUserEmail], (old) => {
+        return old.filter((a: Account) => a.id !== id);
+    }),
+    onError: (err, vars, context) => onErrorRollback(err, vars, context, ['accounts', currentUserEmail]),
+    onSettled: () => onSettledInvalidate(['accounts', currentUserEmail])
+  });
+
+  // Months
+  const addMonthMutation = useMutation({
+    mutationFn: apiMonths.add,
+    onMutate: (newMonth) => onMutateOptimistic(['months', currentUserEmail], (old) => {
+        const temp = { ...newMonth, id: newMonth.id || `temp-${Date.now()}` };
+        return sortMonths([...old, temp]);
+    }),
+    onError: (err, vars, context) => onErrorRollback(err, vars, context, ['months', currentUserEmail]),
+    onSettled: () => onSettledInvalidate(['months', currentUserEmail])
+  });
+
+  const updateMonthMutation = useMutation({
+    mutationFn: apiMonths.update,
+    onMutate: (updatedMonth) => onMutateOptimistic(['months', currentUserEmail], (old) => {
+        return old.map((m: MonthSummary) => m.id === updatedMonth.id ? { ...m, ...updatedMonth } : m);
+    }),
+    onError: (err, vars, context) => onErrorRollback(err, vars, context, ['months', currentUserEmail]),
+    onSettled: () => onSettledInvalidate(['months', currentUserEmail])
+  });
+
+  const deleteMonthMutation = useMutation({
+    mutationFn: apiMonths.delete,
+    onMutate: (id) => onMutateOptimistic(['months', currentUserEmail], (old) => {
+        return old.filter((m: MonthSummary) => m.id !== id);
+    }),
+    onError: (err, vars, context) => onErrorRollback(err, vars, context, ['months', currentUserEmail]),
+    onSettled: () => {
+        onSettledInvalidate(['months', currentUserEmail]);
+        onSettledInvalidate(['transactions', currentUserEmail]);
+    }
+  });
+
+  // Investments
+  const addInvestmentMutation = useMutation({
+    mutationFn: apiInvestments.add,
+    onMutate: (newInv) => onMutateOptimistic(['investments', currentUserEmail], (old) => {
+        const temp = { ...newInv, id: `temp-${Date.now()}` };
+        return [...old, temp];
+    }),
+    onSettled: () => onSettledInvalidate(['investments', currentUserEmail])
+  });
+
+  const updateInvestmentMutation = useMutation({
+    mutationFn: apiInvestments.update,
+    onMutate: (updatedInv) => onMutateOptimistic(['investments', currentUserEmail], (old) => {
+        return old.map((i: Investment) => i.id === updatedInv.id ? { ...i, ...updatedInv } : i);
+    }),
+    onSettled: () => onSettledInvalidate(['investments', currentUserEmail])
+  });
+
+  const deleteInvestmentMutation = useMutation({
+    mutationFn: apiInvestments.delete,
+    onMutate: (id) => onMutateOptimistic(['investments', currentUserEmail], (old) => {
+        return old.filter((i: Investment) => i.id !== id);
+    }),
+    onSettled: () => onSettledInvalidate(['investments', currentUserEmail])
+  });
+
+  // Long Term
+  const addLongTermMutation = useMutation({
+    mutationFn: apiLongTerm.add,
+    onMutate: (newItem) => onMutateOptimistic(['longTerm', currentUserEmail], (old) => {
+        const temp = { ...newItem, id: `temp-${Date.now()}` };
+        return [...old, temp];
+    }),
+    onSettled: () => onSettledInvalidate(['longTerm', currentUserEmail])
+  });
+
+  const updateLongTermMutation = useMutation({
+    mutationFn: apiLongTerm.update,
+    onMutate: (updatedItem) => onMutateOptimistic(['longTerm', currentUserEmail], (old) => {
+        return old.map((i: LongTermTransaction) => i.id === updatedItem.id ? { ...i, ...updatedItem } : i);
+    }),
+    onSettled: () => onSettledInvalidate(['longTerm', currentUserEmail])
+  });
+
+  const deleteLongTermMutation = useMutation({
+    mutationFn: apiLongTerm.delete,
+    onMutate: (id) => onMutateOptimistic(['longTerm', currentUserEmail], (old) => {
+        return old.filter((i: LongTermTransaction) => i.id !== id);
+    }),
+    onSettled: () => onSettledInvalidate(['longTerm', currentUserEmail])
+  });
+
+  // Notifications
+  const addNotificationMutation = useMutation({
+    mutationFn: apiNotifications.add,
+    onMutate: (newNotif) => onMutateOptimistic(['notifications', currentUserEmail], (old) => {
+       const temp = { ...newNotif, id: `temp-${Date.now()}`, read: false };
+       return [temp, ...old];
+    }),
+    onSettled: () => onSettledInvalidate(['notifications', currentUserEmail])
+  });
+
+  const deleteNotificationMutation = useMutation({
+    mutationFn: apiNotifications.delete,
+    onMutate: (id) => onMutateOptimistic(['notifications', currentUserEmail], (old) => {
+       return old.filter((n: AppNotification) => n.id !== id);
+    }),
+    onSettled: () => onSettledInvalidate(['notifications', currentUserEmail])
+  });
+
+  const markAllReadMutation = useMutation({
+    mutationFn: (ids: string[]) => apiNotifications.markAllRead(ids),
+    onMutate: () => onMutateOptimistic(['notifications', currentUserEmail], (old) => {
+       return old.map((n: AppNotification) => ({ ...n, read: true }));
+    }),
+    onSettled: () => onSettledInvalidate(['notifications', currentUserEmail])
+  });
+
+  // Bulk Operations (Optimistic is hard for bulk, generally we just rely on settle)
+  const bulkTransactionsMutation = useMutation({
+    mutationFn: apiTransactions.bulkCreate,
+    onSuccess: () => onSettledInvalidate(['transactions', currentUserEmail])
+  });
+  const bulkAccountsMutation = useMutation({
+    mutationFn: apiAccounts.bulkCreate,
+    onSuccess: () => onSettledInvalidate(['accounts', currentUserEmail])
+  });
+
+  // User Settings (Theme, Profile, etc.) - Direct
+  const saveThemeMutation = useMutation({
+    mutationFn: (theme: AppTheme) => saveUserField(currentUserEmail!, 'theme', theme),
+    onMutate: (theme) => {
+       setAppTheme(theme); // Instant UI Update
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['userProfile'] })
+  });
+
+  const saveProfileMutation = useMutation({
+    mutationFn: (profile: UserProfile) => saveUserField(currentUserEmail!, 'profile', profile),
+    onMutate: (newProfile) => onMutateOptimistic(['userProfile', currentUserEmail], (old) => {
+        return { ...old, profile: newProfile };
+    }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['userProfile'] })
+  });
+
+  const saveCdiMutation = useMutation({
+    mutationFn: (rate: number) => saveUserField(currentUserEmail!, 'cdiRate', rate),
+    onMutate: (rate) => onMutateOptimistic(['userProfile', currentUserEmail], (old) => {
+        return { ...old, cdiRate: rate };
+    }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['userProfile'] })
+  });
+
+  const saveNotepadMutation = useMutation({
+    mutationFn: (payload: { content: string, drawing: string | null }) => {
+       return Promise.all([
+          saveUserField(currentUserEmail!, 'notepadContent', payload.content),
+          saveUserField(currentUserEmail!, 'notepadDrawing', payload.drawing)
+       ]);
+    },
+    onMutate: (payload) => onMutateOptimistic(['userProfile', currentUserEmail], (old) => {
+        return { ...old, notepadContent: payload.content, notepadDrawing: payload.drawing };
+    }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['userProfile'] })
+  });
+
+  const saveDashboardOrderMutation = useMutation({
+    mutationFn: (order: string[]) => saveUserField(currentUserEmail!, 'dashboardOrder', order),
+    onMutate: (order) => onMutateOptimistic(['userProfile', currentUserEmail], (old) => {
+        return { ...old, dashboardOrder: order };
+    }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['userProfile'] })
+  });
+
+
+  // --- INITIAL MONTH CHECK ---
   useEffect(() => {
-    if (!currentUserEmail) return;
+    if (monthsQuery.data.length > 0 && activeMonthId === SYSTEM_INITIAL_MONTH.id) {
+       // Set active to last month loaded
+       setActiveMonthId(monthsQuery.data[monthsQuery.data.length - 1].id);
+    }
+  }, [monthsQuery.data]);
 
-    const checkDueBills = async () => {
-      const today = new Date();
-      const newNotifications: AppNotification[] = [];
-      
-      transactions.forEach(tx => {
-        if (tx.paid) return;
-        let isDueToday = false;
-        
-        if (tx.date.toLowerCase().includes('hoje')) {
-          isDueToday = true;
-        } else {
-          // Parse YYYY-MM-DD
-          if (tx.date.match(/^\d{4}-\d{2}-\d{2}/)) {
-             const d = new Date(tx.date.split(' ')[0] + 'T00:00:00');
-             if (d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear()) {
-                isDueToday = true;
-             }
-          }
-          // Legacy format parsing if needed
-        }
 
-        if (isDueToday) {
-           const alreadyNotified = notifications.some(n => n.message.includes(tx.name) && n.date === new Date().toLocaleDateString('pt-BR'));
-           if (!alreadyNotified) {
-             const notif: AppNotification = {
-               id: Date.now().toString() + Math.random(),
-               title: 'Vencimento Hoje!',
-               message: `A conta ${tx.name} no valor de R$ ${tx.amount} vence hoje.`,
-               date: new Date().toLocaleDateString('pt-BR'),
-               read: false,
-               type: 'alert'
-             };
-             newNotifications.push(notif);
-             // Trigger Browser Notification Logic here if desired (simplified for hook)
-           }
-        }
-      });
-      if (newNotifications.length > 0) {
-        setNotifications(prev => [...newNotifications, ...prev]);
-      }
-    };
-    const timer = setTimeout(checkDueBills, 2000);
-    return () => clearTimeout(timer);
-  }, [transactions, currentUserEmail]); 
-
-  // --- RETURN ---
+  // --- EXPORTED DATA & HANDLERS ---
+  
   return {
     // Data
-    userProfile, setUserProfile,
-    transactions, setTransactions,
-    accounts, setAccounts,
-    months, setMonths,
-    longTermTransactions, setLongTermTransactions,
-    investments, setInvestments,
-    notepadContent, setNotepadContent,
-    notepadDrawing, setNotepadDrawing,
-    notifications, setNotifications,
-    cdiRate, setCdiRate,
-    dashboardOrder, setDashboardOrder,
-    appTheme, setAppTheme,
-    activeMonthId, setActiveMonthId,
-    isLoadingData,
+    userProfile: profileQuery.data?.profile || INITIAL_PROFILE,
+    transactions: transactionsQuery.data,
+    accounts: accountsQuery.data,
+    months: monthsQuery.data,
+    longTermTransactions: longTermQuery.data,
+    investments: investmentsQuery.data,
+    notifications: notificationsQuery.data,
+    notepadContent: profileQuery.data?.notepadContent || '',
+    notepadDrawing: profileQuery.data?.notepadDrawing || null,
+    cdiRate: profileQuery.data?.cdiRate || 11.25,
+    dashboardOrder: profileQuery.data?.dashboardOrder || [BALANCE_CARD_ID],
+    appTheme,
+    
+    activeMonthId, 
+    setActiveMonthId,
+    isLoadingData: profileQuery.isLoading || transactionsQuery.isLoading,
 
     // Actions
-    deleteUser: async () => { /* Logic moved to App or kept here? Kept simplified in App for now */ }
+    setUserProfile: (p: any) => {
+       const newVal = typeof p === 'function' ? p(profileQuery.data?.profile || INITIAL_PROFILE) : p;
+       saveProfileMutation.mutate(newVal);
+    },
+    setAppTheme: (t: any) => {
+       saveThemeMutation.mutate(t);
+    },
+    setCdiRate: (r: number) => saveCdiMutation.mutate(r),
+    setDashboardOrder: (o: any) => {
+       const newVal = typeof o === 'function' ? o(profileQuery.data?.dashboardOrder || []) : o;
+       saveDashboardOrderMutation.mutate(newVal);
+    },
+    // Notepad local state is handled by the modal, we only receive save commands
+    setNotepadContent: (c: string) => {}, 
+    setNotepadDrawing: (d: string | null) => {},
+    saveNotepad: (c: string, d: string | null) => saveNotepadMutation.mutate({ content: c, drawing: d }),
+
+    // Transactions
+    addTransaction: (tx: any) => addTransactionMutation.mutate(tx),
+    updateTransaction: (tx: any) => updateTransactionMutation.mutate(tx),
+    deleteTransaction: (id: string) => deleteTransactionMutation.mutate(id),
+    
+    // Accounts
+    addAccount: (acc: any) => addAccountMutation.mutate(acc),
+    updateAccount: (acc: any) => updateAccountMutation.mutate(acc),
+    deleteAccount: (id: string) => deleteAccountMutation.mutate(id),
+
+    // Months
+    addMonth: (m: any) => addMonthMutation.mutate(m),
+    updateMonth: (m: any) => updateMonthMutation.mutate(m),
+    deleteMonth: (id: string) => deleteMonthMutation.mutate(id),
+    
+    // Bulk
+    bulkCreateTransactions: (txs: any[]) => bulkTransactionsMutation.mutate(txs),
+    bulkCreateAccounts: (accs: any[]) => bulkAccountsMutation.mutate(accs),
+
+    // Investments
+    addInvestment: (inv: any) => addInvestmentMutation.mutate(inv),
+    updateInvestment: (inv: any) => updateInvestmentMutation.mutate(inv),
+    deleteInvestment: (id: string) => deleteInvestmentMutation.mutate(id),
+    setInvestments: (invs: any) => {},
+
+    // Long Term
+    addLongTerm: (lt: any) => addLongTermMutation.mutate(lt),
+    updateLongTerm: (lt: any) => updateLongTermMutation.mutate(lt),
+    deleteLongTerm: (id: string) => deleteLongTermMutation.mutate(id),
+    setLongTermTransactions: (lts: any) => {}, 
+
+    // Notifications
+    setNotifications: (n: any) => {},
+    addNotification: (n: any) => addNotificationMutation.mutate(n),
+    deleteNotification: (id: string) => deleteNotificationMutation.mutate(id),
+    markAllNotificationsRead: () => {
+       const ids = notificationsQuery.data?.map((n:any) => n.id) || [];
+       if(ids.length) markAllReadMutation.mutate(ids);
+    },
+
+    // Legacy Fallbacks (No-ops as we use direct mutations now)
+    setTransactions: () => {},
+    setAccounts: () => {},
+    setMonths: () => {},
   };
 };

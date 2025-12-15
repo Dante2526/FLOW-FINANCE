@@ -81,4 +81,4 @@ const BottomNav: React.FC<Props> = ({ currentView, onChangeView }) => {
   );
 };
 
-export default BottomNav;
+export default React.memo(BottomNav);

@@ -158,9 +158,9 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
   return (
     <div className="h-[100dvh] w-full bg-[#0a0a0b] flex flex-col items-center p-4 relative overflow-hidden">
       
-      {/* Background Decor */}
-      <div className="absolute top-[-20%] left-[-20%] w-[500px] h-[500px] bg-accent/20 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-20%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
+      {/* Background Decor - Animated */}
+      <div className="absolute top-[-20%] left-[-20%] w-[500px] h-[500px] bg-accent/20 rounded-full blur-[120px] pointer-events-none animate-pulse-slow" />
+      <div className="absolute bottom-[-20%] right-[-20%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none animate-pulse-slow" style={{ animationDelay: '2s' }} />
 
       {/* Main Content Wrapper */}
       <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-md relative z-10 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700 min-h-0`}>

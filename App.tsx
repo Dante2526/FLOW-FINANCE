@@ -18,12 +18,12 @@ import LongTermView from './components/LongTermView';
 import InvestmentsView from './components/InvestmentsView';
 import LoginScreen, { FlowLogo } from './components/LoginScreen';
 import ProModal from './components/ProModal'; 
-import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppView } from './types';
+import { Contact, Transaction, Account, CardTheme, MonthSummary, AppView } from './types';
 import { IconBell } from './components/Icons';
 import { Crown } from 'lucide-react';
 import { loginUser, registerUser, deleteUser, VAPID_PUBLIC_KEY } from './services/supabase';
 import { useFinance } from './contexts/FinancialContext';
-import { getMonthFromDateStr, getYearFromDateStr, sortMonths, MONTH_NAMES, MONTH_SHORT_CODES } from './utils/dateUtils';
+import { getMonthFromDateStr, getYearFromDateStr, MONTH_NAMES, MONTH_SHORT_CODES } from './utils/dateUtils';
 
 // Lazy Load Heavy Components
 const AnalyticsModal = React.lazy(() => import('./components/AnalyticsModal'));
@@ -63,17 +63,23 @@ const SplashScreen = () => (
 );
 
 const App: React.FC = () => {
-  // --- CONTEXT CONSUMPTION ---
+  // --- CONTEXT CONSUMPTION (UPDATED) ---
   const {
     userProfile, setUserProfile,
-    transactions, setTransactions,
-    accounts, setAccounts,
-    months, setMonths,
-    longTermTransactions, setLongTermTransactions,
-    investments, setInvestments,
-    notepadContent, setNotepadContent,
-    notepadDrawing, setNotepadDrawing,
-    notifications, setNotifications,
+    transactions, // Data Only
+    addTransaction, updateTransaction, deleteTransaction, bulkCreateTransactions,
+    accounts, // Data Only
+    addAccount, updateAccount, deleteAccount, bulkCreateAccounts,
+    months, // Data Only
+    addMonth, updateMonth, deleteMonth,
+    longTermTransactions, // Data Only
+    addLongTerm, updateLongTerm, deleteLongTerm,
+    investments, // Data Only
+    addInvestment, updateInvestment, deleteInvestment,
+    notepadContent, saveNotepad,
+    notepadDrawing, 
+    notifications, // Data Only
+    addNotification, deleteNotification, markAllNotificationsRead,
     cdiRate, setCdiRate,
     dashboardOrder, setDashboardOrder,
     appTheme, setAppTheme,
@@ -153,9 +159,9 @@ const App: React.FC = () => {
      };
   }, [activeMonthSummary]);
 
-  // --- HANDLERS ---
+  // --- HANDLERS (MEMOIZED & UPDATED FOR REACT QUERY) ---
 
-  const handleLogin = async (email: string, name?: string) => {
+  const handleLogin = useCallback(async (email: string, name?: string) => {
     try {
       let permissionGranted = false;
       if ('Notification' in window && Notification.permission === 'default') {
@@ -171,7 +177,7 @@ const App: React.FC = () => {
         await loginUser(email);
       }
       
-      login(email); // Update Context
+      login(email);
 
       if (permissionGranted && 'serviceWorker' in navigator) {
          navigator.serviceWorker.ready.then(async (registration) => {
@@ -188,25 +194,26 @@ const App: React.FC = () => {
        console.error("Login failed:", error);
        throw error; 
     }
-  };
+  }, [login]);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await logout();
     setIsProfileModalOpen(false);
-  };
+  }, [logout]);
 
-  const handleDeleteUserAccount = async () => {
+  const handleDeleteUserAccount = useCallback(async () => {
     if (!currentUserEmail) return;
     if (window.confirm("ATENÇÃO: Você está prestes a excluir sua conta permanentemente.\n\nEsta ação é irreversível.")) {
        try {
           await deleteUser(currentUserEmail);
-          await handleLogout();
+          await logout();
+          setIsProfileModalOpen(false);
           alert("Conta excluída com sucesso.");
        } catch (error: any) {
           alert("Falha ao excluir conta: " + error.message);
        }
     }
-  };
+  }, [currentUserEmail, logout]);
 
   const handleCardDragStart = useCallback((id: string) => { dragItem.current = id; }, []);
   const handleCardDragEnd = useCallback(() => { dragItem.current = null; }, []);
@@ -214,11 +221,8 @@ const App: React.FC = () => {
     if (dragItem.current && dragItem.current !== targetId) {
        const draggedId = dragItem.current;
        
-       setDashboardOrder(prevOrder => {
-          // Work with the full persisted list, not just visible items
+       setDashboardOrder((prevOrder: string[]) => {
           const newOrder = [...prevOrder];
-          
-          // Ensure both items are in the list (handle orphans being dragged for the first time)
           if (!newOrder.includes(draggedId)) newOrder.push(draggedId);
           if (!newOrder.includes(targetId)) newOrder.push(targetId);
 
@@ -232,11 +236,11 @@ const App: React.FC = () => {
           return newOrder;
        });
     }
-  }, []);
+  }, [setDashboardOrder]);
 
-  const handleDuplicateMonth = () => {
+  const handleDuplicateMonth = useCallback(() => {
+    if (!activeMonthSummary) return;
     const currentSummary = activeMonthSummary;
-    if (!currentSummary) return;
 
     const currentMonthIndex = MONTH_NAMES.indexOf(currentSummary.month);
     const currentYearInt = parseInt(currentSummary.year);
@@ -251,143 +255,265 @@ const App: React.FC = () => {
     const nextMonthName = MONTH_NAMES[nextMonthIndex];
     const nextShortCode = MONTH_SHORT_CODES[nextMonthName];
 
+    // Read current data needed for logic
     if (months.find(m => m.month === nextMonthName && m.year === nextYearInt.toString())) {
-      alert(`O mês de ${nextMonthName} de ${nextYearInt} já existe!`);
-      return;
+        alert(`O mês de ${nextMonthName} de ${nextYearInt} já existe!`);
+        return;
     }
 
-    const newTxs: Transaction[] = filteredTransactions.map(tx => {
-       let newDateStr = '';
-       if (tx.date.match(/^\d{4}-\d{2}-\d{2}/)) {
-           const d = new Date(tx.date.split(' ')[0] + 'T00:00:00');
-           d.setMonth(d.getMonth() + 1); 
-           newDateStr = d.toISOString().split('T')[0];
-       } else {
-           newDateStr = `01 ${nextShortCode}`;
-       }
-       return {
-         ...tx, id: Date.now().toString() + Math.random(),
-         date: newDateStr, paid: false,
-         month: nextMonthName, year: nextYearInt.toString()
-       };
+    // Prepare New Data
+    const txToCopy = transactions.filter(tx => {
+        const txMonth = tx.month || getMonthFromDateStr(tx.date);
+        const txYear = tx.year || getYearFromDateStr(tx.date, currentSummary.year);
+        return txMonth === currentSummary.month && txYear === currentSummary.year;
     });
 
-    const newAccounts: Account[] = filteredAccounts.map(acc => ({
-       ...acc, id: Date.now().toString() + Math.random(),
-       month: nextMonthName, year: nextYearInt.toString()
-    }));
+    const newTxs = txToCopy.map(tx => {
+        let newDateStr = '';
+        if (tx.date.match(/^\d{4}-\d{2}-\d{2}/)) {
+            const d = new Date(tx.date.split(' ')[0] + 'T00:00:00');
+            d.setMonth(d.getMonth() + 1); 
+            newDateStr = d.toISOString().split('T')[0];
+        } else {
+            newDateStr = `01 ${nextShortCode}`;
+        }
+        // Removing ID to let DB generate one
+        const { id, ...rest } = tx;
+        return {
+            ...rest,
+            date: newDateStr, paid: false,
+            month: nextMonthName, year: nextYearInt.toString()
+        };
+    });
 
-    const newMonthSummary: MonthSummary = {
-      id: Date.now().toString(),
-      month: nextMonthName,
-      year: nextYearInt.toString(),
-      total: newTxs.reduce((acc, t) => acc + t.amount, 0)
-    };
+    const accToCopy = accounts.filter(acc => {
+        if (!acc.month && !acc.year) return true;
+        return acc.month === currentSummary.month && acc.year === currentSummary.year;
+    });
 
-    setMonths(sortMonths([...months, newMonthSummary]));
-    setTransactions(prev => [...newTxs, ...prev]); 
-    setAccounts(prev => [...prev, ...newAccounts]);
-    setActiveMonthId(newMonthSummary.id);
+    const newAccounts = accToCopy.map(acc => {
+        const { id, ...rest } = acc;
+        return {
+           ...rest,
+           month: nextMonthName, year: nextYearInt.toString()
+        };
+    });
+
+    // Execute Mutations
+    bulkCreateTransactions(newTxs);
+    bulkCreateAccounts(newAccounts);
     
-    // Auto-append new accounts to dashboard order
-    setDashboardOrder(prev => [...prev, ...newAccounts.map(a => a.id)]);
-  };
+    // Create new Month
+    // Note: We don't set total here because transactions are async added. 
+    // Ideally total triggers an update or is dynamic. For now we sum what we added.
+    const initialTotal = newTxs.reduce((acc, t) => acc + t.amount, 0);
+    
+    // NOTE: setActiveMonthId needs ID. We can only set it after creation.
+    // For React Query, we assume optimistic or refetch. 
+    // Since we don't have the ID yet, we'll need to listen to month changes or rely on UI to let user switch.
+    // BUT: Our `useEffect` in useFinancialData detects new months and auto-switches if last month.
+    
+    addMonth({
+        month: nextMonthName,
+        year: nextYearInt.toString(),
+        total: initialTotal
+    });
 
-  const handleSaveTransaction = (txData: Omit<Transaction, 'id'>) => {
+  }, [activeMonthSummary, months, transactions, accounts, bulkCreateTransactions, bulkCreateAccounts, addMonth]);
+
+  const handleSaveTransaction = useCallback((txData: Omit<Transaction, 'id'>) => {
     if (editingTransaction) {
-      setTransactions(prev => prev.map(t => t.id === editingTransaction.id ? { ...t, ...txData } : t));
+      updateTransaction({ ...txData, id: editingTransaction.id });
+      
+      // Update Month Total Logic (Manual adjustment to optimize UI, though backend could trigger it)
       const oldMonth = editingTransaction.month || getMonthFromDateStr(editingTransaction.date);
       const oldYear = editingTransaction.year || getYearFromDateStr(editingTransaction.date, activeMonthSummary.year);
-      setMonths(prev => prev.map(m => {
-          if (m.month === oldMonth && m.year === oldYear) return { ...m, total: m.total - editingTransaction.amount + txData.amount };
-          return m;
-      }));
+      
+      const targetMonth = months.find(m => m.month === oldMonth && m.year === oldYear);
+      if (targetMonth) {
+         updateMonth({ ...targetMonth, total: targetMonth.total - editingTransaction.amount + txData.amount });
+      }
+
       setEditingTransaction(null);
     } else {
-      const newTx: Transaction = {
-        id: Date.now().toString(),
+      const newTx = {
         ...txData,
         month: activeMonthSummary.month,
         year: activeMonthSummary.year
       };
-      setTransactions(prev => [newTx, ...prev]);
-      setMonths(prev => prev.map(m => {
-        if (m.month === activeMonthSummary.month && m.year === activeMonthSummary.year) return { ...m, total: m.total + newTx.amount };
-        return m;
-      }));
+      addTransaction(newTx);
+      
+      const targetMonth = months.find(m => m.month === activeMonthSummary.month && m.year === activeMonthSummary.year);
+      if (targetMonth) {
+          updateMonth({ ...targetMonth, total: targetMonth.total + newTx.amount });
+      }
     }
-  };
+  }, [editingTransaction, activeMonthSummary, updateTransaction, addTransaction, months, updateMonth]);
 
-  const handleDeleteTransaction = (id: string) => {
+  const handleDeleteTransaction = useCallback((id: string) => {
     const tx = transactions.find(t => t.id === id);
-    if (tx) {
-      setTransactions(prev => prev.filter(t => t.id !== id));
-      const txMonth = tx.month || getMonthFromDateStr(tx.date);
-      const txYear = tx.year || getYearFromDateStr(tx.date, activeMonthSummary.year);
-      setMonths(prev => prev.map(m => {
-        if (m.month === txMonth && m.year === txYear) return { ...m, total: m.total - tx.amount };
-        return m;
-      }));
+    if (!tx) return;
+
+    deleteTransaction(id);
+    
+    const txMonth = tx.month || getMonthFromDateStr(tx.date);
+    const txYear = tx.year || getYearFromDateStr(tx.date, activeMonthSummary.year);
+    const targetMonth = months.find(m => m.month === txMonth && m.year === txYear);
+    
+    if (targetMonth) {
+       updateMonth({ ...targetMonth, total: targetMonth.total - tx.amount });
     }
-  };
 
-  const handleDeleteMonth = (id: string) => {
-    if (months.length <= 1) return;
-    const monthToDelete = months.find(m => m.id === id);
-    if (!monthToDelete) return;
-    setTransactions(prev => prev.filter(tx => !(tx.month === monthToDelete.month && tx.year === monthToDelete.year)));
-    setAccounts(prev => prev.filter(acc => !(acc.month === monthToDelete.month && acc.year === monthToDelete.year)));
-    const newMonths = months.filter(m => m.id !== id);
-    setMonths(newMonths);
-    setActiveMonthId(newMonths[newMonths.length - 1].id);
-  };
+  }, [transactions, activeMonthSummary, deleteTransaction, months, updateMonth]);
 
-  const handleProUpgrade = () => {
+  const handleDeleteMonth = useCallback((id: string) => {
+    deleteMonth(id);
+    // Auto-switch handled by useFinancialData effect or fallback to first
+    const remaining = months.filter(m => m.id !== id);
+    if (remaining.length > 0) {
+        setActiveMonthId(remaining[remaining.length - 1].id);
+    }
+  }, [deleteMonth, months, setActiveMonthId]);
+
+  const handleProUpgrade = useCallback(() => {
     const amount = 7.00;
     const now = new Date();
     const expiryDate = new Date(now);
     expiryDate.setDate(now.getDate() + 30); 
-    const newTx: Transaction = {
-        id: Date.now().toString(),
+    
+    const newTx = {
         name: 'Assinatura PRO', amount, type: 'subscription', logoType: 'generic', 
         paymentMethod: 'pix', paid: true, date: now.toISOString().split('T')[0],
         month: activeMonthSummary.month, year: activeMonthSummary.year
     };
-    setTransactions(prev => [newTx, ...prev]);
-    setMonths(prev => prev.map(m => {
-        if (m.month === activeMonthSummary.month && m.year === activeMonthSummary.year) return { ...m, total: m.total + amount };
-        return m;
-    }));
-    setUserProfile({ ...userProfile, isPro: true, subscriptionExpiry: expiryDate.toISOString() });
-    setIsProModalOpen(false);
-  };
+    
+    addTransaction(newTx);
+    
+    const targetMonth = months.find(m => m.month === activeMonthSummary.month && m.year === activeMonthSummary.year);
+    if (targetMonth) {
+        updateMonth({ ...targetMonth, total: targetMonth.total + amount });
+    }
 
-  const handleSaveAccount = (id: string | undefined, name: string, balance: number, theme: CardTheme) => {
+    setUserProfile((prev: any) => ({ ...prev, isPro: true, subscriptionExpiry: expiryDate.toISOString() }));
+    setIsProModalOpen(false);
+  }, [activeMonthSummary, addTransaction, months, updateMonth, setUserProfile]);
+
+  const handleSaveAccount = useCallback((id: string | undefined, name: string, balance: number, theme: CardTheme) => {
     if (id) {
-      setAccounts(prev => prev.map(acc => acc.id === id ? { ...acc, name, balance, colorTheme: theme } : acc));
+      updateAccount({ id, name, balance, colorTheme: theme });
       setEditingAccount(null);
     } else {
-      const newId = Date.now().toString();
-      const newAccount: Account = { id: newId, name, balance, colorTheme: theme, month: activeMonthSummary.month, year: activeMonthSummary.year };
-      setAccounts(prev => [...prev, newAccount]);
-      setDashboardOrder(prev => [...prev, newId]);
+      // Create new account
+      addAccount({ 
+          name, balance, colorTheme: theme, 
+          month: activeMonthSummary.month, year: activeMonthSummary.year 
+      });
+      // Order update handled implicitly or via refresh, 
+      // but to be snappy we might need to push to dashboardOrder if we want it instantly draggable
     }
-  };
+  }, [activeMonthSummary, updateAccount, addAccount]);
+
+  const handleToggleStatus = useCallback((id: string) => {
+      const tx = transactions.find(t => t.id === id);
+      if (tx) updateTransaction({ id, paid: !tx.paid });
+  }, [transactions, updateTransaction]);
+
+  const handleTogglePaymentMethod = useCallback((id: string) => {
+      const tx = transactions.find(t => t.id === id);
+      if (tx) updateTransaction({ id, paymentMethod: tx.paymentMethod === 'pix' ? 'card' : 'pix' });
+  }, [transactions, updateTransaction]);
+
+  const handleEditTransactionClick = useCallback((tx: Transaction) => {
+      setEditingTransaction(tx);
+      setIsAddTransactionOpen(true);
+  }, []);
+  
+  const handleEditAccountClick = useCallback((acc: Account) => {
+      setEditingAccount(acc);
+      setIsAddAccountOpen(true);
+  }, []);
+
+  const handleDeleteAccount = useCallback((id: string) => {
+      deleteAccount(id);
+  }, [deleteAccount]);
+
+  const handleContactClick = useCallback((c: Contact) => {
+      if (c.id === '1') setIsNotepadOpen(true);
+      if (c.id === '2') setIsCalendarOpen(true);
+      if (c.id === '3') { 
+          if (!userProfile.isPro) setIsProModalOpen(true); else setIsAnalyticsOpen(true); 
+      }
+  }, [userProfile.isPro]);
+
+  // UI Modal Setters Wrappers
+  const openAddTransaction = useCallback(() => setIsAddTransactionOpen(true), []);
+  const openCalculator = useCallback(() => setIsCalculatorOpen(true), []);
+  const openAddAccount = useCallback(() => setIsAddAccountOpen(true), []);
+  const openProfile = useCallback(() => setIsProfileModalOpen(true), []);
+  const openNotifications = useCallback(() => setIsNotificationOpen(true), []);
+  const openProModal = useCallback(() => setIsProModalOpen(true), []);
+  
+  const closeAddTransaction = useCallback(() => { setIsAddTransactionOpen(false); setEditingTransaction(null); }, []);
+  const closeAddAccount = useCallback(() => { setIsAddAccountOpen(false); setEditingAccount(null); }, []);
+  const closeCalculator = useCallback(() => setIsCalculatorOpen(false), []);
+  const closeProfile = useCallback(() => setIsProfileModalOpen(false), []);
+  const closeNotepad = useCallback(() => setIsNotepadOpen(false), []);
+  const closeCalendar = useCallback(() => setIsCalendarOpen(false), []);
+  const closeNotification = useCallback(() => setIsNotificationOpen(false), []);
+  const closeAnalytics = useCallback(() => setIsAnalyticsOpen(false), []);
+  const closeProModal = useCallback(() => setIsProModalOpen(false), []);
+  
+  const handleNotepadSave = useCallback((c: string, d: string | null) => {
+      saveNotepad(c, d);
+  }, [saveNotepad]);
+
+  const handleMarkAllRead = useCallback(() => {
+      markAllNotificationsRead();
+  }, [markAllNotificationsRead]);
+
+  const handleDeleteNotification = useCallback((id: string) => {
+      deleteNotification(id);
+  }, [deleteNotification]);
+
+  const handleSaveTheme = useCallback((theme: any) => {
+      setAppTheme(theme);
+      setCurrentView('home');
+  }, [setAppTheme]);
+
+  // Long Term Callbacks
+  const handleLongTermAdd = useCallback((item: any) => {
+      addLongTerm({ ...item, installmentsPaid: 0 });
+  }, [addLongTerm]);
+
+  const handleLongTermEdit = useCallback((item: any) => {
+      updateLongTerm(item);
+  }, [updateLongTerm]);
+
+  const handleLongTermDelete = useCallback((id: string) => {
+      deleteLongTerm(id);
+  }, [deleteLongTerm]);
+
+  // Investments Callbacks
+  const handleInvestmentAdd = useCallback((inv: any) => {
+      addInvestment(inv);
+  }, [addInvestment]);
+
+  const handleInvestmentEdit = useCallback((inv: any) => {
+      updateInvestment(inv);
+  }, [updateInvestment]);
+
+  const handleInvestmentDelete = useCallback((id: string) => {
+      deleteInvestment(id);
+  }, [deleteInvestment]);
+
+  const handleBackToHome = useCallback(() => setCurrentView('home'), []);
+
 
   // --- RENDER ---
   const shouldShowSplash = !isSessionReady || (currentUserEmail && isLoadingData && !userProfile.name);
   if (shouldShowSplash) return <SplashScreen />;
   if (!currentUserEmail) return <LoginScreen onLogin={handleLogin} />;
   
-  if (isLoadingData && transactions.length === 0) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0b] flex flex-col items-center justify-center gap-4">
-        <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-gray-400 text-sm font-medium animate-pulse">Sincronizando dados...</p>
-      </div>
-    );
-  }
-
   const isAnyModalOpen = isAddTransactionOpen || isAddAccountOpen || isCalculatorOpen || isProfileModalOpen || isNotepadOpen || isCalendarOpen || isNotificationOpen || isAnalyticsOpen || isProModalOpen;
 
   return (
@@ -396,39 +522,39 @@ const App: React.FC = () => {
       {currentView === 'settings' && (
           <SettingsView 
             currentThemeId={appTheme.id}
-            onSaveTheme={(theme) => { setAppTheme(theme); setCurrentView('home'); }}
+            onSaveTheme={handleSaveTheme}
             isPro={!!userProfile.isPro}
-            onOpenProModal={() => setIsProModalOpen(true)}
+            onOpenProModal={openProModal}
           />
       )}
       
       {currentView === 'long-term' && (
           <LongTermView 
             items={longTermTransactions}
-            onAdd={(item) => setLongTermTransactions(prev => [...prev, { ...item, id: Date.now().toString(), installmentsPaid: 0 }])}
-            onEdit={(item) => setLongTermTransactions(prev => prev.map(i => i.id === item.id ? item : i))}
-            onDelete={(id) => setLongTermTransactions(prev => prev.filter(i => i.id !== id))}
+            onAdd={handleLongTermAdd}
+            onEdit={handleLongTermEdit}
+            onDelete={handleLongTermDelete}
           />
       )}
       
       {currentView === 'investments' && (
           <InvestmentsView 
              investments={investments}
-             onAdd={(inv) => setInvestments(prev => [...prev, { ...inv, id: Date.now().toString() }])}
-             onEdit={(inv) => setInvestments(prev => prev.map(i => i.id === inv.id ? inv : i))}
-             onDelete={(id) => setInvestments(prev => prev.filter(i => i.id !== id))}
-             onBack={() => setCurrentView('home')}
+             onAdd={handleInvestmentAdd}
+             onEdit={handleInvestmentEdit}
+             onDelete={handleInvestmentDelete}
+             onBack={handleBackToHome}
              cdiRate={cdiRate}
              onUpdateCdiRate={setCdiRate}
              isPro={!!userProfile.isPro}
-             onOpenProModal={() => setIsProModalOpen(true)}
+             onOpenProModal={openProModal}
           />
       )}
 
       {currentView === 'home' && (
           <>
             <div className="flex justify-between items-center mb-6 pl-1">
-              <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setIsProfileModalOpen(true)}>
+              <div className="flex items-center gap-3 cursor-pointer group" onClick={openProfile}>
                 <div className="relative">
                   <div className={`w-12 h-12 rounded-full border-2 transition-all overflow-hidden shadow-lg shadow-black/20 ${userProfile.isPro ? 'border-yellow-500' : 'border-transparent group-hover:border-accent'}`}>
                      <img src={userProfile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
@@ -448,7 +574,7 @@ const App: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                 <IconBell count={notifications.filter(n => !n.read).length} onClick={() => setIsNotificationOpen(true)} />
+                 <IconBell count={notifications.filter(n => !n.read).length} onClick={openNotifications} />
               </div>
             </div>
 
@@ -456,13 +582,33 @@ const App: React.FC = () => {
                {dashboardItems.map((id) => {
                   if (id === BALANCE_CARD_ID) {
                      return (
-                        <BalanceCard key={id} id={id} balance={profitBalance} onAddClick={() => setIsAddTransactionOpen(true)} onDuplicateClick={handleDuplicateMonth} onCalculatorClick={() => setIsCalculatorOpen(true)} draggable onDragStart={handleCardDragStart} onDragEnter={handleCardDragEnter} onDragEnd={handleCardDragEnd} />
+                        <BalanceCard 
+                            key={id} 
+                            id={id} 
+                            balance={profitBalance} 
+                            onAddClick={openAddTransaction} 
+                            onDuplicateClick={handleDuplicateMonth} 
+                            onCalculatorClick={openCalculator} 
+                            draggable 
+                            onDragStart={handleCardDragStart} 
+                            onDragEnter={handleCardDragEnter} 
+                            onDragEnd={handleCardDragEnd} 
+                        />
                      );
                   }
                   const account = filteredAccounts.find(a => a.id === id);
                   if (account) {
                      return (
-                        <SecondaryCard key={account.id} account={account} onDelete={(id) => setAccounts(prev => prev.filter(a => a.id !== id))} onEdit={(acc) => { setEditingAccount(acc); setIsAddAccountOpen(true); }} draggable onDragStart={handleCardDragStart} onDragEnter={handleCardDragEnter} onDragEnd={handleCardDragEnd} />
+                        <SecondaryCard 
+                            key={account.id} 
+                            account={account} 
+                            onDelete={handleDeleteAccount} 
+                            onEdit={handleEditAccountClick} 
+                            draggable 
+                            onDragStart={handleCardDragStart} 
+                            onDragEnter={handleCardDragEnter} 
+                            onDragEnd={handleCardDragEnd} 
+                        />
                      );
                   }
                   return null;
@@ -471,39 +617,40 @@ const App: React.FC = () => {
 
             <ContactsRow 
                contacts={MOCK_CONTACTS} 
-               onAddClick={() => setIsAddAccountOpen(true)}
-               onContactClick={(c) => {
-                  if (c.id === '1') setIsNotepadOpen(true);
-                  if (c.id === '2') setIsCalendarOpen(true);
-                  if (c.id === '3') { if (!userProfile.isPro) setIsProModalOpen(true); else setIsAnalyticsOpen(true); }
-               }}
+               onAddClick={openAddAccount}
+               onContactClick={handleContactClick}
                isPro={!!userProfile.isPro}
             />
 
-            <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} />
+            <TransactionSummary 
+                months={months} 
+                activeMonthId={activeMonthId} 
+                onSelectMonth={setActiveMonthId} 
+                onDeleteMonth={handleDeleteMonth} 
+            />
             <TransactionList 
               transactions={filteredTransactions} 
               onDelete={handleDeleteTransaction}
-              onEdit={(tx) => { setEditingTransaction(tx); setIsAddTransactionOpen(true); }}
-              onToggleStatus={(id) => setTransactions(prev => prev.map(t => t.id === id ? { ...t, paid: !t.paid } : t))}
-              onTogglePaymentMethod={(id) => setTransactions(prev => prev.map(t => t.id === id ? { ...t, paymentMethod: t.paymentMethod === 'pix' ? 'card' : 'pix' } : t))}
+              onEdit={handleEditTransactionClick}
+              onToggleStatus={handleToggleStatus}
+              onTogglePaymentMethod={handleTogglePaymentMethod}
             />
           </>
       )}
 
       <BottomNav currentView={currentView} onChangeView={setCurrentView} />
 
-      <AddTransactionModal isOpen={isAddTransactionOpen} onClose={() => { setIsAddTransactionOpen(false); setEditingTransaction(null); }} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} activeMonthContext={activeMonthContext} />
-      <AddAccountModal isOpen={isAddAccountOpen} onClose={() => { setIsAddAccountOpen(false); setEditingAccount(null); }} onSave={handleSaveAccount} accountToEdit={editingAccount} isPro={!!userProfile.isPro} onOpenProModal={() => setIsProModalOpen(true)} />
-      <CalculatorModal isOpen={isCalculatorOpen} onClose={() => setIsCalculatorOpen(false)} />
-      <EditProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} onSave={setUserProfile} onLogout={handleLogout} onDeleteAccount={handleDeleteUserAccount} currentProfile={userProfile} />
-      <NotepadModal isOpen={isNotepadOpen} onClose={() => setIsNotepadOpen(false)} initialContent={notepadContent} initialDrawing={notepadDrawing} onSave={(c, d) => { setNotepadContent(c); setNotepadDrawing(d); }} />
-      <CalendarModal isOpen={isCalendarOpen} onClose={() => setIsCalendarOpen(false)} transactions={transactions} activeMonthContext={activeMonthContext} />
-      <NotificationModal isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} notifications={notifications} onMarkAllRead={() => setNotifications(prev => prev.map(n => ({ ...n, read: true })))} onDelete={(id) => setNotifications(prev => prev.filter(n => n.id !== id))} currentUserEmail={currentUserEmail} />
+      <AddTransactionModal isOpen={isAddTransactionOpen} onClose={closeAddTransaction} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} activeMonthContext={activeMonthContext} />
+      <AddAccountModal isOpen={isAddAccountOpen} onClose={closeAddAccount} onSave={handleSaveAccount} accountToEdit={editingAccount} isPro={!!userProfile.isPro} onOpenProModal={openProModal} />
+      <CalculatorModal isOpen={isCalculatorOpen} onClose={closeCalculator} />
+      <EditProfileModal isOpen={isProfileModalOpen} onClose={closeProfile} onSave={setUserProfile} onLogout={handleLogout} onDeleteAccount={handleDeleteUserAccount} currentProfile={userProfile} />
+      <NotepadModal isOpen={isNotepadOpen} onClose={closeNotepad} initialContent={notepadContent} initialDrawing={notepadDrawing} onSave={handleNotepadSave} />
+      <CalendarModal isOpen={isCalendarOpen} onClose={closeCalendar} transactions={transactions} activeMonthContext={activeMonthContext} />
+      <NotificationModal isOpen={isNotificationOpen} onClose={closeNotification} notifications={notifications} onMarkAllRead={handleMarkAllRead} onDelete={handleDeleteNotification} currentUserEmail={currentUserEmail} />
       <Suspense fallback={null}>
-        {isAnalyticsOpen && <AnalyticsModal isOpen={isAnalyticsOpen} onClose={() => setIsAnalyticsOpen(false)} transactions={transactions} months={months} />}
+        {isAnalyticsOpen && <AnalyticsModal isOpen={isAnalyticsOpen} onClose={closeAnalytics} transactions={transactions} months={months} />}
       </Suspense>
-      <ProModal isOpen={isProModalOpen} onClose={() => setIsProModalOpen(false)} onUpgrade={handleProUpgrade} />
+      <ProModal isOpen={isProModalOpen} onClose={closeProModal} onUpgrade={handleProUpgrade} />
     </div>
   );
 };

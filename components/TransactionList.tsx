@@ -27,7 +27,7 @@ interface SwipeableTransactionItemProps {
   onTogglePaymentMethod: (id: string) => void;
 }
 
-const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({ 
+const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = React.memo(({ 
   tx, 
   onDelete,
   onEdit,
@@ -259,7 +259,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
       </div>
     </div>
   );
-};
+});
 
 const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onToggleStatus, onTogglePaymentMethod }) => {
   return (
@@ -280,4 +280,4 @@ const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onTo
   );
 };
 
-export default TransactionList;
+export default React.memo(TransactionList);

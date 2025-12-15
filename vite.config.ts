@@ -13,7 +13,8 @@ export default defineConfig({
       'react-dom/client',
       'lucide-react',
       'recharts',
-      '@supabase/supabase-js'
+      '@supabase/supabase-js',
+      '@tanstack/react-query'
     ]
   },
   build: {
@@ -26,7 +27,8 @@ export default defineConfig({
         'react-dom/client',
         'lucide-react',
         'recharts',
-        '@supabase/supabase-js'
+        '@supabase/supabase-js',
+        '@tanstack/react-query'
       ],
       output: {
         globals: {
@@ -34,7 +36,8 @@ export default defineConfig({
           'react-dom': 'ReactDOM',
           'lucide-react': 'LucideReact',
           'recharts': 'Recharts',
-          '@supabase/supabase-js': 'Supabase'
+          '@supabase/supabase-js': 'Supabase',
+          '@tanstack/react-query': 'ReactQuery'
         }
       }
     }

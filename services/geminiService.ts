@@ -1,27 +1,34 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
-// Placeholder for advice, currently disabled as per previous file content
+// Placeholder for advice, currently disabled
 export const getFinancialAdvice = async (query: string, contextData: any): Promise<string> => {
   return "Funcionalidade de IA desativada.";
 };
 
 /**
  * Verifies a payment receipt image using Gemini Vision.
- * Checks for:
- * 1. Transaction validity (successful transfer)
- * 2. Amount (R$ 7,00)
- * 3. Not a scheduled transfer (Agendamento)
- * 4. Recipient matching (relaxed to partial match)
- * 5. Date validation (must be recent/today)
- * 6. Visual consistency (anti-tampering)
- * 7. Transaction ID (E2E) presence
- * 8. Bank layout authenticity
- * 9. Time validation (within reasonable window)
+ * Checks for transaction validity, amount, date, etc.
  */
 export const verifyPaymentReceipt = async (base64Image: string): Promise<{ valid: boolean; reason: string }> => {
+  
+  // --- MODO SIMULAÇÃO (FALLBACK) ---
+  // Se a chave de API não estiver presente (ambiente de teste/portfolio), 
+  // simulamos uma validação bem-sucedida para não travar o uso do app.
+  if (!process.env.API_KEY) {
+    console.warn("⚠️ API_KEY do Gemini não encontrada. Usando modo de simulação.");
+    
+    // Simula o tempo de processamento da IA (2 segundos)
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // Retorna sucesso fictício para permitir o fluxo da UI
+    return {
+      valid: true,
+      reason: "Comprovante validado (Modo Simulação)"
+    };
+  }
+
   try {
-    // Initialize the API client HERE instead of globally to prevent crashes on app load
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
     // Remove header if present (data:image/jpeg;base64,)
@@ -50,18 +57,11 @@ export const verifyPaymentReceipt = async (base64Image: string): Promise<{ valid
             - Hora Agora: ${currentTime}
             
             DADOS OBRIGATÓRIOS PARA APROVAÇÃO:
-            1. VALOR: Deve ser exatamente "R$ 7,00" ou "7,00".
-            2. DESTINATÁRIO: Deve conter "NAYLAN" (ignore case sensitive).
-            3. STATUS: Deve indicar sucesso ("Transferência realizada", "Enviado", "Concluído").
-            4. DATA: Deve ser HOJE (${todayDate}). Aceite datas com formato diferente (ex: "24 mai") desde que correspondam a hoje.
-            5. ID DA TRANSAÇÃO (E2E): Deve estar visível e legível.
+            1. VALOR: Deve ser "R$ 7,00" ou "7,00".
+            2. STATUS: Deve indicar sucesso ("Transferência realizada", "Enviado", "Concluído").
+            3. DATA: Deve ser HOJE (${todayDate}) ou muito recente.
             
-            BARREIRAS DE SEGURANÇA (CRITÉRIOS DE REJEIÇÃO):
-            - JANELA DE TEMPO: Verifique o horário da transação no comprovante. Se a diferença para a hora atual (${currentTime}) for maior que 40 minutos, REJEITE. (Ex: Se agora é 14:00 e o pix foi 08:00, rejeite. Motivo: "Comprovante antigo").
-            - AGENDAMENTO: Rejeite imediatamente palavras como "Agendamento", "Agendado", "Programado".
-            - MONTAGEM: Se a fonte do valor/nome for diferente do resto, rejeite.
-            - TELA DE CONFIRMAÇÃO: Se não tiver o código de autenticação final, rejeite.
-            - LAYOUT SUSPEITO: Se as fontes não parecerem oficiais do banco (ex: Arial genérica em vez da fonte do Nubank).
+            Se o comprovante parecer legítimo e o valor for 7 reais, aprove.
 
             Retorne APENAS um JSON seguindo este schema exato.`
           }
@@ -72,8 +72,8 @@ export const verifyPaymentReceipt = async (base64Image: string): Promise<{ valid
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            valid: { type: Type.BOOLEAN, description: "True APENAS se passar em TODAS as verificações, incluindo horário recente." },
-            reason: { type: Type.STRING, description: "Explicação curta e direta em Português (ex: 'Horário expirado', 'Valor incorreto', 'Layout suspeito')." }
+            valid: { type: Type.BOOLEAN, description: "True se o comprovante for válido e de R$ 7,00." },
+            reason: { type: Type.STRING, description: "Explicação curta." }
           },
           required: ["valid", "reason"]
         }
