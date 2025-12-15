@@ -309,37 +309,32 @@ const App: React.FC = () => {
     });
   }, [accounts, activeMonthSummary]);
 
-  // --- UNIFIED DASHBOARD LIST (SAFE & SORTABLE) ---
-  // This combines BalanceCard and all Accounts into a single list.
-  // It sorts them by 'dashboardOrder'.
-  // Crucially, it appends any item NOT in dashboardOrder to the end, ensuring nothing disappears.
+  // --- UNIFIED DASHBOARD LIST (SAFE & DETERMINISTIC) ---
+  // Rebuilt to be rock solid against missing IDs or order changes
   const dashboardItems = useMemo(() => {
-    // 1. Build a list of ALL available IDs (Balance Card + Account IDs)
-    const availableIds = [BALANCE_CARD_ID, ...filteredAccounts.map(a => a.id)];
-    
-    // 2. Sort based on dashboardOrder index
-    // If an ID is missing from dashboardOrder, it gets a high index (9999) to go to the end
-    const sortedIds = availableIds.sort((a, b) => {
-        const indexA = dashboardOrder.indexOf(a);
-        const indexB = dashboardOrder.indexOf(b);
-        
-        const valA = indexA === -1 ? 99999 : indexA;
-        const valB = indexB === -1 ? 99999 : indexB;
-        
-        return valA - valB;
-    });
+    // 1. Identify all currently available IDs (Balance Card + Visible Accounts)
+    const visibleAccountIds = new Set(filteredAccounts.map(a => a.id));
+    const allAvailableIds = new Set([BALANCE_CARD_ID, ...filteredAccounts.map(a => a.id)]);
 
-    return sortedIds;
+    // 2. Start with the saved order, filtering only what is currently available
+    // This preserves the user's custom sort
+    const orderedList = dashboardOrder.filter(id => allAvailableIds.has(id));
+
+    // 3. Find any orphans (items available but NOT in the saved order)
+    // This handles new accounts or if the order list got corrupted/partial
+    const savedSet = new Set(dashboardOrder);
+    const orphans = [BALANCE_CARD_ID, ...filteredAccounts.map(a => a.id)].filter(id => !savedSet.has(id));
+
+    // 4. Combine: Order + Orphans at the end
+    return [...orderedList, ...orphans];
   }, [filteredAccounts, dashboardOrder]);
 
   // --- SYNC DASHBOARD ORDER ---
   // If we detect new items (orphans) that aren't in the saved order, we add them to the saved state.
   useEffect(() => {
      const currentSet = new Set(dashboardOrder);
-     // Check if Balance Card is missing from order
      let needsUpdate = !currentSet.has(BALANCE_CARD_ID);
      
-     // Check if any visible account is missing
      const missingAccounts = filteredAccounts.filter(a => !currentSet.has(a.id));
      if (missingAccounts.length > 0) needsUpdate = true;
 
@@ -348,6 +343,7 @@ const App: React.FC = () => {
         if (!currentSet.has(BALANCE_CARD_ID)) newIds.push(BALANCE_CARD_ID);
         newIds.push(...missingAccounts.map(a => a.id));
         
+        // Append new IDs to the end, preserving existing order
         setDashboardOrder(prev => [...prev, ...newIds]);
      }
   }, [filteredAccounts, dashboardOrder]); 
@@ -619,7 +615,11 @@ const App: React.FC = () => {
 
       const currentOrderStr = JSON.stringify(currentStateRef.current.dashboardOrder);
       if (currentOrderStr === prevDashboardOrderRef.current) {
-         if (data.dashboardOrder && JSON.stringify(data.dashboardOrder) !== currentOrderStr) {
+         // UPDATED LOGIC: Protect against empty list overwrite
+         if (data.dashboardOrder && 
+             Array.isArray(data.dashboardOrder) && 
+             data.dashboardOrder.length > 0 &&
+             JSON.stringify(data.dashboardOrder) !== currentOrderStr) {
             setDashboardOrder(data.dashboardOrder);
             prevDashboardOrderRef.current = JSON.stringify(data.dashboardOrder);
          }
