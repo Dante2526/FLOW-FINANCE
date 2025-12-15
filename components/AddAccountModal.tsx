@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Check, Lock, Crown } from 'lucide-react';
 import { CardTheme, Account } from '../types';
@@ -6,7 +5,7 @@ import { CardTheme, Account } from '../types';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (name: string, balance: number, theme: CardTheme) => void;
+  onSave: (id: string | undefined, name: string, balance: number, theme: CardTheme) => void;
   accountToEdit?: Account | null;
   isPro?: boolean;
   onOpenProModal?: () => void;
@@ -62,7 +61,8 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
        finalBalance = parseFloat(balance.replace(/\./g, '').replace(',', '.'));
     }
 
-    onSave(name, finalBalance, selectedTheme);
+    // Pass ID if editing, undefined if creating
+    onSave(accountToEdit?.id, name, finalBalance, selectedTheme);
     
     // Only reset if we are not editing (to prevent flickering before close)
     if (!accountToEdit) {

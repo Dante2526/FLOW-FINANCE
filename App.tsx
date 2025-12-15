@@ -1301,12 +1301,13 @@ const App: React.FC = () => {
     setIsProModalOpen(false);
   };
 
-  const handleSaveAccount = (name: string, balance: number, theme: CardTheme) => {
-    if (editingAccount) {
+  // UPDATED SAVE HANDLER: Uses ID to detect Edit vs Create
+  const handleSaveAccount = (id: string | undefined, name: string, balance: number, theme: CardTheme) => {
+    if (id) {
       // EDIT MODE: Update data ONLY. Do NOT touch order list.
       // This prevents the "reorganizes itself" issue described by the user.
       setAccounts(prev => prev.map(acc => 
-        acc.id === editingAccount.id ? { 
+        acc.id === id ? { 
            ...acc, 
            name, 
            balance, 
