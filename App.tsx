@@ -309,37 +309,37 @@ const App: React.FC = () => {
     });
   }, [accounts, activeMonthSummary]);
 
-  // --- DERIVED DASHBOARD ITEMS (ROBUST & STABLE) ---
-  // This computes the final render list on-the-fly.
-  // It guarantees that everything in dashboardOrder is respected,
-  // AND anything that is missing (orphans) is appended at the end.
-  const dashboardItems = useMemo(() => {
-    const items: string[] = [];
-    // Only accounts that should be visible (e.g. not filtered out)
-    const visibleAccountIds = new Set(filteredAccounts.map(a => a.id));
-    
-    // 1. Add items from the known order (if they are visible/exist in current filter)
-    dashboardOrder.forEach(id => {
-      if (id === BALANCE_CARD_ID || visibleAccountIds.has(id)) {
-        items.push(id);
+  // --- SYNC DASHBOARD ORDER ---
+  // Ensure dashboardOrder always contains "balance-card" and any orphaned accounts
+  useEffect(() => {
+    setDashboardOrder(currentOrder => {
+      // 1. Identify all IDs that SHOULD be in the list (all accounts + balance)
+      // Note: We use ALL accounts here, not just filtered ones, to preserve global order
+      const allAccountIds = new Set(accounts.map(a => a.id));
+      
+      // 2. Filter existing order: Remove IDs that no longer exist (deleted accounts)
+      // Keep 'balance-card' always.
+      const cleanedOrder = currentOrder.filter(id => id === BALANCE_CARD_ID || allAccountIds.has(id));
+      
+      // 3. Find Orphans: Accounts that exist but are not in the order list
+      const existingInOrder = new Set(cleanedOrder);
+      const orphans = accounts.filter(a => !existingInOrder.has(a.id)).map(a => a.id);
+      
+      // 4. Combine: Cleaned Order + Orphans at the end
+      let finalOrder = [...cleanedOrder, ...orphans];
+      
+      // 5. Safety: Ensure Balance Card is present and usually first if list was empty
+      if (!finalOrder.includes(BALANCE_CARD_ID)) {
+        finalOrder = [BALANCE_CARD_ID, ...finalOrder];
       }
-    });
 
-    // 2. Add "Orphan" items (Visible accounts NOT in the order list)
-    // This ensures new accounts or edited ones appear at the bottom without jumping
-    filteredAccounts.forEach(a => {
-      if (!items.includes(a.id)) {
-        items.push(a.id);
+      // 6. Only update if changed
+      if (JSON.stringify(finalOrder) !== JSON.stringify(currentOrder)) {
+        return finalOrder;
       }
+      return currentOrder;
     });
-    
-    // 3. Ensure Balance Card is present if missing
-    if (!items.includes(BALANCE_CARD_ID)) {
-      items.unshift(BALANCE_CARD_ID);
-    }
-
-    return items;
-  }, [dashboardOrder, filteredAccounts]);
+  }, [accounts]); // Dependency on ALL accounts, not just filtered
 
   // --- AUTH CHECK EFFECT (Fixes RLS issues) ---
   useEffect(() => {
@@ -498,7 +498,8 @@ const App: React.FC = () => {
          setDashboardOrder(data.dashboardOrder);
          prevDashboardOrderRef.current = JSON.stringify(data.dashboardOrder);
       } else {
-         // Fallback: Create initial order if none exists
+         // Fallback: Create initial order if none exists based on local data
+         // The useEffect above will clean this up if it misses anything
          const initialOrder = [BALANCE_CARD_ID];
          if (data.accounts) {
             initialOrder.push(...data.accounts.map((a: Account) => a.id));
@@ -876,8 +877,9 @@ const App: React.FC = () => {
   // --- Handlers (Memoized to prevent list flickering) ---
   
   const handleDeleteAccount = useCallback((id: string) => {
+    // 1. Remove from accounts list
     setAccounts(prev => prev.filter(a => a.id !== id));
-    // Manually remove from order list to prevent sync issues/flicker
+    // 2. Remove from global order list explicitly
     setDashboardOrder(prev => prev.filter(orderId => orderId !== id));
   }, []);
 
@@ -888,15 +890,6 @@ const App: React.FC = () => {
 
   const handleCardDragStart = useCallback((id: string) => {
     dragItem.current = id;
-    
-    // LAZY SYNC: If the item being dragged isn't in the official order yet (orphan),
-    // add it immediately so index calculations work during the drag.
-    setDashboardOrder(prev => {
-        if (!prev.includes(id)) {
-            return [...prev, id];
-        }
-        return prev;
-    });
   }, []);
 
   const handleCardDragEnter = useCallback((targetId: string) => {
@@ -908,31 +901,9 @@ const App: React.FC = () => {
           let draggedIndex = newOrder.indexOf(draggedId);
           let targetIndex = newOrder.indexOf(targetId);
           
-          // Case: Dragging an orphan (an item not yet in the official order list)
-          // We treat the orphan as if it's coming from outside, so we insert it at the target position.
-          
-          if (draggedIndex === -1) {
-             // Dragging an orphan INTO the list -> Insert at target
-             // If target is also missing (unlikely if interacting), append both? 
-             // Normally target comes from a rendered card, so targetId exists in DOM, effectively existing in dashboardItems
-             if (targetIndex !== -1) {
-                 newOrder.splice(targetIndex, 0, draggedId);
-             } else {
-                 newOrder.push(draggedId);
-             }
-          } else {
-             // Normal Swap logic
-             if (targetIndex !== -1) {
-                 newOrder.splice(draggedIndex, 1);
-                 newOrder.splice(targetIndex, 0, draggedId);
-             } else {
-                 // Dragging ONTO an orphan target
-                 // Add the target to order, then swap
-                 newOrder.push(targetId);
-                 targetIndex = newOrder.length - 1;
-                 newOrder.splice(draggedIndex, 1);
-                 newOrder.splice(targetIndex, 0, draggedId);
-             }
+          if (draggedIndex !== -1 && targetIndex !== -1) {
+             newOrder.splice(draggedIndex, 1);
+             newOrder.splice(targetIndex, 0, draggedId);
           }
           
           return newOrder;
@@ -1301,19 +1272,20 @@ const App: React.FC = () => {
     setIsProModalOpen(false);
   };
 
-  // UPDATED SAVE HANDLER: Uses ID to detect Edit vs Create
+  // UPDATED SAVE HANDLER: 
+  // STRICTLY SEPARATES CREATION FROM EDITING TO PREVENT REORDERING
   const handleSaveAccount = (id: string | undefined, name: string, balance: number, theme: CardTheme) => {
-    // Robust check: ensure ID is not null/undefined to count as edit
+    // Robust check: ensure ID is present to count as edit
     if (id !== undefined && id !== null) {
-      // EDIT MODE: Update data ONLY. Do NOT touch order list.
-      // This prevents the "reorganizes itself" issue described by the user.
+      // EDIT MODE: Update data ONLY. 
+      // CRITICAL: Do NOT touch dashboardOrder here. This prevents the card from jumping.
       setAccounts(prev => prev.map(acc => 
         acc.id === id ? { 
            ...acc, 
            name, 
            balance, 
            colorTheme: theme,
-           // Safe logic: Preserve existing month/year if present
+           // Preserve existing month/year if present
            month: acc.month || activeMonthSummary?.month,
            year: acc.year || activeMonthSummary?.year
         } : acc
@@ -1321,7 +1293,7 @@ const App: React.FC = () => {
       
       setEditingAccount(null);
     } else {
-      // CREATE MODE: Add to data AND Add to order.
+      // CREATE MODE: Add to data AND Add to order list.
       const newId = Date.now().toString();
       const newAccount: Account = {
         id: newId,
@@ -1331,17 +1303,11 @@ const App: React.FC = () => {
         month: activeMonthSummary?.month,
         year: activeMonthSummary?.year
       };
+      
       setAccounts(prev => [...prev, newAccount]);
       
-      // Explicitly update order here since we are creating a new item
-      setDashboardOrder(prev => {
-         const newOrder = [...prev];
-         if (newOrder.includes(BALANCE_CARD_ID)) {
-            newOrder.splice(1, 0, newId);
-            return newOrder;
-         }
-         return [BALANCE_CARD_ID, newId, ...prev];
-      });
+      // Explicitly append to order only when creating
+      setDashboardOrder(prev => [...prev, newId]);
     }
   };
 
@@ -1425,9 +1391,15 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Draggable Cards Section */}
+            {/* Draggable Cards Section - NEW RENDER LOGIC */}
             <div className="flex flex-col gap-2 mb-6">
-               {dashboardItems.map((id) => {
+               {/* 
+                  Iterate through the MASTER ORDER list.
+                  This list defines the visual sequence.
+               */}
+               {dashboardOrder.map((id) => {
+                  
+                  // 1. Check if it's the Profit Card
                   if (id === BALANCE_CARD_ID) {
                      return (
                         <BalanceCard 
@@ -1445,7 +1417,12 @@ const App: React.FC = () => {
                      );
                   }
                   
+                  // 2. Try to find the account data for this ID
+                  // Note: we search in 'filteredAccounts' to ensure we only show accounts for this month
                   const account = filteredAccounts.find(a => a.id === id);
+                  
+                  // 3. If account exists in current filter, render it.
+                  // If it doesn't exist (deleted or wrong month), render nothing.
                   if (account) {
                      return (
                         <SecondaryCard 
