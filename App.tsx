@@ -1284,6 +1284,7 @@ const App: React.FC = () => {
            year: acc.year || activeMonthSummary?.year
         } : acc
       ));
+      
       setEditingAccount(null);
     } else {
       const newId = Date.now().toString();
