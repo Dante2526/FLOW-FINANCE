@@ -438,7 +438,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
         </div>
 
         {/* EXTRA SPACER TO ALLOW SCROLLING PAST BOTTOM NAV */}
-        <div className="h-48 w-full shrink-0" />
+        <div className="h-28 w-full shrink-0" />
 
          {/* --- MODALS --- */}
 
@@ -649,7 +649,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
             <p>Nenhuma transação parcelada.</p>
           </div>
         ) : (
-          <div className="grid gap-4 pb-48">
+          <div className="grid gap-4 pb-32">
             {items.map((item) => {
               const progress = (item.installmentsPaid / item.installmentsCount) * 100;
               
