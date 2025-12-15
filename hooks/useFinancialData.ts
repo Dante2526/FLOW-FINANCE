@@ -365,6 +365,82 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
     }
   }, [monthsQuery.data]);
 
+  // --- MIGRATION LOGIC ---
+  const migrateLegacyData = async () => {
+    const profile = profileQuery.data?.profile as any || {};
+    let count = 0;
+    
+    // Check if there is data to migrate
+    const hasData = 
+      (profile.transactions && profile.transactions.length) ||
+      (profile.accounts && profile.accounts.length) ||
+      (profile.months && profile.months.length) ||
+      (profile.investments && profile.investments.length) ||
+      (profile.longTerm && profile.longTerm.length);
+
+    if (!hasData) {
+       alert("Nenhum dado antigo encontrado no perfil para migrar.");
+       return 0;
+    }
+
+    try {
+        // 1. Transactions
+        if (profile.transactions && Array.isArray(profile.transactions) && profile.transactions.length > 0) {
+           await apiTransactions.bulkCreate(profile.transactions);
+           count += profile.transactions.length;
+           delete profile.transactions;
+        }
+
+        // 2. Accounts
+        if (profile.accounts && Array.isArray(profile.accounts) && profile.accounts.length > 0) {
+           await apiAccounts.bulkCreate(profile.accounts);
+           count += profile.accounts.length;
+           delete profile.accounts;
+        }
+
+        // 3. Months (Loop)
+        if (profile.months && Array.isArray(profile.months)) {
+           for (const m of profile.months) {
+              // Avoid duplicating initial month if it exists
+              if (m.id === '1' && m.month === SYSTEM_INITIAL_MONTH.month && m.year === SYSTEM_INITIAL_MONTH.year) continue;
+              await apiMonths.add(m).catch(e => console.warn('Month migration error', e));
+              count++;
+           }
+           delete profile.months;
+        }
+
+        // 4. Investments (Loop)
+        if (profile.investments && Array.isArray(profile.investments)) {
+           for (const i of profile.investments) {
+              await apiInvestments.add(i).catch(e => console.warn('Inv migration error', e));
+              count++;
+           }
+           delete profile.investments;
+        }
+        
+        // 5. Long Term (Loop)
+        if (profile.longTerm && Array.isArray(profile.longTerm)) {
+           for (const l of profile.longTerm) {
+              await apiLongTerm.add(l).catch(e => console.warn('LT migration error', e));
+              count++;
+           }
+           delete profile.longTerm;
+        }
+
+        if (count > 0) {
+           // Update profile to remove migrated data (Clean up)
+           await saveProfileMutation.mutateAsync(profile);
+           // Refresh all queries
+           queryClient.invalidateQueries();
+           alert(`SUCESSO! ${count} itens foram migrados para o novo banco de dados.`);
+           return count;
+        }
+    } catch (error: any) {
+        console.error("Migration Failed", error);
+        alert(`Erro na migração: ${error.message}`);
+    }
+    return 0;
+  };
 
   // --- EXPORTED DATA & HANDLERS ---
   
@@ -386,6 +462,8 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
     setActiveMonthId,
     // Fix: Include monthsQuery.isLoading so UI waits for the correct month structure
     isLoadingData: profileQuery.isLoading || transactionsQuery.isLoading || monthsQuery.isLoading,
+    
+    migrateLegacyData, // EXPORTED HERE
 
     setUserProfile: (p: any) => {
        const newVal = typeof p === 'function' ? p(profileQuery.data?.profile || INITIAL_PROFILE) : p;

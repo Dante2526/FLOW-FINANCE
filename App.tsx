@@ -88,7 +88,8 @@ const App: React.FC = () => {
     currentUserEmail,
     isSessionReady,
     login,
-    logout
+    logout,
+    migrateLegacyData // NEW FUNCTION
   } = useFinance();
 
   // --- VIEW & MODAL STATE ---
@@ -530,6 +531,7 @@ const App: React.FC = () => {
             onSaveTheme={handleSaveTheme}
             isPro={!!userProfile.isPro}
             onOpenProModal={openProModal}
+            onMigrateData={migrateLegacyData} // Pass the migration function here
           />
       )}
       
