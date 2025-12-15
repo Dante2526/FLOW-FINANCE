@@ -13,10 +13,7 @@ export default defineConfig({
       'react-dom/client',
       'lucide-react',
       'recharts',
-      '@supabase/supabase-js',
-      'firebase/app',
-      'firebase/auth',
-      'firebase/firestore'
+      '@supabase/supabase-js'
     ]
   },
   build: {
@@ -29,10 +26,7 @@ export default defineConfig({
         'react-dom/client',
         'lucide-react',
         'recharts',
-        '@supabase/supabase-js',
-        'firebase/app',
-        'firebase/auth',
-        'firebase/firestore'
+        '@supabase/supabase-js'
       ],
       output: {
         globals: {
@@ -40,10 +34,7 @@ export default defineConfig({
           'react-dom': 'ReactDOM',
           'lucide-react': 'LucideReact',
           'recharts': 'Recharts',
-          '@supabase/supabase-js': 'Supabase',
-          'firebase/app': 'firebase',
-          'firebase/auth': 'firebaseAuth',
-          'firebase/firestore': 'firebaseFirestore'
+          '@supabase/supabase-js': 'Supabase'
         }
       }
     }
