@@ -12,6 +12,18 @@ import {
 import { AVAILABLE_THEMES } from '../components/SettingsView';
 import { sortMonths, MONTH_NAMES } from '../utils/dateUtils';
 
+// Helper for Stable IDs (UUID v4)
+const generateUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for older browsers
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 const SYSTEM_INITIAL_MONTH: MonthSummary = {
   id: '1',
   month: MONTH_NAMES[new Date().getMonth()],
@@ -107,36 +119,30 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
   // --- OPTIMISTIC UPDATE HELPERS ---
 
   const onMutateOptimistic = async (queryKey: any[], updateFn: (old: any) => any) => {
-    // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
     await queryClient.cancelQueries({ queryKey });
-    // Snapshot the previous value
     const previousData = queryClient.getQueryData(queryKey);
-    // Optimistically update to the new value
     queryClient.setQueryData(queryKey, (old: any) => updateFn(old));
-    // Return a context object with the snapshotted value
     return { previousData };
   };
 
   const onErrorRollback = (err: any, variables: any, context: any, queryKey: any[]) => {
-    // If the mutation fails, use the context returned from onMutate to roll back
     if (context?.previousData) {
       queryClient.setQueryData(queryKey, context.previousData);
     }
   };
 
   const onSettledInvalidate = (queryKey: any[]) => {
-    // Always refetch after error or success:
     queryClient.invalidateQueries({ queryKey });
   };
 
-  // --- MUTATIONS (OPTIMISTIC) ---
+  // --- MUTATIONS (With Stable ID Handling) ---
 
   // Transactions
   const addTransactionMutation = useMutation({
     mutationFn: apiTransactions.add,
     onMutate: (newTx) => onMutateOptimistic(['transactions', currentUserEmail], (old) => {
-        const tempTx = { ...newTx, id: newTx.id || `temp-${Date.now()}` };
-        return [tempTx, ...old];
+        // ID is already generated in the wrapper function below
+        return [newTx, ...old];
     }),
     onError: (err, newTx, context) => onErrorRollback(err, newTx, context, ['transactions', currentUserEmail]),
     onSettled: () => onSettledInvalidate(['transactions', currentUserEmail])
@@ -164,8 +170,7 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
   const addAccountMutation = useMutation({
     mutationFn: apiAccounts.add,
     onMutate: (newAcc) => onMutateOptimistic(['accounts', currentUserEmail], (old) => {
-        const tempAcc = { ...newAcc, id: newAcc.id || `temp-${Date.now()}` };
-        return [...old, tempAcc];
+        return [...old, newAcc];
     }),
     onError: (err, vars, context) => onErrorRollback(err, vars, context, ['accounts', currentUserEmail]),
     onSettled: () => onSettledInvalidate(['accounts', currentUserEmail])
@@ -193,8 +198,7 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
   const addMonthMutation = useMutation({
     mutationFn: apiMonths.add,
     onMutate: (newMonth) => onMutateOptimistic(['months', currentUserEmail], (old) => {
-        const temp = { ...newMonth, id: newMonth.id || `temp-${Date.now()}` };
-        return sortMonths([...old, temp]);
+        return sortMonths([...old, newMonth]);
     }),
     onError: (err, vars, context) => onErrorRollback(err, vars, context, ['months', currentUserEmail]),
     onSettled: () => onSettledInvalidate(['months', currentUserEmail])
@@ -225,8 +229,7 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
   const addInvestmentMutation = useMutation({
     mutationFn: apiInvestments.add,
     onMutate: (newInv) => onMutateOptimistic(['investments', currentUserEmail], (old) => {
-        const temp = { ...newInv, id: `temp-${Date.now()}` };
-        return [...old, temp];
+        return [...old, newInv];
     }),
     onSettled: () => onSettledInvalidate(['investments', currentUserEmail])
   });
@@ -251,8 +254,7 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
   const addLongTermMutation = useMutation({
     mutationFn: apiLongTerm.add,
     onMutate: (newItem) => onMutateOptimistic(['longTerm', currentUserEmail], (old) => {
-        const temp = { ...newItem, id: `temp-${Date.now()}` };
-        return [...old, temp];
+        return [...old, newItem];
     }),
     onSettled: () => onSettledInvalidate(['longTerm', currentUserEmail])
   });
@@ -277,8 +279,7 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
   const addNotificationMutation = useMutation({
     mutationFn: apiNotifications.add,
     onMutate: (newNotif) => onMutateOptimistic(['notifications', currentUserEmail], (old) => {
-       const temp = { ...newNotif, id: `temp-${Date.now()}`, read: false };
-       return [temp, ...old];
+       return [newNotif, ...old];
     }),
     onSettled: () => onSettledInvalidate(['notifications', currentUserEmail])
   });
@@ -299,7 +300,7 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
     onSettled: () => onSettledInvalidate(['notifications', currentUserEmail])
   });
 
-  // Bulk Operations (Optimistic is hard for bulk, generally we just rely on settle)
+  // Bulk Operations
   const bulkTransactionsMutation = useMutation({
     mutationFn: apiTransactions.bulkCreate,
     onSuccess: () => onSettledInvalidate(['transactions', currentUserEmail])
@@ -309,11 +310,11 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
     onSuccess: () => onSettledInvalidate(['accounts', currentUserEmail])
   });
 
-  // User Settings (Theme, Profile, etc.) - Direct
+  // Settings
   const saveThemeMutation = useMutation({
     mutationFn: (theme: AppTheme) => saveUserField(currentUserEmail!, 'theme', theme),
     onMutate: (theme) => {
-       setAppTheme(theme); // Instant UI Update
+       setAppTheme(theme);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['userProfile'] })
   });
@@ -368,7 +369,6 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
   // --- EXPORTED DATA & HANDLERS ---
   
   return {
-    // Data
     userProfile: profileQuery.data?.profile || INITIAL_PROFILE,
     transactions: transactionsQuery.data,
     accounts: accountsQuery.data,
@@ -386,65 +386,75 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
     setActiveMonthId,
     isLoadingData: profileQuery.isLoading || transactionsQuery.isLoading,
 
-    // Actions
     setUserProfile: (p: any) => {
        const newVal = typeof p === 'function' ? p(profileQuery.data?.profile || INITIAL_PROFILE) : p;
        saveProfileMutation.mutate(newVal);
     },
-    setAppTheme: (t: any) => {
-       saveThemeMutation.mutate(t);
-    },
+    setAppTheme: (t: any) => saveThemeMutation.mutate(t),
     setCdiRate: (r: number) => saveCdiMutation.mutate(r),
     setDashboardOrder: (o: any) => {
        const newVal = typeof o === 'function' ? o(profileQuery.data?.dashboardOrder || []) : o;
        saveDashboardOrderMutation.mutate(newVal);
     },
-    // Notepad local state is handled by the modal, we only receive save commands
     setNotepadContent: (c: string) => {}, 
     setNotepadDrawing: (d: string | null) => {},
     saveNotepad: (c: string, d: string | null) => saveNotepadMutation.mutate({ content: c, drawing: d }),
 
-    // Transactions
-    addTransaction: (tx: any) => addTransactionMutation.mutate(tx),
+    // --- WRAPPERS WITH STABLE IDs ---
+    
+    addTransaction: (tx: any) => {
+        // Ensure ID is generated here for 100% consistency between Optimistic UI and DB
+        const txWithId = { ...tx, id: tx.id || generateUUID() };
+        addTransactionMutation.mutate(txWithId);
+    },
     updateTransaction: (tx: any) => updateTransactionMutation.mutate(tx),
     deleteTransaction: (id: string) => deleteTransactionMutation.mutate(id),
     
-    // Accounts
-    addAccount: (acc: any) => addAccountMutation.mutate(acc),
+    addAccount: (acc: any) => {
+        const accWithId = { ...acc, id: acc.id || generateUUID() };
+        addAccountMutation.mutate(accWithId);
+    },
     updateAccount: (acc: any) => updateAccountMutation.mutate(acc),
     deleteAccount: (id: string) => deleteAccountMutation.mutate(id),
 
-    // Months
-    addMonth: (m: any) => addMonthMutation.mutate(m),
+    addMonth: (m: any) => {
+        const monthWithId = { ...m, id: m.id || generateUUID() };
+        addMonthMutation.mutate(monthWithId);
+    },
     updateMonth: (m: any) => updateMonthMutation.mutate(m),
     deleteMonth: (id: string) => deleteMonthMutation.mutate(id),
     
-    // Bulk
     bulkCreateTransactions: (txs: any[]) => bulkTransactionsMutation.mutate(txs),
     bulkCreateAccounts: (accs: any[]) => bulkAccountsMutation.mutate(accs),
 
-    // Investments
-    addInvestment: (inv: any) => addInvestmentMutation.mutate(inv),
+    addInvestment: (inv: any) => {
+        const invWithId = { ...inv, id: inv.id || generateUUID() };
+        addInvestmentMutation.mutate(invWithId);
+    },
     updateInvestment: (inv: any) => updateInvestmentMutation.mutate(inv),
     deleteInvestment: (id: string) => deleteInvestmentMutation.mutate(id),
     setInvestments: (invs: any) => {},
 
-    // Long Term
-    addLongTerm: (lt: any) => addLongTermMutation.mutate(lt),
+    addLongTerm: (lt: any) => {
+        const ltWithId = { ...lt, id: lt.id || generateUUID() };
+        addLongTermMutation.mutate(ltWithId);
+    },
     updateLongTerm: (lt: any) => updateLongTermMutation.mutate(lt),
     deleteLongTerm: (id: string) => deleteLongTermMutation.mutate(id),
     setLongTermTransactions: (lts: any) => {}, 
 
-    // Notifications
     setNotifications: (n: any) => {},
-    addNotification: (n: any) => addNotificationMutation.mutate(n),
+    addNotification: (n: any) => {
+        const notifWithId = { ...n, id: n.id || generateUUID(), read: false };
+        addNotificationMutation.mutate(notifWithId);
+    },
     deleteNotification: (id: string) => deleteNotificationMutation.mutate(id),
     markAllNotificationsRead: () => {
        const ids = notificationsQuery.data?.map((n:any) => n.id) || [];
        if(ids.length) markAllReadMutation.mutate(ids);
     },
 
-    // Legacy Fallbacks (No-ops as we use direct mutations now)
+    // Legacy Fallbacks
     setTransactions: () => {},
     setAccounts: () => {},
     setMonths: () => {},

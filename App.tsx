@@ -304,28 +304,32 @@ const App: React.FC = () => {
     bulkCreateAccounts(newAccounts);
     
     // Create new Month
-    // Note: We don't set total here because transactions are async added. 
-    // Ideally total triggers an update or is dynamic. For now we sum what we added.
     const initialTotal = newTxs.reduce((acc, t) => acc + t.amount, 0);
     
-    // NOTE: setActiveMonthId needs ID. We can only set it after creation.
-    // For React Query, we assume optimistic or refetch. 
-    // Since we don't have the ID yet, we'll need to listen to month changes or rely on UI to let user switch.
-    // BUT: Our `useEffect` in useFinancialData detects new months and auto-switches if last month.
-    
+    // Use generated ID to switch immediately
+    let newMonthId;
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      newMonthId = crypto.randomUUID();
+    } else {
+      newMonthId = `m-${Date.now()}`;
+    }
+
     addMonth({
+        id: newMonthId,
         month: nextMonthName,
         year: nextYearInt.toString(),
         total: initialTotal
     });
+    
+    // Immediate Switch (Stable ID makes this safe)
+    setActiveMonthId(newMonthId);
 
-  }, [activeMonthSummary, months, transactions, accounts, bulkCreateTransactions, bulkCreateAccounts, addMonth]);
+  }, [activeMonthSummary, months, transactions, accounts, bulkCreateTransactions, bulkCreateAccounts, addMonth, setActiveMonthId]);
 
   const handleSaveTransaction = useCallback((txData: Omit<Transaction, 'id'>) => {
     if (editingTransaction) {
       updateTransaction({ ...txData, id: editingTransaction.id });
       
-      // Update Month Total Logic (Manual adjustment to optimize UI, though backend could trigger it)
       const oldMonth = editingTransaction.month || getMonthFromDateStr(editingTransaction.date);
       const oldYear = editingTransaction.year || getYearFromDateStr(editingTransaction.date, activeMonthSummary.year);
       
@@ -368,12 +372,14 @@ const App: React.FC = () => {
 
   const handleDeleteMonth = useCallback((id: string) => {
     deleteMonth(id);
-    // Auto-switch handled by useFinancialData effect or fallback to first
-    const remaining = months.filter(m => m.id !== id);
-    if (remaining.length > 0) {
-        setActiveMonthId(remaining[remaining.length - 1].id);
+    // Fallback switch if active was deleted
+    if (activeMonthId === id) {
+       const remaining = months.filter(m => m.id !== id);
+       if (remaining.length > 0) {
+           setActiveMonthId(remaining[remaining.length - 1].id);
+       }
     }
-  }, [deleteMonth, months, setActiveMonthId]);
+  }, [deleteMonth, months, setActiveMonthId, activeMonthId]);
 
   const handleProUpgrade = useCallback(() => {
     const amount = 7.00;
@@ -408,8 +414,7 @@ const App: React.FC = () => {
           name, balance, colorTheme: theme, 
           month: activeMonthSummary.month, year: activeMonthSummary.year 
       });
-      // Order update handled implicitly or via refresh, 
-      // but to be snappy we might need to push to dashboardOrder if we want it instantly draggable
+      // Order update handled implicitly
     }
   }, [activeMonthSummary, updateAccount, addAccount]);
 
