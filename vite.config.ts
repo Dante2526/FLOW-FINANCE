@@ -6,10 +6,10 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   define: {
-    // Polyfill for process.env to prevent runtime crashes in browser
-    'process.env': {},
-    // Inject API Key safely
-    'process.env.API_KEY': JSON.stringify(process.env.API_KEY)
+    // Explicitly define env variables instead of replacing the whole process.env object
+    // This prevents breaking other libraries that rely on process.env check
+    'process.env.API_KEY': JSON.stringify(process.env.API_KEY || ''),
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
   },
   optimizeDeps: {
     // Exclude dependencies served via CDN to prevent "failed to resolve" errors in Dev
@@ -26,7 +26,7 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
-      // Externalize dependencies in Production Build
+      // Externalize dependencies in Production Build to use CDN versions defined in index.html
       external: [
         'react',
         'react-dom',
