@@ -6,7 +6,7 @@ import {
   LongTermTransaction, Investment, AppNotification, AppTheme 
 } from '../types';
 import { 
-  loginUser, saveUserField, 
+  loginUser, saveUserField, fetchRawUserData, clearLegacyData,
   apiTransactions, apiAccounts, apiMonths, apiInvestments, apiLongTerm, apiNotifications 
 } from '../services/supabase';
 import { AVAILABLE_THEMES } from '../components/SettingsView';
@@ -367,73 +367,96 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
 
   // --- MIGRATION LOGIC ---
   const migrateLegacyData = async () => {
-    const profile = profileQuery.data?.profile as any || {};
-    let count = 0;
+    if (!currentUserEmail) return 0;
     
-    // Check if there is data to migrate
-    const hasData = 
-      (profile.transactions && profile.transactions.length) ||
-      (profile.accounts && profile.accounts.length) ||
-      (profile.months && profile.months.length) ||
-      (profile.investments && profile.investments.length) ||
-      (profile.longTerm && profile.longTerm.length);
-
-    if (!hasData) {
-       alert("Nenhum dado antigo encontrado no perfil para migrar.");
-       return 0;
-    }
+    // Fetch raw user row directly from Supabase to access the legacy columns
+    const rawUser = await fetchRawUserData(currentUserEmail);
+    const profileNested = rawUser.profile || {};
+    
+    let count = 0;
 
     try {
-        // 1. Transactions
-        if (profile.transactions && Array.isArray(profile.transactions) && profile.transactions.length > 0) {
-           await apiTransactions.bulkCreate(profile.transactions);
-           count += profile.transactions.length;
-           delete profile.transactions;
+        // --- 1. ACCOUNTS ---
+        // Source priorities: 'accounts' column (JSON) -> profile.accounts (JSON)
+        const accountsToMigrate = rawUser.accounts || profileNested.accounts || [];
+        if (Array.isArray(accountsToMigrate) && accountsToMigrate.length > 0) {
+           // Clean and map accounts (remove old ID to let DB generate UUID or ensure it fits)
+           // But since accounts might have relationships in Order, regenerating ID might lose order if order array uses old IDs.
+           // However, for simplicity and type safety (if DB id is uuid), we regenerate.
+           // Legacy 'accounts' column used colorTheme property which maps to color_theme in bulkCreate.
+           
+           const cleanAccounts = accountsToMigrate.map((a: any) => {
+              const { id, ...rest } = a; // Strip old ID
+              return { ...rest }; 
+           });
+           
+           await apiAccounts.bulkCreate(cleanAccounts);
+           count += cleanAccounts.length;
         }
 
-        // 2. Accounts
-        if (profile.accounts && Array.isArray(profile.accounts) && profile.accounts.length > 0) {
-           await apiAccounts.bulkCreate(profile.accounts);
-           count += profile.accounts.length;
-           delete profile.accounts;
+        // --- 2. TRANSACTIONS ---
+        const txToMigrate = rawUser.transactions || profileNested.transactions || [];
+        if (Array.isArray(txToMigrate) && txToMigrate.length > 0) {
+           const cleanTxs = txToMigrate.map((t: any) => {
+              const { id, ...rest } = t;
+              return { ...rest };
+           });
+           await apiTransactions.bulkCreate(cleanTxs);
+           count += cleanTxs.length;
         }
 
-        // 3. Months (Loop)
-        if (profile.months && Array.isArray(profile.months)) {
-           for (const m of profile.months) {
-              // Avoid duplicating initial month if it exists
+        // --- 3. MONTHS ---
+        const monthsToMigrate = rawUser.months || profileNested.months || [];
+        if (Array.isArray(monthsToMigrate)) {
+           for (const m of monthsToMigrate) {
               if (m.id === '1' && m.month === SYSTEM_INITIAL_MONTH.month && m.year === SYSTEM_INITIAL_MONTH.year) continue;
-              await apiMonths.add(m).catch(e => console.warn('Month migration error', e));
+              const { id, ...rest } = m;
+              await apiMonths.add(rest).catch(e => console.warn('Month migration error', e));
               count++;
            }
-           delete profile.months;
         }
 
-        // 4. Investments (Loop)
-        if (profile.investments && Array.isArray(profile.investments)) {
-           for (const i of profile.investments) {
-              await apiInvestments.add(i).catch(e => console.warn('Inv migration error', e));
+        // --- 4. INVESTMENTS ---
+        const invToMigrate = rawUser.investments || profileNested.investments || [];
+        if (Array.isArray(invToMigrate)) {
+           for (const i of invToMigrate) {
+              const { id, ...rest } = i;
+              await apiInvestments.add(rest).catch(e => console.warn('Inv migration error', e));
               count++;
            }
-           delete profile.investments;
         }
         
-        // 5. Long Term (Loop)
-        if (profile.longTerm && Array.isArray(profile.longTerm)) {
-           for (const l of profile.longTerm) {
-              await apiLongTerm.add(l).catch(e => console.warn('LT migration error', e));
+        // --- 5. LONG TERM ---
+        // Note: DB column likely 'long_term', profile field 'longTerm'
+        const ltToMigrate = rawUser.long_term || profileNested.longTerm || [];
+        if (Array.isArray(ltToMigrate)) {
+           for (const l of ltToMigrate) {
+              const { id, ...rest } = l;
+              await apiLongTerm.add(rest).catch(e => console.warn('LT migration error', e));
               count++;
            }
-           delete profile.longTerm;
         }
 
         if (count > 0) {
-           // Update profile to remove migrated data (Clean up)
-           await saveProfileMutation.mutateAsync(profile);
-           // Refresh all queries
+           // Clear legacy columns to prevent future double migration
+           await clearLegacyData(currentUserEmail);
+           
+           // Clean profile object if it had nested data
+           if (profileNested.transactions || profileNested.accounts) {
+              const cleanProfile = { ...profileNested };
+              delete cleanProfile.transactions;
+              delete cleanProfile.accounts;
+              delete cleanProfile.months;
+              delete cleanProfile.investments;
+              delete cleanProfile.longTerm;
+              await saveProfileMutation.mutateAsync(cleanProfile);
+           }
+
            queryClient.invalidateQueries();
-           alert(`SUCESSO! ${count} itens foram migrados para o novo banco de dados.`);
+           alert(`SUCESSO! ${count} itens foram migrados e os dados antigos foram limpos.`);
            return count;
+        } else {
+           alert("Nenhum dado encontrado nas colunas antigas.");
         }
     } catch (error: any) {
         console.error("Migration Failed", error);

@@ -60,6 +60,28 @@ export const loginUser = async (email: string) => {
   };
 };
 
+// NEW: Fetch raw user data including legacy columns for migration
+export const fetchRawUserData = async (email: string) => {
+  const normalizedEmail = email.toLowerCase().trim();
+  const { data, error } = await supabase.from('users').select('*').eq('email', normalizedEmail).single();
+  if (error) throw error;
+  return data;
+};
+
+// NEW: Clear legacy columns after migration
+export const clearLegacyData = async (email: string) => {
+  const normalizedEmail = email.toLowerCase().trim();
+  const updates = {
+    accounts: null,
+    transactions: null,
+    months: null,
+    investments: null,
+    long_term: null
+  };
+  const { error } = await supabase.from('users').update(updates).eq('email', normalizedEmail);
+  if (error) throw error;
+};
+
 export const registerUser = async (email: string, name: string, initialData: any) => {
   const normalizedEmail = email.toLowerCase().trim();
   const uid = await getUserId();
@@ -339,13 +361,11 @@ export const apiNotifications = {
     return id;
   },
   markRead: async (id: string) => {
-     // Not used individually much, usually bulk, but implemented
      const { data, error } = await supabase.from('notifications').update({ read: true }).eq('id', id).select().single();
      if (error) throw error;
      return data;
   },
   markAllRead: async (ids: string[]) => {
-     // This needs a specific RPC or loop. For simplicity, we loop or use 'in'.
      const { data, error } = await supabase.from('notifications').update({ read: true }).in('id', ids).select();
      if (error) throw error;
      return data;
