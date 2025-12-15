@@ -315,22 +315,20 @@ const App: React.FC = () => {
   // AND anything that is missing (orphans) is appended at the end.
   const dashboardItems = useMemo(() => {
     const items: string[] = [];
-    const orderSet = new Set(dashboardOrder);
+    // Only accounts that should be visible (e.g. not filtered out)
+    const visibleAccountIds = new Set(filteredAccounts.map(a => a.id));
     
     // 1. Add items from the known order (if they are visible/exist in current filter)
     dashboardOrder.forEach(id => {
-      if (id === BALANCE_CARD_ID) {
+      if (id === BALANCE_CARD_ID || visibleAccountIds.has(id)) {
         items.push(id);
-      } else {
-        const exists = filteredAccounts.find(a => a.id === id);
-        if (exists) items.push(id);
       }
     });
 
     // 2. Add "Orphan" items (Visible accounts NOT in the order list)
-    // This ensures new accounts appear at the bottom without jumping
+    // This ensures new accounts or edited ones appear at the bottom without jumping
     filteredAccounts.forEach(a => {
-      if (!orderSet.has(a.id)) {
+      if (!items.includes(a.id)) {
         items.push(a.id);
       }
     });
@@ -890,9 +888,17 @@ const App: React.FC = () => {
 
   const handleCardDragStart = useCallback((id: string) => {
     dragItem.current = id;
+    
+    // LAZY SYNC: If the item being dragged isn't in the official order yet (orphan),
+    // add it immediately so index calculations work during the drag.
+    setDashboardOrder(prev => {
+        if (!prev.includes(id)) {
+            return [...prev, id];
+        }
+        return prev;
+    });
   }, []);
 
-  // ROBUST DRAG HANDLER: Supports swapping and inserting 'orphans'
   const handleCardDragEnter = useCallback((targetId: string) => {
     if (dragItem.current && dragItem.current !== targetId) {
        const draggedId = dragItem.current;
@@ -904,21 +910,29 @@ const App: React.FC = () => {
           
           // Case: Dragging an orphan (an item not yet in the official order list)
           // We treat the orphan as if it's coming from outside, so we insert it at the target position.
-          // Note: If target is also an orphan, this logic might be tricky, but typically targets are visible items.
-          
-          if (targetIndex === -1) {
-             // If target is orphan (at bottom), append it to order first so we can interact with it
-             newOrder.push(targetId);
-             targetIndex = newOrder.length - 1;
-          }
           
           if (draggedIndex === -1) {
              // Dragging an orphan INTO the list -> Insert at target
-             newOrder.splice(targetIndex, 0, draggedId);
+             // If target is also missing (unlikely if interacting), append both? 
+             // Normally target comes from a rendered card, so targetId exists in DOM, effectively existing in dashboardItems
+             if (targetIndex !== -1) {
+                 newOrder.splice(targetIndex, 0, draggedId);
+             } else {
+                 newOrder.push(draggedId);
+             }
           } else {
-             // Reordering existing items -> Swap logic
-             newOrder.splice(draggedIndex, 1);
-             newOrder.splice(targetIndex, 0, draggedId);
+             // Normal Swap logic
+             if (targetIndex !== -1) {
+                 newOrder.splice(draggedIndex, 1);
+                 newOrder.splice(targetIndex, 0, draggedId);
+             } else {
+                 // Dragging ONTO an orphan target
+                 // Add the target to order, then swap
+                 newOrder.push(targetId);
+                 targetIndex = newOrder.length - 1;
+                 newOrder.splice(draggedIndex, 1);
+                 newOrder.splice(targetIndex, 0, draggedId);
+             }
           }
           
           return newOrder;
@@ -1289,14 +1303,15 @@ const App: React.FC = () => {
 
   const handleSaveAccount = (name: string, balance: number, theme: CardTheme) => {
     if (editingAccount) {
-      // Editing: Update Account state ONLY. Do NOT touch dashboardOrder.
+      // EDIT MODE: Update data ONLY. Do NOT touch order list.
+      // This prevents the "reorganizes itself" issue described by the user.
       setAccounts(prev => prev.map(acc => 
         acc.id === editingAccount.id ? { 
            ...acc, 
            name, 
            balance, 
            colorTheme: theme,
-           // Safe logic: Preserve existing month/year if present, otherwise set to current view context
+           // Safe logic: Preserve existing month/year if present
            month: acc.month || activeMonthSummary?.month,
            year: acc.year || activeMonthSummary?.year
         } : acc
@@ -1304,7 +1319,7 @@ const App: React.FC = () => {
       
       setEditingAccount(null);
     } else {
-      // Creating: Add Account AND Add to Dashboard Order immediately
+      // CREATE MODE: Add to data AND Add to order.
       const newId = Date.now().toString();
       const newAccount: Account = {
         id: newId,
