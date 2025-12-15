@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Plus, Copy, Calculator, GripVertical, Eye, EyeOff } from 'lucide-react';
 
@@ -72,7 +73,7 @@ const BalanceCard: React.FC<Props> = ({
   return (
     <div 
       data-card-id={id}
-      className="relative w-full bg-accent rounded-[2.5rem] p-6 text-white flex flex-col justify-between min-h-[220px] shadow-lg shadow-accent/20"
+      className="relative w-full bg-gradient-to-br from-accent to-accentDark rounded-[2.5rem] p-6 text-white flex flex-col justify-between min-h-[220px] shadow-lg shadow-accent/20"
       onDragEnter={handleDragEnter}
       onDragOver={(e) => e.preventDefault()}
       onDragEnd={onDragEnd}
