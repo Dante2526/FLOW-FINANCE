@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, Suspense, useCallback, useRef } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
