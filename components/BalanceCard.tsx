@@ -73,24 +73,27 @@ const BalanceCard: React.FC<Props> = ({
   return (
     <div 
       data-card-id={id}
-      className="relative w-full bg-gradient-to-br from-accent to-accentDark rounded-[2.5rem] p-6 text-white flex flex-col justify-between min-h-[220px] shadow-lg shadow-accent/20 overflow-hidden"
+      className="relative w-full bg-gradient-to-br from-orange-500 via-orange-600 to-red-600 rounded-[2.5rem] p-6 text-white flex flex-col justify-between min-h-[240px] shadow-2xl shadow-orange-900/40 overflow-hidden group"
       onDragEnter={handleDragEnter}
       onDragOver={(e) => e.preventDefault()}
       onDragEnd={onDragEnd}
     >
-      {/* Decorative background circle for depth */}
-      <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none mix-blend-overlay"></div>
+      {/* Decorative background elements for depth */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none mix-blend-overlay"></div>
+      <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
 
       {/* Header of Card */}
       <div className="flex justify-between items-start z-10">
         <div className="flex items-center gap-3">
-          <span className="text-lg font-extrabold text-white/90 drop-shadow-sm tracking-wide">LUCRO</span>
+          <div className="p-2 bg-white/10 rounded-xl backdrop-blur-md border border-white/10">
+            <span className="text-xs font-bold text-white tracking-widest uppercase">Saldo Atual</span>
+          </div>
           <button 
             onClick={toggleVisibility}
-            className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors active:scale-95 flex items-center justify-center backdrop-blur-sm"
+            className="p-2 rounded-full hover:bg-white/10 transition-colors active:scale-95 flex items-center justify-center"
             title={isVisible ? "Esconder saldo" : "Mostrar saldo"}
           >
-            {isVisible ? <Eye className="w-4 h-4 text-white" /> : <EyeOff className="w-4 h-4 text-white" />}
+            {isVisible ? <Eye className="w-5 h-5 text-white/90" /> : <EyeOff className="w-5 h-5 text-white/90" />}
           </button>
         </div>
         
@@ -119,19 +122,19 @@ const BalanceCard: React.FC<Props> = ({
       </div>
 
       {/* Main Balance with Improved Typography */}
-      <div className="mt-2 mb-6 z-10">
+      <div className="mt-4 mb-8 z-10">
         {isVisible ? (
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-white/80">R$</span>
-            <h1 className="text-5xl font-extrabold tracking-tighter drop-shadow-sm text-white">
-              {integerPart}<span className="text-3xl text-white/90">,{decimalPart}</span>
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-2xl font-medium text-white/80 font-sans">R$</span>
+            <h1 className="text-6xl font-black tracking-tighter drop-shadow-sm text-white">
+              {integerPart}<span className="text-4xl text-white/80 font-bold">,{decimalPart}</span>
             </h1>
           </div>
         ) : (
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-white/80">R$</span>
-             <h1 className="text-5xl font-extrabold tracking-tight drop-shadow-md opacity-80 translate-y-1">
-              ••••
+          <div className="flex items-baseline gap-1.5 animate-pulse">
+            <span className="text-2xl font-medium text-white/80">R$</span>
+             <h1 className="text-6xl font-black tracking-tight drop-shadow-md opacity-50 translate-y-2">
+              ••••••
             </h1>
           </div>
         )}
@@ -139,29 +142,30 @@ const BalanceCard: React.FC<Props> = ({
 
       {/* Action Buttons Row */}
       <div className="flex items-center gap-3 z-10">
-        {/* Add Button (Promoted to Primary - replaces Send) */}
+        {/* Add Button (Promoted to Primary) */}
         <button 
           onClick={onAddClick}
-          className="flex-1 bg-[#121214] text-white h-16 rounded-[1.5rem] flex items-center justify-center gap-2 hover:bg-black transition-colors shadow-lg active:scale-95 border border-white/5"
+          className="flex-1 bg-[#0a0a0b]/90 backdrop-blur-md text-white h-14 rounded-[1.25rem] flex items-center justify-center gap-2 hover:bg-black transition-all shadow-lg active:scale-95 border border-white/5 group-hover:border-white/10"
         >
-          <span className="text-lg font-medium">Adicionar</span>
-          <Plus className="w-5 h-5" />
+          <Plus className="w-5 h-5 text-accent" />
+          <span className="text-sm font-bold tracking-wide">Nova Conta</span>
         </button>
 
-        {/* Duplicate Button (Copy Icon) */}
+        {/* Duplicate Button */}
         <button 
           onClick={onDuplicateClick}
-          className="w-16 h-16 bg-[#121214] text-white rounded-[1.5rem] flex items-center justify-center hover:bg-black transition-colors shadow-lg active:scale-95 border border-white/5"
+          className="w-14 h-14 bg-[#0a0a0b]/40 backdrop-blur-md text-white rounded-[1.25rem] flex items-center justify-center hover:bg-[#0a0a0b]/60 transition-all shadow-lg active:scale-95 border border-white/10"
           title="Duplicar contas para o próximo mês"
         >
-          <Copy className="w-6 h-6" />
+          <Copy className="w-5 h-5" />
         </button>
 
+        {/* Calculator Button */}
         <button 
           onClick={onCalculatorClick}
-          className="w-16 h-16 bg-[#121214] text-white rounded-[1.5rem] flex items-center justify-center hover:bg-black transition-colors shadow-lg active:scale-95 border border-white/5"
+          className="w-14 h-14 bg-[#0a0a0b]/40 backdrop-blur-md text-white rounded-[1.25rem] flex items-center justify-center hover:bg-[#0a0a0b]/60 transition-all shadow-lg active:scale-95 border border-white/10"
         >
-          <Calculator className="w-6 h-6" />
+          <Calculator className="w-5 h-5" />
         </button>
       </div>
     </div>
