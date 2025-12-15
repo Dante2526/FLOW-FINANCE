@@ -1303,7 +1303,8 @@ const App: React.FC = () => {
 
   // UPDATED SAVE HANDLER: Uses ID to detect Edit vs Create
   const handleSaveAccount = (id: string | undefined, name: string, balance: number, theme: CardTheme) => {
-    if (id) {
+    // Robust check: ensure ID is not null/undefined to count as edit
+    if (id !== undefined && id !== null) {
       // EDIT MODE: Update data ONLY. Do NOT touch order list.
       // This prevents the "reorganizes itself" issue described by the user.
       setAccounts(prev => prev.map(acc => 

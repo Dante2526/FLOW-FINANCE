@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Check, Lock, Crown } from 'lucide-react';
 import { CardTheme, Account } from '../types';
 
@@ -25,22 +25,21 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
   const [name, setName] = useState('');
   const [selectedTheme, setSelectedTheme] = useState<CardTheme>('default');
   
-  // USEREF: A maneira mais segura de manter o ID.
-  // Ele não perde o valor mesmo se o componente renderizar novamente.
-  const idRef = useRef<string | undefined>(undefined);
+  // State to persist the ID being edited.
+  const [editingId, setEditingId] = useState<string | undefined>(undefined);
 
   // Load data when entering edit mode
   useEffect(() => {
     if (isOpen) {
       if (accountToEdit) {
-        // MODO EDIÇÃO: Grava o ID imediatamente na referência fixa
-        idRef.current = accountToEdit.id;
+        // MODO EDIÇÃO
+        setEditingId(accountToEdit.id);
         setName(accountToEdit.name);
         setBalance(accountToEdit.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         setSelectedTheme(accountToEdit.colorTheme);
       } else {
-        // MODO CRIAÇÃO: Limpa o ID
-        idRef.current = undefined;
+        // MODO CRIAÇÃO
+        setEditingId(undefined);
         setName('');
         setBalance('');
         setSelectedTheme('default');
@@ -70,10 +69,11 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
        finalBalance = parseFloat(balance.replace(/\./g, '').replace(',', '.'));
     }
 
-    // Usa idRef.current para enviar o ID correto para o App.tsx
-    // Se idRef.current tiver valor, o App sabe que é Edição.
-    // Se for undefined, o App sabe que é Criação.
-    onSave(idRef.current, name, finalBalance, selectedTheme);
+    // ROBUST ID CHECK: Use stored state, fallback to prop if available.
+    // This ensures that even if state was somehow reset, we still have the prop ID during an edit session.
+    const finalId = editingId || accountToEdit?.id;
+
+    onSave(finalId, name, finalBalance, selectedTheme);
     
     onClose();
   };
@@ -87,9 +87,9 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
   };
 
   const isFormValid = name.length > 0;
-
-  // Usa idRef para decidir o título (mais estável que prop direta na renderização)
-  const isEditing = !!idRef.current || !!accountToEdit;
+  
+  // Visual check for title
+  const isEditing = !!editingId || !!accountToEdit;
 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
