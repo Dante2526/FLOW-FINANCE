@@ -309,42 +309,48 @@ const App: React.FC = () => {
     });
   }, [accounts, activeMonthSummary]);
 
-  // --- INDEPENDENT RENDERING LOGIC (NO MORE DISAPPEARING CARDS) ---
-  // We sort the existing accounts based on the saved order.
-  // If an account is not in the order list, it goes to the end.
-  const sortedAccounts = useMemo(() => {
-    return [...filteredAccounts].sort((a, b) => {
-        const indexA = dashboardOrder.indexOf(a.id);
-        const indexB = dashboardOrder.indexOf(b.id);
-
-        // If both are in the order list, sort by that order
-        if (indexA !== -1 && indexB !== -1) {
-            return indexA - indexB;
-        }
+  // --- UNIFIED DASHBOARD LIST (SAFE & SORTABLE) ---
+  // This combines BalanceCard and all Accounts into a single list.
+  // It sorts them by 'dashboardOrder'.
+  // Crucially, it appends any item NOT in dashboardOrder to the end, ensuring nothing disappears.
+  const dashboardItems = useMemo(() => {
+    // 1. Build a list of ALL available IDs (Balance Card + Account IDs)
+    const availableIds = [BALANCE_CARD_ID, ...filteredAccounts.map(a => a.id)];
+    
+    // 2. Sort based on dashboardOrder index
+    // If an ID is missing from dashboardOrder, it gets a high index (9999) to go to the end
+    const sortedIds = availableIds.sort((a, b) => {
+        const indexA = dashboardOrder.indexOf(a);
+        const indexB = dashboardOrder.indexOf(b);
         
-        // If A is in list but B is not, A comes first
-        if (indexA !== -1) return -1;
+        const valA = indexA === -1 ? 99999 : indexA;
+        const valB = indexB === -1 ? 99999 : indexB;
         
-        // If B is in list but A is not, B comes first
-        if (indexB !== -1) return 1;
-
-        // If neither are in the list, keep original order (creation time)
-        return 0;
+        return valA - valB;
     });
+
+    return sortedIds;
   }, [filteredAccounts, dashboardOrder]);
 
   // --- SYNC DASHBOARD ORDER ---
-  // Ensures any new accounts (orphans) are eventually added to the persistent order
+  // If we detect new items (orphans) that aren't in the saved order, we add them to the saved state.
   useEffect(() => {
      const currentSet = new Set(dashboardOrder);
-     const newIds = filteredAccounts
-        .map(a => a.id)
-        .filter(id => !currentSet.has(id));
+     // Check if Balance Card is missing from order
+     let needsUpdate = !currentSet.has(BALANCE_CARD_ID);
      
-     if (newIds.length > 0) {
+     // Check if any visible account is missing
+     const missingAccounts = filteredAccounts.filter(a => !currentSet.has(a.id));
+     if (missingAccounts.length > 0) needsUpdate = true;
+
+     if (needsUpdate) {
+        const newIds = [];
+        if (!currentSet.has(BALANCE_CARD_ID)) newIds.push(BALANCE_CARD_ID);
+        newIds.push(...missingAccounts.map(a => a.id));
+        
         setDashboardOrder(prev => [...prev, ...newIds]);
      }
-  }, [filteredAccounts]); // Only run when accounts list changes
+  }, [filteredAccounts, dashboardOrder]); 
 
   // --- AUTH CHECK EFFECT (Fixes RLS issues) ---
   useEffect(() => {
@@ -1395,34 +1401,52 @@ const App: React.FC = () => {
               </div>
             </div>
 
-            {/* Fixed Balance Card (Always First) */}
+            {/* Unified Draggable Cards Section */}
             <div className="flex flex-col gap-2 mb-6">
-                <BalanceCard 
-                    key={BALANCE_CARD_ID}
-                    id={BALANCE_CARD_ID}
-                    balance={profitBalance} 
-                    onAddClick={handleOpenAddTransaction}
-                    onDuplicateClick={handleDuplicateMonth}
-                    onCalculatorClick={handleOpenCalculator}
-                    draggable
-                    onDragStart={handleCardDragStart}
-                    onDragEnter={handleCardDragEnter}
-                    onDragEnd={handleCardDragEnd}
-                />
-
-                {/* Independent List of Accounts (Sorted by Dashboard Order) */}
-                {sortedAccounts.map((account) => (
-                    <SecondaryCard 
-                        key={account.id} 
-                        account={account} 
-                        onDelete={handleDeleteAccount}
-                        onEdit={handleEditAccount}
-                        draggable
-                        onDragStart={handleCardDragStart}
-                        onDragEnter={handleCardDragEnter}
-                        onDragEnd={handleCardDragEnd}
-                    />
-                ))}
+               {/* 
+                  Render items from the SORTED unified list.
+                  This includes both BalanceCard and Accounts.
+               */}
+               {dashboardItems.map((id) => {
+                  
+                  // 1. Render Balance Card if ID matches
+                  if (id === BALANCE_CARD_ID) {
+                     return (
+                        <BalanceCard 
+                           key={id}
+                           id={id}
+                           balance={profitBalance} 
+                           onAddClick={handleOpenAddTransaction}
+                           onDuplicateClick={handleDuplicateMonth}
+                           onCalculatorClick={handleOpenCalculator}
+                           draggable
+                           onDragStart={handleCardDragStart}
+                           onDragEnter={handleCardDragEnter}
+                           onDragEnd={handleCardDragEnd}
+                        />
+                     );
+                  }
+                  
+                  // 2. Render Account Card if ID matches an account in current filter
+                  const account = filteredAccounts.find(a => a.id === id);
+                  if (account) {
+                     return (
+                        <SecondaryCard 
+                           key={account.id} 
+                           account={account} 
+                           onDelete={handleDeleteAccount}
+                           onEdit={handleEditAccount}
+                           draggable
+                           onDragStart={handleCardDragStart}
+                           onDragEnter={handleCardDragEnter}
+                           onDragEnd={handleCardDragEnd}
+                        />
+                     );
+                  }
+                  
+                  // 3. Fallback (should not happen if logic is correct)
+                  return null;
+               })}
             </div>
 
             <ContactsRow 
