@@ -124,11 +124,18 @@ const App: React.FC = () => {
   }, [accounts, activeMonthSummary]);
 
   const dashboardItems = useMemo(() => {
+    // 1. Identify all IDs that SHOULD be visible
     const visibleAccountIds = new Set(filteredAccounts.map(a => a.id));
     const allAvailableIds = new Set([BALANCE_CARD_ID, ...filteredAccounts.map(a => a.id)]);
+    
+    // 2. Filter the saved order to include only valid/visible IDs
     const orderedList = dashboardOrder.filter(id => allAvailableIds.has(id));
+    
+    // 3. Find "Orphans" (new accounts not yet in the saved order)
     const savedSet = new Set(dashboardOrder);
     const orphans = [BALANCE_CARD_ID, ...filteredAccounts.map(a => a.id)].filter(id => !savedSet.has(id));
+    
+    // 4. Combine: Ordered items first, then new items appended at the end
     return [...orderedList, ...orphans];
   }, [filteredAccounts, dashboardOrder]);
 
@@ -206,10 +213,18 @@ const App: React.FC = () => {
   const handleCardDragEnter = useCallback((targetId: string) => {
     if (dragItem.current && dragItem.current !== targetId) {
        const draggedId = dragItem.current;
-       setDashboardOrder(prev => {
-          const newOrder = [...prev];
-          let draggedIndex = newOrder.indexOf(draggedId);
-          let targetIndex = newOrder.indexOf(targetId);
+       
+       setDashboardOrder(prevOrder => {
+          // Work with the full persisted list, not just visible items
+          const newOrder = [...prevOrder];
+          
+          // Ensure both items are in the list (handle orphans being dragged for the first time)
+          if (!newOrder.includes(draggedId)) newOrder.push(draggedId);
+          if (!newOrder.includes(targetId)) newOrder.push(targetId);
+
+          const draggedIndex = newOrder.indexOf(draggedId);
+          const targetIndex = newOrder.indexOf(targetId);
+
           if (draggedIndex !== -1 && targetIndex !== -1) {
              newOrder.splice(draggedIndex, 1);
              newOrder.splice(targetIndex, 0, draggedId);
@@ -273,6 +288,8 @@ const App: React.FC = () => {
     setTransactions(prev => [...newTxs, ...prev]); 
     setAccounts(prev => [...prev, ...newAccounts]);
     setActiveMonthId(newMonthSummary.id);
+    
+    // Auto-append new accounts to dashboard order
     setDashboardOrder(prev => [...prev, ...newAccounts.map(a => a.id)]);
   };
 

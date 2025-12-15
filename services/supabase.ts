@@ -54,12 +54,13 @@ export const normalizeUserData = (data: any) => {
      result.notepadDrawing = data.profile.notepadDrawing;
   }
   
-  // Try to find dashboardOrder in column first, then fallback to profile
-  if ('dashboard_order' in data && data.dashboard_order && Array.isArray(data.dashboard_order) && data.dashboard_order.length > 0) {
-     result.dashboardOrder = data.dashboard_order;
-  } else if (data.profile && data.profile.dashboardOrder) {
+  // Prioritize Profile dashboardOrder as it is the save target
+  if (data.profile && Array.isArray(data.profile.dashboardOrder)) {
      result.dashboardOrder = data.profile.dashboardOrder;
+  } else if ('dashboard_order' in data && Array.isArray(data.dashboard_order)) {
+     result.dashboardOrder = data.dashboard_order;
   } else {
+     // Default order will be handled by the hook
      result.dashboardOrder = [];
   }
 
@@ -166,7 +167,8 @@ export const registerUser = async (email: string, name: string, initialData: any
         name: name.toUpperCase(),
         subtitle: '',
         avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix',
-        isPro: false 
+        isPro: false,
+        dashboardOrder: ['balance-card'] // Initial Order
       },
       months: initialData.months || [],
       cdi_rate: initialData.cdiRate || 11.25

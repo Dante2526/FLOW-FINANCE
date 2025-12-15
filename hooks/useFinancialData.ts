@@ -149,13 +149,16 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
         setCdiRate(data.cdiRate);
         prevCdiRef.current = data.cdiRate;
       }
+      
+      // Order Handling - Prefer profile data, fall back to calculated list
       if (data.dashboardOrder && Array.isArray(data.dashboardOrder) && data.dashboardOrder.length > 0) {
          setDashboardOrder(data.dashboardOrder);
          prevDashboardOrderRef.current = JSON.stringify(data.dashboardOrder);
-      } else {
-         const initialOrder = [BALANCE_CARD_ID];
-         if (data.accounts) initialOrder.push(...data.accounts.map((a: Account) => a.id));
+      } else if (data.accounts) {
+         // If no saved order, create default
+         const initialOrder = [BALANCE_CARD_ID, ...data.accounts.map((a: Account) => a.id)];
          setDashboardOrder(initialOrder);
+         // Don't update ref yet to allow it to be saved as "dirty" later if needed
       }
   }, [activeMonthId, currentUserEmail]);
 
@@ -184,7 +187,18 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
       updateIfChanged('longTermTransactions', 'longTerm', setLongTermTransactions, prevLongTermRef);
       updateIfChanged('notifications', 'notifications', setNotifications, prevNotificationsRef);
       updateIfChanged('months', 'months', (m: any) => setMonths(sortMonths(m)), prevMonthsRef);
-      updateIfChanged('dashboardOrder', 'dashboardOrder', setDashboardOrder, prevDashboardOrderRef);
+      
+      // Explicitly handle dashboardOrder with array check
+      if (data.dashboardOrder && Array.isArray(data.dashboardOrder) && data.dashboardOrder.length > 0) {
+         const currentOrderStr = JSON.stringify(state.dashboardOrder);
+         if (currentOrderStr === prevDashboardOrderRef.current) {
+             const newOrderStr = JSON.stringify(data.dashboardOrder);
+             if (newOrderStr !== currentOrderStr) {
+                 setDashboardOrder(data.dashboardOrder);
+                 prevDashboardOrderRef.current = newOrderStr;
+             }
+         }
+      }
       
       // Special Handling for Profile (Pro Expiry)
       const currentProfileStr = JSON.stringify(state.userProfile);
@@ -279,6 +293,9 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
                 const timer = setTimeout(async () => {
                     if (collectionName === 'profile' || collectionName === 'theme' || collectionName === 'months' || collectionName.startsWith('notepad') || collectionName === 'cdiRate') {
                         await saveUserField(currentUserEmail, collectionName, data);
+                    } else if (collectionName === 'dashboardOrder') {
+                        // Special save for order to profile structure
+                        await saveCollection(currentUserEmail, collectionName, data);
                     } else {
                         await saveCollection(currentUserEmail, collectionName, data);
                     }
