@@ -159,19 +159,41 @@ export const apiTransactions = {
   list: async () => {
     const { data, error } = await supabase.from('transactions').select('*');
     if (error) throw error;
-    return data;
+    // Map DB columns (snake_case) to Frontend (camelCase)
+    return data.map((t: any) => ({
+      ...t,
+      paymentMethod: t.payment_method,
+      logoType: t.logo_type
+    }));
   },
   add: async (tx: any) => {
     const uid = await getUserId();
-    const { data, error } = await supabase.from('transactions').insert([{ ...tx, user_id: uid }]).select().single();
+    // Map Frontend (camelCase) to DB (snake_case)
+    const payload = {
+        ...tx,
+        user_id: uid,
+        payment_method: tx.paymentMethod,
+        logo_type: tx.logoType
+    };
+    delete payload.paymentMethod;
+    delete payload.logoType;
+
+    const { data, error } = await supabase.from('transactions').insert([payload]).select().single();
     if (error) throw error;
-    return data;
+    // Map back for optimistic UI consistency
+    return { ...data, paymentMethod: data.payment_method, logoType: data.logo_type };
   },
   update: async (tx: any) => {
-    const { id, ...updates } = tx;
-    const { data, error } = await supabase.from('transactions').update(updates).eq('id', id).select().single();
+    const { id, paymentMethod, logoType, ...rest } = tx;
+    const payload: any = { ...rest };
+    
+    // Map specific fields if present
+    if (paymentMethod !== undefined) payload.payment_method = paymentMethod;
+    if (logoType !== undefined) payload.logo_type = logoType;
+
+    const { data, error } = await supabase.from('transactions').update(payload).eq('id', id).select().single();
     if (error) throw error;
-    return data;
+    return { ...data, paymentMethod: data.payment_method, logoType: data.logo_type };
   },
   delete: async (id: string) => {
     const { error } = await supabase.from('transactions').delete().eq('id', id);
@@ -180,10 +202,25 @@ export const apiTransactions = {
   },
   bulkCreate: async (txs: any[]) => {
     const uid = await getUserId();
-    const payload = txs.map(t => ({ ...t, user_id: uid }));
+    // Map Frontend Array to DB Array
+    const payload = txs.map(t => {
+        const p = {
+            ...t,
+            user_id: uid,
+            payment_method: t.paymentMethod,
+            logo_type: t.logoType
+        };
+        // Remove camelCase keys to avoid "column not found" error
+        delete p.paymentMethod;
+        delete p.logoType;
+        return p;
+    });
+
     const { data, error } = await supabase.from('transactions').insert(payload).select();
     if (error) throw error;
-    return data;
+    
+    // Map result back
+    return data.map((t: any) => ({ ...t, paymentMethod: t.payment_method, logoType: t.logo_type }));
   }
 };
 
@@ -192,8 +229,6 @@ export const apiAccounts = {
   list: async () => {
     const { data, error } = await supabase.from('accounts').select('*');
     if (error) throw error;
-    // Map snake_case to camelCase if needed, but for now we updated types to match or handle it in hook
-    // Actually, let's keep frontend types consistent. 
     // DB: color_theme -> Frontend: colorTheme
     return data.map((a: any) => ({ ...a, colorTheme: a.color_theme }));
   },
