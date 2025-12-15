@@ -310,6 +310,25 @@ const App: React.FC = () => {
     });
   }, [accounts, activeMonthSummary]);
 
+  // --- SYNC DASHBOARD ORDER WITH ACCOUNTS (FIX FOR DRAG ISSUE) ---
+  // This ensures that any account that exists (even created remotely) gets added to the sortable list
+  useEffect(() => {
+    if (isLoadingData || accounts.length === 0) return;
+
+    setDashboardOrder(prevOrder => {
+       const orderSet = new Set(prevOrder);
+       // Find accounts that are NOT in the dashboardOrder
+       const missingIds = accounts
+          .filter(a => !orderSet.has(a.id))
+          .map(a => a.id);
+       
+       if (missingIds.length === 0) return prevOrder; // No change needed
+
+       // Append missing items to the end. This makes them "trackable" for Drag & Drop
+       return [...prevOrder, ...missingIds];
+    });
+  }, [accounts, isLoadingData]);
+
   // --- DERIVED DASHBOARD ITEMS (Prevents Flickering & Disappearing) ---
   // This computes the final render list on-the-fly without causing side-effects (re-renders).
   const dashboardItems = useMemo(() => {
