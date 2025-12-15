@@ -169,7 +169,6 @@ const App: React.FC = () => {
   });
   
   // Initialize isLoadingData to TRUE if we have a session stored.
-  // This prevents the app from rendering the default state for a split second before fetching starts.
   const [isLoadingData, setIsLoadingData] = useState<boolean>(() => {
      return !!loadData(STORAGE_KEYS.USER_SESSION, null);
   });
@@ -310,32 +309,15 @@ const App: React.FC = () => {
     });
   }, [accounts, activeMonthSummary]);
 
-  // --- SYNC DASHBOARD ORDER WITH ACCOUNTS (FIX FOR DRAG ISSUE) ---
-  // This ensures that any account that exists (even created remotely) gets added to the sortable list
-  useEffect(() => {
-    if (isLoadingData || accounts.length === 0) return;
-
-    setDashboardOrder(prevOrder => {
-       const orderSet = new Set(prevOrder);
-       // Find accounts that are NOT in the dashboardOrder
-       const missingIds = accounts
-          .filter(a => !orderSet.has(a.id))
-          .map(a => a.id);
-       
-       if (missingIds.length === 0) return prevOrder; // No change needed
-
-       // Append missing items to the end. This makes them "trackable" for Drag & Drop
-       return [...prevOrder, ...missingIds];
-    });
-  }, [accounts, isLoadingData]);
-
-  // --- DERIVED DASHBOARD ITEMS (Prevents Flickering & Disappearing) ---
-  // This computes the final render list on-the-fly without causing side-effects (re-renders).
+  // --- DERIVED DASHBOARD ITEMS (ROBUST & STABLE) ---
+  // This computes the final render list on-the-fly.
+  // It guarantees that everything in dashboardOrder is respected,
+  // AND anything that is missing (orphans) is appended at the end.
   const dashboardItems = useMemo(() => {
     const items: string[] = [];
     const orderSet = new Set(dashboardOrder);
     
-    // 1. Add items from the known order (if they are visible/exist)
+    // 1. Add items from the known order (if they are visible/exist in current filter)
     dashboardOrder.forEach(id => {
       if (id === BALANCE_CARD_ID) {
         items.push(id);
@@ -346,14 +328,14 @@ const App: React.FC = () => {
     });
 
     // 2. Add "Orphan" items (Visible accounts NOT in the order list)
-    // This handles the "disappearing cards" bug by ensuring they are always appended.
+    // This ensures new accounts appear at the bottom without jumping
     filteredAccounts.forEach(a => {
       if (!orderSet.has(a.id)) {
         items.push(a.id);
       }
     });
     
-    // 3. Ensure Balance Card is present
+    // 3. Ensure Balance Card is present if missing
     if (!items.includes(BALANCE_CARD_ID)) {
       items.unshift(BALANCE_CARD_ID);
     }
@@ -910,30 +892,36 @@ const App: React.FC = () => {
     dragItem.current = id;
   }, []);
 
+  // ROBUST DRAG HANDLER: Supports swapping and inserting 'orphans'
   const handleCardDragEnter = useCallback((targetId: string) => {
     if (dragItem.current && dragItem.current !== targetId) {
        const draggedId = dragItem.current;
        
        setDashboardOrder(prev => {
           const newOrder = [...prev];
-          const draggedIndex = newOrder.indexOf(draggedId);
-          const targetIndex = newOrder.indexOf(targetId);
+          let draggedIndex = newOrder.indexOf(draggedId);
+          let targetIndex = newOrder.indexOf(targetId);
           
-          // Case 1: Reordering within the list
-          if (draggedIndex !== -1 && targetIndex !== -1) {
+          // Case: Dragging an orphan (an item not yet in the official order list)
+          // We treat the orphan as if it's coming from outside, so we insert it at the target position.
+          // Note: If target is also an orphan, this logic might be tricky, but typically targets are visible items.
+          
+          if (targetIndex === -1) {
+             // If target is orphan (at bottom), append it to order first so we can interact with it
+             newOrder.push(targetId);
+             targetIndex = newOrder.length - 1;
+          }
+          
+          if (draggedIndex === -1) {
+             // Dragging an orphan INTO the list -> Insert at target
+             newOrder.splice(targetIndex, 0, draggedId);
+          } else {
+             // Reordering existing items -> Swap logic
              newOrder.splice(draggedIndex, 1);
              newOrder.splice(targetIndex, 0, draggedId);
-             return newOrder;
           }
           
-          // Case 2: Dragging an orphan (not in list) INTO a valid target (in list)
-          // This fixes the "drag stops working" issue for items that lost their place
-          if (draggedIndex === -1 && targetIndex !== -1) {
-             newOrder.splice(targetIndex, 0, draggedId);
-             return newOrder;
-          }
-
-          return prev;
+          return newOrder;
        });
     }
   }, []);
@@ -1301,6 +1289,7 @@ const App: React.FC = () => {
 
   const handleSaveAccount = (name: string, balance: number, theme: CardTheme) => {
     if (editingAccount) {
+      // Editing: Update Account state ONLY. Do NOT touch dashboardOrder.
       setAccounts(prev => prev.map(acc => 
         acc.id === editingAccount.id ? { 
            ...acc, 
@@ -1315,6 +1304,7 @@ const App: React.FC = () => {
       
       setEditingAccount(null);
     } else {
+      // Creating: Add Account AND Add to Dashboard Order immediately
       const newId = Date.now().toString();
       const newAccount: Account = {
         id: newId,
@@ -1325,9 +1315,9 @@ const App: React.FC = () => {
         year: activeMonthSummary?.year
       };
       setAccounts(prev => [...prev, newAccount]);
-      // Manually update order immediately to prevent sync flicker
+      
+      // Explicitly update order here since we are creating a new item
       setDashboardOrder(prev => {
-         // Insert after balance card (index 1) or at end
          const newOrder = [...prev];
          if (newOrder.includes(BALANCE_CARD_ID)) {
             newOrder.splice(1, 0, newId);
