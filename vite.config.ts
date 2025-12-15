@@ -6,13 +6,13 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   define: {
-    // Explicitly define env variables instead of replacing the whole process.env object
-    // This prevents breaking other libraries that rely on process.env check
+    // Explicitly define env variables to ensure they are replaced at build time
+    // This handles the process.env access in the browser safely
     'process.env.API_KEY': JSON.stringify(process.env.API_KEY || ''),
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
   },
   optimizeDeps: {
-    // Exclude dependencies served via CDN to prevent "failed to resolve" errors in Dev
+    // Exclude dependencies that are loaded via CDN in index.html
     exclude: [
       'react',
       'react-dom',
@@ -20,13 +20,14 @@ export default defineConfig({
       'lucide-react',
       'recharts',
       '@supabase/supabase-js',
-      '@tanstack/react-query'
+      '@tanstack/react-query',
+      '@google/genai'
     ]
   },
   build: {
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
-      // Externalize dependencies in Production Build to use CDN versions defined in index.html
+      // Treat CDN dependencies as external so they aren't bundled
       external: [
         'react',
         'react-dom',
@@ -34,7 +35,8 @@ export default defineConfig({
         'lucide-react',
         'recharts',
         '@supabase/supabase-js',
-        '@tanstack/react-query'
+        '@tanstack/react-query',
+        '@google/genai'
       ],
       output: {
         globals: {
@@ -43,7 +45,8 @@ export default defineConfig({
           'lucide-react': 'LucideReact',
           'recharts': 'Recharts',
           '@supabase/supabase-js': 'Supabase',
-          '@tanstack/react-query': 'ReactQuery'
+          '@tanstack/react-query': 'ReactQuery',
+          '@google/genai': 'GoogleGenAI'
         }
       }
     }
