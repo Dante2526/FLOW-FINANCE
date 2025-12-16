@@ -111,9 +111,30 @@ const App: React.FC = () => {
   // --- DRAG AND DROP REFS ---
   const dragItem = useRef<string | null>(null);
 
-  // --- COMPUTED DATA ---
-  const activeMonthSummary = useMemo(() => months.find(m => m.id === activeMonthId) || months[0], [months, activeMonthId]);
+  // --- COMPUTED DATA (DYNAMIC) ---
   
+  // 1. Recalculate Month Totals dynamically based on transactions
+  // This fixes the "R$ 0" issue by ignoring potentially stale DB totals
+  const monthsWithTotals = useMemo(() => {
+    return months.map(m => {
+      const monthTotal = transactions
+        .filter(t => {
+           const txMonth = t.month || getMonthFromDateStr(t.date);
+           const txYear = t.year || getYearFromDateStr(t.date, m.year);
+           return txMonth === m.month && txYear === m.year;
+        })
+        .reduce((acc, t) => acc + t.amount, 0);
+      
+      return { ...m, total: monthTotal };
+    });
+  }, [months, transactions]);
+
+  // 2. Active Month Summary
+  const activeMonthSummary = useMemo(() => 
+    monthsWithTotals.find(m => m.id === activeMonthId) || monthsWithTotals[0]
+  , [monthsWithTotals, activeMonthId]);
+  
+  // 3. Filtered Data for Current View
   const filteredTransactions = useMemo(() => {
     if (!activeMonthSummary) return [];
     return transactions.filter(tx => {
@@ -131,26 +152,29 @@ const App: React.FC = () => {
     });
   }, [accounts, activeMonthSummary]);
 
+  // 4. Dashboard Items Ordering
   const dashboardItems = useMemo(() => {
-    // 1. Identify all IDs that SHOULD be visible
     const visibleAccountIds = new Set(filteredAccounts.map(a => a.id));
     const allAvailableIds = new Set([BALANCE_CARD_ID, ...filteredAccounts.map(a => a.id)]);
     
-    // 2. Filter the saved order to include only valid/visible IDs
     const orderedList = dashboardOrder.filter(id => allAvailableIds.has(id));
-    
-    // 3. Find "Orphans" (new accounts not yet in the saved order)
     const savedSet = new Set(dashboardOrder);
     const orphans = [BALANCE_CARD_ID, ...filteredAccounts.map(a => a.id)].filter(id => !savedSet.has(id));
     
-    // 4. Combine: Ordered items first, then new items appended at the end
     return [...orderedList, ...orphans];
   }, [filteredAccounts, dashboardOrder]);
 
+  // 5. Profit Balance Calculation (Smart)
   const profitBalance = useMemo(() => {
     const totalAccounts = filteredAccounts.reduce((acc, account) => acc + account.balance, 0);
-    const totalExpenses = filteredTransactions.reduce((acc, tx) => acc + tx.amount, 0);
-    return totalAccounts - totalExpenses;
+    
+    // Logic: Saldo Bancário Atual (Accounts) - Contas PENDENTES (Unpaid)
+    // Isso mostra "Quanto dinheiro vai sobrar se eu pagar tudo que falta".
+    const pendingExpenses = filteredTransactions
+        .filter(t => !t.paid)
+        .reduce((acc, tx) => acc + tx.amount, 0);
+
+    return totalAccounts - pendingExpenses;
   }, [filteredAccounts, filteredTransactions]);
 
   const activeMonthContext = useMemo(() => {
@@ -306,9 +330,7 @@ const App: React.FC = () => {
     bulkCreateAccounts(newAccounts);
     
     // Create new Month
-    const initialTotal = newTxs.reduce((acc, t) => acc + t.amount, 0);
-    
-    // Use generated ID to switch immediately
+    // Note: We set total to 0 here because it will be dynamically calculated
     let newMonthId;
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
       newMonthId = crypto.randomUUID();
@@ -320,7 +342,7 @@ const App: React.FC = () => {
         id: newMonthId,
         month: nextMonthName,
         year: nextYearInt.toString(),
-        total: initialTotal
+        total: 0 // Will be calculated dynamically
     });
     
     // Immediate Switch (Stable ID makes this safe)
@@ -331,15 +353,6 @@ const App: React.FC = () => {
   const handleSaveTransaction = useCallback((txData: Omit<Transaction, 'id'>) => {
     if (editingTransaction) {
       updateTransaction({ ...txData, id: editingTransaction.id });
-      
-      const oldMonth = editingTransaction.month || getMonthFromDateStr(editingTransaction.date);
-      const oldYear = editingTransaction.year || getYearFromDateStr(editingTransaction.date, activeMonthSummary.year);
-      
-      const targetMonth = months.find(m => m.month === oldMonth && m.year === oldYear);
-      if (targetMonth) {
-         updateMonth({ ...targetMonth, total: targetMonth.total - editingTransaction.amount + txData.amount });
-      }
-
       setEditingTransaction(null);
     } else {
       const newTx = {
@@ -348,29 +361,13 @@ const App: React.FC = () => {
         year: activeMonthSummary.year
       };
       addTransaction(newTx);
-      
-      const targetMonth = months.find(m => m.month === activeMonthSummary.month && m.year === activeMonthSummary.year);
-      if (targetMonth) {
-          updateMonth({ ...targetMonth, total: targetMonth.total + newTx.amount });
-      }
     }
-  }, [editingTransaction, activeMonthSummary, updateTransaction, addTransaction, months, updateMonth]);
+    // We removed manual month total updates because we now use dynamic calculation
+  }, [editingTransaction, activeMonthSummary, updateTransaction, addTransaction]);
 
   const handleDeleteTransaction = useCallback((id: string) => {
-    const tx = transactions.find(t => t.id === id);
-    if (!tx) return;
-
     deleteTransaction(id);
-    
-    const txMonth = tx.month || getMonthFromDateStr(tx.date);
-    const txYear = tx.year || getYearFromDateStr(tx.date, activeMonthSummary.year);
-    const targetMonth = months.find(m => m.month === txMonth && m.year === txYear);
-    
-    if (targetMonth) {
-       updateMonth({ ...targetMonth, total: targetMonth.total - tx.amount });
-    }
-
-  }, [transactions, activeMonthSummary, deleteTransaction, months, updateMonth]);
+  }, [deleteTransaction]);
 
   const handleDeleteMonth = useCallback((id: string) => {
     deleteMonth(id);
@@ -396,15 +393,9 @@ const App: React.FC = () => {
     };
     
     addTransaction(newTx);
-    
-    const targetMonth = months.find(m => m.month === activeMonthSummary.month && m.year === activeMonthSummary.year);
-    if (targetMonth) {
-        updateMonth({ ...targetMonth, total: targetMonth.total + amount });
-    }
-
     setUserProfile((prev: any) => ({ ...prev, isPro: true, subscriptionExpiry: expiryDate.toISOString() }));
     setIsProModalOpen(false);
-  }, [activeMonthSummary, addTransaction, months, updateMonth, setUserProfile]);
+  }, [activeMonthSummary, addTransaction, setUserProfile]);
 
   const handleSaveAccount = useCallback((id: string | undefined, name: string, balance: number, theme: CardTheme) => {
     if (id) {
@@ -632,7 +623,7 @@ const App: React.FC = () => {
             />
 
             <TransactionSummary 
-                months={months} 
+                months={monthsWithTotals} 
                 activeMonthId={activeMonthId} 
                 onSelectMonth={setActiveMonthId} 
                 onDeleteMonth={handleDeleteMonth} 
@@ -657,7 +648,7 @@ const App: React.FC = () => {
       <CalendarModal isOpen={isCalendarOpen} onClose={closeCalendar} transactions={transactions} activeMonthContext={activeMonthContext} />
       <NotificationModal isOpen={isNotificationOpen} onClose={closeNotification} notifications={notifications} onMarkAllRead={handleMarkAllRead} onDelete={handleDeleteNotification} currentUserEmail={currentUserEmail} />
       <Suspense fallback={null}>
-        {isAnalyticsOpen && <AnalyticsModal isOpen={isAnalyticsOpen} onClose={closeAnalytics} transactions={transactions} months={months} />}
+        {isAnalyticsOpen && <AnalyticsModal isOpen={isAnalyticsOpen} onClose={closeAnalytics} transactions={transactions} months={monthsWithTotals} />}
       </Suspense>
       <ProModal isOpen={isProModalOpen} onClose={closeProModal} onUpgrade={handleProUpgrade} />
     </div>
