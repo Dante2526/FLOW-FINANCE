@@ -1,4 +1,5 @@
 
+
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
@@ -13,7 +14,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'Flow Finance';
   const options = {
     body: data.body || 'Você tem uma nova notificação.',
-    icon: data.icon || '/favicon.svg',
+    // Fix: Use transparent pixel to hide the default system placeholder icon if no icon provided
+    icon: data.icon || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
     badge: '/notification-icon.svg',
     vibrate: [100, 50, 100],
     data: {
