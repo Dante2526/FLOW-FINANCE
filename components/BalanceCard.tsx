@@ -155,7 +155,7 @@ const BalanceCard: React.FC<Props> = ({
 
       {/* Action Buttons Row */}
       <div className="flex items-center gap-3 z-10">
-        {/* Add Button (Promoted to Primary - Solid Black) */}
+        {/* Add Button (Solid Black) */}
         <button 
           onClick={onAddClick}
           className="flex-1 bg-[#0a0a0b] text-white h-14 rounded-[1.25rem] flex items-center justify-center gap-2 hover:bg-black/80 transition-all shadow-lg active:scale-95 border border-white/10 group-hover:border-white/20"
@@ -164,19 +164,19 @@ const BalanceCard: React.FC<Props> = ({
           <span className="text-sm font-bold tracking-wide">Nova Conta</span>
         </button>
 
-        {/* Duplicate Button (Darker Glass) */}
+        {/* Duplicate Button (Solid Black) */}
         <button 
           onClick={onDuplicateClick}
-          className="w-14 h-14 bg-[#0a0a0b]/60 backdrop-blur-md text-white rounded-[1.25rem] flex items-center justify-center hover:bg-[#0a0a0b]/80 transition-all shadow-lg active:scale-95 border border-white/10"
+          className="w-14 h-14 bg-[#0a0a0b] text-white rounded-[1.25rem] flex items-center justify-center hover:bg-black/80 transition-all shadow-lg active:scale-95 border border-white/10"
           title="Duplicar contas para o próximo mês"
         >
           <Copy className="w-5 h-5" />
         </button>
 
-        {/* Calculator Button (Darker Glass) */}
+        {/* Calculator Button (Solid Black) */}
         <button 
           onClick={onCalculatorClick}
-          className="w-14 h-14 bg-[#0a0a0b]/60 backdrop-blur-md text-white rounded-[1.25rem] flex items-center justify-center hover:bg-[#0a0a0b]/80 transition-all shadow-lg active:scale-95 border border-white/10"
+          className="w-14 h-14 bg-[#0a0a0b] text-white rounded-[1.25rem] flex items-center justify-center hover:bg-black/80 transition-all shadow-lg active:scale-95 border border-white/10"
         >
           <Calculator className="w-5 h-5" />
         </button>
