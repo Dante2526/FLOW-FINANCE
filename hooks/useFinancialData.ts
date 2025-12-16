@@ -377,14 +377,8 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
 
     try {
         // --- 1. ACCOUNTS ---
-        // Source priorities: 'accounts' column (JSON) -> profile.accounts (JSON)
         const accountsToMigrate = rawUser.accounts || profileNested.accounts || [];
         if (Array.isArray(accountsToMigrate) && accountsToMigrate.length > 0) {
-           // Clean and map accounts (remove old ID to let DB generate UUID or ensure it fits)
-           // But since accounts might have relationships in Order, regenerating ID might lose order if order array uses old IDs.
-           // However, for simplicity and type safety (if DB id is uuid), we regenerate.
-           // Legacy 'accounts' column used colorTheme property which maps to color_theme in bulkCreate.
-           
            const cleanAccounts = accountsToMigrate.map((a: any) => {
               const { id, ...rest } = a; // Strip old ID
               return { ...rest }; 
@@ -427,7 +421,6 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
         }
         
         // --- 5. LONG TERM ---
-        // Note: DB column likely 'long_term', profile field 'longTerm'
         const ltToMigrate = rawUser.long_term || profileNested.longTerm || [];
         if (Array.isArray(ltToMigrate)) {
            for (const l of ltToMigrate) {
@@ -465,6 +458,18 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
     return 0;
   };
 
+  const wipeLegacyData = async () => {
+    if (!currentUserEmail) return;
+    if (window.confirm("ATENÇÃO: Isso apagará permanentemente o backup dos dados antigos na tabela 'users'.\n\nCertifique-se de que a migração foi bem sucedida e que seus dados atuais (Transações, Contas, etc) estão aparecendo corretamente no app.\n\nDeseja continuar?")) {
+       try {
+          await clearLegacyData(currentUserEmail);
+          alert("Backup antigo limpo com sucesso!");
+       } catch (e: any) {
+          alert("Erro ao limpar dados: " + e.message);
+       }
+    }
+  };
+
   // --- EXPORTED DATA & HANDLERS ---
   
   return {
@@ -486,7 +491,8 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
     // Fix: Include monthsQuery.isLoading so UI waits for the correct month structure
     isLoadingData: profileQuery.isLoading || transactionsQuery.isLoading || monthsQuery.isLoading,
     
-    migrateLegacyData, // EXPORTED HERE
+    migrateLegacyData,
+    wipeLegacyData, // NEW: Export cleanup function
 
     setUserProfile: (p: any) => {
        const newVal = typeof p === 'function' ? p(profileQuery.data?.profile || INITIAL_PROFILE) : p;

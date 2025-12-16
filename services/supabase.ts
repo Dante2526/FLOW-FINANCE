@@ -142,7 +142,7 @@ export const saveUserField = async (email: string, field: string, data: any) => 
 
 // --- NORMALIZED DATA API (TRANSACTIONS, ACCOUNTS, ETC) ---
 
-// Helper to filter object by allowed keys
+// Helper to filter object by allowed keys (Strict Whitelist)
 const filterKeys = (obj: any, allowed: string[]) => {
   const clean: any = {};
   allowed.forEach(key => {
@@ -154,7 +154,9 @@ const filterKeys = (obj: any, allowed: string[]) => {
 // 1. Transactions
 export const apiTransactions = {
   list: async () => {
-    const { data, error } = await supabase.from('transactions').select('*');
+    const uid = await getUserId();
+    if (!uid) return []; // Security guard
+    const { data, error } = await supabase.from('transactions').select('*').eq('user_id', uid);
     if (error) throw error;
     return data.map((t: any) => ({
       ...t,
@@ -196,14 +198,16 @@ export const apiTransactions = {
     const uid = await getUserId();
     const validColumns = ['id', 'user_id', 'name', 'date', 'amount', 'type', 'payment_method', 'logo_type', 'paid', 'month', 'year'];
     
-    // Strict Map & Filter
+    // Strict Map & Filter using whitelist
     const payload = txs.map(t => {
         const mapped = {
             ...t,
             user_id: uid,
+            // Prioritize mapped values, fallback to existing snake_case if present
             payment_method: t.paymentMethod || t.payment_method,
             logo_type: t.logoType || t.logo_type
         };
+        // This ensures ONLY keys in `validColumns` are sent to Supabase
         return filterKeys(mapped, validColumns);
     });
 
@@ -216,7 +220,9 @@ export const apiTransactions = {
 // 2. Accounts
 export const apiAccounts = {
   list: async () => {
-    const { data, error } = await supabase.from('accounts').select('*');
+    const uid = await getUserId();
+    if (!uid) return [];
+    const { data, error } = await supabase.from('accounts').select('*').eq('user_id', uid);
     if (error) throw error;
     return data.map((a: any) => ({ ...a, colorTheme: a.color_theme }));
   },
@@ -262,7 +268,9 @@ export const apiAccounts = {
 // 3. Months
 export const apiMonths = {
   list: async () => {
-    const { data, error } = await supabase.from('months').select('*');
+    const uid = await getUserId();
+    if (!uid) return [];
+    const { data, error } = await supabase.from('months').select('*').eq('user_id', uid);
     if (error) throw error;
     return data;
   },
@@ -288,7 +296,9 @@ export const apiMonths = {
 // 4. Investments
 export const apiInvestments = {
   list: async () => {
-    const { data, error } = await supabase.from('investments').select('*');
+    const uid = await getUserId();
+    if (!uid) return [];
+    const { data, error } = await supabase.from('investments').select('*').eq('user_id', uid);
     if (error) throw error;
     return data.map((i: any) => ({ ...i, yieldRate: i.yield_rate }));
   },
@@ -317,7 +327,9 @@ export const apiInvestments = {
 // 5. Long Term
 export const apiLongTerm = {
   list: async () => {
-    const { data, error } = await supabase.from('long_term').select('*');
+    const uid = await getUserId();
+    if (!uid) return [];
+    const { data, error } = await supabase.from('long_term').select('*').eq('user_id', uid);
     if (error) throw error;
     return data.map((l: any) => ({
       ...l,
@@ -373,7 +385,9 @@ export const apiLongTerm = {
 // 6. Notifications
 export const apiNotifications = {
   list: async () => {
-    const { data, error } = await supabase.from('notifications').select('*');
+    const uid = await getUserId();
+    if (!uid) return [];
+    const { data, error } = await supabase.from('notifications').select('*').eq('user_id', uid);
     if (error) throw error;
     return data;
   },

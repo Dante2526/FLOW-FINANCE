@@ -89,7 +89,8 @@ const App: React.FC = () => {
     isSessionReady,
     login,
     logout,
-    migrateLegacyData // NEW FUNCTION
+    migrateLegacyData, // EXPORTED FUNCTION
+    wipeLegacyData // NEW FUNCTION
   } = useFinance();
 
   // --- VIEW & MODAL STATE ---
@@ -532,6 +533,7 @@ const App: React.FC = () => {
             isPro={!!userProfile.isPro}
             onOpenProModal={openProModal}
             onMigrateData={migrateLegacyData} // Pass the migration function here
+            onWipeData={wipeLegacyData} // NEW: Pass wipe function
           />
       )}
       
