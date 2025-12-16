@@ -70,19 +70,18 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
   }, [appTheme]);
 
   // --- 2. MAIN DATA QUERIES ---
+  // REMOVED initialData: [] to allow proper distinguishing between "loading" (undefined) and "empty" ([])
 
   const transactionsQuery = useQuery({
     queryKey: ['transactions', currentUserEmail],
     queryFn: apiTransactions.list,
     enabled: isEnabled,
-    initialData: [],
   });
 
   const accountsQuery = useQuery({
     queryKey: ['accounts', currentUserEmail],
     queryFn: apiAccounts.list,
     enabled: isEnabled,
-    initialData: [],
   });
 
   const monthsQuery = useQuery({
@@ -92,28 +91,24 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
        return sortMonths(data.length > 0 ? data : [SYSTEM_INITIAL_MONTH]);
     },
     enabled: isEnabled,
-    initialData: [SYSTEM_INITIAL_MONTH],
   });
 
   const investmentsQuery = useQuery({
     queryKey: ['investments', currentUserEmail],
     queryFn: apiInvestments.list,
     enabled: isEnabled,
-    initialData: [],
   });
 
   const longTermQuery = useQuery({
     queryKey: ['longTerm', currentUserEmail],
     queryFn: apiLongTerm.list,
     enabled: isEnabled,
-    initialData: [],
   });
 
   const notificationsQuery = useQuery({
     queryKey: ['notifications', currentUserEmail],
     queryFn: apiNotifications.list,
     enabled: isEnabled,
-    initialData: [],
   });
 
   // --- OPTIMISTIC UPDATE HELPERS ---
@@ -121,7 +116,11 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
   const onMutateOptimistic = async (queryKey: any[], updateFn: (old: any) => any) => {
     await queryClient.cancelQueries({ queryKey });
     const previousData = queryClient.getQueryData(queryKey);
-    queryClient.setQueryData(queryKey, (old: any) => updateFn(old));
+    // Safe update: handle undefined old data by defaulting to [] or object
+    queryClient.setQueryData(queryKey, (old: any) => {
+        const safeOld = old || (Array.isArray(previousData) ? [] : {}); 
+        return updateFn(safeOld);
+    });
     return { previousData };
   };
 
@@ -141,7 +140,6 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
   const addTransactionMutation = useMutation({
     mutationFn: apiTransactions.add,
     onMutate: (newTx) => onMutateOptimistic(['transactions', currentUserEmail], (old) => {
-        // ID is already generated in the wrapper function below
         return [newTx, ...old];
     }),
     onError: (err, newTx, context) => onErrorRollback(err, newTx, context, ['transactions', currentUserEmail]),
@@ -357,38 +355,49 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
   });
 
 
-  // --- INITIAL MONTH CHECK ---
+  // --- DATA SELECTION LOGIC (UPDATED) ---
+  const legacyData = (profileQuery.data as any)?.legacy || {};
+
+  // PRIORITY: DB Query Result > Legacy Data > Empty Array
+  // We use nullish coalescing (??) because if DB returns [], we want [], not legacy.
+  // Legacy is only used if DB query hasn't returned yet (undefined).
+  
+  const transactions = transactionsQuery.data ?? (legacyData.transactions || []);
+  const accounts = accountsQuery.data ?? (legacyData.accounts || []);
+  const investments = investmentsQuery.data ?? (legacyData.investments || []);
+  const longTermTransactions = longTermQuery.data ?? (legacyData.longTerm || []);
+  
+  // Months logic remains similar but uses DB result first
+  const effectiveMonths = (monthsQuery.data && monthsQuery.data.length > 0) 
+      ? monthsQuery.data 
+      : (legacyData.months && legacyData.months.length > 0 ? sortMonths(legacyData.months) : [SYSTEM_INITIAL_MONTH]);
+
   useEffect(() => {
-    if (monthsQuery.data.length > 0 && activeMonthId === SYSTEM_INITIAL_MONTH.id) {
-       // Set active to last month loaded
-       setActiveMonthId(monthsQuery.data[monthsQuery.data.length - 1].id);
+    if (effectiveMonths.length > 0 && activeMonthId === SYSTEM_INITIAL_MONTH.id) {
+       setActiveMonthId(effectiveMonths[effectiveMonths.length - 1].id);
     }
-  }, [monthsQuery.data]);
+  }, [effectiveMonths]); 
 
   // --- MIGRATION LOGIC ---
   const migrateLegacyData = async () => {
     if (!currentUserEmail) return 0;
     
-    // Fetch raw user row directly from Supabase to access the legacy columns
     const rawUser = await fetchRawUserData(currentUserEmail);
     const profileNested = rawUser.profile || {};
     
     let count = 0;
 
     try {
-        // --- 1. ACCOUNTS ---
         const accountsToMigrate = rawUser.accounts || profileNested.accounts || [];
         if (Array.isArray(accountsToMigrate) && accountsToMigrate.length > 0) {
            const cleanAccounts = accountsToMigrate.map((a: any) => {
-              const { id, ...rest } = a; // Strip old ID
+              const { id, ...rest } = a; 
               return { ...rest }; 
            });
-           
            await apiAccounts.bulkCreate(cleanAccounts);
            count += cleanAccounts.length;
         }
 
-        // --- 2. TRANSACTIONS ---
         const txToMigrate = rawUser.transactions || profileNested.transactions || [];
         if (Array.isArray(txToMigrate) && txToMigrate.length > 0) {
            const cleanTxs = txToMigrate.map((t: any) => {
@@ -399,7 +408,6 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
            count += cleanTxs.length;
         }
 
-        // --- 3. MONTHS ---
         const monthsToMigrate = rawUser.months || profileNested.months || [];
         if (Array.isArray(monthsToMigrate)) {
            for (const m of monthsToMigrate) {
@@ -410,7 +418,6 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
            }
         }
 
-        // --- 4. INVESTMENTS ---
         const invToMigrate = rawUser.investments || profileNested.investments || [];
         if (Array.isArray(invToMigrate)) {
            for (const i of invToMigrate) {
@@ -420,7 +427,6 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
            }
         }
         
-        // --- 5. LONG TERM ---
         const ltToMigrate = rawUser.long_term || profileNested.longTerm || [];
         if (Array.isArray(ltToMigrate)) {
            for (const l of ltToMigrate) {
@@ -431,10 +437,8 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
         }
 
         if (count > 0) {
-           // Clear legacy columns to prevent future double migration
            await clearLegacyData(currentUserEmail);
            
-           // Clean profile object if it had nested data
            if (profileNested.transactions || profileNested.accounts) {
               const cleanProfile = { ...profileNested };
               delete cleanProfile.transactions;
@@ -446,10 +450,10 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
            }
 
            queryClient.invalidateQueries();
-           alert(`SUCESSO! ${count} itens foram migrados e os dados antigos foram limpos.`);
+           alert(`SUCESSO! ${count} itens foram migrados.`);
            return count;
         } else {
-           alert("Nenhum dado encontrado nas colunas antigas.");
+           alert("Nenhum dado encontrado para migrar.");
         }
     } catch (error: any) {
         console.error("Migration Failed", error);
@@ -460,26 +464,24 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
 
   const wipeLegacyData = async () => {
     if (!currentUserEmail) return;
-    if (window.confirm("ATENÇÃO: Isso apagará permanentemente o backup dos dados antigos na tabela 'users'.\n\nCertifique-se de que a migração foi bem sucedida e que seus dados atuais (Transações, Contas, etc) estão aparecendo corretamente no app.\n\nDeseja continuar?")) {
+    if (window.confirm("ATENÇÃO: Limpar backup antigo?")) {
        try {
           await clearLegacyData(currentUserEmail);
-          alert("Backup antigo limpo com sucesso!");
+          alert("Limpo com sucesso!");
        } catch (e: any) {
-          alert("Erro ao limpar dados: " + e.message);
+          alert("Erro: " + e.message);
        }
     }
   };
 
-  // --- EXPORTED DATA & HANDLERS ---
-  
   return {
     userProfile: profileQuery.data?.profile || INITIAL_PROFILE,
-    transactions: transactionsQuery.data,
-    accounts: accountsQuery.data,
-    months: monthsQuery.data,
-    longTermTransactions: longTermQuery.data,
-    investments: investmentsQuery.data,
-    notifications: notificationsQuery.data,
+    transactions,
+    accounts,
+    months: effectiveMonths,
+    longTermTransactions,
+    investments,
+    notifications: notificationsQuery.data || [],
     notepadContent: profileQuery.data?.notepadContent || '',
     notepadDrawing: profileQuery.data?.notepadDrawing || null,
     cdiRate: profileQuery.data?.cdiRate || 11.25,
@@ -488,11 +490,10 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
     
     activeMonthId, 
     setActiveMonthId,
-    // Fix: Include monthsQuery.isLoading so UI waits for the correct month structure
-    isLoadingData: profileQuery.isLoading || transactionsQuery.isLoading || monthsQuery.isLoading,
+    isLoadingData: profileQuery.isLoading || transactionsQuery.isLoading,
     
     migrateLegacyData,
-    wipeLegacyData, // NEW: Export cleanup function
+    wipeLegacyData,
 
     setUserProfile: (p: any) => {
        const newVal = typeof p === 'function' ? p(profileQuery.data?.profile || INITIAL_PROFILE) : p;
@@ -508,10 +509,7 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
     setNotepadDrawing: (d: string | null) => {},
     saveNotepad: (c: string, d: string | null) => saveNotepadMutation.mutate({ content: c, drawing: d }),
 
-    // --- WRAPPERS WITH STABLE IDs ---
-    
     addTransaction: (tx: any) => {
-        // Ensure ID is generated here for 100% consistency between Optimistic UI and DB
         const txWithId = { ...tx, id: tx.id || generateUUID() };
         addTransactionMutation.mutate(txWithId);
     },
@@ -562,7 +560,6 @@ export const useFinancialData = (currentUserEmail: string | null, isSessionReady
        if(ids.length) markAllReadMutation.mutate(ids);
     },
 
-    // Legacy Fallbacks
     setTransactions: () => {},
     setAccounts: () => {},
     setMonths: () => {},

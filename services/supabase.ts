@@ -34,10 +34,13 @@ export const verifyAuthOtp = async (email: string, token: string) => {
 
 // --- USER & PROFILE (LEGACY + MIXED) ---
 
-// Helper to get User ID safely
+// Helper to get User ID safely (tries multiple ways)
 const getUserId = async () => {
   const { data } = await supabase.auth.getSession();
-  return data.session?.user?.id;
+  if (data.session?.user?.id) return data.session.user.id;
+  
+  const { data: userData } = await supabase.auth.getUser();
+  return userData.user?.id;
 };
 
 export const loginUser = async (email: string) => {
@@ -49,8 +52,6 @@ export const loginUser = async (email: string) => {
   // Normalize just the profile part. Other data comes from tables now.
   let profile = data.profile || {};
   let dashboardOrder = profile.dashboardOrder || data.dashboard_order || [];
-  
-  // RESILIÊNCIA: Tenta ler o tema do perfil (novo local), se não existir, tenta da coluna (antigo/deletado)
   let theme = profile.theme || data.theme;
   
   return {
@@ -59,11 +60,18 @@ export const loginUser = async (email: string) => {
     theme,
     notepadContent: data.notepad_content,
     notepadDrawing: data.notepad_drawing || (profile.notepadDrawing),
-    cdiRate: data.cdi_rate
+    cdiRate: data.cdi_rate,
+    // LEGACY DATA FALLBACK
+    legacy: {
+        transactions: data.transactions || profile.transactions || [],
+        accounts: data.accounts || profile.accounts || [],
+        months: data.months || profile.months || [],
+        investments: data.investments || profile.investments || [],
+        longTerm: data.long_term || profile.longTerm || []
+    }
   };
 };
 
-// NEW: Fetch raw user data including legacy columns for migration
 export const fetchRawUserData = async (email: string) => {
   const normalizedEmail = email.toLowerCase().trim();
   const { data, error } = await supabase.from('users').select('*').eq('email', normalizedEmail).single();
@@ -71,7 +79,6 @@ export const fetchRawUserData = async (email: string) => {
   return data;
 };
 
-// NEW: Clear legacy columns after migration
 export const clearLegacyData = async (email: string) => {
   const normalizedEmail = email.toLowerCase().trim();
   const updates = {
@@ -93,13 +100,11 @@ export const registerUser = async (email: string, name: string, initialData: any
     throw new Error("Sessão inválida para criar usuário. Tente fazer login novamente.");
   }
   
-  // Check existence
   const { data: existing } = await supabase.from('users').select('email').eq('email', normalizedEmail).maybeSingle();
   if (existing) throw new Error("E-mail já cadastrado.");
 
-  // Create User Entry - Explicitly including ID to satisfy potential RLS policies
   const { error } = await supabase.from('users').insert({
-    id: uid, // CRITICAL: Link public.users to auth.users
+    id: uid, 
     email: normalizedEmail,
     name: name.toUpperCase(),
     profile: {
@@ -108,13 +113,12 @@ export const registerUser = async (email: string, name: string, initialData: any
       avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix',
       isPro: false,
       dashboardOrder: ['balance-card'],
-      theme: { id: 'sunset-orange', name: 'Sunset', primary: '#f97316', secondary: '#ea580c' } // Default theme in profile
+      theme: { id: 'sunset-orange', name: 'Sunset', primary: '#f97316', secondary: '#ea580c' } 
     },
     cdi_rate: 11.25
   });
 
   if (error) throw error;
-
   return { email: normalizedEmail, name };
 };
 
@@ -123,28 +127,21 @@ export const deleteUser = async (email: string) => {
   if (error) throw error;
 };
 
-// --- GENERIC FIELD UPDATES (Profile, Theme, Notepad) ---
-
 export const saveUserField = async (email: string, field: string, data: any) => {
   let dbColumn = field;
-  // Mapeamento de nomes do Frontend -> Colunas do Supabase (Snake Case)
   if (field === 'notepadContent') dbColumn = 'notepad_content';
   if (field === 'notepadDrawing') dbColumn = 'notepad_drawing';
   if (field === 'cdiRate') dbColumn = 'cdi_rate';
-  if (field === 'pushSubscription') dbColumn = 'push_subscription'; // CORREÇÃO IMPORTANTE
+  if (field === 'pushSubscription') dbColumn = 'push_subscription';
 
-  // ATUALIZAÇÃO: Salvar theme, profile e dashboardOrder dentro da coluna JSON 'profile'
   if (field === 'profile' || field === 'dashboardOrder' || field === 'theme') {
     const { data: userData } = await supabase.from('users').select('profile').eq('email', email).single();
     const currentProfile = userData?.profile || {};
     
     let updatedProfile;
-    
     if (field === 'profile') {
-        // Merge seguro para não perder campos ocultos no objeto data
         updatedProfile = { ...currentProfile, ...data };
     } else {
-        // Salva campos individuais (theme, dashboardOrder) dentro do profile
         updatedProfile = { ...currentProfile, [field]: data };
     }
 
@@ -159,7 +156,6 @@ export const saveUserField = async (email: string, field: string, data: any) => 
 
 // --- NORMALIZED DATA API (TRANSACTIONS, ACCOUNTS, ETC) ---
 
-// Helper to filter object by allowed keys (Strict Whitelist)
 const filterKeys = (obj: any, allowed: string[]) => {
   const clean: any = {};
   allowed.forEach(key => {
@@ -172,11 +168,13 @@ const filterKeys = (obj: any, allowed: string[]) => {
 export const apiTransactions = {
   list: async () => {
     const uid = await getUserId();
-    if (!uid) return []; // Security guard
+    if (!uid) return []; 
     const { data, error } = await supabase.from('transactions').select('*').eq('user_id', uid);
     if (error) throw error;
+    // Ensure numbers are numbers and snake_case is converted
     return data.map((t: any) => ({
       ...t,
+      amount: parseFloat(t.amount), // Force Float
       paymentMethod: t.payment_method,
       logoType: t.logo_type
     }));
@@ -215,16 +213,13 @@ export const apiTransactions = {
     const uid = await getUserId();
     const validColumns = ['id', 'user_id', 'name', 'date', 'amount', 'type', 'payment_method', 'logo_type', 'paid', 'month', 'year'];
     
-    // Strict Map & Filter using whitelist
     const payload = txs.map(t => {
         const mapped = {
             ...t,
             user_id: uid,
-            // Prioritize mapped values, fallback to existing snake_case if present
             payment_method: t.paymentMethod || t.payment_method,
             logo_type: t.logoType || t.logo_type
         };
-        // This ensures ONLY keys in `validColumns` are sent to Supabase
         return filterKeys(mapped, validColumns);
     });
 
@@ -241,7 +236,11 @@ export const apiAccounts = {
     if (!uid) return [];
     const { data, error } = await supabase.from('accounts').select('*').eq('user_id', uid);
     if (error) throw error;
-    return data.map((a: any) => ({ ...a, colorTheme: a.color_theme }));
+    return data.map((a: any) => ({ 
+        ...a, 
+        balance: parseFloat(a.balance), // Force Float
+        colorTheme: a.color_theme 
+    }));
   },
   add: async (acc: any) => {
     const uid = await getUserId();
@@ -317,7 +316,11 @@ export const apiInvestments = {
     if (!uid) return [];
     const { data, error } = await supabase.from('investments').select('*').eq('user_id', uid);
     if (error) throw error;
-    return data.map((i: any) => ({ ...i, yieldRate: i.yield_rate }));
+    return data.map((i: any) => ({ 
+        ...i, 
+        amount: parseFloat(i.amount),
+        yieldRate: i.yield_rate 
+    }));
   },
   add: async (inv: any) => {
     const uid = await getUserId();
@@ -350,11 +353,11 @@ export const apiLongTerm = {
     if (error) throw error;
     return data.map((l: any) => ({
       ...l,
-      totalAmount: l.total_amount,
+      totalAmount: parseFloat(l.total_amount),
       installmentsCount: l.installments_count,
       startDate: l.start_date,
       installmentsPaid: l.installments_paid,
-      monthlyAmount: l.monthly_amount,
+      monthlyAmount: parseFloat(l.monthly_amount),
       installmentsHistory: l.installments_history,
       installmentsDates: l.installments_dates
     }));
