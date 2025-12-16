@@ -23,7 +23,7 @@ import ProModal from './components/ProModal';
 import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification } from './types';
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { IconBell, IconMore } from './components/Icons';
-import { Crown, Loader2 } from 'lucide-react';
+import { Crown, Loader2, BellRing } from 'lucide-react';
 
 // Supabase Services
 import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, deleteUser, supabase, VAPID_PUBLIC_KEY, upsertItem, deleteItem } from './services/supabase';
@@ -298,6 +298,8 @@ const App: React.FC = () => {
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false); 
   
+  const [showNotificationBanner, setShowNotificationBanner] = useState(false);
+
   const isAnyModalOpen = 
     isAddTransactionOpen || 
     isAddAccountOpen || 
@@ -429,9 +431,49 @@ const App: React.FC = () => {
      });
   }, [accounts]);
 
+  // --- CHECK NOTIFICATION PERMISSION ---
+  useEffect(() => {
+    if ('Notification' in window) {
+      if (Notification.permission === 'default' && currentUserEmail) {
+        setShowNotificationBanner(true);
+      } else {
+        setShowNotificationBanner(false);
+      }
+    }
+  }, [currentUserEmail]);
+
+  const requestNotificationPermission = async () => {
+    if (!('Notification' in window)) return;
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== 'default') {
+        setShowNotificationBanner(false);
+      }
+      if (permission === 'granted') {
+         // Also verify subscription
+         if ('serviceWorker' in navigator && currentUserEmail) {
+            const registration = await navigator.serviceWorker.ready;
+            let subscription = await registration.pushManager.getSubscription();
+            if (!subscription) {
+               subscription = await registration.pushManager.subscribe({
+                  userVisibleOnly: true,
+                  applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+               });
+               if(subscription) {
+                  const subJson = JSON.parse(JSON.stringify(subscription));
+                  await saveUserField(currentUserEmail, 'pushSubscription', subJson);
+               }
+            }
+         }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   // --- NOTIFICATION CHECKER (FIXED) ---
   useEffect(() => {
-    const checkDueBills = () => {
+    const checkDueBills = async () => {
       // Check even if Notification API is not supported (for internal list)
       const now = new Date();
       // Generate Local Today String manually to avoid UTC offset issues (e.g., "24/05/2025")
@@ -444,9 +486,9 @@ const App: React.FC = () => {
 
       const todayShortLower = now.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).toLowerCase().replace('.', ''); // "24 mai"
 
-      transactions.forEach(tx => {
-         if (tx.paid) return;
-         if (alreadyNotifiedIds.includes(tx.id)) return;
+      for (const tx of transactions) {
+         if (tx.paid) continue;
+         if (alreadyNotifiedIds.includes(tx.id)) continue;
 
          let isToday = false;
          const txDateLower = tx.date.toLowerCase();
@@ -475,15 +517,18 @@ const App: React.FC = () => {
          }
 
          if (isToday) {
-            // Browser Notification
-            if ('Notification' in window && Notification.permission === 'granted') {
+            // Service Worker Notification (System Status Bar)
+            if ('serviceWorker' in navigator && Notification.permission === 'granted') {
                try {
-                 new Notification('Flow Finance', {
-                    body: `Sua conta ${tx.name} vence hoje! Valor: R$ ${tx.amount.toFixed(2)}`,
-                    icon: '/favicon.svg'
-                 });
+                 const registration = await navigator.serviceWorker.ready;
+                 registration.showNotification('Flow Finance', {
+                    body: `Conta vencendo hoje: ${tx.name} (R$ ${tx.amount.toFixed(2)})`,
+                    icon: '/favicon.svg',
+                    vibrate: [200, 100, 200],
+                    tag: `bill-${tx.id}`
+                 } as any);
                } catch (e) {
-                 console.error("Notificação falhou:", e);
+                 console.error("SW Notificação falhou:", e);
                }
             }
 
@@ -508,7 +553,7 @@ const App: React.FC = () => {
             newNotifiedIds.push(tx.id);
             hasNotification = true;
          }
-      });
+      }
 
       if (hasNotification) {
          localStorage.setItem(notifiedKey, JSON.stringify(newNotifiedIds));
@@ -595,6 +640,30 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // --- CLEANUP OLD NOTIFICATIONS ---
+  const cleanupOldNotifications = (notifs: AppNotification[]) => {
+     if (!currentUserEmail) return;
+     
+     // Remove notifications older than 30 days
+     const thirtyDaysAgo = new Date();
+     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+     
+     // Since our notification date format is loose (e.g. "Hoje", "24/05/2025"), 
+     // we rely on the DB insertion time if available, or skip complex parsing for now.
+     // Assuming the ID is UUID, we can't extract date.
+     // Strategy: Just delete if the list is too big (> 50)
+     if (notifs.length > 50) {
+        const toKeep = notifs.slice(0, 50); // Keep 50 newest
+        const toDelete = notifs.slice(50);
+        
+        toDelete.forEach(n => {
+           deleteItem(currentUserEmail, 'notifications', n.id);
+        });
+        
+        setNotifications(toKeep);
+     }
+  };
+
   // --- LOAD DATA ---
   useEffect(() => {
     if (!currentUserEmail || !isSessionReady) return;
@@ -606,6 +675,11 @@ const App: React.FC = () => {
         if (data) {
           const { hasChanges, data: cleanData, idMap } = sanitizeDataIds(data);
           applyData(cleanData);
+          
+          // Cleanup routine
+          if (cleanData.notifications) {
+             cleanupOldNotifications(cleanData.notifications);
+          }
 
           if (hasChanges && currentUserEmail) {
              if (idMap[activeMonthId]) {
@@ -1188,6 +1262,24 @@ const App: React.FC = () => {
       case 'investments': return <InvestmentsView investments={investments} onAdd={handleAddInvestment} onEdit={handleEditInvestment} onDelete={handleDeleteInvestment} onBack={handleBackToHome} cdiRate={cdiRate} onUpdateCdiRate={setCdiRate} isPro={!!userProfile.isPro} onOpenProModal={openPro} />;
       case 'home': default: return (
           <>
+            {/* PERMISSION BANNER */}
+            {showNotificationBanner && (
+               <div className="mx-2 mb-4 p-3 bg-blue-600 rounded-2xl flex items-center justify-between shadow-lg animate-in slide-in-from-top-4 duration-300">
+                  <div className="flex items-center gap-3">
+                     <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                        <BellRing className="w-4 h-4 text-white" />
+                     </div>
+                     <span className="text-xs text-white font-bold">Ative os lembretes de vencimento</span>
+                  </div>
+                  <button 
+                     onClick={requestNotificationPermission}
+                     className="px-3 py-1.5 bg-white text-blue-600 rounded-lg text-xs font-bold shadow-sm active:scale-95 transition-transform"
+                  >
+                     Ativar
+                  </button>
+               </div>
+            )}
+
             <div className="flex justify-between items-center mb-6 pl-1">
               <div className="flex items-center gap-3 cursor-pointer group" onClick={openProfile}>
                 <div className="relative">
