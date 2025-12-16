@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Check, Calendar } from 'lucide-react';
 import { LogoType, Transaction } from '../types';
@@ -339,4 +338,4 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
   );
 };
 
-export default AddTransactionModal;
+export default React.memo(AddTransactionModal);

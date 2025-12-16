@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Wallet, Plus, ChevronLeft, Calendar, Trash2, Check, Edit2 } from 'lucide-react';
 import { LongTermTransaction } from '../types';
@@ -784,4 +783,4 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
   );
 };
 
-export default LongTermView;
+export default React.memo(LongTermView);

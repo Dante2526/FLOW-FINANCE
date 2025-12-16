@@ -40,7 +40,8 @@ interface SwipeableTransactionItemProps {
   onTogglePaymentMethod: (id: string) => void;
 }
 
-const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({ 
+// MEMOIZED ATOMIC COMPONENT
+const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({ 
   tx, 
   onDelete,
   onEdit,
@@ -54,7 +55,6 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
   const startY = useRef<number | null>(null); // Track vertical start
   const startOffset = useRef(0);
   const isDragging = useRef(false);
-  const hasDragged = useRef(false); // Track if a drag actually occurred
   const interactionType = useRef<'scroll' | 'swipe' | null>(null); // Lock direction
 
   // Unified Handler Logic
@@ -63,7 +63,6 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
     startY.current = clientY;
     startOffset.current = offsetX;
     isDragging.current = true;
-    hasDragged.current = false;
     interactionType.current = null; // Reset lock
   };
 
@@ -99,11 +98,6 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
       if (newOffset > 100) setOffsetX(100);
       else if (newOffset < -100) setOffsetX(-100);
       else setOffsetX(newOffset);
-      
-      // Mark as dragged if moved significantly
-      if (Math.abs(diffX) > 5) {
-        hasDragged.current = true;
-      }
     }
   };
 
@@ -151,30 +145,25 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
       setOffsetX(0);
       return;
     }
-    // If it was a clean click (no drag), edit
-    if (!hasDragged.current) {
-      onEdit(tx);
-    }
   };
 
   return (
     <div className="relative mb-3 h-24 rounded-2xl bg-[#1c1c1e] overflow-hidden select-none cursor-grab active:cursor-grabbing">
       {/* Background (Buttons) */}
       <div className={`absolute inset-0 flex justify-between rounded-2xl transition-all duration-200 ${offsetX === 0 ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
-         {/* Left Side (Pay/Unpay) - Visible when swiping Right */}
+         
+         {/* Left Side (Edit) - Visible when swiping Right (positive offset) */}
          <button
           onClick={() => {
-             onToggleStatus(tx.id);
+             onEdit(tx);
              setOffsetX(0);
           }}
-          className={`w-20 h-full flex items-center justify-center text-white transition-colors pl-2 ${
-            tx.paid ? 'bg-gray-600 hover:bg-gray-700' : 'bg-green-600 hover:bg-green-700'
-          }`}
+          className="w-20 h-full flex items-center justify-center bg-yellow-600 text-white hover:bg-yellow-700 transition-colors pl-2"
         >
-          {tx.paid ? <RotateCcw className="w-6 h-6" /> : <Check className="w-6 h-6" />}
+          <Edit2 className="w-6 h-6" />
         </button>
 
-        {/* Right Side (Delete) - Visible when swiping Left */}
+        {/* Right Side (Delete) - Visible when swiping Left (negative offset) */}
         <button
           onClick={() => onDelete(tx.id)}
           className="w-20 h-full flex items-center justify-center bg-red-600 text-white hover:bg-red-700 transition-colors pr-2"
@@ -235,9 +224,9 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
         </div>
 
         {/* Right Side Group: Amount + Toggle */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           {/* Amount & Badge */}
-          <div className="flex flex-col items-end gap-0.5 pointer-events-none">
+          <div className="flex flex-col items-end gap-0.5 pointer-events-none mr-1">
             <span className={`text-base font-bold tabular-nums transition-colors ${tx.paid ? 'text-white/50' : 'text-white'}`}>
               R$ {tx.amount.toFixed(2).replace('.', ',')}
             </span>
@@ -253,14 +242,14 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
             </div>
           </div>
 
-          {/* Paid Toggle Button */}
+          {/* Paid Toggle Button - Kept on card face for quick access */}
           <button
             onClick={(e) => {
               e.stopPropagation(); // Prevent affecting swipe
               onToggleStatus(tx.id);
             }}
             onMouseDown={(e) => e.stopPropagation()} // Prevent drag start on button click
-            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 cursor-pointer ${
+            className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all duration-200 cursor-pointer active:scale-95 ${
               tx.paid 
                 ? 'bg-green-500 border-green-500' 
                 : 'bg-transparent border-gray-600 hover:border-gray-400'
@@ -272,7 +261,7 @@ const SwipeableTransactionItem: React.FC<SwipeableTransactionItemProps> = ({
       </div>
     </div>
   );
-};
+});
 
 const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onToggleStatus, onTogglePaymentMethod }) => {
   return (
@@ -293,4 +282,4 @@ const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onTo
   );
 };
 
-export default TransactionList;
+export default React.memo(TransactionList);

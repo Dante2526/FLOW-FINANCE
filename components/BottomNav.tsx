@@ -6,7 +6,6 @@ import { AppView } from '../types';
 interface Props {
   currentView: AppView;
   onChangeView: (view: AppView) => void;
-  // Deprecated: onInvestmentClick removed in favor of standard view switching
   onInvestmentClick?: () => void;
 }
 
@@ -81,4 +80,4 @@ const BottomNav: React.FC<Props> = ({ currentView, onChangeView }) => {
   );
 };
 
-export default BottomNav;
+export default React.memo(BottomNav);

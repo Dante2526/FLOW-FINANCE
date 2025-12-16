@@ -2,68 +2,46 @@
 import { createClient } from '@supabase/supabase-js';
 
 // --- CONFIGURAÇÃO DE SEGURANÇA ---
-// NOTA: As chaves abaixo são PÚBLICAS (Anon Key) e projetadas para uso no Frontend.
-// A segurança dos dados depende das regras de Row Level Security (RLS) configuradas no painel do Supabase.
-// NÃO substitua a 'SUPABASE_ANON_KEY' por uma chave 'SERVICE_ROLE' (Admin).
-
 const SUPABASE_URL = 'https://xfsmdidfccgptfzjhhui.supabase.co'.trim();
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmc21kaWRmY2NncHRmempoaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3MTQ0NjAsImV4cCI6MjA4MDI5MDQ2MH0.4oFJ_L7fdjw2ttYtTko8EdTVhDpBtM5WWXQM4_N7zTU'.trim();
 
-// Chave Pública para Push Notifications (Web Push)
 export const VAPID_PUBLIC_KEY = 'BOabgmhdqm_B03NgjZgZUG4tT6whqH_sfr9-ZmMt1XY-lbI_ADbOzze9pRDU3tnj7oXttv01ZXcNKLhzeXlifC8';
 
-// Configurações simples
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true, 
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storage: localStorage // Explicitly use localStorage to fix reload disconnects
+    storage: localStorage
   }
 });
 
-// Helper para converter os dados do Supabase para o formato do App
-export const normalizeUserData = (data: any) => {
-  const result: any = { ...data };
+// --- HELPERS DE CONVERSÃO (Snake Case <-> Camel Case) ---
 
-  const assignIfPresent = (targetKey: string, sourceKey: string, defaultVal: any) => {
-    if (sourceKey in data) {
-      result[targetKey] = data[sourceKey] || defaultVal;
-    }
-  };
+const toCamelCase = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(v => toCamelCase(v));
+  } else if (obj !== null && obj.constructor === Object) {
+    return Object.keys(obj).reduce((result, key) => {
+      const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+      result[camelKey] = toCamelCase(obj[key]);
+      return result;
+    }, {} as any);
+  }
+  return obj;
+};
 
-  assignIfPresent('longTerm', 'long_term', []);
-  assignIfPresent('notepadContent', 'notepad_content', '');
-  // First try to get drawing from direct column
-  assignIfPresent('notepadDrawing', 'notepad_drawing', null); 
-  
-  if ('cdi_rate' in data) {
-    result.cdiRate = data.cdi_rate !== null ? data.cdi_rate : 11.25;
+const toSnakeCase = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    return obj.map(v => toSnakeCase(v));
+  } else if (obj !== null && obj.constructor === Object) {
+    return Object.keys(obj).reduce((result, key) => {
+      const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      result[snakeKey] = toSnakeCase(obj[key]);
+      return result;
+    }, {} as any);
   }
-  
-  assignIfPresent('transactions', 'transactions', []);
-  assignIfPresent('accounts', 'accounts', []);
-  assignIfPresent('investments', 'investments', []);
-  assignIfPresent('notifications', 'notifications', []);
-  assignIfPresent('months', 'months', []);
-  assignIfPresent('profile', 'profile', {});
-  assignIfPresent('theme', 'theme', null);
-  
-  // Fallback: Check profile for notepadDrawing if not found in root column
-  if (!result.notepadDrawing && data.profile && data.profile.notepadDrawing) {
-     result.notepadDrawing = data.profile.notepadDrawing;
-  }
-  
-  // Try to find dashboardOrder in column first, then fallback to profile
-  if ('dashboard_order' in data && data.dashboard_order && Array.isArray(data.dashboard_order) && data.dashboard_order.length > 0) {
-     result.dashboardOrder = data.dashboard_order;
-  } else if (data.profile && data.profile.dashboardOrder) {
-     result.dashboardOrder = data.profile.dashboardOrder;
-  } else {
-     result.dashboardOrder = [];
-  }
-
-  return result;
+  return obj;
 };
 
 // --- AUTH HELPERS (OTP) ---
@@ -76,19 +54,9 @@ export const sendAuthOtp = async (email: string) => {
 
   if (error) {
     console.error("Erro ao enviar OTP:", error.message);
-    
-    // Tratamento específico para Rate Limit (Muitas tentativas)
     if (error.message.includes("security purposes") || error.status === 429) {
-       const match = error.message.match(/after (\d+) seconds/);
-       const seconds = match ? match[1] : null;
-       
-       if (seconds) {
-         throw new Error(`Muitas tentativas. Aguarde ${seconds}s para tentar novamente.`);
-       } else {
-         throw new Error("Muitas tentativas. Aguarde um momento.");
-       }
+       throw new Error("Muitas tentativas. Aguarde alguns segundos.");
     }
-
     throw new Error("Falha ao enviar código. Verifique o e-mail.");
   }
   return true;
@@ -106,57 +74,53 @@ export const verifyAuthOtp = async (email: string, token: string) => {
     console.error("Erro ao verificar OTP:", error);
     throw new Error("Código inválido ou expirado.");
   }
-  
   return data;
 };
 
 // --- USER MANAGEMENT ---
 
+// Recupera o UUID do Auth (necessário para Foreign Keys nas tabelas relacionais)
+const getAuthUserId = async (): Promise<string> => {
+    const { data } = await supabase.auth.getUser();
+    if (data.user) return data.user.id;
+    
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (sessionData.session?.user) return sessionData.session.user.id;
+    
+    throw new Error("Usuário não autenticado.");
+};
+
 export const loginUser = async (email: string) => {
   const normalizedEmail = email.toLowerCase().trim();
   
-  // Busca direta na tabela users
+  // Verifica se o usuário existe na tabela pública usando EMAIL (pois 'id' não existe na tabela pública)
   const { data, error } = await supabase
-    .from('users')
-    .select('*')
-    .eq('email', normalizedEmail)
-    .single();
-
-  if (error) {
-    console.error("Erro Supabase Login:", error);
-    if (error.message && (error.message.includes('fetch') || error.message.includes('network'))) {
-       throw new Error("Erro de conexão. Verifique sua internet.");
-    }
-    // Se não encontrou (código PGRST116), lançamos erro específico
-    throw new Error("Usuário não encontrado. Verifique o e-mail ou crie uma conta.");
-  }
+      .from('users')
+      .select('email')
+      .eq('email', normalizedEmail)
+      .maybeSingle();
   
-  if (!data) {
-    throw new Error("Usuário não encontrado.");
-  }
-
-  return normalizeUserData(data);
+  if (!data) throw new Error("Usuário não encontrado.");
+  
+  // Retorna o auth ID para uso posterior se necessário, mas aqui apenas validamos existência
+  return await getAuthUserId();
 };
 
 export const registerUser = async (email: string, name: string, initialData: any) => {
   const normalizedEmail = email.toLowerCase().trim();
 
-  // Verifica se usuário já existe
-  const { data: existingUser, error: checkError } = await supabase
+  // Verifica existência
+  const { data: existingUser } = await supabase
     .from('users')
     .select('email')
     .eq('email', normalizedEmail)
     .maybeSingle();
 
-  if (checkError && !checkError.message.includes('JSON')) {
-     console.error("Erro verificação registro:", checkError);
-  }
-
   if (existingUser) {
     throw new Error("Este e-mail já possui cadastro.");
   }
 
-  // Cria o usuário diretamente
+  // Insere na tabela pública
   const { error } = await supabase
     .from('users')
     .insert({
@@ -168,25 +132,30 @@ export const registerUser = async (email: string, name: string, initialData: any
         avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix',
         isPro: false 
       },
-      months: initialData.months || [],
-      cdi_rate: initialData.cdiRate || 11.25
+      cdi_rate: initialData.cdiRate || 11.25,
     });
 
   if (error) {
     console.error("Erro criação usuário:", error);
-    throw new Error("Erro ao criar conta. Tente novamente.");
   }
 
   return { email: normalizedEmail, name };
 };
 
 export const deleteUser = async (email: string) => {
+  const userId = await getAuthUserId();
   const normalizedEmail = email.toLowerCase().trim();
   
-  const { error } = await supabase
-    .from('users')
-    .delete()
-    .eq('email', normalizedEmail);
+  // Deletar tabelas relacionais usando o UUID do Auth
+  await supabase.from('transactions').delete().eq('user_id', userId);
+  await supabase.from('accounts').delete().eq('user_id', userId);
+  await supabase.from('months').delete().eq('user_id', userId);
+  await supabase.from('investments').delete().eq('user_id', userId);
+  await supabase.from('long_term').delete().eq('user_id', userId);
+  await supabase.from('notifications').delete().eq('user_id', userId);
+  
+  // Deletar usuário da tabela pública usando EMAIL
+  const { error } = await supabase.from('users').delete().eq('email', normalizedEmail);
 
   if (error) {
     console.error("Erro ao deletar usuário:", error);
@@ -194,158 +163,250 @@ export const deleteUser = async (email: string) => {
   }
 };
 
-// --- REALTIME SUBSCRIPTION ---
+// --- DATA SYNC (CRUD RELACIONAL) ---
 
-export const subscribeToUserChanges = (email: string, onUpdate: (data: any) => void) => {
-  const normalizedEmail = email.toLowerCase().trim();
+export const loadUserData = async (email: string) => {
+  try {
+    const normalizedEmail = email.toLowerCase().trim();
+    const userId = await getAuthUserId(); // UUID para tabelas filhas
 
-  const channel = supabase
-    .channel(`user-updates-${normalizedEmail}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE', 
-        schema: 'public',
-        table: 'users',
-        filter: `email=eq.${normalizedEmail}` 
-      },
-      (payload) => {
-        if (payload.new) {
-          onUpdate(normalizeUserData(payload.new));
+    // Executa queries em paralelo
+    // Tabela 'users' consultada por EMAIL
+    const userReq = supabase.from('users').select('*').eq('email', normalizedEmail).single();
+
+    // Tabelas filhas consultadas por USER_ID (UUID)
+    const transactionsReq = supabase.from('transactions').select('*').eq('user_id', userId);
+    const accountsReq = supabase.from('accounts').select('*').eq('user_id', userId);
+    const monthsReq = supabase.from('months').select('*').eq('user_id', userId);
+    const investmentsReq = supabase.from('investments').select('*').eq('user_id', userId);
+    const longTermReq = supabase.from('long_term').select('*').eq('user_id', userId);
+    const notificationsReq = supabase.from('notifications').select('*').eq('user_id', userId);
+
+    const [
+        userRes,
+        transactionsRes,
+        accountsRes,
+        monthsRes,
+        investmentsRes,
+        longTermRes,
+        notificationsRes
+    ] = await Promise.all([
+        userReq,
+        transactionsReq,
+        accountsReq,
+        monthsReq,
+        investmentsReq,
+        longTermReq,
+        notificationsReq
+    ]);
+
+    const user = userRes.data || {};
+    
+    // Monta o objeto final
+    const result = {
+        profile: user.profile || {},
+        cdiRate: user.cdi_rate ?? 11.25,
+        notepadContent: user.notepad_content || '',
+        notepadDrawing: user.profile?.notepadDrawing || null,
+        theme: user.theme || null,
+        dashboardOrder: user.profile?.dashboardOrder || [], 
+        
+        transactions: toCamelCase(transactionsRes.data || []),
+        accounts: toCamelCase(accountsRes.data || []),
+        months: toCamelCase(monthsRes.data || []),
+        investments: toCamelCase(investmentsRes.data || []),
+        longTerm: toCamelCase(longTermRes.data || []),
+        notifications: toCamelCase(notificationsRes.data || [])
+    };
+
+    return result;
+
+  } catch (error) {
+    console.error("Erro carregando dados:", error);
+    return null;
+  }
+};
+
+export const saveCollection = async (email: string, collectionName: string, dataArray: any[]): Promise<boolean> => {
+  try {
+    const userId = await getAuthUserId();
+    let tableName = collectionName;
+    
+    if (collectionName === 'longTerm') tableName = 'long_term';
+    // profile/dashboardOrder handling remains as is (they use saveUserField logic usually, handled separately if passed here incorrectly)
+    if (collectionName === 'dashboardOrder') {
+        return saveUserField(email, 'dashboardOrder', dataArray);
+    }
+
+    // Prepara dados com user_id (UUID)
+    const rows = dataArray.map(item => {
+        const snakeItem = toSnakeCase(item);
+        
+        // CORREÇÃO: Se não tiver data de criação, injeta a data atual
+        if (!snakeItem.created_at) {
+            snakeItem.created_at = new Date().toISOString();
         }
-      }
-    )
-    .subscribe((status) => {
-      console.log(`[Realtime] Status para ${normalizedEmail}:`, status);
-      if (status === 'SUBSCRIBED') {
-         console.log("Conectado para receber atualizações em tempo real.");
-      }
-      if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
-         console.warn("Desconectado do Realtime. O app tentará reconectar...");
-      }
+
+        return {
+            ...snakeItem,
+            user_id: userId
+        };
     });
 
-  return () => {
-    supabase.removeChannel(channel);
-  };
-};
+    // 1. UPSERT: Atualiza os que existem, insere os novos
+    const { error: upsertError } = await supabase
+        .from(tableName)
+        .upsert(rows, { onConflict: 'id' });
 
-// --- DATA SYNC ---
-
-export const saveCollection = async (userId: string, collectionName: string, dataArray: any[]): Promise<boolean> => {
-  const normalizedEmail = userId.toLowerCase().trim();
-  
-  // SPECIAL HANDLING FOR DASHBOARD ORDER:
-  // Since 'dashboard_order' might not exist as a column in the schema,
-  // we store it inside the 'profile' JSONB column to avoid schema errors.
-  if (collectionName === 'dashboardOrder') {
-     try {
-       // 1. Fetch current profile to avoid overwriting other fields
-       const { data: userData, error: fetchError } = await supabase
-         .from('users')
-         .select('profile')
-         .eq('email', normalizedEmail)
-         .single();
-       
-       if (fetchError) {
-         console.error(`Error fetching profile for dashboardOrder:`, fetchError.message);
-         return false;
-       }
-
-       const currentProfile = userData?.profile || {};
-       const updatedProfile = { ...currentProfile, dashboardOrder: dataArray };
-
-       // 2. Save updated profile
-       const { error: updateError } = await supabase
-         .from('users')
-         .update({ profile: updatedProfile })
-         .eq('email', normalizedEmail);
-
-       if (updateError) {
-         console.error(`Error saving dashboardOrder to profile:`, updateError.message);
-         return false;
-       }
-       return true;
-
-     } catch (err: any) {
-       console.error("Exception saving dashboardOrder:", err.message || err);
-       return false;
-     }
-  }
-
-  // STANDARD HANDLING FOR OTHER COLLECTIONS
-  let dbColumn = collectionName;
-  if (collectionName === 'longTerm') dbColumn = 'long_term';
-
-  try {
-    const { error } = await supabase
-      .from('users')
-      .update({ [dbColumn]: dataArray })
-      .eq('email', normalizedEmail);
-
-    if (error) {
-      console.error(`Error saving ${collectionName} to Supabase:`, error.message);
-      return false;
+    if (upsertError) {
+        console.error(`Erro salvando ${tableName}:`, upsertError.message || upsertError);
+        return false;
     }
-    return true;
 
-  } catch (error: any) {
-    console.error(`Error saving ${collectionName}:`, error.message || error);
+    // 2. DELETE ORPHANS (A CORREÇÃO PRINCIPAL)
+    // Precisamos apagar do banco os itens que NÃO estão mais na lista local 'dataArray'.
+    // Isso garante que se o usuário deletou localmente, o item suma do banco.
+    
+    const currentIds = rows.map(r => r.id);
+
+    if (currentIds.length > 0) {
+        // Deleta itens deste usuário cujo ID NÃO está na lista atual
+        const { error: deleteError } = await supabase
+            .from(tableName)
+            .delete()
+            .eq('user_id', userId)
+            .not('id', 'in', `(${currentIds.join(',')})`); // Syntax para array no Postgrest via client
+            
+        if (deleteError) {
+             console.error(`Erro limpando itens antigos em ${tableName}:`, deleteError.message);
+        }
+    } else {
+        // Se a lista local está vazia (ex: usuário apagou tudo), limpa a tabela para este usuário
+        const { error: deleteAllError } = await supabase
+            .from(tableName)
+            .delete()
+            .eq('user_id', userId);
+            
+        if (deleteAllError) {
+             console.error(`Erro limpando tudo em ${tableName}:`, deleteAllError.message);
+        }
+    }
+
+    return true;
+  } catch (error) {
+    console.error(`Exceção salvando ${collectionName}:`, error);
     return false;
   }
 };
 
-export const saveUserField = async (userId: string, field: string, data: any): Promise<boolean> => {
-  const normalizedEmail = userId.toLowerCase().trim();
-  
-  // SPECIAL HANDLING: notepadDrawing (save to profile JSONB)
-  // This avoids errors if the 'notepad_drawing' column does not exist in the DB schema
-  if (field === 'notepadDrawing') {
-    try {
-      const { data: userData, error: fetchError } = await supabase
+export const saveUserField = async (email: string, field: string, data: any): Promise<boolean> => {
+  try {
+    const normalizedEmail = email.toLowerCase().trim();
+    let updatePayload: any = {};
+
+    const profileFields = ['notepadDrawing', 'dashboardOrder', 'pushSubscription', 'profile'];
+
+    if (profileFields.includes(field)) {
+        // Busca profile atual usando EMAIL
+        const { data: userData, error: fetchError } = await supabase
+            .from('users')
+            .select('profile')
+            .eq('email', normalizedEmail)
+            .maybeSingle();
+
+        if (fetchError) {
+             console.error(`Erro buscando profile para ${field}:`, fetchError.message);
+        }
+
+        const currentProfile = userData?.profile || {};
+        
+        let newProfile;
+        if (field === 'profile') {
+             newProfile = { ...currentProfile, ...data };
+        } else {
+             newProfile = { ...currentProfile, [field]: data };
+        }
+        
+        updatePayload = { profile: newProfile };
+
+    } else {
+        if (field === 'notepadContent') {
+            updatePayload = { notepad_content: data };
+        } else if (field === 'cdiRate') {
+            updatePayload = { cdi_rate: data };
+        } else if (field === 'theme') {
+            updatePayload = { theme: data };
+        } else {
+            updatePayload = toSnakeCase({ [field]: data });
+        }
+    }
+
+    // Atualiza tabela users usando EMAIL
+    const { error } = await supabase
         .from('users')
-        .select('profile')
-        .eq('email', normalizedEmail)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      const currentProfile = userData?.profile || {};
-      const updatedProfile = { ...currentProfile, notepadDrawing: data };
-
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ profile: updatedProfile })
+        .update(updatePayload)
         .eq('email', normalizedEmail);
 
-      if (updateError) throw updateError;
-      return true;
-    } catch (err: any) {
-      console.error(`Error saving notepadDrawing to profile:`, err.message);
-      return false;
+    if (error) {
+        console.error(`Erro salvando campo ${field}:`, error.message || JSON.stringify(error));
+        return false;
     }
-  }
-
-  // Standard Column Mapping
-  let dbColumn = field;
-  if (field === 'notepadContent') dbColumn = 'notepad_content';
-  if (field === 'cdiRate') dbColumn = 'cdi_rate';
-  if (field === 'pushSubscription') dbColumn = 'push_subscription';
-  
-  // If we reach here with 'notepadDrawing' (fallback) or other fields
-  const { error } = await supabase
-    .from('users')
-    .update({ [dbColumn]: data })
-    .eq('email', normalizedEmail);
-
-  if (error) {
-    console.error(`Error saving field ${field}:`, error.message);
+    return true;
+  } catch (error: any) {
+    console.error(`Exceção salvando campo ${field}:`, error.message || error);
     return false;
   }
-  return true;
 };
 
-// Modified loadUserData to fetch all necessary fields/sub-collections logic if simulated
-export const loadUserData = async (userId: string) => {
-  return loginUser(userId);
+// --- REALTIME SUBSCRIPTION ---
+
+export const subscribeToUserChanges = (email: string, onUpdate: () => void) => {
+  let channels: any[] = [];
+
+  const setup = async () => {
+    try {
+      // É preciso do UUID para filtrar tabelas privadas
+      const userId = await getAuthUserId();
+      const normalizedEmail = email.toLowerCase().trim();
+
+      const tables = ['transactions', 'accounts', 'months', 'investments', 'long_term', 'notifications'];
+      
+      // Canal Único para todas as mudanças do usuário
+      const channel = supabase.channel('user-db-changes');
+
+      // 1. Escuta tabela pública 'users' (Profile, Tema, Notas) filtrando pelo email
+      channel.on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'users', filter: `email=eq.${normalizedEmail}` },
+          (payload) => {
+             // console.log('Realtime User update:', payload);
+             onUpdate();
+          }
+      );
+
+      // 2. Escuta tabelas privadas filtrando pelo user_id
+      tables.forEach(table => {
+        channel.on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: table, filter: `user_id=eq.${userId}` },
+          (payload) => {
+             // console.log(`Realtime ${table} update:`, payload);
+             onUpdate();
+          }
+        );
+      });
+
+      channel.subscribe();
+      channels.push(channel);
+
+    } catch (err) {
+      console.warn("Could not setup realtime subscriptions (Auth error?)", err);
+    }
+  };
+
+  setup();
+
+  return () => {
+    channels.forEach(ch => supabase.removeChannel(ch));
+  };
 };

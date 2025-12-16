@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Check, Lock, Crown } from 'lucide-react';
 import { CardTheme, Account } from '../types';
@@ -194,4 +193,4 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
   );
 };
 
-export default AddAccountModal;
+export default React.memo(AddAccountModal);

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Plus, Copy, Calculator, GripVertical, Eye, EyeOff } from 'lucide-react';
 
@@ -56,6 +57,8 @@ const BalanceCard: React.FC<Props> = ({
 
   // Touch Handler for Mobile Drag Simulation
   const handleTouchMove = (e: React.TouchEvent) => {
+    e.stopPropagation(); // Stop scrolling interference
+    
     // Rely on touch-action: none for scroll prevention
     const touch = e.touches[0];
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
@@ -132,7 +135,7 @@ const BalanceCard: React.FC<Props> = ({
       <div className="flex items-center gap-3">
         {/* Add Button (Promoted to Primary - replaces Send) */}
         <button 
-          onClick={onAddClick}
+          onClick={(e) => { e.stopPropagation(); onAddClick(); }}
           className="flex-1 bg-[#121214] text-white h-16 rounded-[1.5rem] flex items-center justify-center gap-2 hover:bg-black transition-colors shadow-lg"
         >
           <span className="text-lg font-medium">Adicionar</span>
@@ -141,7 +144,7 @@ const BalanceCard: React.FC<Props> = ({
 
         {/* Duplicate Button (Copy Icon) */}
         <button 
-          onClick={onDuplicateClick}
+          onClick={(e) => { e.stopPropagation(); onDuplicateClick(); }}
           className="w-16 h-16 bg-[#121214] text-white rounded-[1.5rem] flex items-center justify-center hover:bg-black transition-colors shadow-lg"
           title="Duplicar contas para o próximo mês"
         >
@@ -149,7 +152,7 @@ const BalanceCard: React.FC<Props> = ({
         </button>
 
         <button 
-          onClick={onCalculatorClick}
+          onClick={(e) => { e.stopPropagation(); onCalculatorClick(); }}
           className="w-16 h-16 bg-[#121214] text-white rounded-[1.5rem] flex items-center justify-center hover:bg-black transition-colors shadow-lg"
         >
           <Calculator className="w-6 h-6" />

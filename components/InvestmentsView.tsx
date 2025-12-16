@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { TrendingUp, Plus, PieChart, Building, Trash2, Edit2, Settings2, X, RefreshCw } from 'lucide-react';
 import { Investment } from '../types';
@@ -24,7 +23,7 @@ interface SwipeableItemProps {
   getYieldLabel: (inv: Investment) => string;
 }
 
-const SwipeableInvestmentItem: React.FC<SwipeableItemProps> = ({ inv, onEdit, onDelete, getYieldLabel }) => {
+const SwipeableInvestmentItem: React.FC<SwipeableItemProps> = React.memo(({ inv, onEdit, onDelete, getYieldLabel }) => {
   const [offsetX, setOffsetX] = useState(0);
   
   // Refs to track gestures
@@ -119,7 +118,7 @@ const SwipeableInvestmentItem: React.FC<SwipeableItemProps> = ({ inv, onEdit, on
   };
 
   return (
-    <div className="relative h-20 rounded-2xl overflow-hidden select-none cursor-grab active:cursor-grabbing">
+    <div className="relative h-20 rounded-2xl overflow-hidden select-none cursor-grab active:cursor-grabbing will-change-transform">
       {/* Background Layer (Actions) */}
       <div className={`absolute inset-0 flex justify-between transition-all duration-200 ${offsetX === 0 ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
         
@@ -184,7 +183,7 @@ const SwipeableInvestmentItem: React.FC<SwipeableItemProps> = ({ inv, onEdit, on
       </div>
     </div>
   );
-};
+});
 
 
 const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete, onBack, cdiRate, onUpdateCdiRate, isPro = false, onOpenProModal }) => {
@@ -453,4 +452,4 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
   );
 };
 
-export default InvestmentsView;
+export default React.memo(InvestmentsView);

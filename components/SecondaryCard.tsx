@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Account, CardTheme } from '../types';
 import { Trash2, Edit2, GripVertical } from 'lucide-react';
@@ -158,11 +159,15 @@ const SecondaryCard: React.FC<Props> = ({
   // Manual Touch Move for Android
   const handleManualTouchMove = (e: React.TouchEvent) => {
      const touch = e.touches[0];
+     // Use clientX/Y to check elements under the finger
      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+     
+     // Look for the closest card container with data-card-id
      const cardRow = element?.closest('[data-card-id]');
      
      if (cardRow) {
         const targetId = cardRow.getAttribute('data-card-id');
+        // Only trigger enter if target is different from source
         if (targetId && targetId !== account.id && onDragEnter) {
            onDragEnter(targetId);
         }

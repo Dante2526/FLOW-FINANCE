@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Palette, Check, Lock, Crown, Shield, ChevronRight } from 'lucide-react';
 import { AppTheme } from '../types';
@@ -53,7 +52,7 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
   };
 
   return (
-    <div className="flex flex-col animate-in fade-in duration-300">
+    <div className="flex flex-col animate-in fade-in duration-300 relative">
       
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
@@ -143,13 +142,13 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
            </button>
            
            <p className="text-center text-[10px] text-gray-600 mt-6 pb-4">
-              Flow Finance v1.2.0 • Build 2025
+              Flow Finance v1.4.0 • Performance 100%
            </p>
         </div>
       </div>
 
-      {/* Confirm Button - Fixed at bottom of view area */}
-      <div className="fixed bottom-28 left-0 right-0 px-4 flex justify-center pointer-events-none z-50">
+      {/* Confirm Button - Fixed at bottom of view area with blur */}
+      <div className="fixed bottom-24 left-0 right-0 px-4 pt-6 pb-4 flex justify-center pointer-events-none z-50 bg-gradient-to-t from-black via-black/80 to-transparent backdrop-blur-[2px]">
         <button 
           onClick={handleConfirm}
           disabled={selectedThemeId === currentThemeId}
@@ -170,4 +169,4 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
   );
 };
 
-export default SettingsView;
+export default React.memo(SettingsView);
