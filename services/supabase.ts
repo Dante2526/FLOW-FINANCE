@@ -50,10 +50,13 @@ export const loginUser = async (email: string) => {
   let profile = data.profile || {};
   let dashboardOrder = profile.dashboardOrder || data.dashboard_order || [];
   
+  // RESILIÊNCIA: Tenta ler o tema do perfil (novo local), se não existir, tenta da coluna (antigo/deletado)
+  let theme = profile.theme || data.theme;
+  
   return {
     profile,
     dashboardOrder,
-    theme: data.theme,
+    theme,
     notepadContent: data.notepad_content,
     notepadDrawing: data.notepad_drawing || (profile.notepadDrawing),
     cdiRate: data.cdi_rate
@@ -104,7 +107,8 @@ export const registerUser = async (email: string, name: string, initialData: any
       subtitle: '',
       avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix',
       isPro: false,
-      dashboardOrder: ['balance-card']
+      dashboardOrder: ['balance-card'],
+      theme: { id: 'sunset-orange', name: 'Sunset', primary: '#f97316', secondary: '#ea580c' } // Default theme in profile
     },
     cdi_rate: 11.25
   });
@@ -127,10 +131,21 @@ export const saveUserField = async (email: string, field: string, data: any) => 
   if (field === 'notepadDrawing') dbColumn = 'notepad_drawing';
   if (field === 'cdiRate') dbColumn = 'cdi_rate';
 
-  if (field === 'profile' || field === 'dashboardOrder') {
+  // ATUALIZAÇÃO: Salvar theme, profile e dashboardOrder dentro da coluna JSON 'profile'
+  if (field === 'profile' || field === 'dashboardOrder' || field === 'theme') {
     const { data: userData } = await supabase.from('users').select('profile').eq('email', email).single();
     const currentProfile = userData?.profile || {};
-    let updatedProfile = field === 'profile' ? data : { ...currentProfile, [field]: data };
+    
+    let updatedProfile;
+    
+    if (field === 'profile') {
+        // Merge seguro para não perder campos ocultos no objeto data
+        updatedProfile = { ...currentProfile, ...data };
+    } else {
+        // Salva campos individuais (theme, dashboardOrder) dentro do profile
+        updatedProfile = { ...currentProfile, [field]: data };
+    }
+
     const { error } = await supabase.from('users').update({ profile: updatedProfile }).eq('email', email);
     return !error;
   }
@@ -350,7 +365,7 @@ export const apiLongTerm = {
        total_amount: lt.totalAmount,
        installments_count: lt.installments_count,
        start_date: lt.startDate,
-       installments_paid: lt.installmentsPaid,
+       installments_paid: lt.installments_paid,
        monthly_amount: lt.monthlyAmount,
        installments_history: lt.installmentsHistory,
        installments_dates: lt.installmentsDates
