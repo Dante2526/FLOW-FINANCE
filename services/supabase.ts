@@ -127,9 +127,11 @@ export const deleteUser = async (email: string) => {
 
 export const saveUserField = async (email: string, field: string, data: any) => {
   let dbColumn = field;
+  // Mapeamento de nomes do Frontend -> Colunas do Supabase (Snake Case)
   if (field === 'notepadContent') dbColumn = 'notepad_content';
   if (field === 'notepadDrawing') dbColumn = 'notepad_drawing';
   if (field === 'cdiRate') dbColumn = 'cdi_rate';
+  if (field === 'pushSubscription') dbColumn = 'push_subscription'; // CORREÇÃO IMPORTANTE
 
   // ATUALIZAÇÃO: Salvar theme, profile e dashboardOrder dentro da coluna JSON 'profile'
   if (field === 'profile' || field === 'dashboardOrder' || field === 'theme') {
