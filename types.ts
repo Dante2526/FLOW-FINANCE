@@ -49,6 +49,7 @@ export interface Transaction {
   paid: boolean;
   month?: string; // The dashboard month name (e.g. "JANEIRO") this belongs to
   year?: string;  // The dashboard year (e.g. "2025") this belongs to
+  createdAt?: string; // Critical for sorting stability
 }
 
 export interface Contact {

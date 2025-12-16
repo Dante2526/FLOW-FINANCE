@@ -432,8 +432,7 @@ const App: React.FC = () => {
   // --- NOTIFICATION CHECKER (FIXED) ---
   useEffect(() => {
     const checkDueBills = () => {
-      if (!('Notification' in window)) return;
-
+      // Check even if Notification API is not supported (for internal list)
       const now = new Date();
       // Generate Local Today String manually to avoid UTC offset issues (e.g., "24/05/2025")
       const todayLocalStr = now.toLocaleDateString('pt-BR');
@@ -476,7 +475,8 @@ const App: React.FC = () => {
          }
 
          if (isToday) {
-            if (Notification.permission === 'granted') {
+            // Browser Notification
+            if ('Notification' in window && Notification.permission === 'granted') {
                try {
                  new Notification('Flow Finance', {
                     body: `Sua conta ${tx.name} vence hoje! Valor: R$ ${tx.amount.toFixed(2)}`,
@@ -486,17 +486,25 @@ const App: React.FC = () => {
                  console.error("Notificação falhou:", e);
                }
             }
-            setNotifications(prev => [
-               {
-                  id: generateUUID(),
-                  title: 'Conta Vencendo Hoje!',
-                  message: `A conta ${tx.name} de R$ ${tx.amount.toFixed(2)} vence hoje.`,
-                  date: 'Hoje',
-                  read: false,
-                  type: 'alert'
-               },
-               ...prev
-            ]);
+
+            // Create Internal Notification Object
+            const newNotif: AppNotification = {
+                id: generateUUID(),
+                title: 'Conta Vencendo Hoje!',
+                message: `A conta ${tx.name} de R$ ${tx.amount.toFixed(2)} vence hoje.`,
+                date: 'Hoje',
+                read: false,
+                type: 'alert'
+            };
+
+            // Update State
+            setNotifications(prev => [newNotif, ...prev]);
+            
+            // CRITICAL: Persist notification immediately to Cloud/DB
+            if (currentUserEmail) {
+                upsertItem(currentUserEmail, 'notifications', newNotif);
+            }
+
             newNotifiedIds.push(tx.id);
             hasNotification = true;
          }
@@ -509,7 +517,7 @@ const App: React.FC = () => {
 
     const timer = setTimeout(checkDueBills, 2000);
     return () => clearTimeout(timer);
-  }, [transactions]); 
+  }, [transactions, currentUserEmail]); 
 
   // --- FILTERING ---
   const activeMonthSummary = months.find(m => m.id === activeMonthId) || months[0];
@@ -798,7 +806,8 @@ const App: React.FC = () => {
             month: nextMonthName,
             year: nextYearStr,
             paid: false,
-            date: newDate
+            date: newDate,
+            createdAt: new Date().toISOString() // Ensure duplicated tx has new date
         };
     });
 
@@ -841,8 +850,6 @@ const App: React.FC = () => {
 
     setMonths(prev => sortMonths([...prev, newMonth]));
     
-    // Performance: We set state first, then save to DB (triggered by state change in effect or manual call?)
-    // Here we use bulk operations because it is a bulk action.
     let updatedTx = [];
     let updatedAcc = [];
 
@@ -875,7 +882,6 @@ const App: React.FC = () => {
     
     setActiveMonthId(newMonthId);
 
-    // MANUAL SAVE FOR BULK OPS (Since we removed auto-effect for tx/acc)
     if (currentUserEmail) {
         saveCollection(currentUserEmail, "transactions", updatedTx);
         saveCollection(currentUserEmail, "accounts", updatedAcc);
@@ -969,12 +975,20 @@ const App: React.FC = () => {
       
       setTransactions(prev => {
          if (editingTransaction) {
+             // Preserve original createdAt to prevent jumping in list
              newTx = { ...editingTransaction, ...txData };
-             // Granular Save
              if(currentUserEmail) upsertItem(currentUserEmail, 'transactions', newTx);
              return prev.map(t => t.id === editingTransaction.id ? newTx : t);
          } else {
-             newTx = { id: generateUUID(), ...txData, month: activeMonthSummary.month, year: activeMonthSummary.year };
+             // Set createdAt on creation
+             const nowIso = new Date().toISOString();
+             newTx = { 
+                 id: generateUUID(), 
+                 ...txData, 
+                 month: activeMonthSummary.month, 
+                 year: activeMonthSummary.year,
+                 createdAt: nowIso // Important for sorting
+             };
              if(currentUserEmail) upsertItem(currentUserEmail, 'transactions', newTx);
              return [newTx, ...prev];
          }
