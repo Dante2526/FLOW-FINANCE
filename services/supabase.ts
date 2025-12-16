@@ -111,18 +111,10 @@ export const registerUser = async (email: string, name: string, initialData: any
 
   if (error) throw error;
 
-  // If initialData has months, we should insert them into the 'months' table
-  if (initialData.months && initialData.months.length > 0) {
-     // Optional: Insert initial month immediately
-     // await apiMonths.add({ ...initialData.months[0] });
-  }
-
   return { email: normalizedEmail, name };
 };
 
 export const deleteUser = async (email: string) => {
-  // This might fail due to FK constraints if not cascading. 
-  // Assuming Supabase 'users' table deletion cascades or RLS handles it.
   const { error } = await supabase.from('users').delete().eq('email', email);
   if (error) throw error;
 };
@@ -131,18 +123,14 @@ export const deleteUser = async (email: string) => {
 
 export const saveUserField = async (email: string, field: string, data: any) => {
   let dbColumn = field;
-  // Map frontend field names to DB column names (legacy 'users' table)
   if (field === 'notepadContent') dbColumn = 'notepad_content';
   if (field === 'notepadDrawing') dbColumn = 'notepad_drawing';
   if (field === 'cdiRate') dbColumn = 'cdi_rate';
 
   if (field === 'profile' || field === 'dashboardOrder') {
-    // Complex merge for profile JSONB
     const { data: userData } = await supabase.from('users').select('profile').eq('email', email).single();
     const currentProfile = userData?.profile || {};
-    
     let updatedProfile = field === 'profile' ? data : { ...currentProfile, [field]: data };
-    
     const { error } = await supabase.from('users').update({ profile: updatedProfile }).eq('email', email);
     return !error;
   }
@@ -154,12 +142,20 @@ export const saveUserField = async (email: string, field: string, data: any) => 
 
 // --- NORMALIZED DATA API (TRANSACTIONS, ACCOUNTS, ETC) ---
 
+// Helper to filter object by allowed keys
+const filterKeys = (obj: any, allowed: string[]) => {
+  const clean: any = {};
+  allowed.forEach(key => {
+    if (obj[key] !== undefined) clean[key] = obj[key];
+  });
+  return clean;
+};
+
 // 1. Transactions
 export const apiTransactions = {
   list: async () => {
     const { data, error } = await supabase.from('transactions').select('*');
     if (error) throw error;
-    // Map DB columns (snake_case) to Frontend (camelCase)
     return data.map((t: any) => ({
       ...t,
       paymentMethod: t.payment_method,
@@ -168,7 +164,6 @@ export const apiTransactions = {
   },
   add: async (tx: any) => {
     const uid = await getUserId();
-    // Map Frontend (camelCase) to DB (snake_case)
     const payload = {
         ...tx,
         user_id: uid,
@@ -180,14 +175,11 @@ export const apiTransactions = {
 
     const { data, error } = await supabase.from('transactions').insert([payload]).select().single();
     if (error) throw error;
-    // Map back for optimistic UI consistency
     return { ...data, paymentMethod: data.payment_method, logoType: data.logo_type };
   },
   update: async (tx: any) => {
     const { id, paymentMethod, logoType, ...rest } = tx;
     const payload: any = { ...rest };
-    
-    // Map specific fields if present
     if (paymentMethod !== undefined) payload.payment_method = paymentMethod;
     if (logoType !== undefined) payload.logo_type = logoType;
 
@@ -202,24 +194,21 @@ export const apiTransactions = {
   },
   bulkCreate: async (txs: any[]) => {
     const uid = await getUserId();
-    // Map Frontend Array to DB Array
+    const validColumns = ['id', 'user_id', 'name', 'date', 'amount', 'type', 'payment_method', 'logo_type', 'paid', 'month', 'year'];
+    
+    // Strict Map & Filter
     const payload = txs.map(t => {
-        const p = {
+        const mapped = {
             ...t,
             user_id: uid,
-            payment_method: t.paymentMethod,
-            logo_type: t.logoType
+            payment_method: t.paymentMethod || t.payment_method,
+            logo_type: t.logoType || t.logo_type
         };
-        // Remove camelCase keys to avoid "column not found" error
-        delete p.paymentMethod;
-        delete p.logoType;
-        return p;
+        return filterKeys(mapped, validColumns);
     });
 
     const { data, error } = await supabase.from('transactions').insert(payload).select();
     if (error) throw error;
-    
-    // Map result back
     return data.map((t: any) => ({ ...t, paymentMethod: t.payment_method, logoType: t.logo_type }));
   }
 };
@@ -229,13 +218,12 @@ export const apiAccounts = {
   list: async () => {
     const { data, error } = await supabase.from('accounts').select('*');
     if (error) throw error;
-    // DB: color_theme -> Frontend: colorTheme
     return data.map((a: any) => ({ ...a, colorTheme: a.color_theme }));
   },
   add: async (acc: any) => {
     const uid = await getUserId();
     const payload = { ...acc, user_id: uid, color_theme: acc.colorTheme };
-    delete payload.colorTheme; // clean up
+    delete payload.colorTheme; 
     const { data, error } = await supabase.from('accounts').insert([payload]).select().single();
     if (error) throw error;
     return { ...data, colorTheme: data.color_theme };
@@ -254,11 +242,16 @@ export const apiAccounts = {
   },
   bulkCreate: async (accs: any[]) => {
     const uid = await getUserId();
-    const payload = accs.map(a => ({
-        ...a, user_id: uid, color_theme: a.colorTheme
-    }));
-    // Clean keys
-    payload.forEach(p => delete p.colorTheme);
+    const validColumns = ['id', 'user_id', 'name', 'balance', 'color_theme', 'month', 'year'];
+
+    const payload = accs.map(a => {
+        const mapped = {
+            ...a, 
+            user_id: uid, 
+            color_theme: a.colorTheme || a.color_theme
+        };
+        return filterKeys(mapped, validColumns);
+    });
 
     const { data, error } = await supabase.from('accounts').insert(payload).select();
     if (error) throw error;
