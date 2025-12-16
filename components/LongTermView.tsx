@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { Wallet, Plus, ChevronLeft, Calendar, Trash2, Check, Edit2 } from 'lucide-react';
+import { Wallet, Plus, ChevronLeft, Calendar, Trash2, Check, Edit2, Info } from 'lucide-react';
 import { LongTermTransaction } from '../types';
 
 interface Props {
@@ -22,6 +23,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
   // Form State for Adding
   const [newTitle, setNewTitle] = useState('');
   const [newTotal, setNewTotal] = useState('');
+  const [newMonthly, setNewMonthly] = useState(''); // NEW: State for Monthly input
   const [newInstallments, setNewInstallments] = useState('');
   const [newStartDate, setNewStartDate] = useState(new Date().toISOString().split('T')[0]);
 
@@ -66,25 +68,70 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
     setter(amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   };
 
+  // --- SYNC LOGIC FOR NEW TRANSACTION ---
+  
+  const parseCurrency = (val: string) => {
+      if (!val) return 0;
+      return parseFloat(val.replace(/\./g, '').replace(',', '.'));
+  };
+
+  // Simple handlers without auto-calculation logic
+  const handleNewMonthlyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      handleAmountChange(e, setNewMonthly);
+  };
+
+  const handleNewTotalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      handleAmountChange(e, setNewTotal);
+  };
+
+  const handleNewCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setNewInstallments(e.target.value);
+  };
+
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Clean formatting (remove dots, replace comma with dot) to parse to float
-    const cleanTotal = newTotal.replace(/\./g, '').replace(',', '.');
-    const totalAmount = parseFloat(cleanTotal);
+    // Parse inputs
+    const totalInput = parseCurrency(newTotal);
+    const monthlyInput = parseCurrency(newMonthly);
     const count = parseInt(newInstallments);
-    const initialMonthly = totalAmount / count;
+    
+    if (!count || count <= 0) return;
+
+    // Check if at least one value is provided
+    if (totalInput === 0 && monthlyInput === 0) {
+        alert("Preencha o Valor da Parcela OU o Valor Total.");
+        return;
+    }
+
+    // Logic to ensure data consistency based on what the user provided:
+    let finalTotal = totalInput;
+    let finalMonthly = monthlyInput;
+
+    // Case 1: User provided only Monthly -> Calculate Total
+    if (finalTotal === 0 && finalMonthly > 0) {
+        finalTotal = finalMonthly * count;
+    }
+    
+    // Case 2: User provided only Total -> Calculate Monthly
+    if (finalMonthly === 0 && finalTotal > 0) {
+        finalMonthly = finalTotal / count;
+    }
+
+    // Case 3: User provided BOTH -> Use inputs as is (allows manual adjustments/interest)
 
     onAdd({
       title: newTitle.toUpperCase(),
-      totalAmount: totalAmount,
+      totalAmount: finalTotal,
       installmentsCount: count,
       startDate: newStartDate,
-      monthlyAmount: initialMonthly // Initialize explicitly
+      monthlyAmount: finalMonthly
     });
+    
     setIsAddModalOpen(false);
     setNewTitle('');
     setNewTotal('');
+    setNewMonthly('');
     setNewInstallments('');
   };
 
@@ -288,9 +335,9 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
     }
 
     return (
-      <div className="flex flex-col h-full animate-in fade-in slide-in-from-right-10 duration-300 pb-32">
-        {/* Header Navigation */}
-        <div className="flex items-center gap-4 mb-6">
+      <div className="flex flex-col h-full animate-in fade-in slide-in-from-right-10 duration-300">
+        {/* Header Navigation - STATIC */}
+        <div className="flex items-center gap-4 mb-6 shrink-0">
           <button 
             onClick={() => setSelectedItem(null)}
             className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-white/10 transition-colors"
@@ -318,8 +365,8 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
           </button>
         </div>
 
-        {/* Summary Header Blocks (Spreadsheet Style) */}
-        <div className="grid grid-cols-3 gap-1 mb-4">
+        {/* Summary Header Blocks (Spreadsheet Style) - STATIC */}
+        <div className="grid grid-cols-3 gap-1 mb-4 shrink-0">
           {/* Editable Monthly Value */}
           <button 
             onClick={openEditMonthlyModal}
@@ -361,79 +408,86 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
           </button>
         </div>
           
-        {/* Sub Header */}
-        <div className="grid grid-cols-4 bg-orange-600 h-10 items-center px-2 rounded-2xl mb-2 shadow-lg shadow-orange-900/20 z-10 relative select-none">
-            <span className="text-[10px] font-bold text-black text-center border-r border-black/10 h-full flex items-center justify-center">PARCELA</span>
-            <span className="text-[10px] font-bold text-black text-center col-span-2 border-r border-black/10 h-full flex items-center justify-center">DATA PAGAMENTO</span>
-            <span className="text-[10px] font-bold text-black text-center h-full flex items-center justify-center">VALOR</span>
-        </div>
-
-        {/* The Spreadsheet Grid - Converted to Independent Cards */}
-        <div className="flex flex-col gap-2 pb-4">
-          {Array.from({ length: selectedItem.installmentsCount }).map((_, index) => {
-            const isPaid = index < selectedItem.installmentsPaid;
-            const amount = getInstallmentAmount(selectedItem, index);
-            const dateStr = getInstallmentDate(selectedItem, index);
-            const rawDateStr = getRawInstallmentDate(selectedItem, index);
+        {/* SCROLLABLE AREA START */}
+        <div className="flex-1 overflow-y-auto no-scrollbar relative -mx-2 px-2">
             
-            return (
-              <div 
-                key={index}
-                onClick={() => toggleInstallment(index)}
-                className={`grid grid-cols-4 items-center h-16 px-2 cursor-pointer transition-all group relative rounded-2xl shadow-sm select-none ${
-                  isPaid 
-                    ? 'bg-green-600 shadow-green-900/20' 
-                    : 'bg-[#1c1c1e] border border-white/5 hover:bg-[#2c2c2e]'
-                }`}
-              >
-                {/* Number */}
-                <div className="flex justify-center">
-                  <span className={`font-bold text-lg ${isPaid ? 'text-white' : 'text-accent'}`}>{index + 1}º</span>
-                </div>
-                
-                {/* Date */}
-                <div className={`col-span-2 flex justify-center h-full items-center border-l relative ${isPaid ? 'border-white/10' : 'border-white/5'}`}>
-                  <span className={`text-sm ${isPaid ? 'text-white font-medium' : 'text-gray-400'}`}>
-                    {dateStr}
-                  </span>
-                </div>
-                
-                {/* Value Column */}
-                <div className={`flex flex-col justify-center items-center h-full relative px-1 border-l ${isPaid ? 'border-white/10' : 'border-white/5'}`}>
-                   <div className="flex items-center gap-1">
-                       <span className={`text-xs font-bold ${isPaid ? 'text-white' : 'text-gray-300'}`}>
-                         R$ {amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                       </span>
-                       {isPaid && <Check className="w-3 h-3 text-white" />}
-                   </div>
-                </div>
+            {/* Sub Header - REMOVED STICKY */}
+            <div className="grid grid-cols-4 bg-orange-600 h-10 items-center px-2 rounded-2xl mb-2 shadow-lg shadow-orange-900/20 select-none">
+                <span className="text-[10px] font-bold text-black text-center border-r border-black/10 h-full flex items-center justify-center">PARCELA</span>
+                <span className="text-[10px] font-bold text-black text-center col-span-2 border-r border-black/10 h-full flex items-center justify-center">DATA PAGAMENTO</span>
+                <span className="text-[10px] font-bold text-black text-center h-full flex items-center justify-center">VALOR</span>
+            </div>
 
-                {/* Specific Edit Button - ABSOLUTE TOP RIGHT OF THE ROW CONTAINER (Value + Date) */}
-                <button 
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        openEditInstallmentModal(index, amount, rawDateStr);
-                    }}
-                    className="absolute top-1.5 right-1.5 z-20 opacity-50 hover:opacity-100 transition-opacity"
-                    title="Editar valor e data"
+            {/* The Spreadsheet Grid - Reverted to Compact List */}
+            <div className="flex flex-col gap-2 pb-4">
+            {Array.from({ length: selectedItem.installmentsCount }).map((_, index) => {
+                const isPaid = index < selectedItem.installmentsPaid;
+                const amount = getInstallmentAmount(selectedItem, index);
+                const dateStr = getInstallmentDate(selectedItem, index);
+                const rawDateStr = getRawInstallmentDate(selectedItem, index);
+                
+                return (
+                <div 
+                    key={index}
+                    onClick={() => toggleInstallment(index)}
+                    className={`grid grid-cols-4 items-center h-16 px-2 cursor-pointer transition-all group relative rounded-2xl shadow-sm select-none ${
+                    isPaid 
+                        ? 'bg-green-600 shadow-green-900/20' 
+                        : 'bg-[#1c1c1e] border border-white/5 hover:bg-[#2c2c2e]'
+                    }`}
                 >
-                    <Edit2 className="w-3 h-3 text-white" />
-                </button>
-              </div>
-            );
-          })}
-        </div>
+                    {/* Number */}
+                    <div className="flex justify-center">
+                    <span className={`font-bold text-lg ${isPaid ? 'text-white' : 'text-accent'}`}>{index + 1}º</span>
+                    </div>
+                    
+                    {/* Date */}
+                    <div className={`col-span-2 flex justify-center h-full items-center border-l relative ${isPaid ? 'border-white/10' : 'border-white/5'}`}>
+                    <span className={`text-sm ${isPaid ? 'text-white font-medium' : 'text-gray-400'}`}>
+                        {dateStr}
+                    </span>
+                    </div>
+                    
+                    {/* Value Column */}
+                    <div className={`flex flex-col justify-center items-center h-full relative px-1 border-l ${isPaid ? 'border-white/10' : 'border-white/5'}`}>
+                    <div className="flex items-center gap-1">
+                        <span className={`text-xs font-bold ${isPaid ? 'text-white' : 'text-gray-300'}`}>
+                            R$ {amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                        {isPaid && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    </div>
 
-        {/* Footer Summary */}
-        <div className="mt-2 flex rounded-2xl overflow-hidden h-14 bg-[#1c1c1e] border border-white/5 shadow-lg">
-          <div className="flex-1 bg-green-600 flex items-center justify-center">
-             <span className="font-bold text-black text-sm uppercase">JÁ FOI PAGO</span>
-          </div>
-          <div className="w-32 flex items-center justify-center">
-             <span className="font-bold text-white text-lg">
-               R$ {totalPaidSoFar.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-             </span>
-          </div>
+                    {/* Specific Edit Button - ABSOLUTE TOP RIGHT OF THE ROW CONTAINER (Value + Date) */}
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            openEditInstallmentModal(index, amount, rawDateStr);
+                        }}
+                        className="absolute top-1.5 right-1.5 z-20 opacity-50 hover:opacity-100 transition-opacity"
+                        title="Editar valor e data"
+                    >
+                        <Edit2 className="w-3 h-3 text-white" />
+                    </button>
+                </div>
+                );
+            })}
+            </div>
+
+            {/* Footer Summary - Barra "JÁ FOI PAGO" */}
+            <div className="mt-2 flex rounded-2xl overflow-hidden h-14 bg-[#1c1c1e] border border-white/5 shadow-lg shrink-0">
+            <div className="flex-1 bg-green-600 flex items-center justify-center">
+                <span className="font-bold text-black text-sm uppercase">JÁ FOI PAGO</span>
+            </div>
+            <div className="w-32 flex items-center justify-center">
+                <span className="font-bold text-white text-lg">
+                R$ {totalPaidSoFar.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+            </div>
+            </div>
+
+            {/* Spacer for Bottom Nav */}
+            <div className="h-2 w-full shrink-0" />
         </div>
 
          {/* --- MODALS --- */}
@@ -638,7 +692,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar">
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-32">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-gray-500">
             <Wallet className="w-12 h-12 mb-4 opacity-20" />
@@ -649,6 +703,12 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
             {items.map((item) => {
               const progress = (item.installmentsPaid / item.installmentsCount) * 100;
               
+              const startDate = new Date(item.startDate + 'T00:00:00');
+              const endDate = new Date(startDate);
+              // Calculate end date based on start + installments count
+              // Usually the last installment is at (start month + count - 1)
+              endDate.setMonth(startDate.getMonth() + item.installmentsCount - 1);
+
               return (
                 <div 
                   key={item.id}
@@ -658,7 +718,11 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                    <div className="flex justify-between items-start mb-4">
                      <div>
                        <h3 className="text-lg font-bold text-white uppercase">{item.title}</h3>
-                       <span className="text-xs text-gray-400">Início: {new Date(item.startDate + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
+                       <div className="flex gap-2 text-xs text-gray-400 mt-1">
+                          <span>Início: {startDate.toLocaleDateString('pt-BR')}</span>
+                          <span>•</span>
+                          <span>Fim: {endDate.toLocaleDateString('pt-BR')}</span>
+                       </div>
                      </div>
                      <span className="text-xl font-bold text-accent">
                        R$ {item.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -714,21 +778,23 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                  />
                </div>
 
-               <div className="flex gap-4">
+               <div className="flex gap-3">
+                  {/* Monthly Value Input */}
                  <div className="flex-1 flex flex-col gap-1">
-                   <label className="text-xs text-gray-400 ml-2">Valor Total</label>
+                   <label className="text-xs text-gray-400 ml-2">Valor Parcela</label>
                    <input 
                       type="text"
                       inputMode="numeric"
-                      name="lt_total_hidden"
+                      name="lt_monthly_hidden"
                       className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold"
                       placeholder="0,00"
-                      value={newTotal}
-                      onChange={(e) => handleAmountChange(e, setNewTotal)}
-                      required
+                      value={newMonthly}
+                      onChange={handleNewMonthlyChange}
                       autoComplete="off"
                    />
                  </div>
+                 
+                 {/* Count Input */}
                  <div className="w-24 flex flex-col gap-1">
                    <label className="text-xs text-gray-400 ml-2">Vezes</label>
                    <input 
@@ -737,11 +803,33 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                       className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold text-center"
                       placeholder="12"
                       value={newInstallments}
-                      onChange={e => setNewInstallments(e.target.value)}
+                      onChange={handleNewCountChange}
                       required
                       autoComplete="off"
                    />
                  </div>
+               </div>
+
+               <div className="flex flex-col gap-1">
+                 <label className="text-xs text-gray-400 ml-2">Valor Total</label>
+                 <input 
+                    type="text"
+                    inputMode="numeric"
+                    name="lt_total_hidden"
+                    className="w-full bg-[#2c2c2e] text-white/70 p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold"
+                    placeholder="0,00"
+                    value={newTotal}
+                    onChange={handleNewTotalChange}
+                    autoComplete="off"
+                 />
+               </div>
+
+               {/* Hint Box */}
+               <div className="flex items-center gap-2 bg-[#2c2c2e]/50 p-2 rounded-xl border border-white/5">
+                  <Info className="w-4 h-4 text-gray-400 shrink-0" />
+                  <p className="text-[10px] text-gray-400 leading-tight">
+                     Preencha apenas o <strong>Valor da Parcela</strong> OU o <strong>Valor Total</strong>. O sistema calculará o outro automaticamente ao criar.
+                  </p>
                </div>
 
                <div className="flex flex-col gap-1">
