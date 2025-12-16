@@ -716,15 +716,15 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                   className="bg-[#1c1c1e] rounded-[1.5rem] p-5 border border-white/5 active:scale-95 transition-all cursor-pointer shadow-lg"
                 >
                    <div className="flex justify-between items-start mb-4">
-                     <div>
-                       <h3 className="text-lg font-bold text-white uppercase">{item.title}</h3>
-                       <div className="flex gap-2 text-xs text-gray-400 mt-1">
+                     <div className="min-w-0 flex-1 mr-4">
+                       <h3 className="text-lg font-bold text-white uppercase truncate">{item.title}</h3>
+                       <div className="flex gap-2 text-xs text-gray-400 mt-1 whitespace-nowrap">
                           <span>Início: {startDate.toLocaleDateString('pt-BR')}</span>
                           <span>•</span>
                           <span>Fim: {endDate.toLocaleDateString('pt-BR')}</span>
                        </div>
                      </div>
-                     <span className="text-xl font-bold text-accent">
+                     <span className="text-xl font-bold text-accent whitespace-nowrap">
                        R$ {item.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                      </span>
                    </div>
