@@ -38,7 +38,8 @@ const getLabelStyles = (theme: CardTheme) => {
     case 'lime':
       return 'text-white font-extrabold drop-shadow-sm';
     case 'default':
-      return 'text-gray-400 font-bold';
+      // UPDATED: Changed from text-gray-400 to text-white/90 for better visibility as requested
+      return 'text-white/90 font-bold';
     default:
       return 'text-white/90 font-bold';
   }
