@@ -165,8 +165,15 @@ export const loadUserData = async (email: string) => {
 
     const userReq = supabase.from('users').select('*').eq('email', normalizedEmail).single();
 
-    // PERFORMANCE FIX: Ordenar transações por created_at DESC no servidor para garantir ordem correta
-    const transactionsReq = supabase.from('transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false });
+    // PERFORMANCE FIX: Ordenar transações por created_at DESC e ID como critério de desempate
+    // Isso garante ordem determinística e estável
+    const transactionsReq = supabase
+        .from('transactions')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true }); // Desempate para evitar pulos na lista
+
     const accountsReq = supabase.from('accounts').select('*').eq('user_id', userId);
     const monthsReq = supabase.from('months').select('*').eq('user_id', userId);
     const investmentsReq = supabase.from('investments').select('*').eq('user_id', userId);
@@ -261,7 +268,6 @@ export const deleteItem = async (email: string, collectionName: string, id: stri
   }
 };
 
-// Mantido para compatibilidade e operações em lote (Ex: Drag and Drop, Deletar Mês)
 export const saveCollection = async (email: string, collectionName: string, dataArray: any[]): Promise<boolean> => {
   try {
     const userId = await getAuthUserId();

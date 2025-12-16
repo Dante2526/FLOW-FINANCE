@@ -429,19 +429,21 @@ const App: React.FC = () => {
      });
   }, [accounts]);
 
-  // --- NOTIFICATION CHECKER ---
+  // --- NOTIFICATION CHECKER (FIXED) ---
   useEffect(() => {
     const checkDueBills = () => {
       if (!('Notification' in window)) return;
 
-      const today = new Date();
-      const todayISO = today.toISOString().split('T')[0];
-      const todayShort = today.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '').toLowerCase();
+      const now = new Date();
+      // Generate Local Today String manually to avoid UTC offset issues (e.g., "24/05/2025")
+      const todayLocalStr = now.toLocaleDateString('pt-BR');
       
-      const notifiedKey = `flow_notified_${todayISO}`;
+      const notifiedKey = `flow_notified_${todayLocalStr.replace(/\//g, '-')}`;
       const alreadyNotifiedIds = JSON.parse(localStorage.getItem(notifiedKey) || '[]');
       const newNotifiedIds = [...alreadyNotifiedIds];
       let hasNotification = false;
+
+      const todayShortLower = now.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).toLowerCase().replace('.', ''); // "24 mai"
 
       transactions.forEach(tx => {
          if (tx.paid) return;
@@ -450,12 +452,24 @@ const App: React.FC = () => {
          let isToday = false;
          const txDateLower = tx.date.toLowerCase();
 
-         if (txDateLower.includes('hoje')) isToday = true;
-         else if (tx.date.startsWith(todayISO)) isToday = true;
+         // Case 1: "Hoje ..."
+         if (txDateLower.includes('hoje')) {
+            isToday = true;
+         } 
+         // Case 2: ISO YYYY-MM-DD
+         else if (tx.date.match(/^\d{4}-\d{2}-\d{2}/)) {
+            // Convert the stored ISO string to local parts for comparison
+            const [y, m, d] = tx.date.split(' ')[0].split('-');
+            const txLocalStr = new Date(Number(y), Number(m)-1, Number(d)).toLocaleDateString('pt-BR');
+            if (txLocalStr === todayLocalStr) {
+               isToday = true;
+            }
+         } 
+         // Case 3: "24 Mai" format
          else {
             const parts = txDateLower.split(' ');
             if (parts.length >= 2) {
-               if (todayShort.includes(parts[0]) && todayShort.includes(parts[1])) {
+               if (todayShortLower.includes(parts[0]) && todayShortLower.includes(parts[1])) {
                   isToday = true;
                }
             }
@@ -463,10 +477,14 @@ const App: React.FC = () => {
 
          if (isToday) {
             if (Notification.permission === 'granted') {
-               new Notification('Flow Finance', {
-                  body: `Sua conta ${tx.name} vence hoje! Valor: R$ ${tx.amount.toFixed(2)}`,
-                  icon: '/favicon.svg'
-               });
+               try {
+                 new Notification('Flow Finance', {
+                    body: `Sua conta ${tx.name} vence hoje! Valor: R$ ${tx.amount.toFixed(2)}`,
+                    icon: '/favicon.svg'
+                 });
+               } catch (e) {
+                 console.error("Notificação falhou:", e);
+               }
             }
             setNotifications(prev => [
                {
