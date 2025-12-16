@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef, Suspense, useCallback } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -463,6 +464,79 @@ const App: React.FC = () => {
      });
   }, [accounts]);
 
+  // --- NOTIFICATION CHECKER (RUNS ONCE PER SESSION/TRANSACTION UPDATE) ---
+  useEffect(() => {
+    const checkDueBills = () => {
+      if (!('Notification' in window)) return;
+
+      const today = new Date();
+      const todayISO = today.toISOString().split('T')[0]; // YYYY-MM-DD
+      const todayShort = today.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '').toLowerCase(); // "24 mai"
+      
+      const notifiedKey = `flow_notified_${todayISO}`;
+      const alreadyNotifiedIds = JSON.parse(localStorage.getItem(notifiedKey) || '[]');
+      const newNotifiedIds = [...alreadyNotifiedIds];
+      let hasNotification = false;
+
+      transactions.forEach(tx => {
+         if (tx.paid) return;
+         if (alreadyNotifiedIds.includes(tx.id)) return;
+
+         // Check Date Match
+         let isToday = false;
+         const txDateLower = tx.date.toLowerCase();
+
+         if (txDateLower.includes('hoje')) isToday = true;
+         else if (tx.date.startsWith(todayISO)) isToday = true;
+         else {
+            // Check short format like "24 Mai"
+            // We need to match day and month approximately
+            const parts = txDateLower.split(' ');
+            if (parts.length >= 2) {
+               // Very basic check: "24" == "24" AND "mai" in "maio"
+               if (todayShort.includes(parts[0]) && todayShort.includes(parts[1])) {
+                  isToday = true;
+               }
+            }
+         }
+
+         if (isToday) {
+            // 1. Send Browser Notification
+            if (Notification.permission === 'granted') {
+               new Notification('Flow Finance', {
+                  body: `Sua conta ${tx.name} vence hoje! Valor: R$ ${tx.amount.toFixed(2)}`,
+                  icon: '/favicon.svg'
+               });
+            }
+
+            // 2. Add Internal App Notification
+            setNotifications(prev => [
+               {
+                  id: generateUUID(),
+                  title: 'Conta Vencendo Hoje!',
+                  message: `A conta ${tx.name} de R$ ${tx.amount.toFixed(2)} vence hoje.`,
+                  date: 'Hoje',
+                  read: false,
+                  type: 'alert'
+               },
+               ...prev
+            ]);
+
+            newNotifiedIds.push(tx.id);
+            hasNotification = true;
+         }
+      });
+
+      if (hasNotification) {
+         localStorage.setItem(notifiedKey, JSON.stringify(newNotifiedIds));
+      }
+    };
+
+    // Run check with a small delay to ensure data loaded
+    const timer = setTimeout(checkDueBills, 2000);
+    return () => clearTimeout(timer);
+  }, [transactions]); // Re-run if transactions change (e.g. sync)
+
   // --- FILTERING ---
   const activeMonthSummary = months.find(m => m.id === activeMonthId) || months[0];
   
@@ -476,21 +550,10 @@ const App: React.FC = () => {
       return txMonth === activeMonthSummary.month && txYear === activeMonthSummary.year;
     });
 
-    // Explicit Sort to guarantee consistent order
-    return filtered.sort((a, b) => {
-        // 1. Sort by Date (Ascending)
-        if (a.date !== b.date) {
-            // Check if one is ISO and other is generic
-            const isAIso = a.date.match(/^\d{4}-\d{2}-\d{2}/);
-            const isBIso = b.date.match(/^\d{4}-\d{2}-\d{2}/);
-            
-            if (isAIso && isBIso) return a.date.localeCompare(b.date);
-            // Fallback for mixed/non-iso string comparison (ISO usually comes after 'Hoje' alphabetically if simplistic, but let's just use localeCompare for consistency)
-            return a.date.localeCompare(b.date);
-        }
-        // 2. Sort by Name (Alphabetical) as secondary
-        return a.name.localeCompare(b.name);
-    });
+    // CHANGE: NO SORTING. 
+    // Return insertion order (Newest added are usually at index 0 because of prepend logic)
+    // This satisfies the request: "new accounts go to start of list"
+    return filtered; 
   }, [transactions, activeMonthSummary]);
 
   const filteredAccounts = useMemo(() => {
@@ -940,16 +1003,15 @@ const App: React.FC = () => {
      const monthToDelete = months.find(m => m.id === id);
      if (!monthToDelete) return;
 
-     if (confirm(`Apagar o mês de ${monthToDelete.month}?`)) {
-        setMonths(prev => prev.filter(m => m.id !== id));
-        setTransactions(prev => prev.filter(t => !(t.month === monthToDelete.month && t.year === monthToDelete.year)));
-        setAccounts(prev => prev.filter(a => !(a.month === monthToDelete.month && a.year === monthToDelete.year)));
-        
-        if (activeMonthId === id) {
-           const remaining = months.filter(m => m.id !== id);
-           const sorted = sortMonths(remaining);
-           if (sorted.length > 0) setActiveMonthId(sorted[sorted.length - 1].id);
-        }
+     // REMOVIDO: window.confirm - Agora a UI lida com isso em TransactionSummary
+     setMonths(prev => prev.filter(m => m.id !== id));
+     setTransactions(prev => prev.filter(t => !(t.month === monthToDelete.month && t.year === monthToDelete.year)));
+     setAccounts(prev => prev.filter(a => !(a.month === monthToDelete.month && a.year === monthToDelete.year)));
+     
+     if (activeMonthId === id) {
+        const remaining = months.filter(m => m.id !== id);
+        const sorted = sortMonths(remaining);
+        if (sorted.length > 0) setActiveMonthId(sorted[sorted.length - 1].id);
      }
   }, [months, activeMonthId]);
 
@@ -1006,6 +1068,7 @@ const App: React.FC = () => {
          if (editingTransaction) {
              return prev.map(t => t.id === editingTransaction.id ? { ...t, ...txData } : t);
          } else {
+             // ADDS TO START (PREPEND) - This logic is correct, but was being undone by sorting
              return [{ id: generateUUID(), ...txData, month: activeMonthSummary.month, year: activeMonthSummary.year }, ...prev];
          }
       });
