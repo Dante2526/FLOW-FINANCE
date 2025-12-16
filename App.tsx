@@ -481,8 +481,8 @@ const App: React.FC = () => {
                  const registration = await navigator.serviceWorker.ready;
                  registration.showNotification('Flow Finance', {
                     body: `Conta vencendo hoje: ${tx.name} (R$ ${tx.amount.toFixed(2)})`,
-                    // Fix: Use transparent pixel to hide the default system placeholder icon
-                    icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+                    // Fix: Use the official branded favicon to look professional
+                    icon: '/favicon.svg',
                     badge: '/notification-icon.svg?v=1', // Monochrome icon with cache bust
                     vibrate: [200, 100, 200],
                     tag: `bill-${tx.id}`
