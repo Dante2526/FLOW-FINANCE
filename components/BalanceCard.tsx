@@ -99,7 +99,7 @@ const BalanceCard: React.FC<Props> = ({
       <div className="flex justify-between items-start z-10">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-white/10 rounded-xl backdrop-blur-md border border-white/10">
-            <span className="text-xs font-bold text-white tracking-widest uppercase">Saldo Atual</span>
+            <span className="text-xs font-bold text-white tracking-widest uppercase">Lucro</span>
           </div>
           <button 
             onClick={toggleVisibility}
