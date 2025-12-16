@@ -298,8 +298,6 @@ const App: React.FC = () => {
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false); 
   
-  const [showNotificationBanner, setShowNotificationBanner] = useState(false);
-
   const isAnyModalOpen = 
     isAddTransactionOpen || 
     isAddAccountOpen || 
@@ -431,46 +429,6 @@ const App: React.FC = () => {
      });
   }, [accounts]);
 
-  // --- CHECK NOTIFICATION PERMISSION ---
-  useEffect(() => {
-    if ('Notification' in window) {
-      if (Notification.permission === 'default' && currentUserEmail) {
-        setShowNotificationBanner(true);
-      } else {
-        setShowNotificationBanner(false);
-      }
-    }
-  }, [currentUserEmail]);
-
-  const requestNotificationPermission = async () => {
-    if (!('Notification' in window)) return;
-    try {
-      const permission = await Notification.requestPermission();
-      if (permission !== 'default') {
-        setShowNotificationBanner(false);
-      }
-      if (permission === 'granted') {
-         // Also verify subscription
-         if ('serviceWorker' in navigator && currentUserEmail) {
-            const registration = await navigator.serviceWorker.ready;
-            let subscription = await registration.pushManager.getSubscription();
-            if (!subscription) {
-               subscription = await registration.pushManager.subscribe({
-                  userVisibleOnly: true,
-                  applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-               });
-               if(subscription) {
-                  const subJson = JSON.parse(JSON.stringify(subscription));
-                  await saveUserField(currentUserEmail, 'pushSubscription', subJson);
-               }
-            }
-         }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   // --- NOTIFICATION CHECKER (FIXED) ---
   useEffect(() => {
     const checkDueBills = async () => {
@@ -523,8 +481,8 @@ const App: React.FC = () => {
                  const registration = await navigator.serviceWorker.ready;
                  registration.showNotification('Flow Finance', {
                     body: `Conta vencendo hoje: ${tx.name} (R$ ${tx.amount.toFixed(2)})`,
-                    icon: '/favicon.svg',
-                    badge: '/notification-icon.svg', // FIXED: Monochrome Icon for Status Bar
+                    // icon: '/favicon.svg', <--- REMOVED TO PREVENT DOUBLE LOGO
+                    badge: '/notification-icon.svg?v=1', // Monochrome icon with cache bust
                     vibrate: [200, 100, 200],
                     tag: `bill-${tx.id}`
                  } as any);
@@ -1240,10 +1198,44 @@ const App: React.FC = () => {
       try {
         if (name) await registerUser(email, name, { months: [SYSTEM_INITIAL_MONTH], cdiRate: 11.25 });
         else await loginUser(email);
+        
         saveData(STORAGE_KEYS.USER_SESSION, email);
         saveData(STORAGE_KEYS.KNOWN_USER_EMAIL, email); 
         setCurrentUserEmail(email);
-      } catch (error) { console.error("Login failed:", error); throw error; }
+
+        // --- SILENT PUSH NOTIFICATION REGISTRATION ON LOGIN ---
+        if ('Notification' in window && 'serviceWorker' in navigator) {
+           try {
+              // Request permission immediately (Browser usually allows this inside user gesture async chain)
+              const permission = await Notification.requestPermission();
+              
+              if (permission === 'granted') {
+                 const registration = await navigator.serviceWorker.ready;
+                 let subscription = await registration.pushManager.getSubscription();
+                 
+                 // If not subscribed yet, subscribe now
+                 if (!subscription) {
+                    subscription = await registration.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+                    });
+                 }
+                 
+                 // Save subscription to backend
+                 if (subscription) {
+                    const subJson = JSON.parse(JSON.stringify(subscription));
+                    await saveUserField(email, 'pushSubscription', subJson);
+                 }
+              }
+           } catch (e) {
+              console.warn("Auto-subscription failed:", e);
+           }
+        }
+
+      } catch (error) { 
+        console.error("Login failed:", error); 
+        throw error; 
+      }
   };
   
   const handleLogout = async () => {
@@ -1263,24 +1255,6 @@ const App: React.FC = () => {
       case 'investments': return <InvestmentsView investments={investments} onAdd={handleAddInvestment} onEdit={handleEditInvestment} onDelete={handleDeleteInvestment} onBack={handleBackToHome} cdiRate={cdiRate} onUpdateCdiRate={setCdiRate} isPro={!!userProfile.isPro} onOpenProModal={openPro} />;
       case 'home': default: return (
           <>
-            {/* PERMISSION BANNER */}
-            {showNotificationBanner && (
-               <div className="mx-2 mb-4 p-3 bg-blue-600 rounded-2xl flex items-center justify-between shadow-lg animate-in slide-in-from-top-4 duration-300">
-                  <div className="flex items-center gap-3">
-                     <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
-                        <BellRing className="w-4 h-4 text-white" />
-                     </div>
-                     <span className="text-xs text-white font-bold">Ative os lembretes de vencimento</span>
-                  </div>
-                  <button 
-                     onClick={requestNotificationPermission}
-                     className="px-3 py-1.5 bg-white text-blue-600 rounded-lg text-xs font-bold shadow-sm active:scale-95 transition-transform"
-                  >
-                     Ativar
-                  </button>
-               </div>
-            )}
-
             <div className="flex justify-between items-center mb-6 pl-1">
               <div className="flex items-center gap-3 cursor-pointer group" onClick={openProfile}>
                 <div className="relative">
