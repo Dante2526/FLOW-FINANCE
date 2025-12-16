@@ -601,7 +601,8 @@ const App: React.FC = () => {
                             draggable 
                             onDragStart={handleCardDragStart} 
                             onDragEnter={handleCardDragEnter} 
-                            onDragEnd={handleCardDragEnd} 
+                            onDragEnd={handleCardDragEnd}
+                            theme={appTheme}
                         />
                      );
                   }

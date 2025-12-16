@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { Plus, Copy, Calculator, GripVertical, Eye, EyeOff } from 'lucide-react';
+import { AppTheme } from '../types';
 
 interface Props {
   balance: number;
@@ -13,6 +14,7 @@ interface Props {
   onDragStart?: (id: string) => void;
   onDragEnter?: (id: string) => void;
   onDragEnd?: () => void;
+  theme?: AppTheme;
 }
 
 const BalanceCard: React.FC<Props> = ({ 
@@ -24,7 +26,8 @@ const BalanceCard: React.FC<Props> = ({
   draggable,
   onDragStart,
   onDragEnter,
-  onDragEnd
+  onDragEnd,
+  theme
 }) => {
   // State for balance visibility
   const [isVisible, setIsVisible] = useState(() => {
@@ -70,10 +73,20 @@ const BalanceCard: React.FC<Props> = ({
     }
   };
 
+  // Dynamic Styles based on Theme
+  const dynamicStyle = theme ? {
+    background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})`,
+    boxShadow: `0 20px 50px -12px ${theme.primary}66` // 66 hex is approx 40% opacity
+  } : {};
+
+  const baseClasses = "relative w-full rounded-[2.5rem] p-6 text-white flex flex-col justify-between min-h-[240px] overflow-hidden group transition-all duration-500";
+  const defaultClasses = "bg-gradient-to-br from-orange-500 via-orange-600 to-red-600 shadow-2xl shadow-orange-900/40";
+
   return (
     <div 
       data-card-id={id}
-      className="relative w-full bg-gradient-to-br from-orange-500 via-orange-600 to-red-600 rounded-[2.5rem] p-6 text-white flex flex-col justify-between min-h-[240px] shadow-2xl shadow-orange-900/40 overflow-hidden group"
+      className={theme ? baseClasses : `${baseClasses} ${defaultClasses}`}
+      style={dynamicStyle}
       onDragEnter={handleDragEnter}
       onDragOver={(e) => e.preventDefault()}
       onDragEnd={onDragEnd}
