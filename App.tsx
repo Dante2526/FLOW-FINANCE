@@ -164,17 +164,13 @@ const App: React.FC = () => {
     return [...orderedList, ...orphans];
   }, [filteredAccounts, dashboardOrder]);
 
-  // 5. Profit Balance Calculation (Smart)
+  // 5. Profit Balance Calculation (Original Logic)
+  // Total de Contas (Receita/Reserva) - Total de Gastos (Independente se foi pago ou não)
   const profitBalance = useMemo(() => {
     const totalAccounts = filteredAccounts.reduce((acc, account) => acc + account.balance, 0);
-    
-    // Logic: Saldo Bancário Atual (Accounts) - Contas PENDENTES (Unpaid)
-    // Isso mostra "Quanto dinheiro vai sobrar se eu pagar tudo que falta".
-    const pendingExpenses = filteredTransactions
-        .filter(t => !t.paid)
-        .reduce((acc, tx) => acc + tx.amount, 0);
+    const totalExpenses = filteredTransactions.reduce((acc, tx) => acc + tx.amount, 0);
 
-    return totalAccounts - pendingExpenses;
+    return totalAccounts - totalExpenses;
   }, [filteredAccounts, filteredTransactions]);
 
   const activeMonthContext = useMemo(() => {
