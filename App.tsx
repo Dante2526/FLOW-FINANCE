@@ -23,7 +23,7 @@ import { IconBell } from './components/Icons';
 import { Crown } from 'lucide-react';
 import { loginUser, registerUser, deleteUser, VAPID_PUBLIC_KEY } from './services/supabase';
 import { useFinance } from './contexts/FinancialContext';
-import { getMonthFromDateStr, getYearFromDateStr, MONTH_NAMES, MONTH_SHORT_CODES } from './utils/dateUtils';
+import { getMonthFromDateStr, getYearFromDateStr, MONTH_NAMES, MONTH_SHORT_CODES, parseDateToISO } from './utils/dateUtils';
 
 // Lazy Load Heavy Components
 const AnalyticsModal = React.lazy(() => import('./components/AnalyticsModal'));
@@ -137,10 +137,23 @@ const App: React.FC = () => {
   // 3. Filtered Data for Current View
   const filteredTransactions = useMemo(() => {
     if (!activeMonthSummary) return [];
-    return transactions.filter(tx => {
+    
+    // Filter
+    const filtered = transactions.filter(tx => {
       const txMonth = tx.month || getMonthFromDateStr(tx.date);
       const txYear = tx.year || getYearFromDateStr(tx.date, activeMonthSummary.year);
       return txMonth === activeMonthSummary.month && txYear === activeMonthSummary.year;
+    });
+
+    // Sort to prevent jumping: Date Ascending -> Name Ascending
+    return filtered.sort((a, b) => {
+        const yearInt = parseInt(activeMonthSummary.year);
+        // Uses dateUtils helper to get comparable ISO strings (YYYY-MM-DD)
+        const dateA = parseDateToISO(a.date, yearInt);
+        const dateB = parseDateToISO(b.date, yearInt);
+        
+        if (dateA !== dateB) return dateA.localeCompare(dateB);
+        return a.name.localeCompare(b.name);
     });
   }, [transactions, activeMonthSummary]);
 
