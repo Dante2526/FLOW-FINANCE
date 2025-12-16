@@ -13,7 +13,7 @@ interface Props {
 const BottomNav: React.FC<Props> = ({ currentView, onChangeView }) => {
   return (
     <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-md z-50">
-      <div className="bg-[#1c1c1e]/80 backdrop-blur-xl border border-white/10 rounded-[1.5rem] h-20 px-6 flex items-center justify-between shadow-2xl shadow-black/50 transition-all duration-300">
+      <div className="bg-[#1c1c1e] border border-white/5 rounded-[1.5rem] h-20 px-6 flex items-center justify-between shadow-2xl shadow-black/50 transition-all duration-300">
         
         {/* Home Item */}
         {currentView === 'home' ? (
@@ -81,4 +81,4 @@ const BottomNav: React.FC<Props> = ({ currentView, onChangeView }) => {
   );
 };
 
-export default React.memo(BottomNav);
+export default BottomNav;

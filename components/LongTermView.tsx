@@ -289,7 +289,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
     }
 
     return (
-      <div className="flex flex-col h-full animate-in fade-in slide-in-from-right-10 duration-300">
+      <div className="flex flex-col h-full animate-in fade-in slide-in-from-right-10 duration-300 pb-32">
         {/* Header Navigation */}
         <div className="flex items-center gap-4 mb-6">
           <button 
@@ -426,7 +426,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
         </div>
 
         {/* Footer Summary */}
-        <div className="mt-2 flex rounded-2xl overflow-hidden h-14 bg-[#1c1c1e] border border-white/5 shadow-lg shrink-0">
+        <div className="mt-2 flex rounded-2xl overflow-hidden h-14 bg-[#1c1c1e] border border-white/5 shadow-lg">
           <div className="flex-1 bg-green-600 flex items-center justify-center">
              <span className="font-bold text-black text-sm uppercase">JÁ FOI PAGO</span>
           </div>
@@ -436,9 +436,6 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
              </span>
           </div>
         </div>
-
-        {/* EXTRA SPACER TO ALLOW SCROLLING PAST BOTTOM NAV */}
-        <div className="h-28 w-full shrink-0" />
 
          {/* --- MODALS --- */}
 
@@ -649,7 +646,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
             <p>Nenhuma transação parcelada.</p>
           </div>
         ) : (
-          <div className="grid gap-4 pb-32">
+          <div className="grid gap-4">
             {items.map((item) => {
               const progress = (item.installmentsPaid / item.installmentsCount) * 100;
               

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, Check, Lock, Crown } from 'lucide-react';
 import { CardTheme, Account } from '../types';
@@ -5,7 +6,7 @@ import { CardTheme, Account } from '../types';
 interface Props {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (id: string | undefined, name: string, balance: number, theme: CardTheme) => void;
+  onSave: (name: string, balance: number, theme: CardTheme) => void;
   accountToEdit?: Account | null;
   isPro?: boolean;
   onOpenProModal?: () => void;
@@ -21,42 +22,25 @@ const THEMES: { id: CardTheme; color: string; label: string; isPro?: boolean }[]
 ];
 
 const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEdit, isPro = false, onOpenProModal }) => {
-  // We use a key on the form container to force a full re-render when the account changes.
-  // This ensures state is initialized correctly from props every time.
-  const formKey = isOpen ? (accountToEdit?.id || 'new_account') : 'closed';
-
-  return (
-    <div className={`fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity duration-200 ${isOpen ? 'opacity-100 visible' : 'opacity-0 invisible pointer-events-none'}`}>
-      <AccountForm 
-        key={formKey} // CRITICAL: This forces the component to reset completely when opening for a different account
-        onClose={onClose}
-        onSave={onSave}
-        accountToEdit={accountToEdit}
-        isPro={isPro}
-        onOpenProModal={onOpenProModal}
-      />
-    </div>
-  );
-};
-
-// Sub-component to isolate state and ensure clean initialization
-const AccountForm: React.FC<Omit<Props, 'isOpen'>> = ({ onClose, onSave, accountToEdit, isPro, onOpenProModal }) => {
   const [balance, setBalance] = useState('');
   const [name, setName] = useState('');
   const [selectedTheme, setSelectedTheme] = useState<CardTheme>('default');
-  
-  // Initialize state from props immediately on mount (guaranteed by the parent key)
+
+  // Load data when entering edit mode
   useEffect(() => {
-    if (accountToEdit) {
+    if (isOpen && accountToEdit) {
       setName(accountToEdit.name);
       setBalance(accountToEdit.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       setSelectedTheme(accountToEdit.colorTheme);
-    } else {
+    } else if (isOpen && !accountToEdit) {
+      // Reset if opening in create mode
       setName('');
       setBalance('');
       setSelectedTheme('default');
     }
-  }, [accountToEdit]); // Dependency on prop ensures updates if prop changes while open
+  }, [isOpen, accountToEdit]);
+
+  if (!isOpen) return null;
 
   const handleBalanceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value.replace(/\D/g, '');
@@ -78,10 +62,14 @@ const AccountForm: React.FC<Omit<Props, 'isOpen'>> = ({ onClose, onSave, account
        finalBalance = parseFloat(balance.replace(/\./g, '').replace(',', '.'));
     }
 
-    // Direct access to prop ensures we never lose the ID
-    const idToSave = accountToEdit?.id;
-
-    onSave(idToSave, name, finalBalance, selectedTheme);
+    onSave(name, finalBalance, selectedTheme);
+    
+    // Only reset if we are not editing (to prevent flickering before close)
+    if (!accountToEdit) {
+      setBalance('');
+      setName('');
+      setSelectedTheme('default');
+    }
     onClose();
   };
 
@@ -94,15 +82,15 @@ const AccountForm: React.FC<Omit<Props, 'isOpen'>> = ({ onClose, onSave, account
   };
 
   const isFormValid = name.length > 0;
-  const isEditing = !!accountToEdit;
 
   return (
-    <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-6 max-h-[90dvh] overflow-y-auto no-scrollbar animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-6 max-h-[90dvh] overflow-y-auto no-scrollbar">
         
         {/* Header */}
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold text-white">
-            {isEditing ? 'Editar Fonte de Renda' : 'Nova Fonte de Renda'}
+            {accountToEdit ? 'Editar Fonte de Renda' : 'Nova Fonte de Renda'}
           </h2>
           <button 
             onClick={onClose} 
@@ -196,11 +184,12 @@ const AccountForm: React.FC<Omit<Props, 'isOpen'>> = ({ onClose, onSave, account
             disabled={!isFormValid}
             className="w-full bg-accent text-black disabled:bg-surfaceLight disabled:text-gray-500 h-16 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-2 hover:bg-accentDark disabled:hover:bg-surfaceLight transition-colors mt-2"
           >
-            {isEditing ? 'Salvar Alterações' : 'Criar Fonte de Renda'}
+            {accountToEdit ? 'Salvar Alterações' : 'Criar Fonte de Renda'}
             <Check className="w-5 h-5" />
           </button>
 
         </form>
+      </div>
     </div>
   );
 };

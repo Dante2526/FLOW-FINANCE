@@ -1,7 +1,5 @@
-
 import React, { useState } from 'react';
 import { Plus, Copy, Calculator, GripVertical, Eye, EyeOff } from 'lucide-react';
-import { AppTheme } from '../types';
 
 interface Props {
   balance: number;
@@ -14,7 +12,6 @@ interface Props {
   onDragStart?: (id: string) => void;
   onDragEnter?: (id: string) => void;
   onDragEnd?: () => void;
-  theme?: AppTheme;
 }
 
 const BalanceCard: React.FC<Props> = ({ 
@@ -26,8 +23,7 @@ const BalanceCard: React.FC<Props> = ({
   draggable,
   onDragStart,
   onDragEnter,
-  onDragEnd,
-  theme
+  onDragEnd
 }) => {
   // State for balance visibility
   const [isVisible, setIsVisible] = useState(() => {
@@ -73,40 +69,25 @@ const BalanceCard: React.FC<Props> = ({
     }
   };
 
-  // Dynamic Styles based on Theme
-  const dynamicStyle = theme ? {
-    background: `linear-gradient(135deg, ${theme.primary}, ${theme.secondary})`,
-    boxShadow: `0 20px 50px -12px ${theme.primary}66` // 66 hex is approx 40% opacity
-  } : {};
-
-  const baseClasses = "relative w-full rounded-[2.5rem] p-6 text-white flex flex-col justify-between min-h-[240px] overflow-hidden group transition-all duration-500";
-  const defaultClasses = "bg-gradient-to-br from-orange-500 via-orange-600 to-red-600 shadow-2xl shadow-orange-900/40";
-
   return (
     <div 
       data-card-id={id}
-      className={theme ? baseClasses : `${baseClasses} ${defaultClasses}`}
-      style={dynamicStyle}
+      className="relative w-full bg-accent rounded-[2.5rem] p-6 text-white flex flex-col justify-between min-h-[220px] shadow-lg shadow-accent/20"
       onDragEnter={handleDragEnter}
       onDragOver={(e) => e.preventDefault()}
       onDragEnd={onDragEnd}
     >
-      {/* Decorative background elements for depth */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none mix-blend-overlay"></div>
-      <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2 pointer-events-none"></div>
-
+      
       {/* Header of Card */}
-      <div className="flex justify-between items-start z-10">
+      <div className="flex justify-between items-start">
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-white/10 rounded-xl backdrop-blur-md border border-white/10">
-            <span className="text-xs font-bold text-white tracking-widest uppercase">Lucro</span>
-          </div>
+          <span className="text-lg font-extrabold text-white drop-shadow-sm tracking-wide">LUCRO</span>
           <button 
             onClick={toggleVisibility}
-            className="p-2 rounded-full hover:bg-white/10 transition-colors active:scale-95 flex items-center justify-center"
+            className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors active:scale-95 flex items-center justify-center backdrop-blur-sm"
             title={isVisible ? "Esconder saldo" : "Mostrar saldo"}
           >
-            {isVisible ? <Eye className="w-5 h-5 text-white/90" /> : <EyeOff className="w-5 h-5 text-white/90" />}
+            {isVisible ? <Eye className="w-4 h-4 text-white" /> : <EyeOff className="w-4 h-4 text-white" />}
           </button>
         </div>
         
@@ -134,51 +115,44 @@ const BalanceCard: React.FC<Props> = ({
         )}
       </div>
 
-      {/* Main Balance with Improved Typography */}
-      <div className="mt-4 mb-8 z-10">
+      {/* Main Balance */}
+      <div className="mt-2 mb-6">
         {isVisible ? (
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-medium text-white/80 font-sans">R$</span>
-            <h1 className="text-6xl font-black tracking-tighter drop-shadow-sm text-white">
-              {integerPart}<span className="text-4xl text-white/80 font-bold">,{decimalPart}</span>
-            </h1>
-          </div>
+          <h1 className="text-4xl font-bold tracking-tight drop-shadow-md">
+            R$ {integerPart}<span className="text-3xl text-white">,{decimalPart}</span>
+          </h1>
         ) : (
-          <div className="flex items-baseline gap-1.5 animate-pulse">
-            <span className="text-2xl font-medium text-white/80">R$</span>
-             <h1 className="text-6xl font-black tracking-tight drop-shadow-md opacity-50 translate-y-2">
-              ••••••
-            </h1>
-          </div>
+          <h1 className="text-4xl font-bold tracking-tight drop-shadow-md opacity-80">
+            R$ ••••
+          </h1>
         )}
       </div>
 
       {/* Action Buttons Row */}
-      <div className="flex items-center gap-3 z-10">
-        {/* Add Button (Solid Black) */}
+      <div className="flex items-center gap-3">
+        {/* Add Button (Promoted to Primary - replaces Send) */}
         <button 
           onClick={onAddClick}
-          className="flex-1 bg-[#0a0a0b] text-white h-14 rounded-[1.25rem] flex items-center justify-center gap-2 hover:bg-black/80 transition-all shadow-lg active:scale-95 border border-white/10 group-hover:border-white/20"
+          className="flex-1 bg-[#121214] text-white h-16 rounded-[1.5rem] flex items-center justify-center gap-2 hover:bg-black transition-colors shadow-lg"
         >
-          <Plus className="w-5 h-5 text-accent" />
-          <span className="text-sm font-bold tracking-wide">Nova Conta</span>
+          <span className="text-lg font-medium">Adicionar</span>
+          <Plus className="w-5 h-5" />
         </button>
 
-        {/* Duplicate Button (Solid Black) */}
+        {/* Duplicate Button (Copy Icon) */}
         <button 
           onClick={onDuplicateClick}
-          className="w-14 h-14 bg-[#0a0a0b] text-white rounded-[1.25rem] flex items-center justify-center hover:bg-black/80 transition-all shadow-lg active:scale-95 border border-white/10"
+          className="w-16 h-16 bg-[#121214] text-white rounded-[1.5rem] flex items-center justify-center hover:bg-black transition-colors shadow-lg"
           title="Duplicar contas para o próximo mês"
         >
-          <Copy className="w-5 h-5" />
+          <Copy className="w-6 h-6" />
         </button>
 
-        {/* Calculator Button (Solid Black) */}
         <button 
           onClick={onCalculatorClick}
-          className="w-14 h-14 bg-[#0a0a0b] text-white rounded-[1.25rem] flex items-center justify-center hover:bg-black/80 transition-all shadow-lg active:scale-95 border border-white/10"
+          className="w-16 h-16 bg-[#121214] text-white rounded-[1.5rem] flex items-center justify-center hover:bg-black transition-colors shadow-lg"
         >
-          <Calculator className="w-5 h-5" />
+          <Calculator className="w-6 h-6" />
         </button>
       </div>
     </div>

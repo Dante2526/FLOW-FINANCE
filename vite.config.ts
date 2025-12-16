@@ -5,14 +5,8 @@ import react from '@vitejs/plugin-react';
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  define: {
-    // Explicitly define env variables to ensure they are replaced at build time
-    // This handles the process.env access in the browser safely
-    'process.env.API_KEY': JSON.stringify(process.env.API_KEY || ''),
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
-  },
   optimizeDeps: {
-    // Exclude dependencies that are loaded via CDN in index.html
+    // Exclude dependencies served via CDN to prevent "failed to resolve" errors in Dev
     exclude: [
       'react',
       'react-dom',
@@ -20,14 +14,15 @@ export default defineConfig({
       'lucide-react',
       'recharts',
       '@supabase/supabase-js',
-      '@tanstack/react-query',
-      '@google/genai'
+      'firebase/app',
+      'firebase/auth',
+      'firebase/firestore'
     ]
   },
   build: {
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
-      // Treat CDN dependencies as external so they aren't bundled
+      // Externalize dependencies in Production Build
       external: [
         'react',
         'react-dom',
@@ -35,8 +30,9 @@ export default defineConfig({
         'lucide-react',
         'recharts',
         '@supabase/supabase-js',
-        '@tanstack/react-query',
-        '@google/genai'
+        'firebase/app',
+        'firebase/auth',
+        'firebase/firestore'
       ],
       output: {
         globals: {
@@ -45,8 +41,9 @@ export default defineConfig({
           'lucide-react': 'LucideReact',
           'recharts': 'Recharts',
           '@supabase/supabase-js': 'Supabase',
-          '@tanstack/react-query': 'ReactQuery',
-          '@google/genai': 'GoogleGenAI'
+          'firebase/app': 'firebase',
+          'firebase/auth': 'firebaseAuth',
+          'firebase/firestore': 'firebaseFirestore'
         }
       }
     }

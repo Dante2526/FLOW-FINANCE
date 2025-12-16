@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Palette, Check, Lock, Crown, Shield, ChevronRight, Database, Loader2, Trash2 } from 'lucide-react';
+import { Palette, Check, Lock, Crown, Shield, ChevronRight } from 'lucide-react';
 import { AppTheme } from '../types';
 import PrivacyPolicyModal from './PrivacyPolicyModal';
 
@@ -9,8 +9,6 @@ interface Props {
   onSaveTheme: (theme: AppTheme) => void;
   isPro: boolean;
   onOpenProModal: () => void;
-  onMigrateData?: () => Promise<number>;
-  onWipeData?: () => Promise<void>;
 }
 
 // Extended interface internally to handle UI logic
@@ -35,11 +33,9 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
   { id: 'aqua', name: 'Aqua', primary: '#22d3ee', secondary: '#0891b2', isPro: true },
 ];
 
-const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onOpenProModal, onMigrateData, onWipeData }) => {
+const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onOpenProModal }) => {
   const [selectedThemeId, setSelectedThemeId] = useState(currentThemeId);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
-  const [isMigrating, setIsMigrating] = useState(false);
-  const [isWiping, setIsWiping] = useState(false);
 
   const handleConfirm = () => {
     const theme = AVAILABLE_THEMES.find(t => t.id === selectedThemeId);
@@ -54,32 +50,6 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
       return;
     }
     setSelectedThemeId(theme.id);
-  };
-
-  const handleMigrationClick = async () => {
-    if (!onMigrateData) return;
-    if (!window.confirm("Isso irá mover seus dados antigos (salvos no perfil) para as novas tabelas do banco de dados.\n\nATENÇÃO: Se você já fez isso antes, pode criar duplicatas.\n\nDeseja continuar?")) {
-       return;
-    }
-    
-    setIsMigrating(true);
-    try {
-       await onMigrateData();
-    } catch (e) {
-       console.error(e);
-    } finally {
-       setIsMigrating(false);
-    }
-  };
-
-  const handleWipeClick = async () => {
-    if (!onWipeData) return;
-    setIsWiping(true);
-    try {
-       await onWipeData();
-    } finally {
-       setIsWiping(false);
-    }
   };
 
   return (
@@ -154,11 +124,8 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
           })}
         </div>
 
-        {/* Data & Privacy Actions */}
-        <h3 className="text-gray-400 text-sm font-bold ml-2 mb-4 uppercase tracking-wider">Dados e Privacidade</h3>
-        <div className="px-1 flex flex-col gap-3">
-           
-           {/* Privacy Policy */}
+        {/* Privacy Policy Link */}
+        <div className="px-1">
            <button 
              onClick={() => setIsPrivacyOpen(true)}
              className="w-full bg-[#1c1c1e] hover:bg-[#2c2c2e] border border-white/5 rounded-2xl p-4 flex items-center justify-between group transition-colors"
@@ -174,48 +141,8 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
               </div>
               <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
            </button>
-
-           {/* Migration Button */}
-           {onMigrateData && (
-             <button 
-               onClick={handleMigrationClick}
-               disabled={isMigrating}
-               className="w-full bg-[#1c1c1e] hover:bg-[#2c2c2e] border border-white/5 rounded-2xl p-4 flex items-center justify-between group transition-colors"
-             >
-                <div className="flex items-center gap-3">
-                   <div className="w-8 h-8 rounded-full bg-blue-900/30 flex items-center justify-center">
-                      {isMigrating ? <Loader2 className="w-4 h-4 text-blue-400 animate-spin" /> : <Database className="w-4 h-4 text-blue-400" />}
-                   </div>
-                   <div className="text-left">
-                      <span className="text-white font-bold text-sm block">Migrar Dados Antigos</span>
-                      <span className="text-gray-500 text-xs">Mover dados do perfil para novas tabelas</span>
-                   </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
-             </button>
-           )}
-
-           {/* Wipe Legacy Button (New) */}
-           {onWipeData && (
-             <button 
-               onClick={handleWipeClick}
-               disabled={isWiping}
-               className="w-full bg-[#1c1c1e] hover:bg-red-900/10 border border-red-900/20 rounded-2xl p-4 flex items-center justify-between group transition-colors"
-             >
-                <div className="flex items-center gap-3">
-                   <div className="w-8 h-8 rounded-full bg-red-900/20 flex items-center justify-center">
-                      {isWiping ? <Loader2 className="w-4 h-4 text-red-500 animate-spin" /> : <Trash2 className="w-4 h-4 text-red-500" />}
-                   </div>
-                   <div className="text-left">
-                      <span className="text-white font-bold text-sm block text-red-400">Excluir Backup Antigo</span>
-                      <span className="text-gray-500 text-xs">Limpar colunas antigas (já migradas)</span>
-                   </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-red-400 transition-colors" />
-             </button>
-           )}
            
-           <p className="text-center text-[10px] text-gray-600 mt-4 pb-4">
+           <p className="text-center text-[10px] text-gray-600 mt-6 pb-4">
               Flow Finance v1.2.0 • Build 2025
            </p>
         </div>

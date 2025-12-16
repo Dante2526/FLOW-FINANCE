@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NotebookPen, Landmark, Calendar, BarChart3, Lock } from 'lucide-react';
 import { Contact } from '../types';
@@ -106,4 +105,4 @@ const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, is
   );
 };
 
-export default React.memo(ContactsRow);
+export default ContactsRow;

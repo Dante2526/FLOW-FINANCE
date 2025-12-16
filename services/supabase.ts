@@ -2,434 +2,350 @@
 import { createClient } from '@supabase/supabase-js';
 
 // --- CONFIGURAÇÃO DE SEGURANÇA ---
+// NOTA: As chaves abaixo são PÚBLICAS (Anon Key) e projetadas para uso no Frontend.
+// A segurança dos dados depende das regras de Row Level Security (RLS) configuradas no painel do Supabase.
+// NÃO substitua a 'SUPABASE_ANON_KEY' por uma chave 'SERVICE_ROLE' (Admin).
+
 const SUPABASE_URL = 'https://xfsmdidfccgptfzjhhui.supabase.co'.trim();
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmc21kaWRmY2NncHRmempoaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3MTQ0NjAsImV4cCI6MjA4MDI5MDQ2MH0.4oFJ_L7fdjw2ttYtTko8EdTVhDpBtM5WWXQM4_N7zTU'.trim();
 
+// Chave Pública para Push Notifications (Web Push)
 export const VAPID_PUBLIC_KEY = 'BOabgmhdqm_B03NgjZgZUG4tT6whqH_sfr9-ZmMt1XY-lbI_ADbOzze9pRDU3tnj7oXttv01ZXcNKLhzeXlifC8';
 
+// Configurações simples
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true, 
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    storage: localStorage 
+    storage: localStorage // Explicitly use localStorage to fix reload disconnects
   }
 });
 
-// --- AUTH ---
+// Helper para converter os dados do Supabase para o formato do App
+export const normalizeUserData = (data: any) => {
+  const result: any = { ...data };
+
+  const assignIfPresent = (targetKey: string, sourceKey: string, defaultVal: any) => {
+    if (sourceKey in data) {
+      result[targetKey] = data[sourceKey] || defaultVal;
+    }
+  };
+
+  assignIfPresent('longTerm', 'long_term', []);
+  assignIfPresent('notepadContent', 'notepad_content', '');
+  // First try to get drawing from direct column
+  assignIfPresent('notepadDrawing', 'notepad_drawing', null); 
+  
+  if ('cdi_rate' in data) {
+    result.cdiRate = data.cdi_rate !== null ? data.cdi_rate : 11.25;
+  }
+  
+  assignIfPresent('transactions', 'transactions', []);
+  assignIfPresent('accounts', 'accounts', []);
+  assignIfPresent('investments', 'investments', []);
+  assignIfPresent('notifications', 'notifications', []);
+  assignIfPresent('months', 'months', []);
+  assignIfPresent('profile', 'profile', {});
+  assignIfPresent('theme', 'theme', null);
+  
+  // Fallback: Check profile for notepadDrawing if not found in root column
+  if (!result.notepadDrawing && data.profile && data.profile.notepadDrawing) {
+     result.notepadDrawing = data.profile.notepadDrawing;
+  }
+  
+  // Try to find dashboardOrder in column first, then fallback to profile
+  if ('dashboard_order' in data && data.dashboard_order && Array.isArray(data.dashboard_order) && data.dashboard_order.length > 0) {
+     result.dashboardOrder = data.dashboard_order;
+  } else if (data.profile && data.profile.dashboardOrder) {
+     result.dashboardOrder = data.profile.dashboardOrder;
+  } else {
+     result.dashboardOrder = [];
+  }
+
+  return result;
+};
+
+// --- AUTH HELPERS (OTP) ---
 
 export const sendAuthOtp = async (email: string) => {
   const normalizedEmail = email.toLowerCase().trim();
-  const { error } = await supabase.auth.signInWithOtp({ email: normalizedEmail });
-  if (error) throw error;
+  const { error } = await supabase.auth.signInWithOtp({
+    email: normalizedEmail,
+  });
+
+  if (error) {
+    console.error("Erro ao enviar OTP:", error.message);
+    
+    // Tratamento específico para Rate Limit (Muitas tentativas)
+    if (error.message.includes("security purposes") || error.status === 429) {
+       const match = error.message.match(/after (\d+) seconds/);
+       const seconds = match ? match[1] : null;
+       
+       if (seconds) {
+         throw new Error(`Muitas tentativas. Aguarde ${seconds}s para tentar novamente.`);
+       } else {
+         throw new Error("Muitas tentativas. Aguarde um momento.");
+       }
+    }
+
+    throw new Error("Falha ao enviar código. Verifique o e-mail.");
+  }
   return true;
 };
 
 export const verifyAuthOtp = async (email: string, token: string) => {
   const normalizedEmail = email.toLowerCase().trim();
-  const { data, error } = await supabase.auth.verifyOtp({ email: normalizedEmail, token, type: 'email' });
-  if (error) throw error;
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: normalizedEmail,
+    token,
+    type: 'email',
+  });
+
+  if (error) {
+    console.error("Erro ao verificar OTP:", error);
+    throw new Error("Código inválido ou expirado.");
+  }
+  
   return data;
 };
 
-// --- USER & PROFILE (LEGACY + MIXED) ---
-
-// Helper to get User ID safely (tries multiple ways)
-const getUserId = async () => {
-  const { data } = await supabase.auth.getSession();
-  if (data.session?.user?.id) return data.session.user.id;
-  
-  const { data: userData } = await supabase.auth.getUser();
-  return userData.user?.id;
-};
+// --- USER MANAGEMENT ---
 
 export const loginUser = async (email: string) => {
   const normalizedEmail = email.toLowerCase().trim();
-  const { data, error } = await supabase.from('users').select('*').eq('email', normalizedEmail).single();
   
-  if (error) throw new Error("Usuário não encontrado.");
-  
-  // Normalize just the profile part. Other data comes from tables now.
-  let profile = data.profile || {};
-  let dashboardOrder = profile.dashboardOrder || data.dashboard_order || [];
-  let theme = profile.theme || data.theme;
-  
-  return {
-    profile,
-    dashboardOrder,
-    theme,
-    notepadContent: data.notepad_content,
-    notepadDrawing: data.notepad_drawing || (profile.notepadDrawing),
-    cdiRate: data.cdi_rate,
-    // LEGACY DATA FALLBACK
-    legacy: {
-        transactions: data.transactions || profile.transactions || [],
-        accounts: data.accounts || profile.accounts || [],
-        months: data.months || profile.months || [],
-        investments: data.investments || profile.investments || [],
-        longTerm: data.long_term || profile.longTerm || []
+  // Busca direta na tabela users
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('email', normalizedEmail)
+    .single();
+
+  if (error) {
+    console.error("Erro Supabase Login:", error);
+    if (error.message && (error.message.includes('fetch') || error.message.includes('network'))) {
+       throw new Error("Erro de conexão. Verifique sua internet.");
     }
-  };
-};
+    // Se não encontrou (código PGRST116), lançamos erro específico
+    throw new Error("Usuário não encontrado. Verifique o e-mail ou crie uma conta.");
+  }
+  
+  if (!data) {
+    throw new Error("Usuário não encontrado.");
+  }
 
-export const fetchRawUserData = async (email: string) => {
-  const normalizedEmail = email.toLowerCase().trim();
-  const { data, error } = await supabase.from('users').select('*').eq('email', normalizedEmail).single();
-  if (error) throw error;
-  return data;
-};
-
-export const clearLegacyData = async (email: string) => {
-  const normalizedEmail = email.toLowerCase().trim();
-  const updates = {
-    accounts: null,
-    transactions: null,
-    months: null,
-    investments: null,
-    long_term: null
-  };
-  const { error } = await supabase.from('users').update(updates).eq('email', normalizedEmail);
-  if (error) throw error;
+  return normalizeUserData(data);
 };
 
 export const registerUser = async (email: string, name: string, initialData: any) => {
   const normalizedEmail = email.toLowerCase().trim();
-  const uid = await getUserId();
 
-  if (!uid) {
-    throw new Error("Sessão inválida para criar usuário. Tente fazer login novamente.");
+  // Verifica se usuário já existe
+  const { data: existingUser, error: checkError } = await supabase
+    .from('users')
+    .select('email')
+    .eq('email', normalizedEmail)
+    .maybeSingle();
+
+  if (checkError && !checkError.message.includes('JSON')) {
+     console.error("Erro verificação registro:", checkError);
   }
-  
-  const { data: existing } = await supabase.from('users').select('email').eq('email', normalizedEmail).maybeSingle();
-  if (existing) throw new Error("E-mail já cadastrado.");
 
-  const { error } = await supabase.from('users').insert({
-    id: uid, 
-    email: normalizedEmail,
-    name: name.toUpperCase(),
-    profile: {
+  if (existingUser) {
+    throw new Error("Este e-mail já possui cadastro.");
+  }
+
+  // Cria o usuário diretamente
+  const { error } = await supabase
+    .from('users')
+    .insert({
+      email: normalizedEmail,
       name: name.toUpperCase(),
-      subtitle: '',
-      avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix',
-      isPro: false,
-      dashboardOrder: ['balance-card'],
-      theme: { id: 'sunset-orange', name: 'Sunset', primary: '#f97316', secondary: '#ea580c' } 
-    },
-    cdi_rate: 11.25
-  });
+      profile: {
+        name: name.toUpperCase(),
+        subtitle: '',
+        avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix',
+        isPro: false 
+      },
+      months: initialData.months || [],
+      cdi_rate: initialData.cdiRate || 11.25
+    });
 
-  if (error) throw error;
+  if (error) {
+    console.error("Erro criação usuário:", error);
+    throw new Error("Erro ao criar conta. Tente novamente.");
+  }
+
   return { email: normalizedEmail, name };
 };
 
 export const deleteUser = async (email: string) => {
-  const { error } = await supabase.from('users').delete().eq('email', email);
-  if (error) throw error;
+  const normalizedEmail = email.toLowerCase().trim();
+  
+  const { error } = await supabase
+    .from('users')
+    .delete()
+    .eq('email', normalizedEmail);
+
+  if (error) {
+    console.error("Erro ao deletar usuário:", error);
+    throw new Error("Erro ao excluir conta: " + error.message);
+  }
 };
 
-export const saveUserField = async (email: string, field: string, data: any) => {
+// --- REALTIME SUBSCRIPTION ---
+
+export const subscribeToUserChanges = (email: string, onUpdate: (data: any) => void) => {
+  const normalizedEmail = email.toLowerCase().trim();
+
+  const channel = supabase
+    .channel(`user-updates-${normalizedEmail}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE', 
+        schema: 'public',
+        table: 'users',
+        filter: `email=eq.${normalizedEmail}` 
+      },
+      (payload) => {
+        if (payload.new) {
+          onUpdate(normalizeUserData(payload.new));
+        }
+      }
+    )
+    .subscribe((status) => {
+      console.log(`[Realtime] Status para ${normalizedEmail}:`, status);
+      if (status === 'SUBSCRIBED') {
+         console.log("Conectado para receber atualizações em tempo real.");
+      }
+      if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+         console.warn("Desconectado do Realtime. O app tentará reconectar...");
+      }
+    });
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
+};
+
+// --- DATA SYNC ---
+
+export const saveCollection = async (userId: string, collectionName: string, dataArray: any[]): Promise<boolean> => {
+  const normalizedEmail = userId.toLowerCase().trim();
+  
+  // SPECIAL HANDLING FOR DASHBOARD ORDER:
+  // Since 'dashboard_order' might not exist as a column in the schema,
+  // we store it inside the 'profile' JSONB column to avoid schema errors.
+  if (collectionName === 'dashboardOrder') {
+     try {
+       // 1. Fetch current profile to avoid overwriting other fields
+       const { data: userData, error: fetchError } = await supabase
+         .from('users')
+         .select('profile')
+         .eq('email', normalizedEmail)
+         .single();
+       
+       if (fetchError) {
+         console.error(`Error fetching profile for dashboardOrder:`, fetchError.message);
+         return false;
+       }
+
+       const currentProfile = userData?.profile || {};
+       const updatedProfile = { ...currentProfile, dashboardOrder: dataArray };
+
+       // 2. Save updated profile
+       const { error: updateError } = await supabase
+         .from('users')
+         .update({ profile: updatedProfile })
+         .eq('email', normalizedEmail);
+
+       if (updateError) {
+         console.error(`Error saving dashboardOrder to profile:`, updateError.message);
+         return false;
+       }
+       return true;
+
+     } catch (err: any) {
+       console.error("Exception saving dashboardOrder:", err.message || err);
+       return false;
+     }
+  }
+
+  // STANDARD HANDLING FOR OTHER COLLECTIONS
+  let dbColumn = collectionName;
+  if (collectionName === 'longTerm') dbColumn = 'long_term';
+
+  try {
+    const { error } = await supabase
+      .from('users')
+      .update({ [dbColumn]: dataArray })
+      .eq('email', normalizedEmail);
+
+    if (error) {
+      console.error(`Error saving ${collectionName} to Supabase:`, error.message);
+      return false;
+    }
+    return true;
+
+  } catch (error: any) {
+    console.error(`Error saving ${collectionName}:`, error.message || error);
+    return false;
+  }
+};
+
+export const saveUserField = async (userId: string, field: string, data: any): Promise<boolean> => {
+  const normalizedEmail = userId.toLowerCase().trim();
+  
+  // SPECIAL HANDLING: notepadDrawing (save to profile JSONB)
+  // This avoids errors if the 'notepad_drawing' column does not exist in the DB schema
+  if (field === 'notepadDrawing') {
+    try {
+      const { data: userData, error: fetchError } = await supabase
+        .from('users')
+        .select('profile')
+        .eq('email', normalizedEmail)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const currentProfile = userData?.profile || {};
+      const updatedProfile = { ...currentProfile, notepadDrawing: data };
+
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ profile: updatedProfile })
+        .eq('email', normalizedEmail);
+
+      if (updateError) throw updateError;
+      return true;
+    } catch (err: any) {
+      console.error(`Error saving notepadDrawing to profile:`, err.message);
+      return false;
+    }
+  }
+
+  // Standard Column Mapping
   let dbColumn = field;
   if (field === 'notepadContent') dbColumn = 'notepad_content';
-  if (field === 'notepadDrawing') dbColumn = 'notepad_drawing';
   if (field === 'cdiRate') dbColumn = 'cdi_rate';
   if (field === 'pushSubscription') dbColumn = 'push_subscription';
-
-  if (field === 'profile' || field === 'dashboardOrder' || field === 'theme') {
-    const { data: userData } = await supabase.from('users').select('profile').eq('email', email).single();
-    const currentProfile = userData?.profile || {};
-    
-    let updatedProfile;
-    if (field === 'profile') {
-        updatedProfile = { ...currentProfile, ...data };
-    } else {
-        updatedProfile = { ...currentProfile, [field]: data };
-    }
-
-    const { error } = await supabase.from('users').update({ profile: updatedProfile }).eq('email', email);
-    return !error;
-  }
   
-  const { error } = await supabase.from('users').update({ [dbColumn]: data }).eq('email', email);
-  return !error;
-};
+  // If we reach here with 'notepadDrawing' (fallback) or other fields
+  const { error } = await supabase
+    .from('users')
+    .update({ [dbColumn]: data })
+    .eq('email', normalizedEmail);
 
-
-// --- NORMALIZED DATA API (TRANSACTIONS, ACCOUNTS, ETC) ---
-
-const filterKeys = (obj: any, allowed: string[]) => {
-  const clean: any = {};
-  allowed.forEach(key => {
-    if (obj[key] !== undefined) clean[key] = obj[key];
-  });
-  return clean;
-};
-
-// 1. Transactions
-export const apiTransactions = {
-  list: async () => {
-    const uid = await getUserId();
-    if (!uid) return []; 
-    const { data, error } = await supabase.from('transactions').select('*').eq('user_id', uid);
-    if (error) throw error;
-    // Ensure numbers are numbers and snake_case is converted
-    return data.map((t: any) => ({
-      ...t,
-      amount: parseFloat(t.amount), // Force Float
-      paymentMethod: t.payment_method,
-      logoType: t.logo_type
-    }));
-  },
-  add: async (tx: any) => {
-    const uid = await getUserId();
-    const payload = {
-        ...tx,
-        user_id: uid,
-        payment_method: tx.paymentMethod,
-        logo_type: tx.logoType
-    };
-    delete payload.paymentMethod;
-    delete payload.logoType;
-
-    const { data, error } = await supabase.from('transactions').insert([payload]).select().single();
-    if (error) throw error;
-    return { ...data, paymentMethod: data.payment_method, logoType: data.logo_type };
-  },
-  update: async (tx: any) => {
-    const { id, paymentMethod, logoType, ...rest } = tx;
-    const payload: any = { ...rest };
-    if (paymentMethod !== undefined) payload.payment_method = paymentMethod;
-    if (logoType !== undefined) payload.logo_type = logoType;
-
-    const { data, error } = await supabase.from('transactions').update(payload).eq('id', id).select().single();
-    if (error) throw error;
-    return { ...data, paymentMethod: data.payment_method, logoType: data.logo_type };
-  },
-  delete: async (id: string) => {
-    const { error } = await supabase.from('transactions').delete().eq('id', id);
-    if (error) throw error;
-    return id;
-  },
-  bulkCreate: async (txs: any[]) => {
-    const uid = await getUserId();
-    const validColumns = ['id', 'user_id', 'name', 'date', 'amount', 'type', 'payment_method', 'logo_type', 'paid', 'month', 'year'];
-    
-    const payload = txs.map(t => {
-        const mapped = {
-            ...t,
-            user_id: uid,
-            payment_method: t.paymentMethod || t.payment_method,
-            logo_type: t.logoType || t.logo_type
-        };
-        return filterKeys(mapped, validColumns);
-    });
-
-    const { data, error } = await supabase.from('transactions').insert(payload).select();
-    if (error) throw error;
-    return data.map((t: any) => ({ ...t, paymentMethod: t.payment_method, logoType: t.logo_type }));
+  if (error) {
+    console.error(`Error saving field ${field}:`, error.message);
+    return false;
   }
+  return true;
 };
 
-// 2. Accounts
-export const apiAccounts = {
-  list: async () => {
-    const uid = await getUserId();
-    if (!uid) return [];
-    const { data, error } = await supabase.from('accounts').select('*').eq('user_id', uid);
-    if (error) throw error;
-    return data.map((a: any) => ({ 
-        ...a, 
-        balance: parseFloat(a.balance), // Force Float
-        colorTheme: a.color_theme 
-    }));
-  },
-  add: async (acc: any) => {
-    const uid = await getUserId();
-    const payload = { ...acc, user_id: uid, color_theme: acc.colorTheme };
-    delete payload.colorTheme; 
-    const { data, error } = await supabase.from('accounts').insert([payload]).select().single();
-    if (error) throw error;
-    return { ...data, colorTheme: data.color_theme };
-  },
-  update: async (acc: any) => {
-    const { id, colorTheme, ...rest } = acc;
-    const payload = { ...rest, color_theme: colorTheme };
-    const { data, error } = await supabase.from('accounts').update(payload).eq('id', id).select().single();
-    if (error) throw error;
-    return { ...data, colorTheme: data.color_theme };
-  },
-  delete: async (id: string) => {
-    const { error } = await supabase.from('accounts').delete().eq('id', id);
-    if (error) throw error;
-    return id;
-  },
-  bulkCreate: async (accs: any[]) => {
-    const uid = await getUserId();
-    const validColumns = ['id', 'user_id', 'name', 'balance', 'color_theme', 'month', 'year'];
-
-    const payload = accs.map(a => {
-        const mapped = {
-            ...a, 
-            user_id: uid, 
-            color_theme: a.colorTheme || a.color_theme
-        };
-        return filterKeys(mapped, validColumns);
-    });
-
-    const { data, error } = await supabase.from('accounts').insert(payload).select();
-    if (error) throw error;
-    return data.map((a: any) => ({ ...a, colorTheme: a.color_theme }));
-  }
-};
-
-// 3. Months
-export const apiMonths = {
-  list: async () => {
-    const uid = await getUserId();
-    if (!uid) return [];
-    const { data, error } = await supabase.from('months').select('*').eq('user_id', uid);
-    if (error) throw error;
-    return data;
-  },
-  add: async (m: any) => {
-    const uid = await getUserId();
-    const { data, error } = await supabase.from('months').insert([{ ...m, user_id: uid }]).select().single();
-    if (error) throw error;
-    return data;
-  },
-  update: async (m: any) => {
-    const { id, ...updates } = m;
-    const { data, error } = await supabase.from('months').update(updates).eq('id', id).select().single();
-    if (error) throw error;
-    return data;
-  },
-  delete: async (id: string) => {
-    const { error } = await supabase.from('months').delete().eq('id', id);
-    if (error) throw error;
-    return id;
-  }
-};
-
-// 4. Investments
-export const apiInvestments = {
-  list: async () => {
-    const uid = await getUserId();
-    if (!uid) return [];
-    const { data, error } = await supabase.from('investments').select('*').eq('user_id', uid);
-    if (error) throw error;
-    return data.map((i: any) => ({ 
-        ...i, 
-        amount: parseFloat(i.amount),
-        yieldRate: i.yield_rate 
-    }));
-  },
-  add: async (inv: any) => {
-    const uid = await getUserId();
-    const payload = { ...inv, user_id: uid, yield_rate: inv.yieldRate };
-    delete payload.yieldRate;
-    const { data, error } = await supabase.from('investments').insert([payload]).select().single();
-    if (error) throw error;
-    return { ...data, yieldRate: data.yield_rate };
-  },
-  update: async (inv: any) => {
-    const { id, yieldRate, ...rest } = inv;
-    const payload = { ...rest, yield_rate: yieldRate };
-    const { data, error } = await supabase.from('investments').update(payload).eq('id', id).select().single();
-    if (error) throw error;
-    return { ...data, yieldRate: data.yield_rate };
-  },
-  delete: async (id: string) => {
-    const { error } = await supabase.from('investments').delete().eq('id', id);
-    if (error) throw error;
-    return id;
-  }
-};
-
-// 5. Long Term
-export const apiLongTerm = {
-  list: async () => {
-    const uid = await getUserId();
-    if (!uid) return [];
-    const { data, error } = await supabase.from('long_term').select('*').eq('user_id', uid);
-    if (error) throw error;
-    return data.map((l: any) => ({
-      ...l,
-      totalAmount: parseFloat(l.total_amount),
-      installmentsCount: l.installments_count,
-      startDate: l.start_date,
-      installmentsPaid: l.installments_paid,
-      monthlyAmount: parseFloat(l.monthly_amount),
-      installmentsHistory: l.installments_history,
-      installmentsDates: l.installments_dates
-    }));
-  },
-  add: async (lt: any) => {
-    const uid = await getUserId();
-    const payload = {
-       user_id: uid,
-       title: lt.title,
-       total_amount: lt.totalAmount,
-       installments_count: lt.installments_count,
-       start_date: lt.startDate,
-       installments_paid: lt.installments_paid,
-       monthly_amount: lt.monthlyAmount,
-       installments_history: lt.installmentsHistory,
-       installments_dates: lt.installmentsDates
-    };
-    const { data, error } = await supabase.from('long_term').insert([payload]).select().single();
-    if (error) throw error;
-    return { ...data, totalAmount: data.total_amount, installmentsCount: data.installments_count, startDate: data.start_date, installmentsPaid: data.installments_paid, monthlyAmount: data.monthly_amount, installmentsHistory: data.installments_history, installmentsDates: data.installments_dates };
-  },
-  update: async (lt: any) => {
-    const { id, totalAmount, installmentsCount, startDate, installmentsPaid, monthlyAmount, installmentsHistory, installmentsDates, ...rest } = lt;
-    const payload = {
-        ...rest,
-        total_amount: totalAmount,
-        installments_count: installmentsCount,
-        start_date: startDate,
-        installments_paid: installmentsPaid,
-        monthly_amount: monthlyAmount,
-        installments_history: installmentsHistory,
-        installments_dates: installmentsDates
-    };
-    const { data, error } = await supabase.from('long_term').update(payload).eq('id', id).select().single();
-    if (error) throw error;
-    return { ...data, totalAmount: data.total_amount, installmentsCount: data.installments_count, startDate: data.start_date, installmentsPaid: data.installments_paid, monthlyAmount: data.monthly_amount, installmentsHistory: data.installments_history, installmentsDates: data.installments_dates };
-  },
-  delete: async (id: string) => {
-    const { error } = await supabase.from('long_term').delete().eq('id', id);
-    if (error) throw error;
-    return id;
-  }
-};
-
-// 6. Notifications
-export const apiNotifications = {
-  list: async () => {
-    const uid = await getUserId();
-    if (!uid) return [];
-    const { data, error } = await supabase.from('notifications').select('*').eq('user_id', uid);
-    if (error) throw error;
-    return data;
-  },
-  add: async (n: any) => {
-    const uid = await getUserId();
-    const { data, error } = await supabase.from('notifications').insert([{ ...n, user_id: uid }]).select().single();
-    if (error) throw error;
-    return data;
-  },
-  delete: async (id: string) => {
-    const { error } = await supabase.from('notifications').delete().eq('id', id);
-    if (error) throw error;
-    return id;
-  },
-  markRead: async (id: string) => {
-     const { data, error } = await supabase.from('notifications').update({ read: true }).eq('id', id).select().single();
-     if (error) throw error;
-     return data;
-  },
-  markAllRead: async (ids: string[]) => {
-     const { data, error } = await supabase.from('notifications').update({ read: true }).in('id', ids).select();
-     if (error) throw error;
-     return data;
-  }
+// Modified loadUserData to fetch all necessary fields/sub-collections logic if simulated
+export const loadUserData = async (userId: string) => {
+  return loginUser(userId);
 };

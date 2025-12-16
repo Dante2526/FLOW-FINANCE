@@ -178,7 +178,7 @@ const SecondaryCard: React.FC<Props> = ({
       onDragEnd={onDragEnd}
     >
       {/* Background Layer */}
-      <div className={`absolute inset-0 flex justify-between transition-all duration-300 ${offsetX === 0 ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
+      <div className={`absolute inset-0 flex justify-between transition-all duration-200 ${offsetX === 0 ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
         
         {/* Left Side (Edit) - Visible when swiping Right */}
         <button
@@ -202,7 +202,7 @@ const SecondaryCard: React.FC<Props> = ({
 
       {/* Foreground Card */}
       <div 
-        className={`relative w-full h-full rounded-[2.5rem] p-6 shadow-lg shadow-black/20 border transition-all duration-300 ease-out z-10 touch-pan-y ${themeClass}`}
+        className={`relative w-full h-full rounded-[2.5rem] p-6 shadow-lg shadow-black/20 border transition-transform duration-200 ease-out z-10 touch-pan-y ${themeClass}`}
         style={{ transform: `translateX(${offsetX}px)` }}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}

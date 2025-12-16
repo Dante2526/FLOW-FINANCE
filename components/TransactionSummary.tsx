@@ -84,4 +84,4 @@ const TransactionSummary: React.FC<Props> = ({ months, activeMonthId, onSelectMo
   );
 };
 
-export default React.memo(TransactionSummary);
+export default TransactionSummary;
