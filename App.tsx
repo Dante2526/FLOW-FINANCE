@@ -25,8 +25,8 @@ import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { IconBell, IconMore } from './components/Icons';
 import { Crown, Loader2 } from 'lucide-react';
 
-// Supabase Services (Simplified)
-import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, deleteUser, supabase, VAPID_PUBLIC_KEY } from './services/supabase';
+// Supabase Services
+import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, deleteUser, supabase, VAPID_PUBLIC_KEY, upsertItem, deleteItem } from './services/supabase';
 
 // Lazy Load Heavy Components
 const AnalyticsModal = React.lazy(() => import('./components/AnalyticsModal'));
@@ -128,8 +128,6 @@ const sanitizeDataIds = (data: any) => {
   };
 
   const newMonths = processList(data.months);
-  
-  // FIX: Create a set of valid Month Keys to detect Orphans
   const validMonthKeys = new Set(newMonths.map((m: any) => `${m.month}|${m.year}`));
 
   // --- CLEANUP: Deduplicate & Clean Orphans Transactions ---
@@ -139,8 +137,6 @@ const sanitizeDataIds = (data: any) => {
 
   if (rawTransactions) {
       rawTransactions.forEach((tx: any) => {
-        // 1. Orphan Cleanup: If tx belongs to a month NOT in the month list, discard it.
-        // This fixes the "Ghost Data" bug where deleting a month left transactions behind.
         if (tx.month && tx.year) {
             const key = `${tx.month}|${tx.year}`;
             if (!validMonthKeys.has(key)) {
@@ -148,8 +144,6 @@ const sanitizeDataIds = (data: any) => {
                 return; // Skip orphaned transaction
             }
         }
-
-        // 2. Deduplication
         const signature = `${tx.name?.trim()}|${tx.amount}|${tx.date}|${tx.type}|${tx.month}|${tx.year}`;
         if (!uniqueTxMap.has(signature)) {
             uniqueTxMap.add(signature);
@@ -159,9 +153,7 @@ const sanitizeDataIds = (data: any) => {
         }
       });
   }
-  // -----------------------------------------
   
-  // Identify fallback month for orphans accounts (if any kept)
   const fallbackMonth = (newMonths && newMonths.length > 0) ? newMonths[0] : SYSTEM_INITIAL_MONTH;
 
   const rawAccounts = processList(data.accounts);
@@ -169,25 +161,18 @@ const sanitizeDataIds = (data: any) => {
   const uniqueAccounts: any[] = [];
   
   rawAccounts.forEach((acc: any) => {
-      // Clean orphans accounts too
       if (acc.month && acc.year) {
           const key = `${acc.month}|${acc.year}`;
           if (!validMonthKeys.has(key)) {
-              // Instead of deleting accounts which might be important, we move them to fallback?
-              // Or delete? Let's delete to be consistent with "Month Deleted" logic.
               hasChanges = true;
               return; 
           }
       }
-
-      // 1. Strict Independence: Assign orphans (null month) to the fallback month
       if (!acc.month || !acc.year) {
           acc.month = fallbackMonth.month;
           acc.year = fallbackMonth.year;
           hasChanges = true;
       }
-
-      // 2. Deduplication Logic
       const key = `${acc.name}|${acc.balance}|${acc.colorTheme}|${acc.month}|${acc.year}`;
       if (!uniqueAccountsMap.has(key)) {
           uniqueAccountsMap.set(key, true);
@@ -207,8 +192,6 @@ const sanitizeDataIds = (data: any) => {
         return idMap[id] || id; 
      });
   }
-
-  // Deduplicate Dashboard Order
   newDashboardOrder = Array.from(new Set(newDashboardOrder));
 
   return {
@@ -355,17 +338,7 @@ const App: React.FC = () => {
   // Use a string ref to lock creation of specific months to prevent duplicates
   const pendingMonthCreationRef = useRef<string | null>(null);
 
-  const prevTransactionsRef = useRef<string>(JSON.stringify(transactions));
-  const prevAccountsRef = useRef<string>(JSON.stringify(accounts));
-  const prevInvestmentsRef = useRef<string>(JSON.stringify(investments));
-  const prevLongTermRef = useRef<string>(JSON.stringify(longTermTransactions));
-  const prevNotificationsRef = useRef<string>(JSON.stringify(notifications));
-  const prevProfileRef = useRef<string>(JSON.stringify(userProfile));
-  const prevThemeRef = useRef<string>(JSON.stringify(appTheme));
   const prevMonthsRef = useRef<string>(JSON.stringify(months));
-  const prevNotepadRef = useRef<string>(notepadContent);
-  const prevDrawingRef = useRef<string | null>(notepadDrawing);
-  const prevCdiRef = useRef<number>(cdiRate);
   const prevDashboardOrderRef = useRef<string>(JSON.stringify(dashboardOrder));
 
   const currentStateRef = useRef({
@@ -401,7 +374,6 @@ const App: React.FC = () => {
   });
 
   // --- APPLY THEME TO CSS VARIABLES ---
-  // This ensures that when appTheme state changes, the actual CSS colors update globally
   useEffect(() => {
     const root = document.documentElement;
     root.style.setProperty('--color-accent', appTheme.primary);
@@ -409,12 +381,10 @@ const App: React.FC = () => {
   }, [appTheme]);
 
   // --- AUTO-CALCULATE MONTH TOTALS ---
-  // This effect ensures that Month Summary cards always reflect the sum of transactions for that month
   useEffect(() => {
     setMonths(prevMonths => {
       let hasChanged = false;
       const updatedMonths = prevMonths.map(month => {
-        // Calculate total for this specific month based on transactions
         const monthTotal = transactions
           .filter(t => {
              const tMonth = t.month || getMonthFromDateStr(t.date);
@@ -423,7 +393,6 @@ const App: React.FC = () => {
           })
           .reduce((sum, t) => sum + t.amount, 0);
 
-        // ROUND TO PREVENT FLOAT ERRORS
         const roundedTotal = roundMoney(monthTotal);
 
         if (month.total !== roundedTotal) {
@@ -432,8 +401,6 @@ const App: React.FC = () => {
         }
         return month;
       });
-
-      // Only update state if calculations produced a difference to avoid loops
       return hasChanged ? updatedMonths : prevMonths;
     });
   }, [transactions]); 
@@ -458,20 +425,18 @@ const App: React.FC = () => {
         if (!currentSet.has(BALANCE_CARD_ID)) {
              nextOrder.unshift(BALANCE_CARD_ID);
         }
-        
-        // Ensure uniqueness
         return Array.from(new Set([...nextOrder, ...newIds]));
      });
   }, [accounts]);
 
-  // --- NOTIFICATION CHECKER (RUNS ONCE PER SESSION/TRANSACTION UPDATE) ---
+  // --- NOTIFICATION CHECKER ---
   useEffect(() => {
     const checkDueBills = () => {
       if (!('Notification' in window)) return;
 
       const today = new Date();
-      const todayISO = today.toISOString().split('T')[0]; // YYYY-MM-DD
-      const todayShort = today.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '').toLowerCase(); // "24 mai"
+      const todayISO = today.toISOString().split('T')[0];
+      const todayShort = today.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '').toLowerCase();
       
       const notifiedKey = `flow_notified_${todayISO}`;
       const alreadyNotifiedIds = JSON.parse(localStorage.getItem(notifiedKey) || '[]');
@@ -482,18 +447,14 @@ const App: React.FC = () => {
          if (tx.paid) return;
          if (alreadyNotifiedIds.includes(tx.id)) return;
 
-         // Check Date Match
          let isToday = false;
          const txDateLower = tx.date.toLowerCase();
 
          if (txDateLower.includes('hoje')) isToday = true;
          else if (tx.date.startsWith(todayISO)) isToday = true;
          else {
-            // Check short format like "24 Mai"
-            // We need to match day and month approximately
             const parts = txDateLower.split(' ');
             if (parts.length >= 2) {
-               // Very basic check: "24" == "24" AND "mai" in "maio"
                if (todayShort.includes(parts[0]) && todayShort.includes(parts[1])) {
                   isToday = true;
                }
@@ -501,15 +462,12 @@ const App: React.FC = () => {
          }
 
          if (isToday) {
-            // 1. Send Browser Notification
             if (Notification.permission === 'granted') {
                new Notification('Flow Finance', {
                   body: `Sua conta ${tx.name} vence hoje! Valor: R$ ${tx.amount.toFixed(2)}`,
                   icon: '/favicon.svg'
                });
             }
-
-            // 2. Add Internal App Notification
             setNotifications(prev => [
                {
                   id: generateUUID(),
@@ -521,7 +479,6 @@ const App: React.FC = () => {
                },
                ...prev
             ]);
-
             newNotifiedIds.push(tx.id);
             hasNotification = true;
          }
@@ -532,10 +489,9 @@ const App: React.FC = () => {
       }
     };
 
-    // Run check with a small delay to ensure data loaded
     const timer = setTimeout(checkDueBills, 2000);
     return () => clearTimeout(timer);
-  }, [transactions]); // Re-run if transactions change (e.g. sync)
+  }, [transactions]); 
 
   // --- FILTERING ---
   const activeMonthSummary = months.find(m => m.id === activeMonthId) || months[0];
@@ -543,24 +499,19 @@ const App: React.FC = () => {
   const filteredTransactions = useMemo(() => {
     if (!activeMonthSummary) return [];
     
-    // Filter
     const filtered = transactions.filter(tx => {
       const txMonth = tx.month || getMonthFromDateStr(tx.date);
       const txYear = tx.year || getYearFromDateStr(tx.date, activeMonthSummary.year);
       return txMonth === activeMonthSummary.month && txYear === activeMonthSummary.year;
     });
 
-    // CHANGE: NO SORTING. 
-    // Return insertion order (Newest added are usually at index 0 because of prepend logic)
-    // This satisfies the request: "new accounts go to start of list"
+    // Insertion order (newest first)
     return filtered; 
   }, [transactions, activeMonthSummary]);
 
   const filteredAccounts = useMemo(() => {
     if (!activeMonthSummary) return [];
     return accounts.filter(acc => {
-      // STRICT FILTERING: Accounts must belong to the active month explicitly.
-      // This enforces total independence between months.
       return acc.month === activeMonthSummary.month && acc.year === activeMonthSummary.year;
     });
   }, [accounts, activeMonthSummary]);
@@ -569,7 +520,6 @@ const App: React.FC = () => {
     const items: string[] = [];
     const orderSet = new Set(dashboardOrder);
     
-    // Add known items that exist in current filtered view
     dashboardOrder.forEach(id => {
       if (id === BALANCE_CARD_ID) {
         items.push(id);
@@ -579,7 +529,6 @@ const App: React.FC = () => {
       }
     });
 
-    // Add orphans (Visible items not in order list)
     filteredAccounts.forEach(a => {
       if (!orderSet.has(a.id)) {
         items.push(a.id);
@@ -589,8 +538,6 @@ const App: React.FC = () => {
     if (!items.includes(BALANCE_CARD_ID)) {
       items.unshift(BALANCE_CARD_ID);
     }
-
-    // FINAL SAFETY: Deduplicate
     return Array.from(new Set(items));
   }, [dashboardOrder, filteredAccounts]);
 
@@ -622,7 +569,7 @@ const App: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // --- LOAD DATA & SANITIZE ---
+  // --- LOAD DATA ---
   useEffect(() => {
     if (!currentUserEmail || !isSessionReady) return;
 
@@ -631,21 +578,17 @@ const App: React.FC = () => {
     loadUserData(currentUserEmail)
       .then((data) => {
         if (data) {
-          // CRITICAL: SANITIZE DATA ON LOAD
           const { hasChanges, data: cleanData, idMap } = sanitizeDataIds(data);
-          
           applyData(cleanData);
 
-          if (hasChanges) {
+          if (hasChanges && currentUserEmail) {
              if (idMap[activeMonthId]) {
                 setActiveMonthId(idMap[activeMonthId]);
              }
-             if (currentUserEmail) {
-                saveCollection(currentUserEmail, "transactions", cleanData.transactions);
-                saveCollection(currentUserEmail, "accounts", cleanData.accounts);
-                saveCollection(currentUserEmail, "months", cleanData.months);
-                saveUserField(currentUserEmail, "dashboardOrder", cleanData.dashboardOrder);
-             }
+             saveCollection(currentUserEmail, "transactions", cleanData.transactions);
+             saveCollection(currentUserEmail, "accounts", cleanData.accounts);
+             saveCollection(currentUserEmail, "months", cleanData.months);
+             saveUserField(currentUserEmail, "dashboardOrder", cleanData.dashboardOrder);
           }
         }
       })
@@ -655,21 +598,15 @@ const App: React.FC = () => {
       .finally(() => setIsLoadingData(false));
   }, [currentUserEmail, isSessionReady]);
 
-  // --- REALTIME SYNC LISTENER (OPTIMIZED) ---
+  // --- REALTIME ---
   useEffect(() => {
     if (!currentUserEmail || !isSessionReady) return;
 
-    // Fix: Use ReturnType<typeof setTimeout> instead of NodeJS.Timeout to be browser compatible
     let debounceTimer: ReturnType<typeof setTimeout>;
 
-    // Optimized Handler with Debounce
     const handleRealtimeUpdate = () => {
-       // Clear previous timer if a new event arrives quickly (e.g. bulk insert)
        clearTimeout(debounceTimer);
-       
-       // Set a delay of 1000ms. If no new events happen, trigger fetch.
        debounceTimer = setTimeout(() => {
-          // console.log("Realtime: Fetching new data after debounce...");
           loadUserData(currentUserEmail).then((data) => {
               if (data) {
                  const { data: cleanData } = sanitizeDataIds(data);
@@ -682,16 +619,14 @@ const App: React.FC = () => {
     const unsubscribe = subscribeToUserChanges(currentUserEmail, handleRealtimeUpdate);
     return () => { 
         unsubscribe(); 
-        clearTimeout(debounceTimer); // Cleanup timer on unmount
+        clearTimeout(debounceTimer); 
     };
   }, [currentUserEmail, isSessionReady]);
 
-  // --- VIGIA (WATCHDOG) - FORCE REFRESH ON FOCUS ---
+  // --- VIGIA ---
   useEffect(() => {
     const handleFocus = () => {
-      // Refresh data when user comes back to the tab/app
       if (document.visibilityState === 'visible' && currentUserEmail) {
-         // console.log("Vigia: Atualizando dados ao focar...");
          loadUserData(currentUserEmail).then((data) => {
             if (data) {
                const { data: cleanData } = sanitizeDataIds(data);
@@ -723,41 +658,18 @@ const App: React.FC = () => {
            }
         }
         setUserProfile(profile);
-        prevProfileRef.current = JSON.stringify(profile);
       }
-      if (data.transactions) {
-        setTransactions(data.transactions);
-        prevTransactionsRef.current = JSON.stringify(data.transactions);
-      }
-      if (data.accounts) {
-        setAccounts(data.accounts);
-        prevAccountsRef.current = JSON.stringify(data.accounts);
-      }
-      if (data.investments) {
-        setInvestments(data.investments);
-        prevInvestmentsRef.current = JSON.stringify(data.investments);
-      }
-      if (data.longTerm) {
-        setLongTermTransactions(data.longTerm);
-        prevLongTermRef.current = JSON.stringify(data.longTerm);
-      }
-      if (data.notifications) {
-        setNotifications(data.notifications);
-        prevNotificationsRef.current = JSON.stringify(data.notifications);
-      }
+      if (data.transactions) setTransactions(data.transactions);
+      if (data.accounts) setAccounts(data.accounts);
+      if (data.investments) setInvestments(data.investments);
+      if (data.longTerm) setLongTermTransactions(data.longTerm);
+      if (data.notifications) setNotifications(data.notifications);
       if (data.theme) {
          setAppTheme(data.theme);
          saveData(STORAGE_KEYS.APP_THEME, data.theme);
-         prevThemeRef.current = JSON.stringify(data.theme);
       }
-      if (data.notepadContent !== undefined) {
-        setNotepadContent(data.notepadContent);
-        prevNotepadRef.current = data.notepadContent;
-      }
-      if (data.notepadDrawing !== undefined) {
-        setNotepadDrawing(data.notepadDrawing);
-        prevDrawingRef.current = data.notepadDrawing;
-      }
+      if (data.notepadContent !== undefined) setNotepadContent(data.notepadContent);
+      if (data.notepadDrawing !== undefined) setNotepadDrawing(data.notepadDrawing);
       if (data.months && data.months.length > 0) {
         const sorted = sortMonths(data.months);
         setMonths(sorted);
@@ -766,44 +678,15 @@ const App: React.FC = () => {
         }
         prevMonthsRef.current = JSON.stringify(sorted);
       }
-      if (data.cdiRate !== undefined) {
-        setCdiRate(data.cdiRate);
-        prevCdiRef.current = data.cdiRate;
-      }
+      if (data.cdiRate !== undefined) setCdiRate(data.cdiRate);
       if (data.dashboardOrder && Array.isArray(data.dashboardOrder)) {
          setDashboardOrder(data.dashboardOrder);
          prevDashboardOrderRef.current = JSON.stringify(data.dashboardOrder);
       }
   };
 
-  // --- SAVE DEBOUNCES ---
+  // --- SAVES (PERFORMANCE: ONLY BULK/COMPLEX DATA USES EFFECT) ---
   const DEBOUNCE_DELAY = 1500;
-
-  useEffect(() => {
-    if (currentUserEmail && !isLoadingData) {
-      const currentStr = JSON.stringify(transactions);
-      if (currentStr !== prevTransactionsRef.current) {
-        const timer = setTimeout(async () => {
-          await saveCollection(currentUserEmail, "transactions", transactions);
-          prevTransactionsRef.current = currentStr;
-        }, DEBOUNCE_DELAY);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [transactions, currentUserEmail, isLoadingData]);
-
-  useEffect(() => {
-    if (currentUserEmail && !isLoadingData) {
-      const currentStr = JSON.stringify(accounts);
-      if (currentStr !== prevAccountsRef.current) {
-        const timer = setTimeout(async () => {
-          await saveCollection(currentUserEmail, "accounts", accounts);
-          prevAccountsRef.current = currentStr;
-        }, DEBOUNCE_DELAY);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [accounts, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
     if (currentUserEmail && !isLoadingData) {
@@ -835,12 +718,9 @@ const App: React.FC = () => {
   
   const handleDuplicateMonth = useCallback(() => {
     const currentData = currentStateRef.current;
-    // Find active month summary from ref to be safe
     const activeMonthRef = currentData.months.find(m => m.id === activeMonthId) || currentData.months[0];
-    
     if (!activeMonthRef) return;
 
-    // Calculate Next Month
     let nextMonthIndex = MONTH_NAMES.indexOf(activeMonthRef.month) + 1;
     let nextYear = parseInt(activeMonthRef.year);
 
@@ -853,26 +733,19 @@ const App: React.FC = () => {
     const nextYearStr = nextYear.toString();
     const creationKey = `${nextMonthName}-${nextYearStr}`;
 
-    // STRICT LOCK
     if (pendingMonthCreationRef.current === creationKey) return;
 
-    // Check Existence in REF
     const exists = currentData.months.find(m => m.month === nextMonthName && m.year === nextYearStr);
-    
     if (exists) {
       setActiveMonthId(exists.id);
       return;
     }
 
-    // Check if ORPHANED DATA exists in REF (Stale Data Protection)
     const existingAccounts = currentData.accounts.filter(a => a.month === nextMonthName && a.year === nextYearStr);
     const existingTransactions = currentData.transactions.filter(t => t.month === nextMonthName && t.year === nextYearStr);
-    
     const hasOrphans = existingAccounts.length > 0 || existingTransactions.length > 0;
 
-    // Set Lock
     pendingMonthCreationRef.current = creationKey;
-
     const newMonthId = generateUUID();
     
     let newTransactions: Transaction[] = [];
@@ -880,26 +753,18 @@ const App: React.FC = () => {
     let newOrderSegment: string[] = [];
     let initialTotal = 0; 
 
-    // ALWAYS DUPLICATE if we are creating a new month, even if orphans exist (we overwrite logic)
-    // Actually, we must PURGE ORPHANS if we are "Creating" a month that didn't exist in summary
-    // to prevent the "Ghost Data" bug.
-    
-    // --- 1. Filter Source Transactions from REF (Fresh Data from ACTIVE Month) ---
     const sourceTransactions = currentData.transactions.filter(tx => {
         const txMonth = tx.month || getMonthFromDateStr(tx.date);
         const txYear = tx.year || getYearFromDateStr(tx.date, activeMonthRef.year);
         return txMonth === activeMonthRef.month && txYear === activeMonthRef.year;
     });
 
-    // --- 2. Filter Source Accounts from REF ---
     const sourceAccounts = currentData.accounts.filter(acc => {
         return acc.month === activeMonthRef.month && acc.year === activeMonthRef.year;
     });
 
-    // Duplicate Transactions
     newTransactions = sourceTransactions.map(tx => {
         let newDate = tx.date;
-        // Shift date by 1 month
         if (tx.date.match(/^\d{4}-\d{2}-\d{2}/)) {
             const d = new Date(tx.date.split(' ')[0] + 'T00:00:00');
             d.setMonth(d.getMonth() + 1);
@@ -919,11 +784,9 @@ const App: React.FC = () => {
         };
     });
 
-    // CALCULATE INITIAL TOTAL IMMEDIATELY & ROUND IT
     const rawTotal = newTransactions.reduce((acc, curr) => acc + curr.amount, 0);
     initialTotal = roundMoney(rawTotal);
 
-    // Duplicate Accounts
     const oldIdToNewIdMap = new Map<string, string>();
     sourceAccounts.forEach(acc => {
         const newId = generateUUID();
@@ -936,24 +799,21 @@ const App: React.FC = () => {
         });
     });
 
-    // Reconstruct Order based on active view logic from REF
     const currentOrder = currentData.dashboardOrder;
     currentOrder.forEach(oldId => {
         if (oldId === BALANCE_CARD_ID) {
-            newOrderSegment.push(BALANCE_CARD_ID); // Keep Balance Card relative position
+            newOrderSegment.push(BALANCE_CARD_ID);
         } else if (oldIdToNewIdMap.has(oldId)) {
             newOrderSegment.push(oldIdToNewIdMap.get(oldId)!);
         }
     });
 
-    // Append any newly created accounts that might have been missed (orphans)
     newAccounts.forEach(acc => {
         if (!newOrderSegment.includes(acc.id)) {
             newOrderSegment.push(acc.id);
         }
     });
 
-    // Create Month Summary
     const newMonth: MonthSummary = {
       id: newMonthId,
       month: nextMonthName,
@@ -961,59 +821,87 @@ const App: React.FC = () => {
       total: initialTotal 
     };
 
-    // Batch Update State
     setMonths(prev => sortMonths([...prev, newMonth]));
     
-    // IMPORTANT: If orphans existed, we must REMOVE them first to avoid duplicates or mixing data
+    // Performance: We set state first, then save to DB (triggered by state change in effect or manual call?)
+    // Here we use bulk operations because it is a bulk action.
+    let updatedTx = [];
+    let updatedAcc = [];
+
     if (hasOrphans) {
         setTransactions(prev => {
-            // Remove orphans for the new month, add fresh duplicates
             const cleaned = prev.filter(t => !(t.month === nextMonthName && t.year === nextYearStr));
-            return [...newTransactions, ...cleaned];
+            updatedTx = [...newTransactions, ...cleaned];
+            return updatedTx;
         });
         setAccounts(prev => {
             const cleaned = prev.filter(a => !(a.month === nextMonthName && a.year === nextYearStr));
-            return [...prev, ...newAccounts]; // Appending usually fine, but let's be safe
+            updatedAcc = [...prev, ...newAccounts];
+            return updatedAcc;
         });
     } else {
-        setTransactions(prev => [...newTransactions, ...prev]);
-        setAccounts(prev => [...prev, ...newAccounts]);
+        setTransactions(prev => {
+            updatedTx = [...newTransactions, ...prev];
+            return updatedTx;
+        });
+        setAccounts(prev => {
+            updatedAcc = [...prev, ...newAccounts];
+            return updatedAcc;
+        });
     }
     
-    // Safety: ensure uniqueness when updating dashboardOrder
     setDashboardOrder(prev => {
-        // Remove BALANCE_CARD_ID from prev to ensure it moves to the new month's relative position
         const cleanPrev = prev.filter(id => id !== BALANCE_CARD_ID);
         return Array.from(new Set([...cleanPrev, ...newOrderSegment]));
     });
     
     setActiveMonthId(newMonthId);
 
-    // Release Lock after delay
+    // MANUAL SAVE FOR BULK OPS (Since we removed auto-effect for tx/acc)
+    if (currentUserEmail) {
+        saveCollection(currentUserEmail, "transactions", updatedTx);
+        saveCollection(currentUserEmail, "accounts", updatedAcc);
+    }
+
     setTimeout(() => { 
         if (pendingMonthCreationRef.current === creationKey) {
             pendingMonthCreationRef.current = null; 
         }
     }, 2000);
 
-  }, [activeMonthId]); // Removed extensive deps to use ref for freshness
+  }, [activeMonthId, currentUserEmail]);
 
   const handleDeleteMonth = useCallback((id: string) => {
      if (months.length <= 1) return;
      const monthToDelete = months.find(m => m.id === id);
      if (!monthToDelete) return;
 
-     // REMOVIDO: window.confirm - Agora a UI lida com isso em TransactionSummary
      setMonths(prev => prev.filter(m => m.id !== id));
-     setTransactions(prev => prev.filter(t => !(t.month === monthToDelete.month && t.year === monthToDelete.year)));
-     setAccounts(prev => prev.filter(a => !(a.month === monthToDelete.month && a.year === monthToDelete.year)));
+     
+     let updatedTx: Transaction[] = [];
+     let updatedAcc: Account[] = [];
+
+     setTransactions(prev => {
+         updatedTx = prev.filter(t => !(t.month === monthToDelete.month && t.year === monthToDelete.year));
+         return updatedTx;
+     });
+     setAccounts(prev => {
+         updatedAcc = prev.filter(a => !(a.month === monthToDelete.month && a.year === monthToDelete.year));
+         return updatedAcc;
+     });
      
      if (activeMonthId === id) {
         const remaining = months.filter(m => m.id !== id);
         const sorted = sortMonths(remaining);
         if (sorted.length > 0) setActiveMonthId(sorted[sorted.length - 1].id);
      }
-  }, [months, activeMonthId]);
+
+     // MANUAL SAVE
+     if (currentUserEmail) {
+        saveCollection(currentUserEmail, "transactions", updatedTx);
+        saveCollection(currentUserEmail, "accounts", updatedAcc);
+     }
+  }, [months, activeMonthId, currentUserEmail]);
 
   // Drag Handlers
   const handleCardDragStart = useCallback((id: string) => {
@@ -1045,11 +933,13 @@ const App: React.FC = () => {
     dragItem.current = null;
   }, []);
 
-  // Handlers - MEMOIZED to prevent re-renders of children
+  // --- GRANULAR HANDLERS (PERFORMANCE) ---
+
   const handleDeleteAccount = useCallback((id: string) => {
     setAccounts(prev => prev.filter(a => a.id !== id));
     setDashboardOrder(prev => prev.filter(oid => oid !== id));
-  }, []);
+    if (currentUserEmail) deleteItem(currentUserEmail, 'accounts', id);
+  }, [currentUserEmail]);
   
   const handleEditAccount = useCallback((acc: Account) => {
       setEditingAccount(acc);
@@ -1057,27 +947,27 @@ const App: React.FC = () => {
   }, []);
 
   const handleSaveTransaction = useCallback((txData: any) => { 
-      // Depends on local scope refs but called only from modal
-      // This function needs access to editingTransaction which is state.
-      // Since it's passed to a modal that re-renders anyway when open, simple ref check inside or dep on editingTransaction is OK.
+      let newTx: Transaction;
+      
       setTransactions(prev => {
-         // Using functional update to avoid dep on transactions
-         // We need the editing ID from state, or check logic here.
-         // A cleaner way is to let the modal pass ID if editing.
-         // But sticking to existing logic:
          if (editingTransaction) {
-             return prev.map(t => t.id === editingTransaction.id ? { ...t, ...txData } : t);
+             newTx = { ...editingTransaction, ...txData };
+             // Granular Save
+             if(currentUserEmail) upsertItem(currentUserEmail, 'transactions', newTx);
+             return prev.map(t => t.id === editingTransaction.id ? newTx : t);
          } else {
-             // ADDS TO START (PREPEND) - This logic is correct, but was being undone by sorting
-             return [{ id: generateUUID(), ...txData, month: activeMonthSummary.month, year: activeMonthSummary.year }, ...prev];
+             newTx = { id: generateUUID(), ...txData, month: activeMonthSummary.month, year: activeMonthSummary.year };
+             if(currentUserEmail) upsertItem(currentUserEmail, 'transactions', newTx);
+             return [newTx, ...prev];
          }
       });
-      setEditingTransaction(null); // Close edit mode
-  }, [editingTransaction, activeMonthSummary]);
+      setEditingTransaction(null);
+  }, [editingTransaction, activeMonthSummary, currentUserEmail]);
 
   const handleDeleteTransaction = useCallback((id: string) => {
       setTransactions(prev => prev.filter(t => t.id !== id));
-  }, []);
+      if (currentUserEmail) deleteItem(currentUserEmail, 'transactions', id);
+  }, [currentUserEmail]);
 
   const handleEditTransaction = useCallback((tx: Transaction) => { 
       setEditingTransaction(tx); 
@@ -1090,52 +980,75 @@ const App: React.FC = () => {
   }, []);
 
   const handleToggleTransactionStatus = useCallback((id: string) => {
-      setTransactions(prev => prev.map(t => t.id === id ? { ...t, paid: !t.paid } : t));
-  }, []);
+      setTransactions(prev => prev.map(t => {
+          if (t.id === id) {
+              const updated = { ...t, paid: !t.paid };
+              if (currentUserEmail) upsertItem(currentUserEmail, 'transactions', updated);
+              return updated;
+          }
+          return t;
+      }));
+  }, [currentUserEmail]);
 
   const handleTogglePaymentMethod = useCallback((id: string) => {
-      setTransactions(prev => prev.map(t => t.id === id ? { ...t, paymentMethod: t.paymentMethod === 'pix' ? 'card' : 'pix' } : t));
-  }, []);
+      setTransactions(prev => prev.map(t => {
+          if (t.id === id) {
+              const updated = { ...t, paymentMethod: t.paymentMethod === 'pix' ? 'card' : 'pix' } as Transaction;
+              if (currentUserEmail) upsertItem(currentUserEmail, 'transactions', updated);
+              return updated;
+          }
+          return t;
+      }));
+  }, [currentUserEmail]);
   
   const handleSaveAccount = useCallback((name: string, balance: number, theme: CardTheme) => {
     if (editingAccount) {
-      setAccounts(prev => prev.map(acc => acc.id === editingAccount.id ? { ...acc, name, balance, colorTheme: theme } : acc));
+      const updated = { ...editingAccount, name, balance, colorTheme: theme };
+      setAccounts(prev => prev.map(acc => acc.id === editingAccount.id ? updated : acc));
+      if (currentUserEmail) upsertItem(currentUserEmail, 'accounts', updated);
       setEditingAccount(null);
     } else {
-      // Need activeMonthSummary here
-      setAccounts(prev => [...prev, { id: generateUUID(), name, balance, colorTheme: theme, month: activeMonthSummary?.month, year: activeMonthSummary?.year }]);
+      const newAcc = { id: generateUUID(), name, balance, colorTheme: theme, month: activeMonthSummary?.month, year: activeMonthSummary?.year };
+      setAccounts(prev => [...prev, newAcc]);
+      if (currentUserEmail) upsertItem(currentUserEmail, 'accounts', newAcc);
     }
-  }, [editingAccount, activeMonthSummary]);
+  }, [editingAccount, activeMonthSummary, currentUserEmail]);
 
   // --- CRUD CALLBACKS FOR MEMOIZED VIEWS ---
-  // Using useCallback here ensures these functions don't change on every render,
-  // allowing React.memo to work correctly in LongTermView and InvestmentsView.
   
   const handleAddLongTerm = useCallback((item: Omit<LongTermTransaction, 'id' | 'installmentsPaid'>) => {
-     setLongTermTransactions(p => [...p, { ...item, id: generateUUID(), installmentsPaid: 0 }]);
-  }, []);
+     const newItem = { ...item, id: generateUUID(), installmentsPaid: 0 };
+     setLongTermTransactions(p => [...p, newItem]);
+     if (currentUserEmail) upsertItem(currentUserEmail, 'longTerm', newItem);
+  }, [currentUserEmail]);
 
   const handleEditLongTerm = useCallback((item: LongTermTransaction) => {
      setLongTermTransactions(p => p.map(o => o.id === item.id ? item : o));
-  }, []);
+     if (currentUserEmail) upsertItem(currentUserEmail, 'longTerm', item);
+  }, [currentUserEmail]);
 
   const handleDeleteLongTerm = useCallback((id: string) => {
      setLongTermTransactions(p => p.filter(i => i.id !== id));
-  }, []);
+     if (currentUserEmail) deleteItem(currentUserEmail, 'longTerm', id);
+  }, [currentUserEmail]);
 
   const handleAddInvestment = useCallback((item: Omit<Investment, 'id'>) => {
-     setInvestments(p => [...p, { ...item, id: generateUUID() }]);
-  }, []);
+     const newItem = { ...item, id: generateUUID() };
+     setInvestments(p => [...p, newItem]);
+     if (currentUserEmail) upsertItem(currentUserEmail, 'investments', newItem);
+  }, [currentUserEmail]);
 
   const handleEditInvestment = useCallback((item: Investment) => {
      setInvestments(p => p.map(o => o.id === item.id ? item : o));
-  }, []);
+     if (currentUserEmail) upsertItem(currentUserEmail, 'investments', item);
+  }, [currentUserEmail]);
 
   const handleDeleteInvestment = useCallback((id: string) => {
      setInvestments(p => p.filter(i => i.id !== id));
-  }, []);
+     if (currentUserEmail) deleteItem(currentUserEmail, 'investments', id);
+  }, [currentUserEmail]);
 
-  // Modal Openers - MEMOIZED
+  // Modal Openers
   const openAddTransaction = useCallback(() => setIsAddTransactionOpen(true), []);
   const openAddAccount = useCallback(() => setIsAddAccountOpen(true), []);
   const openCalculator = useCallback(() => setIsCalculatorOpen(true), []);
@@ -1146,7 +1059,7 @@ const App: React.FC = () => {
   const openAnalytics = useCallback(() => setIsAnalyticsOpen(true), []);
   const openPro = useCallback(() => setIsProModalOpen(true), []);
 
-  // Close Handlers - MEMOIZED to prevent inline arrow functions in render
+  // Close Handlers
   const handleCloseTransactionModal = useCallback(() => {
       setIsAddTransactionOpen(false);
       setEditingTransaction(null);
@@ -1173,16 +1086,30 @@ const App: React.FC = () => {
   const handleSaveNotepad = useCallback((c: string, d: string | null) => {
       setNotepadContent(c);
       setNotepadDrawing(d);
-  }, []);
+      if (currentUserEmail) {
+          saveUserField(currentUserEmail, 'notepadContent', c);
+          saveUserField(currentUserEmail, 'notepadDrawing', d);
+      }
+  }, [currentUserEmail]);
 
   const handleUpgradePro = useCallback(() => {
       setUserProfile(prev => ({...prev, isPro: true}));
       setIsProModalOpen(false);
   }, []);
 
-  // Notification Handlers
-  const handleMarkAllRead = useCallback(() => setNotifications(p => p.map(n => ({ ...n, read: true }))), []);
-  const handleDeleteNotification = useCallback((id: string) => setNotifications(p => p.filter(n => n.id !== id)), []);
+  // Notification Handlers (Batch delete/mark might use SaveCollection for ease)
+  const handleMarkAllRead = useCallback(() => {
+      setNotifications(p => {
+          const updated = p.map(n => ({ ...n, read: true }));
+          if (currentUserEmail) saveCollection(currentUserEmail, 'notifications', updated);
+          return updated;
+      });
+  }, [currentUserEmail]);
+
+  const handleDeleteNotification = useCallback((id: string) => {
+      setNotifications(p => p.filter(n => n.id !== id));
+      if (currentUserEmail) deleteItem(currentUserEmail, 'notifications', id);
+  }, [currentUserEmail]);
 
   // Contact Click Handler
   const handleContactClick = useCallback((c: Contact) => {
@@ -1194,7 +1121,6 @@ const App: React.FC = () => {
       }
   }, [userProfile.isPro, openNotepad, openCalendar, openPro, openAnalytics]);
 
-  // OPTIMIZED CONTEXT: Use primitive dependencies to avoid unnecessary object creation
   const activeMonthMonth = activeMonthSummary?.month;
   const activeMonthYear = activeMonthSummary?.year;
   

@@ -79,7 +79,6 @@ export const verifyAuthOtp = async (email: string, token: string) => {
 
 // --- USER MANAGEMENT ---
 
-// Recupera o UUID do Auth (necessário para Foreign Keys nas tabelas relacionais)
 const getAuthUserId = async (): Promise<string> => {
     const { data } = await supabase.auth.getUser();
     if (data.user) return data.user.id;
@@ -93,7 +92,6 @@ const getAuthUserId = async (): Promise<string> => {
 export const loginUser = async (email: string) => {
   const normalizedEmail = email.toLowerCase().trim();
   
-  // Verifica se o usuário existe na tabela pública usando EMAIL (pois 'id' não existe na tabela pública)
   const { data, error } = await supabase
       .from('users')
       .select('email')
@@ -102,14 +100,12 @@ export const loginUser = async (email: string) => {
   
   if (!data) throw new Error("Usuário não encontrado.");
   
-  // Retorna o auth ID para uso posterior se necessário, mas aqui apenas validamos existência
   return await getAuthUserId();
 };
 
 export const registerUser = async (email: string, name: string, initialData: any) => {
   const normalizedEmail = email.toLowerCase().trim();
 
-  // Verifica existência
   const { data: existingUser } = await supabase
     .from('users')
     .select('email')
@@ -120,7 +116,6 @@ export const registerUser = async (email: string, name: string, initialData: any
     throw new Error("Este e-mail já possui cadastro.");
   }
 
-  // Insere na tabela pública
   const { error } = await supabase
     .from('users')
     .insert({
@@ -146,7 +141,6 @@ export const deleteUser = async (email: string) => {
   const userId = await getAuthUserId();
   const normalizedEmail = email.toLowerCase().trim();
   
-  // Deletar tabelas relacionais usando o UUID do Auth
   await supabase.from('transactions').delete().eq('user_id', userId);
   await supabase.from('accounts').delete().eq('user_id', userId);
   await supabase.from('months').delete().eq('user_id', userId);
@@ -154,7 +148,6 @@ export const deleteUser = async (email: string) => {
   await supabase.from('long_term').delete().eq('user_id', userId);
   await supabase.from('notifications').delete().eq('user_id', userId);
   
-  // Deletar usuário da tabela pública usando EMAIL
   const { error } = await supabase.from('users').delete().eq('email', normalizedEmail);
 
   if (error) {
@@ -163,19 +156,17 @@ export const deleteUser = async (email: string) => {
   }
 };
 
-// --- DATA SYNC (CRUD RELACIONAL) ---
+// --- DATA SYNC (CRUD RELACIONAL OTIMIZADO) ---
 
 export const loadUserData = async (email: string) => {
   try {
     const normalizedEmail = email.toLowerCase().trim();
-    const userId = await getAuthUserId(); // UUID para tabelas filhas
+    const userId = await getAuthUserId();
 
-    // Executa queries em paralelo
-    // Tabela 'users' consultada por EMAIL
     const userReq = supabase.from('users').select('*').eq('email', normalizedEmail).single();
 
-    // Tabelas filhas consultadas por USER_ID (UUID)
-    const transactionsReq = supabase.from('transactions').select('*').eq('user_id', userId);
+    // PERFORMANCE FIX: Ordenar transações por created_at DESC no servidor para garantir ordem correta
+    const transactionsReq = supabase.from('transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false });
     const accountsReq = supabase.from('accounts').select('*').eq('user_id', userId);
     const monthsReq = supabase.from('months').select('*').eq('user_id', userId);
     const investmentsReq = supabase.from('investments').select('*').eq('user_id', userId);
@@ -202,7 +193,6 @@ export const loadUserData = async (email: string) => {
 
     const user = userRes.data || {};
     
-    // Monta o objeto final
     const result = {
         profile: user.profile || {},
         cdiRate: user.cdi_rate ?? 11.25,
@@ -227,69 +217,88 @@ export const loadUserData = async (email: string) => {
   }
 };
 
+// --- FUNÇÕES GRANULARES (PERFORMANCE) ---
+
+export const upsertItem = async (email: string, collectionName: string, item: any) => {
+  try {
+    const userId = await getAuthUserId();
+    let tableName = collectionName;
+    if (collectionName === 'longTerm') tableName = 'long_term';
+    
+    const snakeItem = toSnakeCase(item);
+    // Garantir created_at
+    if (!snakeItem.created_at) snakeItem.created_at = new Date().toISOString();
+    
+    const { error } = await supabase
+        .from(tableName)
+        .upsert({ ...snakeItem, user_id: userId }, { onConflict: 'id' });
+        
+    if (error) console.error(`Erro upserting ${collectionName}:`, error);
+    return !error;
+  } catch (e) {
+    console.error(e);
+    return false;
+  }
+};
+
+export const deleteItem = async (email: string, collectionName: string, id: string) => {
+  try {
+    const userId = await getAuthUserId();
+    let tableName = collectionName;
+    if (collectionName === 'longTerm') tableName = 'long_term';
+
+    const { error } = await supabase
+        .from(tableName)
+        .delete()
+        .eq('user_id', userId)
+        .eq('id', id);
+
+    if (error) console.error(`Erro deletando ${collectionName}:`, error);
+    return !error;
+  } catch (e) {
+    console.error(e);
+    return false;
+  }
+};
+
+// Mantido para compatibilidade e operações em lote (Ex: Drag and Drop, Deletar Mês)
 export const saveCollection = async (email: string, collectionName: string, dataArray: any[]): Promise<boolean> => {
   try {
     const userId = await getAuthUserId();
     let tableName = collectionName;
     
     if (collectionName === 'longTerm') tableName = 'long_term';
-    // profile/dashboardOrder handling remains as is (they use saveUserField logic usually, handled separately if passed here incorrectly)
     if (collectionName === 'dashboardOrder') {
         return saveUserField(email, 'dashboardOrder', dataArray);
     }
 
-    // Prepara dados com user_id (UUID)
     const rows = dataArray.map(item => {
         const snakeItem = toSnakeCase(item);
-        
-        // CORREÇÃO: Se não tiver data de criação, injeta a data atual
         if (!snakeItem.created_at) {
             snakeItem.created_at = new Date().toISOString();
         }
-
-        return {
-            ...snakeItem,
-            user_id: userId
-        };
+        return { ...snakeItem, user_id: userId };
     });
 
-    // 1. UPSERT: Atualiza os que existem, insere os novos
     const { error: upsertError } = await supabase
         .from(tableName)
         .upsert(rows, { onConflict: 'id' });
 
     if (upsertError) {
-        console.error(`Erro salvando ${tableName}:`, upsertError.message || upsertError);
+        console.error(`Erro salvando ${tableName}:`, upsertError.message);
         return false;
     }
 
-    // 2. DELETE ORPHANS (A CORREÇÃO PRINCIPAL)
-    // Precisamos apagar do banco os itens que NÃO estão mais na lista local 'dataArray'.
-    // Isso garante que se o usuário deletou localmente, o item suma do banco.
-    
+    // Clean Orphans
     const currentIds = rows.map(r => r.id);
-
     if (currentIds.length > 0) {
-        // Deleta itens deste usuário cujo ID NÃO está na lista atual
-        const { error: deleteError } = await supabase
+        await supabase
             .from(tableName)
             .delete()
             .eq('user_id', userId)
-            .not('id', 'in', `(${currentIds.join(',')})`); // Syntax para array no Postgrest via client
-            
-        if (deleteError) {
-             console.error(`Erro limpando itens antigos em ${tableName}:`, deleteError.message);
-        }
+            .not('id', 'in', `(${currentIds.join(',')})`); 
     } else {
-        // Se a lista local está vazia (ex: usuário apagou tudo), limpa a tabela para este usuário
-        const { error: deleteAllError } = await supabase
-            .from(tableName)
-            .delete()
-            .eq('user_id', userId);
-            
-        if (deleteAllError) {
-             console.error(`Erro limpando tudo em ${tableName}:`, deleteAllError.message);
-        }
+        await supabase.from(tableName).delete().eq('user_id', userId);
     }
 
     return true;
@@ -307,92 +316,61 @@ export const saveUserField = async (email: string, field: string, data: any): Pr
     const profileFields = ['notepadDrawing', 'dashboardOrder', 'pushSubscription', 'profile'];
 
     if (profileFields.includes(field)) {
-        // Busca profile atual usando EMAIL
-        const { data: userData, error: fetchError } = await supabase
+        const { data: userData } = await supabase
             .from('users')
             .select('profile')
             .eq('email', normalizedEmail)
             .maybeSingle();
 
-        if (fetchError) {
-             console.error(`Erro buscando profile para ${field}:`, fetchError.message);
-        }
-
         const currentProfile = userData?.profile || {};
-        
         let newProfile;
         if (field === 'profile') {
              newProfile = { ...currentProfile, ...data };
         } else {
              newProfile = { ...currentProfile, [field]: data };
         }
-        
         updatePayload = { profile: newProfile };
-
     } else {
-        if (field === 'notepadContent') {
-            updatePayload = { notepad_content: data };
-        } else if (field === 'cdiRate') {
-            updatePayload = { cdi_rate: data };
-        } else if (field === 'theme') {
-            updatePayload = { theme: data };
-        } else {
-            updatePayload = toSnakeCase({ [field]: data });
-        }
+        if (field === 'notepadContent') updatePayload = { notepad_content: data };
+        else if (field === 'cdiRate') updatePayload = { cdi_rate: data };
+        else if (field === 'theme') updatePayload = { theme: data };
+        else updatePayload = toSnakeCase({ [field]: data });
     }
 
-    // Atualiza tabela users usando EMAIL
     const { error } = await supabase
         .from('users')
         .update(updatePayload)
         .eq('email', normalizedEmail);
 
-    if (error) {
-        console.error(`Erro salvando campo ${field}:`, error.message || JSON.stringify(error));
-        return false;
-    }
-    return true;
+    return !error;
   } catch (error: any) {
-    console.error(`Exceção salvando campo ${field}:`, error.message || error);
+    console.error(`Exceção salvando campo ${field}:`, error);
     return false;
   }
 };
-
-// --- REALTIME SUBSCRIPTION ---
 
 export const subscribeToUserChanges = (email: string, onUpdate: () => void) => {
   let channels: any[] = [];
 
   const setup = async () => {
     try {
-      // É preciso do UUID para filtrar tabelas privadas
       const userId = await getAuthUserId();
       const normalizedEmail = email.toLowerCase().trim();
-
       const tables = ['transactions', 'accounts', 'months', 'investments', 'long_term', 'notifications'];
       
-      // Canal Único para todas as mudanças do usuário
       const channel = supabase.channel('user-db-changes');
 
-      // 1. Escuta tabela pública 'users' (Profile, Tema, Notas) filtrando pelo email
       channel.on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'users', filter: `email=eq.${normalizedEmail}` },
-          (payload) => {
-             // console.log('Realtime User update:', payload);
-             onUpdate();
-          }
+          () => onUpdate()
       );
 
-      // 2. Escuta tabelas privadas filtrando pelo user_id
       tables.forEach(table => {
         channel.on(
           'postgres_changes',
           { event: '*', schema: 'public', table: table, filter: `user_id=eq.${userId}` },
-          (payload) => {
-             // console.log(`Realtime ${table} update:`, payload);
-             onUpdate();
-          }
+          () => onUpdate()
         );
       });
 
@@ -400,7 +378,7 @@ export const subscribeToUserChanges = (email: string, onUpdate: () => void) => {
       channels.push(channel);
 
     } catch (err) {
-      console.warn("Could not setup realtime subscriptions (Auth error?)", err);
+      console.warn("Could not setup realtime subscriptions", err);
     }
   };
 
