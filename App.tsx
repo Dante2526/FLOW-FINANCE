@@ -524,6 +524,7 @@ const App: React.FC = () => {
                  registration.showNotification('Flow Finance', {
                     body: `Conta vencendo hoje: ${tx.name} (R$ ${tx.amount.toFixed(2)})`,
                     icon: '/favicon.svg',
+                    badge: '/notification-icon.svg', // FIXED: Monochrome Icon for Status Bar
                     vibrate: [200, 100, 200],
                     tag: `bill-${tx.id}`
                  } as any);
