@@ -334,6 +334,7 @@ const App: React.FC = () => {
   // --- REFS ---
   const dragItem = useRef<string | null>(null);
   const lastDragUpdate = useRef<number>(0);
+  const mainScrollRef = useRef<HTMLDivElement>(null);
   
   // Use a string ref to lock creation of specific months to prevent duplicates
   const pendingMonthCreationRef = useRef<string | null>(null);
@@ -379,6 +380,14 @@ const App: React.FC = () => {
     root.style.setProperty('--color-accent', appTheme.primary);
     root.style.setProperty('--color-accent-dark', appTheme.secondary);
   }, [appTheme]);
+
+  // --- SCROLL RESET ---
+  // Ensures Settings (and other views) start at top
+  useEffect(() => {
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTop = 0;
+    }
+  }, [currentView]);
 
   // --- AUTO-CALCULATE MONTH TOTALS ---
   useEffect(() => {
@@ -1294,7 +1303,7 @@ const App: React.FC = () => {
   if (!currentUserEmail) return <LoginScreen onLogin={handleLogin} />;
   
   return (
-    <div className={`h-full overflow-y-auto bg-[#0a0a0b] text-white px-2 pt-4 pb-32 font-sans selection:bg-accent selection:text-black no-scrollbar ${isAnyModalOpen ? 'overflow-hidden' : ''}`} style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+    <div ref={mainScrollRef} className={`h-full overflow-y-auto bg-[#0a0a0b] text-white px-2 pt-4 pb-32 font-sans selection:bg-accent selection:text-black no-scrollbar ${isAnyModalOpen ? 'overflow-hidden' : ''}`} style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
       {renderView()}
       <BottomNav currentView={currentView} onChangeView={setCurrentView} />
       <AddTransactionModal isOpen={isAddTransactionOpen} onClose={handleCloseTransactionModal} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} activeMonthContext={activeMonthContext} />
