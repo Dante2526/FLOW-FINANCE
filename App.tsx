@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef, Suspense, useCallback } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -996,7 +995,7 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleCardDragEnd = useCallback(() => {
+  const handleCardDragEnd = useCallback((id: string) => {
     dragItem.current = null;
   }, []);
 
@@ -1155,8 +1154,12 @@ const App: React.FC = () => {
 
   const handleSaveTheme = useCallback((t: AppTheme) => {
       setAppTheme(t);
+      saveData(STORAGE_KEYS.APP_THEME, t); // Save locally
+      if (currentUserEmail) {
+          saveUserField(currentUserEmail, 'theme', t); // Save to cloud
+      }
       setCurrentView('home');
-  }, []);
+  }, [currentUserEmail]);
 
   const handleSaveNotepad = useCallback((c: string, d: string | null) => {
       setNotepadContent(c);
