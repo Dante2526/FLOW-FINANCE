@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef, Suspense, useCallback } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -612,17 +613,12 @@ const App: React.FC = () => {
   const cleanupOldNotifications = (notifs: AppNotification[]) => {
      if (!currentUserEmail) return;
      
-     // Remove notifications older than 30 days
-     const thirtyDaysAgo = new Date();
-     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+     // LIMIT CHANGED: 10 PER USER
+     const NOTIFICATION_LIMIT = 10;
      
-     // Since our notification date format is loose (e.g. "Hoje", "24/05/2025"), 
-     // we rely on the DB insertion time if available, or skip complex parsing for now.
-     // Assuming the ID is UUID, we can't extract date.
-     // Strategy: Just delete if the list is too big (> 50)
-     if (notifs.length > 50) {
-        const toKeep = notifs.slice(0, 50); // Keep 50 newest
-        const toDelete = notifs.slice(50);
+     if (notifs.length > NOTIFICATION_LIMIT) {
+        const toKeep = notifs.slice(0, NOTIFICATION_LIMIT); // Keep newest 10 (assumes sorted)
+        const toDelete = notifs.slice(NOTIFICATION_LIMIT);   // Identify older ones
         
         toDelete.forEach(n => {
            deleteItem(currentUserEmail, 'notifications', n.id);
@@ -1177,11 +1173,8 @@ const App: React.FC = () => {
 
   // Notification Handlers (Batch delete/mark might use SaveCollection for ease)
   const handleMarkAllRead = useCallback(() => {
-      setNotifications(p => {
-          const updated = p.map(n => ({ ...n, read: true }));
-          if (currentUserEmail) saveCollection(currentUserEmail, 'notifications', updated);
-          return updated;
-      });
+      setNotifications([]);
+      if (currentUserEmail) saveCollection(currentUserEmail, 'notifications', []);
   }, [currentUserEmail]);
 
   const handleDeleteNotification = useCallback((id: string) => {

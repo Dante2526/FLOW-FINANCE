@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare, CloudLightning, Loader2, Check } from 'lucide-react';
 import { AppNotification } from '../types';
@@ -403,9 +404,9 @@ const NotificationModal: React.FC<Props> = ({
                 {notifications.length > 0 && (
                   <button 
                     onClick={onMarkAllRead}
-                    className="w-full h-14 rounded-[1.5rem] bg-accent text-black font-bold flex items-center justify-center gap-2 hover:bg-accentDark transition-colors"
+                    className="w-full h-14 rounded-[1.5rem] bg-accent text-black font-bold flex items-center justify-center gap-2 hover:bg-accentDark transition-colors shadow-lg"
                   >
-                    <CheckCircle2 className="w-5 h-5" />
+                    <CheckCircle2 className="w-5 h-5 text-black" />
                     Marcar todas como lidas
                   </button>
                 )}

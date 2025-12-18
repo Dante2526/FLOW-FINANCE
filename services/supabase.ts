@@ -178,7 +178,13 @@ export const loadUserData = async (email: string) => {
     const monthsReq = supabase.from('months').select('*').eq('user_id', userId);
     const investmentsReq = supabase.from('investments').select('*').eq('user_id', userId);
     const longTermReq = supabase.from('long_term').select('*').eq('user_id', userId);
-    const notificationsReq = supabase.from('notifications').select('*').eq('user_id', userId);
+    
+    // NEW: Order notifications by created_at descending (Newest first)
+    const notificationsReq = supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
 
     const [
         userRes,
