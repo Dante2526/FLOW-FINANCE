@@ -339,7 +339,6 @@ const App: React.FC = () => {
   
   // LOCKS RIGOROSOS PARA SINCRONIZAÇÃO
   const lastActionTimeRef = useRef<number>(0);
-  const isInternalUpdateRef = useRef<boolean>(false);
   
   // Use a string ref to lock creation of specific months to prevent duplicates
   const pendingMonthCreationRef = useRef<string | null>(null);
@@ -678,8 +677,8 @@ const App: React.FC = () => {
     let debounceTimer: ReturnType<typeof setTimeout>;
 
     const handleRealtimeUpdate = () => {
-       // BLOQUEIO RIGOROSO: Ignora atualizações externas durante e após ações do usuário por 12 segundos
-       if (Date.now() - lastActionTimeRef.current < 12000) return;
+       // BLOQUEIO RIGOROSO: Aumentado para 15 segundos para dar tempo ao Supabase de confirmar deleções
+       if (Date.now() - lastActionTimeRef.current < 15000) return;
 
        clearTimeout(debounceTimer);
        debounceTimer = setTimeout(() => {
@@ -703,8 +702,8 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleFocus = () => {
       if (document.visibilityState === 'visible' && currentUserEmail) {
-         // Só recarrega se não estivermos no meio de uma ação (12s)
-         if (Date.now() - lastActionTimeRef.current > 12000) {
+         // Só recarrega se não estivermos no meio de uma ação (15s)
+         if (Date.now() - lastActionTimeRef.current > 15000) {
             loadUserData(currentUserEmail).then((data) => {
                 if (data) {
                   const { data: cleanData } = sanitizeDataIds(data);
@@ -768,14 +767,13 @@ const App: React.FC = () => {
   const DEBOUNCE_DELAY = 1500;
 
   useEffect(() => {
-    // PROTEÇÃO: Não dispara auto-save se uma ação interna estiver ocorrendo (12s)
-    if (Date.now() - lastActionTimeRef.current < 12000) return;
+    // PROTEÇÃO: Não dispara auto-save se uma ação interna recente ocorreu (15s)
+    if (Date.now() - lastActionTimeRef.current < 15000) return;
 
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(months);
       if (currentStr !== prevMonthsRef.current) {
         const timer = setTimeout(async () => {
-          // Remove computed 'count' before saving
           const monthsToSave = months.map(({ count, ...rest }) => rest);
           await saveCollection(currentUserEmail, "months", monthsToSave);
           prevMonthsRef.current = currentStr;
@@ -786,7 +784,7 @@ const App: React.FC = () => {
   }, [months, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
-    if (Date.now() - lastActionTimeRef.current < 12000) return;
+    if (Date.now() - lastActionTimeRef.current < 15000) return;
 
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(dashboardOrder);
@@ -832,7 +830,7 @@ const App: React.FC = () => {
 
     pendingMonthCreationRef.current = creationKey;
     
-    // BLOQUEIO TOTAL DE ATUALIZAÇÕES AUTOMÁTICAS (12 segundos)
+    // BLOQUEIO TOTAL (15 segundos)
     lastActionTimeRef.current = Date.now();
 
     const newMonthId = generateUUID();
@@ -935,7 +933,7 @@ const App: React.FC = () => {
 
     const updatedMonths = sortMonths([...currentData.months, newMonth]);
 
-    // UPDATE STATES (Sincronizado com Ref para evitar Auto-Save redundantemente)
+    // UPDATE STATES
     prevMonthsRef.current = JSON.stringify(updatedMonths);
     setMonths(updatedMonths);
     setTransactions(finalTx);
@@ -950,7 +948,7 @@ const App: React.FC = () => {
     
     setActiveMonthId(newMonthId);
 
-    // PERSIST TO CLOUD (Aguardamos as 4 operações para garantir integridade)
+    // PERSIST TO CLOUD
     if (currentUserEmail) {
         const monthsToSave = updatedMonths.map(({ count, ...rest }: any) => rest);
         
@@ -961,7 +959,6 @@ const App: React.FC = () => {
            saveUserField(currentUserEmail, "dashboardOrder", Array.from(new Set([...currentData.dashboardOrder.filter(id => id !== BALANCE_CARD_ID), ...newOrderSegment])))
         ]);
         
-        // Renova o bloqueio após o salvamento para dar tempo ao Supabase de indexar
         lastActionTimeRef.current = Date.now();
     }
 
@@ -980,10 +977,12 @@ const App: React.FC = () => {
      
      const currentData = currentStateRef.current;
 
-     // BLOQUEIO RIGOROSO
+     // BLOQUEIO RIGOROSO (15 segundos para evitar rollback de sincronização)
      lastActionTimeRef.current = Date.now();
 
      const updatedMonths = months.filter(m => m.id !== id);
+     
+     // Conteúdo relacionado que será removido localmente para sincronia
      const updatedTx = currentData.transactions.filter(t => !(t.month === monthToDelete.month && t.year === monthToDelete.year));
      const updatedAcc = currentData.accounts.filter(a => !(a.month === monthToDelete.month && a.year === monthToDelete.year));
      
@@ -993,10 +992,11 @@ const App: React.FC = () => {
 
      const updatedDashboardOrder = currentData.dashboardOrder.filter(oid => !deletedAccountIds.has(oid));
 
-     // Sincroniza refs e estados
+     // Sincroniza refs IMEDIATAMENTE para bloquear o useEffect auto-save antes da mudança de estado
      prevMonthsRef.current = JSON.stringify(updatedMonths);
      prevDashboardOrderRef.current = JSON.stringify(updatedDashboardOrder);
      
+     // Atualiza Estados locais (UI responde instantaneamente)
      setMonths(updatedMonths);
      setTransactions(updatedTx);
      setAccounts(updatedAcc);
@@ -1008,15 +1008,26 @@ const App: React.FC = () => {
      }
 
      if (currentUserEmail) {
+        // Remove 'count' antes de enviar ao banco
         const monthsToSave = updatedMonths.map(({ count, ...rest }: any) => rest);
-        await Promise.all([
-           saveCollection(currentUserEmail, "months", monthsToSave),
-           saveCollection(currentUserEmail, "transactions", updatedTx),
-           saveCollection(currentUserEmail, "accounts", updatedAcc),
-           saveUserField(currentUserEmail, "dashboardOrder", updatedDashboardOrder)
-        ]);
         
-        lastActionTimeRef.current = Date.now();
+        // PERSISTÊNCIA ATÔMICA COM DELEÇÃO EXPLÍCITA
+        try {
+            await Promise.all([
+               // 1. Deletar explicitamente o mês por ID para garantir
+               deleteItem(currentUserEmail, "months", id),
+               // 2. Sincronizar as coleções reduzidas para limpar órfãos (transações/contas)
+               saveCollection(currentUserEmail, "transactions", updatedTx),
+               saveCollection(currentUserEmail, "accounts", updatedAcc),
+               // 3. Salvar nova ordem do dashboard
+               saveUserField(currentUserEmail, "dashboardOrder", updatedDashboardOrder)
+            ]);
+            
+            // Reforça o lock após a confirmação do banco
+            lastActionTimeRef.current = Date.now();
+        } catch (e) {
+            console.error("Erro na persistência da deleção:", e);
+        }
      }
   }, [months, activeMonthId, currentUserEmail]);
 
