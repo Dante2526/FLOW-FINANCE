@@ -805,29 +805,20 @@ const App: React.FC = () => {
       return;
     }
 
-    const existingAccounts = currentData.accounts.filter(a => a.month === nextMonthName && a.year === nextYearStr);
-    const existingTransactions = currentData.transactions.filter(t => t.month === nextMonthName && t.year === nextYearStr);
-    const hasOrphans = existingAccounts.length > 0 || existingTransactions.length > 0;
+    const hasOrphans = currentData.accounts.some(a => a.month === nextMonthName && a.year === nextYearStr) || 
+                       currentData.transactions.some(t => t.month === nextMonthName && t.year === nextYearStr);
 
     pendingMonthCreationRef.current = creationKey;
     const newMonthId = generateUUID();
     
-    let newTransactions: Transaction[] = [];
-    let newAccounts: Account[] = [];
-    let newOrderSegment: string[] = [];
-    let initialTotal = 0; 
-
+    // Generate New Transactions
     const sourceTransactions = currentData.transactions.filter(tx => {
         const txMonth = tx.month || getMonthFromDateStr(tx.date);
         const txYear = tx.year || getYearFromDateStr(tx.date, activeMonthRef.year);
         return txMonth === activeMonthRef.month && txYear === activeMonthRef.year;
     });
 
-    const sourceAccounts = currentData.accounts.filter(acc => {
-        return acc.month === activeMonthRef.month && acc.year === activeMonthRef.year;
-    });
-
-    newTransactions = sourceTransactions.map(tx => {
+    const newTransactions: Transaction[] = sourceTransactions.map(tx => {
         let newDate = tx.date;
         if (tx.date.match(/^\d{4}-\d{2}-\d{2}/)) {
             const d = new Date(tx.date.split(' ')[0] + 'T00:00:00');
@@ -845,14 +836,21 @@ const App: React.FC = () => {
             year: nextYearStr,
             paid: false,
             date: newDate,
-            createdAt: new Date().toISOString() // Ensure duplicated tx has new date
+            createdAt: new Date().toISOString()
         };
     });
 
     const rawTotal = newTransactions.reduce((acc, curr) => acc + curr.amount, 0);
-    initialTotal = roundMoney(rawTotal);
+    const initialTotal = roundMoney(rawTotal);
 
+    // Generate New Accounts
+    const sourceAccounts = currentData.accounts.filter(acc => {
+        return acc.month === activeMonthRef.month && acc.year === activeMonthRef.year;
+    });
+
+    const newAccounts: Account[] = [];
     const oldIdToNewIdMap = new Map<string, string>();
+    
     sourceAccounts.forEach(acc => {
         const newId = generateUUID();
         oldIdToNewIdMap.set(acc.id, newId);
@@ -864,6 +862,8 @@ const App: React.FC = () => {
         });
     });
 
+    // Dashboard Order Logic
+    const newOrderSegment: string[] = [];
     const currentOrder = currentData.dashboardOrder;
     currentOrder.forEach(oldId => {
         if (oldId === BALANCE_CARD_ID) {
@@ -886,32 +886,25 @@ const App: React.FC = () => {
       total: initialTotal 
     };
 
-    setMonths(prev => sortMonths([...prev, newMonth]));
-    
-    let updatedTx = [];
-    let updatedAcc = [];
+    // CALCULATE FINAL LISTS SYNCHRONOUSLY
+    let finalTx: Transaction[] = [];
+    let finalAcc: Account[] = [];
 
     if (hasOrphans) {
-        setTransactions(prev => {
-            const cleaned = prev.filter(t => !(t.month === nextMonthName && t.year === nextYearStr));
-            updatedTx = [...newTransactions, ...cleaned];
-            return updatedTx;
-        });
-        setAccounts(prev => {
-            const cleaned = prev.filter(a => !(a.month === nextMonthName && a.year === nextYearStr));
-            updatedAcc = [...prev, ...newAccounts];
-            return updatedAcc;
-        });
+        const cleanTx = currentData.transactions.filter(t => !(t.month === nextMonthName && t.year === nextYearStr));
+        finalTx = [...newTransactions, ...cleanTx];
+
+        const cleanAcc = currentData.accounts.filter(a => !(a.month === nextMonthName && a.year === nextYearStr));
+        finalAcc = [...cleanAcc, ...newAccounts]; 
     } else {
-        setTransactions(prev => {
-            updatedTx = [...newTransactions, ...prev];
-            return updatedTx;
-        });
-        setAccounts(prev => {
-            updatedAcc = [...prev, ...newAccounts];
-            return updatedAcc;
-        });
+        finalTx = [...newTransactions, ...currentData.transactions];
+        finalAcc = [...currentData.accounts, ...newAccounts];
     }
+
+    // Update States
+    setMonths(prev => sortMonths([...prev, newMonth]));
+    setTransactions(finalTx);
+    setAccounts(finalAcc);
     
     setDashboardOrder(prev => {
         const cleanPrev = prev.filter(id => id !== BALANCE_CARD_ID);
@@ -921,8 +914,8 @@ const App: React.FC = () => {
     setActiveMonthId(newMonthId);
 
     if (currentUserEmail) {
-        saveCollection(currentUserEmail, "transactions", updatedTx);
-        saveCollection(currentUserEmail, "accounts", updatedAcc);
+        saveCollection(currentUserEmail, "transactions", finalTx);
+        saveCollection(currentUserEmail, "accounts", finalAcc);
     }
 
     setTimeout(() => { 
@@ -937,31 +930,31 @@ const App: React.FC = () => {
      if (months.length <= 1) return;
      const monthToDelete = months.find(m => m.id === id);
      if (!monthToDelete) return;
-
-     setMonths(prev => prev.filter(m => m.id !== id));
      
-     let updatedTx: Transaction[] = [];
-     let updatedAcc: Account[] = [];
+     const currentData = currentStateRef.current; // Access latest data synchronously
 
-     setTransactions(prev => {
-         updatedTx = prev.filter(t => !(t.month === monthToDelete.month && t.year === monthToDelete.year));
-         return updatedTx;
-     });
-     setAccounts(prev => {
-         updatedAcc = prev.filter(a => !(a.month === monthToDelete.month && a.year === monthToDelete.year));
-         return updatedAcc;
-     });
+     // 1. Calculate new state locally
+     const updatedMonths = months.filter(m => m.id !== id);
+     const updatedTx = currentData.transactions.filter(t => !(t.month === monthToDelete.month && t.year === monthToDelete.year));
+     const updatedAcc = currentData.accounts.filter(a => !(a.month === monthToDelete.month && a.year === monthToDelete.year));
+
+     // 2. Update React State
+     setMonths(updatedMonths);
+     setTransactions(updatedTx);
+     setAccounts(updatedAcc);
      
      if (activeMonthId === id) {
-        const remaining = months.filter(m => m.id !== id);
-        const sorted = sortMonths(remaining);
+        const sorted = sortMonths(updatedMonths);
         if (sorted.length > 0) setActiveMonthId(sorted[sorted.length - 1].id);
      }
 
-     // MANUAL SAVE
+     // 3. Save to Cloud
      if (currentUserEmail) {
+        // Use the calculated variables, NOT variables assigned inside setTransactions callback
         saveCollection(currentUserEmail, "transactions", updatedTx);
         saveCollection(currentUserEmail, "accounts", updatedAcc);
+        // Also save months to ensure consistency
+        saveCollection(currentUserEmail, "months", updatedMonths);
      }
   }, [months, activeMonthId, currentUserEmail]);
 
