@@ -16,12 +16,11 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   }
 });
 
-// --- HELPERS DE CONVERSÃO (Snake Case <-> Camel Case) ---
+// --- HELPERS DE CONVERSÃO ---
 
 const toCamelCase = (obj: any): any => {
-  if (Array.isArray(obj)) {
-    return obj.map(v => toCamelCase(v));
-  } else if (obj !== null && obj.constructor === Object) {
+  if (Array.isArray(obj)) return obj.map(v => toCamelCase(v));
+  if (obj !== null && obj.constructor === Object) {
     return Object.keys(obj).reduce((result, key) => {
       const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
       result[camelKey] = toCamelCase(obj[key]);
@@ -32,9 +31,8 @@ const toCamelCase = (obj: any): any => {
 };
 
 const toSnakeCase = (obj: any): any => {
-  if (Array.isArray(obj)) {
-    return obj.map(v => toSnakeCase(v));
-  } else if (obj !== null && obj.constructor === Object) {
+  if (Array.isArray(obj)) return obj.map(v => toSnakeCase(v));
+  if (obj !== null && obj.constructor === Object) {
     return Object.keys(obj).reduce((result, key) => {
       const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
       result[snakeKey] = toSnakeCase(obj[key]);
@@ -44,357 +42,196 @@ const toSnakeCase = (obj: any): any => {
   return obj;
 };
 
-// --- AUTH HELPERS (OTP) ---
+// --- AUTH HELPERS ---
 
 export const sendAuthOtp = async (email: string) => {
-  const normalizedEmail = email.toLowerCase().trim();
-  const { error } = await supabase.auth.signInWithOtp({
-    email: normalizedEmail,
-  });
-
-  if (error) {
-    console.error("Erro ao enviar OTP:", error.message);
-    if (error.message.includes("security purposes") || error.status === 429) {
-       throw new Error("Muitas tentativas. Aguarde alguns segundos.");
-    }
-    throw new Error("Falha ao enviar código. Verifique o e-mail.");
-  }
+  const { error } = await supabase.auth.signInWithOtp({ email: email.toLowerCase().trim() });
+  if (error) throw new Error(error.message);
   return true;
 };
 
 export const verifyAuthOtp = async (email: string, token: string) => {
-  const normalizedEmail = email.toLowerCase().trim();
-  const { data, error } = await supabase.auth.verifyOtp({
-    email: normalizedEmail,
-    token,
-    type: 'email',
-  });
-
-  if (error) {
-    console.error("Erro ao verificar OTP:", error);
-    throw new Error("Código inválido ou expirado.");
-  }
+  const { data, error } = await supabase.auth.verifyOtp({ email: email.toLowerCase().trim(), token, type: 'email' });
+  if (error) throw new Error("Código inválido ou expirado.");
   return data;
 };
 
 // --- USER MANAGEMENT ---
 
 const getAuthUserId = async (): Promise<string> => {
-    const { data } = await supabase.auth.getUser();
-    if (data.user) return data.user.id;
-    
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (sessionData.session?.user) return sessionData.session.user.id;
-    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) return user.id;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) return session.user.id;
     throw new Error("Usuário não autenticado.");
 };
 
 export const loginUser = async (email: string) => {
-  const normalizedEmail = email.toLowerCase().trim();
-  
-  const { data, error } = await supabase
-      .from('users')
-      .select('email')
-      .eq('email', normalizedEmail)
-      .maybeSingle();
-  
+  const { data } = await supabase.from('users').select('email').eq('email', email.toLowerCase().trim()).maybeSingle();
   if (!data) throw new Error("Usuário não encontrado.");
-  
   return await getAuthUserId();
 };
 
 export const registerUser = async (email: string, name: string, initialData: any) => {
-  const normalizedEmail = email.toLowerCase().trim();
-
-  const { data: existingUser } = await supabase
-    .from('users')
-    .select('email')
-    .eq('email', normalizedEmail)
-    .maybeSingle();
-
-  if (existingUser) {
-    throw new Error("Este e-mail já possui cadastro.");
-  }
-
-  const { error } = await supabase
-    .from('users')
-    .insert({
-      email: normalizedEmail,
-      name: name.toUpperCase(),
-      profile: {
-        name: name.toUpperCase(),
-        subtitle: '',
-        avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix',
-        isPro: false 
-      },
-      cdi_rate: initialData.cdiRate || 11.25,
-    });
-
-  if (error) {
-    console.error("Erro criação usuário:", error);
-  }
-
-  return { email: normalizedEmail, name };
+  const emailNorm = email.toLowerCase().trim();
+  const { data: exists } = await supabase.from('users').select('email').eq('email', emailNorm).maybeSingle();
+  if (exists) throw new Error("Este e-mail já possui cadastro.");
+  
+  const { error } = await supabase.from('users').insert({
+    email: emailNorm,
+    name: name.toUpperCase(),
+    profile: { name: name.toUpperCase(), avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix', isPro: false },
+    cdi_rate: initialData.cdiRate || 11.25,
+  });
+  if (error) throw error;
+  return { email: emailNorm, name };
 };
 
 export const deleteUser = async (email: string) => {
   const userId = await getAuthUserId();
-  const normalizedEmail = email.toLowerCase().trim();
-  
-  await supabase.from('transactions').delete().eq('user_id', userId);
-  await supabase.from('accounts').delete().eq('user_id', userId);
-  await supabase.from('months').delete().eq('user_id', userId);
-  await supabase.from('investments').delete().eq('user_id', userId);
-  await supabase.from('long_term').delete().eq('user_id', userId);
-  await supabase.from('notifications').delete().eq('user_id', userId);
-  
-  const { error } = await supabase.from('users').delete().eq('email', normalizedEmail);
-
-  if (error) {
-    console.error("Erro ao deletar usuário:", error);
-    throw new Error("Erro ao excluir conta: " + error.message);
-  }
+  await Promise.all([
+    supabase.from('transactions').delete().eq('user_id', userId),
+    supabase.from('accounts').delete().eq('user_id', userId),
+    supabase.from('months').delete().eq('user_id', userId),
+    supabase.from('investments').delete().eq('user_id', userId),
+    supabase.from('long_term').delete().eq('user_id', userId),
+    supabase.from('notifications').delete().eq('user_id', userId),
+  ]);
+  const { error } = await supabase.from('users').delete().eq('email', email.toLowerCase().trim());
+  if (error) throw error;
 };
 
-// --- DATA SYNC (CRUD RELACIONAL OTIMIZADO) ---
+// --- DATA SYNC ---
 
 export const loadUserData = async (email: string) => {
   try {
-    const normalizedEmail = email.toLowerCase().trim();
     const userId = await getAuthUserId();
-
-    const userReq = supabase.from('users').select('*').eq('email', normalizedEmail).single();
-
-    // PERFORMANCE FIX: Ordenar transações por created_at DESC e ID como critério de desempate
-    const transactionsReq = supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .order('id', { ascending: true });
-
-    const accountsReq = supabase.from('accounts').select('*').eq('user_id', userId);
-    const monthsReq = supabase.from('months').select('*').eq('user_id', userId);
-    const investmentsReq = supabase.from('investments').select('*').eq('user_id', userId);
-    const longTermReq = supabase.from('long_term').select('*').eq('user_id', userId);
-    
-    const notificationsReq = supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-    const [
-        userRes,
-        transactionsRes,
-        accountsRes,
-        monthsRes,
-        investmentsRes,
-        longTermRes,
-        notificationsRes
-    ] = await Promise.all([
-        userReq,
-        transactionsReq,
-        accountsReq,
-        monthsReq,
-        investmentsReq,
-        longTermReq,
-        notificationsReq
+    const [userRes, txRes, accRes, monRes, invRes, ltRes, notRes] = await Promise.all([
+      supabase.from('users').select('*').eq('email', email.toLowerCase().trim()).single(),
+      supabase.from('transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+      supabase.from('accounts').select('*').eq('user_id', userId),
+      supabase.from('months').select('*').eq('user_id', userId),
+      supabase.from('investments').select('*').eq('user_id', userId),
+      supabase.from('long_term').select('*').eq('user_id', userId),
+      supabase.from('notifications').select('*').eq('user_id', userId).order('created_at', { ascending: false })
     ]);
 
     const user = userRes.data || {};
-    
-    const result = {
+    return {
         profile: user.profile || {},
         cdiRate: user.cdi_rate ?? 11.25,
         notepadContent: user.notepad_content || '',
         notepadDrawing: user.profile?.notepadDrawing || null,
         theme: user.theme || null,
         dashboardOrder: user.profile?.dashboardOrder || [], 
-        
-        transactions: toCamelCase(transactionsRes.data || []),
-        accounts: toCamelCase(accountsRes.data || []),
-        months: toCamelCase(monthsRes.data || []),
-        investments: toCamelCase(investmentsRes.data || []),
-        longTerm: toCamelCase(longTermRes.data || []),
-        notifications: toCamelCase(notificationsRes.data || [])
+        transactions: toCamelCase(txRes.data || []),
+        accounts: toCamelCase(accRes.data || []),
+        months: toCamelCase(monRes.data || []),
+        investments: toCamelCase(invRes.data || []),
+        longTerm: toCamelCase(ltRes.data || []),
+        notifications: toCamelCase(notRes.data || [])
     };
-
-    return result;
-
   } catch (error) {
-    console.error("Erro carregando dados:", error);
+    console.error("Load Error:", error);
     return null;
   }
 };
 
-// --- FUNÇÕES GRANULARES (PERFORMANCE) ---
+// --- CRUD GRANULAR ---
 
-export const upsertItem = async (email: string, collectionName: string, item: any) => {
+export const upsertItem = async (email: string, collection: string, item: any) => {
   try {
     const userId = await getAuthUserId();
-    let tableName = collectionName;
-    if (collectionName === 'longTerm') tableName = 'long_term';
-    
-    const snakeItem = toSnakeCase(item);
-    if (!snakeItem.created_at) snakeItem.created_at = new Date().toISOString();
-    
-    const { error } = await supabase
-        .from(tableName)
-        .upsert({ ...snakeItem, user_id: userId }, { onConflict: 'id' });
+    const table = collection === 'longTerm' ? 'long_term' : collection;
+    const snake = toSnakeCase(item);
+    if (!snake.created_at) snake.created_at = new Date().toISOString();
+    const { error } = await supabase.from(table).upsert({ ...snake, user_id: userId }, { onConflict: 'id' });
+    return !error;
+  } catch (e) { return false; }
+};
+
+export const deleteItem = async (email: string, collection: string, id: string) => {
+  try {
+    const userId = await getAuthUserId();
+    const table = collection === 'longTerm' ? 'long_term' : collection;
+    const { error } = await supabase.from(table).delete().eq('user_id', userId).eq('id', id);
+    return !error;
+  } catch (e) { return false; }
+};
+
+/**
+ * EXCLUSÃO ATÔMICA DE MÊS
+ * Apaga o mês e limpa todos os registros vinculados por texto (mês/ano)
+ */
+export const hardDeleteMonth = async (monthId: string, monthName: string, year: string) => {
+    try {
+        const userId = await getAuthUserId();
         
-    if (error) console.error(`Erro upserting ${collectionName}:`, error);
-    return !error;
-  } catch (e) {
-    console.error(e);
-    return false;
-  }
-};
+        // 1. Apaga Transações do mês
+        const deleteTx = supabase.from('transactions').delete().eq('user_id', userId).eq('month', monthName).eq('year', year);
+        // 2. Apaga Contas do mês
+        const deleteAcc = supabase.from('accounts').delete().eq('user_id', userId).eq('month', monthName).eq('year', year);
+        // 3. Apaga o registro do Mês
+        const deleteMonth = supabase.from('months').delete().eq('user_id', userId).eq('id', monthId);
 
-export const deleteItem = async (email: string, collectionName: string, id: string) => {
-  try {
-    const userId = await getAuthUserId();
-    let tableName = collectionName;
-    if (collectionName === 'longTerm') tableName = 'long_term';
-
-    const { error } = await supabase
-        .from(tableName)
-        .delete()
-        .eq('user_id', userId)
-        .eq('id', id);
-
-    if (error) console.error(`Erro deletando ${collectionName}:`, error);
-    return !error;
-  } catch (e) {
-    console.error(e);
-    return false;
-  }
-};
-
-export const saveCollection = async (email: string, collectionName: string, dataArray: any[]): Promise<boolean> => {
-  try {
-    const userId = await getAuthUserId();
-    let tableName = collectionName;
-    
-    if (collectionName === 'longTerm') tableName = 'long_term';
-    if (collectionName === 'dashboardOrder') {
-        return saveUserField(email, 'dashboardOrder', dataArray);
-    }
-
-    const rows = dataArray.map(item => {
-        const snakeItem = toSnakeCase(item);
-        if (!snakeItem.created_at) {
-            snakeItem.created_at = new Date().toISOString();
-        }
-        return { ...snakeItem, user_id: userId };
-    });
-
-    // 1. Upsert all current data
-    const { error: upsertError } = await supabase
-        .from(tableName)
-        .upsert(rows, { onConflict: 'id' });
-
-    if (upsertError) {
-        console.error(`Erro salvando ${tableName}:`, upsertError.message);
+        const results = await Promise.all([deleteTx, deleteAcc, deleteMonth]);
+        const hasError = results.some(r => r.error);
+        
+        if (hasError) console.error("Erro na exclusão atômica:", results.map(r => r.error));
+        return !hasError;
+    } catch (e) {
+        console.error("Exceção na exclusão:", e);
         return false;
     }
+};
 
-    // 2. Clean Orphans (Delete items that exist in DB for this user but NOT in the new list)
+export const saveCollection = async (email: string, collection: string, data: any[]): Promise<boolean> => {
+  try {
+    const userId = await getAuthUserId();
+    const table = collection === 'longTerm' ? 'long_term' : collection;
+    if (collection === 'dashboardOrder') return saveUserField(email, 'dashboardOrder', data);
+
+    const rows = data.map(item => {
+        const snake = toSnakeCase(item);
+        if (!snake.created_at) snake.created_at = new Date().toISOString();
+        return { ...snake, user_id: userId };
+    });
+
+    const { error: upsertError } = await supabase.from(table).upsert(rows, { onConflict: 'id' });
+    if (upsertError) return false;
+
     const currentIds = rows.map(r => r.id);
     if (currentIds.length > 0) {
-        await supabase
-            .from(tableName)
-            .delete()
-            .eq('user_id', userId)
-            .not('id', 'in', currentIds); // Native Supabase JS array filter
+        await supabase.from(table).delete().eq('user_id', userId).not('id', 'in', `(${currentIds.join(',')})`);
     } else {
-        await supabase.from(tableName).delete().eq('user_id', userId);
+        await supabase.from(table).delete().eq('user_id', userId);
     }
-
     return true;
-  } catch (error) {
-    console.error(`Exceção salvando ${collectionName}:`, error);
-    return false;
-  }
+  } catch (error) { return false; }
 };
 
 export const saveUserField = async (email: string, field: string, data: any): Promise<boolean> => {
   try {
-    const normalizedEmail = email.toLowerCase().trim();
-    let updatePayload: any = {};
-
+    let payload: any = {};
     const profileFields = ['notepadDrawing', 'dashboardOrder', 'pushSubscription', 'profile'];
-
     if (profileFields.includes(field)) {
-        const { data: userData } = await supabase
-            .from('users')
-            .select('profile')
-            .eq('email', normalizedEmail)
-            .maybeSingle();
-
-        const currentProfile = userData?.profile || {};
-        let newProfile;
-        if (field === 'profile') {
-             newProfile = { ...currentProfile, ...data };
-        } else {
-             newProfile = { ...currentProfile, [field]: data };
-        }
-        updatePayload = { profile: newProfile };
+        const { data: user } = await supabase.from('users').select('profile').eq('email', email.toLowerCase().trim()).maybeSingle();
+        payload = { profile: { ...(user?.profile || {}), [field]: data } };
     } else {
-        if (field === 'notepadContent') updatePayload = { notepad_content: data };
-        else if (field === 'cdiRate') updatePayload = { cdi_rate: data };
-        else if (field === 'theme') updatePayload = { theme: data };
-        else updatePayload = toSnakeCase({ [field]: data });
+        const map: any = { notepadContent: 'notepad_content', cdiRate: 'cdi_rate', theme: 'theme' };
+        payload = { [map[field] || toSnakeCase(field)]: data };
     }
-
-    const { error } = await supabase
-        .from('users')
-        .update(updatePayload)
-        .eq('email', normalizedEmail);
-
+    const { error } = await supabase.from('users').update(payload).eq('email', email.toLowerCase().trim());
     return !error;
-  } catch (error: any) {
-    console.error(`Exceção salvando campo ${field}:`, error);
-    return false;
-  }
+  } catch (error) { return false; }
 };
 
 export const subscribeToUserChanges = (email: string, onUpdate: () => void) => {
-  let channels: any[] = [];
-
-  const setup = async () => {
-    try {
-      const userId = await getAuthUserId();
-      const normalizedEmail = email.toLowerCase().trim();
-      const tables = ['transactions', 'accounts', 'months', 'investments', 'long_term', 'notifications'];
-      
-      const channel = supabase.channel('user-db-changes');
-
-      channel.on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'users', filter: `email=eq.${normalizedEmail}` },
-          () => onUpdate()
-      );
-
-      tables.forEach(table => {
-        channel.on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: table, filter: `user_id=eq.${userId}` },
-          () => onUpdate()
-        );
-      });
-
-      channel.subscribe();
-      channels.push(channel);
-
-    } catch (err) {
-      console.warn("Could not setup realtime subscriptions", err);
-    }
-  };
-
-  setup();
-
-  return () => {
-    channels.forEach(ch => supabase.removeChannel(ch));
-  };
+  const tables = ['users', 'transactions', 'accounts', 'months', 'investments', 'long_term', 'notifications'];
+  const channel = supabase.channel('db-changes');
+  tables.forEach(table => {
+    channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => onUpdate());
+  });
+  channel.subscribe();
+  return () => { supabase.removeChannel(channel); };
 };
