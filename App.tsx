@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef, Suspense, useCallback } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -104,7 +103,8 @@ const SYSTEM_INITIAL_MONTH: MonthSummary = {
   id: '00000000-0000-0000-0000-000000000001', 
   month: currentMonthName,
   year: currentYear.toString(),
-  total: 0
+  total: 0,
+  count: 0
 };
 
 // --- DATA MIGRATION HELPER ---
@@ -390,24 +390,24 @@ const App: React.FC = () => {
     }
   }, [currentView]);
 
-  // --- AUTO-CALCULATE MONTH TOTALS ---
+  // --- AUTO-CALCULATE MONTH TOTALS & COUNTS ---
   useEffect(() => {
     setMonths(prevMonths => {
       let hasChanged = false;
       const updatedMonths = prevMonths.map(month => {
-        const monthTotal = transactions
-          .filter(t => {
+        const monthTransactions = transactions.filter(t => {
              const tMonth = t.month || getMonthFromDateStr(t.date);
              const tYear = t.year || getYearFromDateStr(t.date, month.year);
              return tMonth === month.month && tYear === month.year;
-          })
-          .reduce((sum, t) => sum + t.amount, 0);
+        });
 
+        const monthTotal = monthTransactions.reduce((sum, t) => sum + t.amount, 0);
         const roundedTotal = roundMoney(monthTotal);
+        const count = monthTransactions.length;
 
-        if (month.total !== roundedTotal) {
+        if (month.total !== roundedTotal || (month.count !== count)) {
           hasChanged = true;
-          return { ...month, total: roundedTotal };
+          return { ...month, total: roundedTotal, count };
         }
         return month;
       });
@@ -652,7 +652,11 @@ const App: React.FC = () => {
              }
              saveCollection(currentUserEmail, "transactions", cleanData.transactions);
              saveCollection(currentUserEmail, "accounts", cleanData.accounts);
-             saveCollection(currentUserEmail, "months", cleanData.months);
+             
+             // Strip count before saving
+             const cleanMonths = cleanData.months.map(({ count, ...rest }: any) => rest);
+             saveCollection(currentUserEmail, "months", cleanMonths);
+             
              saveUserField(currentUserEmail, "dashboardOrder", cleanData.dashboardOrder);
           }
         }
@@ -761,7 +765,9 @@ const App: React.FC = () => {
       const currentStr = JSON.stringify(months);
       if (currentStr !== prevMonthsRef.current) {
         const timer = setTimeout(async () => {
-          await saveCollection(currentUserEmail, "months", months);
+          // Remove computed 'count' before saving
+          const monthsToSave = months.map(({ count, ...rest }) => rest);
+          await saveCollection(currentUserEmail, "months", monthsToSave);
           prevMonthsRef.current = currentStr;
         }, DEBOUNCE_DELAY);
         return () => clearTimeout(timer);
@@ -896,7 +902,8 @@ const App: React.FC = () => {
       id: newMonthId,
       month: nextMonthName,
       year: nextYearStr,
-      total: initialTotal 
+      total: initialTotal,
+      count: newTransactions.length
     };
 
     // CALCULATE FINAL LISTS SYNCHRONOUSLY
@@ -932,7 +939,10 @@ const App: React.FC = () => {
         // FORCE SAVE MONTHS FIRST TO PREVENT ORPHANS
         // Prevent debounce effect from firing by updating the ref immediately
         prevMonthsRef.current = JSON.stringify(updatedMonths);
-        await saveCollection(currentUserEmail, "months", updatedMonths);
+        
+        // Remove 'count' before saving
+        const monthsToSave = updatedMonths.map(({ count, ...rest }) => rest);
+        await saveCollection(currentUserEmail, "months", monthsToSave);
 
         // Then save contents
         saveCollection(currentUserEmail, "transactions", finalTx);
@@ -951,7 +961,7 @@ const App: React.FC = () => {
 
   }, [activeMonthId, currentUserEmail]);
 
-  const handleDeleteMonth = useCallback((id: string) => {
+  const handleDeleteMonth = useCallback(async (id: string) => {
      if (months.length <= 1) return;
      const monthToDelete = months.find(m => m.id === id);
      if (!monthToDelete) return;
@@ -992,7 +1002,10 @@ const App: React.FC = () => {
      if (currentUserEmail) {
         // Prevent debounce
         prevMonthsRef.current = JSON.stringify(updatedMonths);
-        saveCollection(currentUserEmail, "months", updatedMonths);
+        
+        // Remove 'count' before saving
+        const monthsToSave = updatedMonths.map(({ count, ...rest }) => rest);
+        await saveCollection(currentUserEmail, "months", monthsToSave);
 
         saveCollection(currentUserEmail, "transactions", updatedTx);
         saveCollection(currentUserEmail, "accounts", updatedAcc);

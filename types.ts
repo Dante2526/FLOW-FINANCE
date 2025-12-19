@@ -74,6 +74,7 @@ export interface MonthSummary {
   month: string;
   year: string;
   total: number;
+  count?: number;
 }
 
 export interface UserProfile {

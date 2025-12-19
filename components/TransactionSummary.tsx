@@ -81,20 +81,27 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
                 <div className="absolute -right-4 -top-4 w-16 h-16 bg-white/20 rounded-full blur-xl pointer-events-none" />
                 
                 {/* Year Badge */}
-                <span className={`absolute top-4 left-4 font-bold text-[10px] tracking-wider border px-1.5 py-0.5 rounded-md transition-colors pointer-events-none ${
-                  isActive ? 'text-white/90 border-white/50' : 'text-white/60 border-white/20'
-                }`}>
-                  {item.year}
-                </span>
+                <div className="absolute top-4 left-4 flex flex-col gap-1 pointer-events-none">
+                   <span className={`font-bold text-[10px] tracking-wider border px-1.5 py-0.5 rounded-md transition-colors w-fit ${
+                     isActive ? 'text-white/90 border-white/50' : 'text-white/60 border-white/20'
+                   }`}>
+                     {item.year}
+                   </span>
+                </div>
 
                 {/* Bottom Content (Month & Total) */}
                 <div className="absolute bottom-4 left-4 flex flex-col pointer-events-none">
                   <h3 className="text-white font-black text-sm tracking-wide uppercase leading-none mb-1">
                     {item.month}
                   </h3>
-                  <span className="text-white font-bold text-sm opacity-90 leading-none">
-                    R$ {item.total.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-white font-bold text-sm opacity-90 leading-none">
+                        R$ {item.total.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </span>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${isActive ? 'bg-white/20 text-white' : 'bg-black/20 text-white/60'}`}>
+                        {item.count || 0}
+                    </span>
+                  </div>
                 </div>
              </>
           )}
