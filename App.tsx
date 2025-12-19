@@ -826,7 +826,9 @@ const App: React.FC = () => {
         return txMonth === activeMonthRef.month && txYear === activeMonthRef.year;
     });
 
-    const newTransactions: Transaction[] = sourceTransactions.map(tx => {
+    const baseTime = Date.now();
+
+    const newTransactions: Transaction[] = sourceTransactions.map((tx, index) => {
         let newDate = tx.date;
         if (tx.date.match(/^\d{4}-\d{2}-\d{2}/)) {
             const d = new Date(tx.date.split(' ')[0] + 'T00:00:00');
@@ -837,6 +839,9 @@ const App: React.FC = () => {
             newDate = `${nextYearStr}-${m}-01`;
         }
 
+        // Force sequential order by decrementing timestamp slightly for each item
+        const sequentialCreatedAt = new Date(baseTime - (index * 10)).toISOString();
+
         return {
             ...tx,
             id: generateUUID(),
@@ -844,7 +849,7 @@ const App: React.FC = () => {
             year: nextYearStr,
             paid: false,
             date: newDate,
-            createdAt: new Date().toISOString()
+            createdAt: sequentialCreatedAt
         };
     });
 
