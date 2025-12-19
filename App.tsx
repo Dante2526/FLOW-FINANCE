@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef, Suspense, useCallback } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -335,7 +336,10 @@ const App: React.FC = () => {
   const dragItem = useRef<string | null>(null);
   const lastDragUpdate = useRef<number>(0);
   const mainScrollRef = useRef<HTMLDivElement>(null);
+  
+  // LOCKS RIGOROSOS PARA SINCRONIZAÇÃO
   const lastActionTimeRef = useRef<number>(0);
+  const isInternalUpdateRef = useRef<boolean>(false);
   
   // Use a string ref to lock creation of specific months to prevent duplicates
   const pendingMonthCreationRef = useRef<string | null>(null);
@@ -674,8 +678,8 @@ const App: React.FC = () => {
     let debounceTimer: ReturnType<typeof setTimeout>;
 
     const handleRealtimeUpdate = () => {
-       // SAFETY LOCK: Ignore updates shortly after user actions
-       if (Date.now() - lastActionTimeRef.current < 4000) return;
+       // BLOQUEIO RIGOROSO: Ignora atualizações externas durante e após ações do usuário por 12 segundos
+       if (Date.now() - lastActionTimeRef.current < 12000) return;
 
        clearTimeout(debounceTimer);
        debounceTimer = setTimeout(() => {
@@ -699,12 +703,15 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleFocus = () => {
       if (document.visibilityState === 'visible' && currentUserEmail) {
-         loadUserData(currentUserEmail).then((data) => {
-            if (data) {
-               const { data: cleanData } = sanitizeDataIds(data);
-               applyData(cleanData);
-            }
-         });
+         // Só recarrega se não estivermos no meio de uma ação (12s)
+         if (Date.now() - lastActionTimeRef.current > 12000) {
+            loadUserData(currentUserEmail).then((data) => {
+                if (data) {
+                  const { data: cleanData } = sanitizeDataIds(data);
+                  applyData(cleanData);
+                }
+            });
+         }
       }
     };
 
@@ -761,6 +768,9 @@ const App: React.FC = () => {
   const DEBOUNCE_DELAY = 1500;
 
   useEffect(() => {
+    // PROTEÇÃO: Não dispara auto-save se uma ação interna estiver ocorrendo (12s)
+    if (Date.now() - lastActionTimeRef.current < 12000) return;
+
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(months);
       if (currentStr !== prevMonthsRef.current) {
@@ -776,6 +786,8 @@ const App: React.FC = () => {
   }, [months, currentUserEmail, isLoadingData]);
 
   useEffect(() => {
+    if (Date.now() - lastActionTimeRef.current < 12000) return;
+
     if (currentUserEmail && !isLoadingData) {
       const currentStr = JSON.stringify(dashboardOrder);
       if (currentStr !== prevDashboardOrderRef.current) {
@@ -820,7 +832,7 @@ const App: React.FC = () => {
 
     pendingMonthCreationRef.current = creationKey;
     
-    // START SAFE ACTION LOCK
+    // BLOQUEIO TOTAL DE ATUALIZAÇÕES AUTOMÁTICAS (12 segundos)
     lastActionTimeRef.current = Date.now();
 
     const newMonthId = generateUUID();
@@ -845,7 +857,7 @@ const App: React.FC = () => {
             newDate = `${nextYearStr}-${m}-01`;
         }
 
-        // Force sequential order by decrementing timestamp slightly for each item
+        // Force sequential order
         const sequentialCreatedAt = new Date(baseTime - (index * 10)).toISOString();
 
         return {
@@ -906,7 +918,7 @@ const App: React.FC = () => {
       count: newTransactions.length
     };
 
-    // CALCULATE FINAL LISTS SYNCHRONOUSLY
+    // CALCULATE FINAL LISTS
     let finalTx: Transaction[] = [];
     let finalAcc: Account[] = [];
 
@@ -923,34 +935,34 @@ const App: React.FC = () => {
 
     const updatedMonths = sortMonths([...currentData.months, newMonth]);
 
-    // Update States
+    // UPDATE STATES (Sincronizado com Ref para evitar Auto-Save redundantemente)
+    prevMonthsRef.current = JSON.stringify(updatedMonths);
     setMonths(updatedMonths);
     setTransactions(finalTx);
     setAccounts(finalAcc);
     
     setDashboardOrder(prev => {
         const cleanPrev = prev.filter(id => id !== BALANCE_CARD_ID);
-        return Array.from(new Set([...cleanPrev, ...newOrderSegment]));
+        const order = Array.from(new Set([...cleanPrev, ...newOrderSegment]));
+        prevDashboardOrderRef.current = JSON.stringify(order);
+        return order;
     });
     
     setActiveMonthId(newMonthId);
 
+    // PERSIST TO CLOUD (Aguardamos as 4 operações para garantir integridade)
     if (currentUserEmail) {
-        // FORCE SAVE MONTHS FIRST TO PREVENT ORPHANS
-        // Prevent debounce effect from firing by updating the ref immediately
-        prevMonthsRef.current = JSON.stringify(updatedMonths);
+        const monthsToSave = updatedMonths.map(({ count, ...rest }: any) => rest);
         
-        // Remove 'count' before saving
-        const monthsToSave = updatedMonths.map(({ count, ...rest }) => rest);
-        await saveCollection(currentUserEmail, "months", monthsToSave);
-
-        // Then save contents
-        saveCollection(currentUserEmail, "transactions", finalTx);
-        saveCollection(currentUserEmail, "accounts", finalAcc);
+        await Promise.all([
+           saveCollection(currentUserEmail, "months", monthsToSave),
+           saveCollection(currentUserEmail, "transactions", finalTx),
+           saveCollection(currentUserEmail, "accounts", finalAcc),
+           saveUserField(currentUserEmail, "dashboardOrder", Array.from(new Set([...currentData.dashboardOrder.filter(id => id !== BALANCE_CARD_ID), ...newOrderSegment])))
+        ]);
         
-        // Explicitly save order for safety
-        const safeOrder = Array.from(new Set([...currentData.dashboardOrder.filter(id => id !== BALANCE_CARD_ID), ...newOrderSegment]));
-        saveUserField(currentUserEmail, "dashboardOrder", safeOrder);
+        // Renova o bloqueio após o salvamento para dar tempo ao Supabase de indexar
+        lastActionTimeRef.current = Date.now();
     }
 
     setTimeout(() => { 
@@ -966,28 +978,25 @@ const App: React.FC = () => {
      const monthToDelete = months.find(m => m.id === id);
      if (!monthToDelete) return;
      
-     const currentData = currentStateRef.current; // Access latest data synchronously
+     const currentData = currentStateRef.current;
 
-     // START SAFE ACTION LOCK
+     // BLOQUEIO RIGOROSO
      lastActionTimeRef.current = Date.now();
 
-     // 1. Calculate new state locally (Items to KEEP)
      const updatedMonths = months.filter(m => m.id !== id);
-     
-     // Transactions belonging to other months
      const updatedTx = currentData.transactions.filter(t => !(t.month === monthToDelete.month && t.year === monthToDelete.year));
-     
-     // Accounts belonging to other months
      const updatedAcc = currentData.accounts.filter(a => !(a.month === monthToDelete.month && a.year === monthToDelete.year));
-
-     // Identify IDs of accounts being deleted to clean Dashboard Order
+     
      const deletedAccountIds = new Set(currentData.accounts
         .filter(a => a.month === monthToDelete.month && a.year === monthToDelete.year)
         .map(a => a.id));
 
      const updatedDashboardOrder = currentData.dashboardOrder.filter(oid => !deletedAccountIds.has(oid));
 
-     // 2. Update React State
+     // Sincroniza refs e estados
+     prevMonthsRef.current = JSON.stringify(updatedMonths);
+     prevDashboardOrderRef.current = JSON.stringify(updatedDashboardOrder);
+     
      setMonths(updatedMonths);
      setTransactions(updatedTx);
      setAccounts(updatedAcc);
@@ -998,18 +1007,16 @@ const App: React.FC = () => {
         if (sorted.length > 0) setActiveMonthId(sorted[sorted.length - 1].id);
      }
 
-     // 3. Save to Cloud
      if (currentUserEmail) {
-        // Prevent debounce
-        prevMonthsRef.current = JSON.stringify(updatedMonths);
+        const monthsToSave = updatedMonths.map(({ count, ...rest }: any) => rest);
+        await Promise.all([
+           saveCollection(currentUserEmail, "months", monthsToSave),
+           saveCollection(currentUserEmail, "transactions", updatedTx),
+           saveCollection(currentUserEmail, "accounts", updatedAcc),
+           saveUserField(currentUserEmail, "dashboardOrder", updatedDashboardOrder)
+        ]);
         
-        // Remove 'count' before saving
-        const monthsToSave = updatedMonths.map(({ count, ...rest }) => rest);
-        await saveCollection(currentUserEmail, "months", monthsToSave);
-
-        saveCollection(currentUserEmail, "transactions", updatedTx);
-        saveCollection(currentUserEmail, "accounts", updatedAcc);
-        saveUserField(currentUserEmail, "dashboardOrder", updatedDashboardOrder);
+        lastActionTimeRef.current = Date.now();
      }
   }, [months, activeMonthId, currentUserEmail]);
 
@@ -1061,19 +1068,17 @@ const App: React.FC = () => {
       
       setTransactions(prev => {
          if (editingTransaction) {
-             // Preserve original createdAt to prevent jumping in list
              newTx = { ...editingTransaction, ...txData };
              if(currentUserEmail) upsertItem(currentUserEmail, 'transactions', newTx);
              return prev.map(t => t.id === editingTransaction.id ? newTx : t);
          } else {
-             // Set createdAt on creation
              const nowIso = new Date().toISOString();
              newTx = { 
                  id: generateUUID(), 
                  ...txData, 
                  month: activeMonthSummary.month, 
                  year: activeMonthSummary.year,
-                 createdAt: nowIso // Important for sorting
+                 createdAt: nowIso
              };
              if(currentUserEmail) upsertItem(currentUserEmail, 'transactions', newTx);
              return [newTx, ...prev];
@@ -1132,8 +1137,7 @@ const App: React.FC = () => {
     }
   }, [editingAccount, activeMonthSummary, currentUserEmail]);
 
-  // --- CRUD CALLBACKS FOR MEMOIZED VIEWS ---
-  
+  // CRUD CALLBACKS
   const handleAddLongTerm = useCallback((item: Omit<LongTermTransaction, 'id' | 'installmentsPaid'>) => {
      const newItem = { ...item, id: generateUUID(), installmentsPaid: 0 };
      setLongTermTransactions(p => [...p, newItem]);
@@ -1198,9 +1202,9 @@ const App: React.FC = () => {
 
   const handleSaveTheme = useCallback((t: AppTheme) => {
       setAppTheme(t);
-      saveData(STORAGE_KEYS.APP_THEME, t); // Save locally
+      saveData(STORAGE_KEYS.APP_THEME, t);
       if (currentUserEmail) {
-          saveUserField(currentUserEmail, 'theme', t); // Save to cloud
+          saveUserField(currentUserEmail, 'theme', t);
       }
       setCurrentView('home');
   }, [currentUserEmail]);
@@ -1219,7 +1223,6 @@ const App: React.FC = () => {
       setIsProModalOpen(false);
   }, []);
 
-  // Notification Handlers (Batch delete/mark might use SaveCollection for ease)
   const handleMarkAllRead = useCallback(() => {
       setNotifications([]);
       if (currentUserEmail) saveCollection(currentUserEmail, 'notifications', []);
@@ -1257,25 +1260,18 @@ const App: React.FC = () => {
         saveData(STORAGE_KEYS.KNOWN_USER_EMAIL, email); 
         setCurrentUserEmail(email);
 
-        // --- SILENT PUSH NOTIFICATION REGISTRATION ON LOGIN ---
         if ('Notification' in window && 'serviceWorker' in navigator) {
            try {
-              // Request permission immediately (Browser usually allows this inside user gesture async chain)
               const permission = await Notification.requestPermission();
-              
               if (permission === 'granted') {
                  const registration = await navigator.serviceWorker.ready;
                  let subscription = await registration.pushManager.getSubscription();
-                 
-                 // If not subscribed yet, subscribe now
                  if (!subscription) {
                     subscription = await registration.pushManager.subscribe({
                         userVisibleOnly: true,
                         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
                     });
                  }
-                 
-                 // Save subscription to backend
                  if (subscription) {
                     const subJson = JSON.parse(JSON.stringify(subscription));
                     await saveUserField(email, 'pushSubscription', subJson);
@@ -1285,7 +1281,6 @@ const App: React.FC = () => {
               console.warn("Auto-subscription failed:", e);
            }
         }
-
       } catch (error) { 
         console.error("Login failed:", error); 
         throw error; 

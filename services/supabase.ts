@@ -166,20 +166,18 @@ export const loadUserData = async (email: string) => {
     const userReq = supabase.from('users').select('*').eq('email', normalizedEmail).single();
 
     // PERFORMANCE FIX: Ordenar transações por created_at DESC e ID como critério de desempate
-    // Isso garante ordem determinística e estável
     const transactionsReq = supabase
         .from('transactions')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
-        .order('id', { ascending: true }); // Desempate para evitar pulos na lista
+        .order('id', { ascending: true });
 
     const accountsReq = supabase.from('accounts').select('*').eq('user_id', userId);
     const monthsReq = supabase.from('months').select('*').eq('user_id', userId);
     const investmentsReq = supabase.from('investments').select('*').eq('user_id', userId);
     const longTermReq = supabase.from('long_term').select('*').eq('user_id', userId);
     
-    // NEW: Order notifications by created_at descending (Newest first)
     const notificationsReq = supabase
         .from('notifications')
         .select('*')
@@ -239,7 +237,6 @@ export const upsertItem = async (email: string, collectionName: string, item: an
     if (collectionName === 'longTerm') tableName = 'long_term';
     
     const snakeItem = toSnakeCase(item);
-    // Garantir created_at
     if (!snakeItem.created_at) snakeItem.created_at = new Date().toISOString();
     
     const { error } = await supabase
@@ -292,6 +289,7 @@ export const saveCollection = async (email: string, collectionName: string, data
         return { ...snakeItem, user_id: userId };
     });
 
+    // 1. Upsert all current data
     const { error: upsertError } = await supabase
         .from(tableName)
         .upsert(rows, { onConflict: 'id' });
@@ -301,14 +299,14 @@ export const saveCollection = async (email: string, collectionName: string, data
         return false;
     }
 
-    // Clean Orphans
+    // 2. Clean Orphans (Delete items that exist in DB for this user but NOT in the new list)
     const currentIds = rows.map(r => r.id);
     if (currentIds.length > 0) {
         await supabase
             .from(tableName)
             .delete()
             .eq('user_id', userId)
-            .not('id', 'in', `(${currentIds.join(',')})`); 
+            .not('id', 'in', currentIds); // Native Supabase JS array filter
     } else {
         await supabase.from(tableName).delete().eq('user_id', userId);
     }
