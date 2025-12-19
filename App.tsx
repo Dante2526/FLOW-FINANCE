@@ -916,6 +916,9 @@ const App: React.FC = () => {
     if (currentUserEmail) {
         saveCollection(currentUserEmail, "transactions", finalTx);
         saveCollection(currentUserEmail, "accounts", finalAcc);
+        // Explicitly save order for safety
+        const safeOrder = Array.from(new Set([...currentData.dashboardOrder.filter(id => id !== BALANCE_CARD_ID), ...newOrderSegment]));
+        saveUserField(currentUserEmail, "dashboardOrder", safeOrder);
     }
 
     setTimeout(() => { 
@@ -933,15 +936,27 @@ const App: React.FC = () => {
      
      const currentData = currentStateRef.current; // Access latest data synchronously
 
-     // 1. Calculate new state locally
+     // 1. Calculate new state locally (Items to KEEP)
      const updatedMonths = months.filter(m => m.id !== id);
+     
+     // Transactions belonging to other months
      const updatedTx = currentData.transactions.filter(t => !(t.month === monthToDelete.month && t.year === monthToDelete.year));
+     
+     // Accounts belonging to other months
      const updatedAcc = currentData.accounts.filter(a => !(a.month === monthToDelete.month && a.year === monthToDelete.year));
+
+     // Identify IDs of accounts being deleted to clean Dashboard Order
+     const deletedAccountIds = new Set(currentData.accounts
+        .filter(a => a.month === monthToDelete.month && a.year === monthToDelete.year)
+        .map(a => a.id));
+
+     const updatedDashboardOrder = currentData.dashboardOrder.filter(oid => !deletedAccountIds.has(oid));
 
      // 2. Update React State
      setMonths(updatedMonths);
      setTransactions(updatedTx);
      setAccounts(updatedAcc);
+     setDashboardOrder(updatedDashboardOrder);
      
      if (activeMonthId === id) {
         const sorted = sortMonths(updatedMonths);
@@ -955,6 +970,8 @@ const App: React.FC = () => {
         saveCollection(currentUserEmail, "accounts", updatedAcc);
         // Also save months to ensure consistency
         saveCollection(currentUserEmail, "months", updatedMonths);
+        // Save cleaned dashboard order to prevent ghosts
+        saveUserField(currentUserEmail, "dashboardOrder", updatedDashboardOrder);
      }
   }, [months, activeMonthId, currentUserEmail]);
 
