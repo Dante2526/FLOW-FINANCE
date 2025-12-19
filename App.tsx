@@ -72,7 +72,7 @@ const SplashScreen = () => (
     </div>
     <div className="flex flex-col items-center gap-2">
        <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-       <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">v1.4.1 • Cloud Sync Fix</p>
+       <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">v1.4.2 • Layout Consistency Fix</p>
     </div>
   </div>
 );
@@ -206,6 +206,18 @@ const App: React.FC = () => {
     }
   }, [months, currentUserEmail, isLoadingData]);
 
+  // Sync dashboardOrder global list automatically when new accounts are added externally
+  useEffect(() => {
+    if (accounts.length > 0 && Date.now() - lastActionTimeRef.current > 20000) {
+      setDashboardOrder(prev => {
+        const set = new Set(prev);
+        const newOnes = accounts.filter(a => !set.has(a.id)).map(a => a.id);
+        if (newOnes.length === 0) return prev;
+        return [...prev, ...newOnes];
+      });
+    }
+  }, [accounts]);
+
   const handleDuplicateMonth = useCallback(async () => {
     const cur = currentStateRef.current;
     const act = cur.months.find(m => m.id === activeMonthId) || cur.months[0];
@@ -217,18 +229,57 @@ const App: React.FC = () => {
 
     lastActionTimeRef.current = Date.now();
     const nId = generateUUID();
-    const nTx: Transaction[] = cur.transactions.filter(t => (t.month || getMonthFromDateStr(t.date)) === act.month && (t.year || getYearFromDateStr(t.date, act.year)) === act.year).map((t, i) => ({ ...t, id: generateUUID(), month: nName, year: nYrS, paid: false, createdAt: new Date(Date.now() - i * 10).toISOString() }));
-    const nAcc: Account[] = cur.accounts.filter(a => a.month === act.month && a.year === act.year).map(a => ({ ...a, id: generateUUID(), month: nName, year: nYrS }));
+    
+    // Duplicate Transactions
+    const nTx: Transaction[] = cur.transactions
+      .filter(t => (t.month || getMonthFromDateStr(t.date)) === act.month && (t.year || getYearFromDateStr(t.date, act.year)) === act.year)
+      .map((t, i) => ({ ...t, id: generateUUID(), month: nName, year: nYrS, paid: false, createdAt: new Date(Date.now() - i * 10).toISOString() }));
+
+    // Duplicate Accounts + Maintain ID mapping for order preservation
+    const oldToNewAccMap = new Map<string, string>();
+    const sourceAcc = cur.accounts.filter(a => a.month === act.month && a.year === act.year);
+    const nAcc: Account[] = sourceAcc.map(a => {
+        const newId = generateUUID();
+        oldToNewAccMap.set(a.id, newId);
+        return { ...a, id: newId, month: nName, year: nYrS };
+    });
+
     const nMonth = { id: nId, month: nName, year: nYrS, total: roundMoney(nTx.reduce((s, t) => s + t.amount, 0)), count: nTx.length };
     const updMonths = sortMonths([...cur.months, nMonth]);
 
+    // PRESERVE DASHBOARD ORDER: Construct new order list mirroring the source month
+    const currentOrder = cur.dashboardOrder;
+    const newOrderSegment: string[] = [];
+    currentOrder.forEach(id => {
+       if (id === BALANCE_CARD_ID) {
+          // Balance card is singleton, no new ID
+       } else if (oldToNewAccMap.has(id)) {
+          newOrderSegment.push(oldToNewAccMap.get(id)!);
+       }
+    });
+    
+    // Ensure all new accounts are in the order list even if source wasn't (safety)
+    nAcc.forEach(a => { if (!newOrderSegment.includes(a.id)) newOrderSegment.push(a.id); });
+
+    // Join with existing global order (appends new IDs at the end but they will be filtered correctly in dItems)
+    const finalDashboardOrder = Array.from(new Set([...currentOrder, ...newOrderSegment]));
+
     prevMonthsRef.current = JSON.stringify(updMonths);
+    prevDashboardOrderRef.current = JSON.stringify(finalDashboardOrder);
+
     setMonths(updMonths);
     setTransactions([...nTx, ...cur.transactions]);
     setAccounts([...cur.accounts, ...nAcc]);
+    setDashboardOrder(finalDashboardOrder);
     setActiveMonthId(nId);
+
     if (currentUserEmail) {
-        await Promise.all([saveCollection(currentUserEmail, "months", updMonths.map(({ count, ...rest }) => rest)), saveCollection(currentUserEmail, "transactions", [...nTx, ...cur.transactions]), saveCollection(currentUserEmail, "accounts", [...cur.accounts, ...nAcc])]);
+        await Promise.all([
+          saveCollection(currentUserEmail, "months", updMonths.map(({ count, ...rest }) => rest)), 
+          saveCollection(currentUserEmail, "transactions", [...nTx, ...cur.transactions]), 
+          saveCollection(currentUserEmail, "accounts", [...cur.accounts, ...nAcc]),
+          saveUserField(currentUserEmail, "dashboardOrder", finalDashboardOrder)
+        ]);
         lastActionTimeRef.current = Date.now();
     }
   }, [activeMonthId, currentUserEmail]);
@@ -238,29 +289,38 @@ const App: React.FC = () => {
      const target = months.find(m => m.id === id);
      if (!target) return;
      
-     // 1. BLOQUEIO IMEDIATO ANTES DE QUALQUER MUDANÇA
      lastActionTimeRef.current = Date.now();
 
      const updMonths = months.filter(m => m.id !== id);
      const updTx = currentStateRef.current.transactions.filter(t => !((t.month || getMonthFromDateStr(t.date)) === target.month && (t.year || getYearFromDateStr(t.date, target.year)) === target.year));
-     const updAcc = currentStateRef.current.accounts.filter(a => !(a.month === target.month && a.year === target.year));
+     
+     const deletedAccs = currentStateRef.current.accounts.filter(a => a.month === target.month && a.year === target.year);
+     const deletedAccIds = new Set(deletedAccs.map(a => a.id));
+     const updAcc = currentStateRef.current.accounts.filter(a => !deletedAccIds.has(a.id));
+     
+     // Clean up dashboard order to remove deleted account IDs
+     const updDashboardOrder = currentStateRef.current.dashboardOrder.filter(oid => oid === BALANCE_CARD_ID || !deletedAccIds.has(oid));
 
-     // 2. ATUALIZAÇÃO LOCAL INSTANTÂNEA
      prevMonthsRef.current = JSON.stringify(updMonths);
+     prevDashboardOrderRef.current = JSON.stringify(updDashboardOrder);
+     
      setMonths(updMonths);
      setTransactions(updTx);
      setAccounts(updAcc);
+     setDashboardOrder(updDashboardOrder);
      
      if (activeMonthId === id) {
         const sorted = sortMonths(updMonths);
         if (sorted.length > 0) setActiveMonthId(sorted[sorted.length - 1].id);
      }
 
-     // 3. EXCLUSÃO ATÔMICA NO SUPABASE
      if (currentUserEmail) {
         try {
-            await hardDeleteMonth(id, target.month, target.year);
-            lastActionTimeRef.current = Date.now(); // RENOVA O LOCK
+            await Promise.all([
+               hardDeleteMonth(id, target.month, target.year),
+               saveUserField(currentUserEmail, "dashboardOrder", updDashboardOrder)
+            ]);
+            lastActionTimeRef.current = Date.now();
         } catch (e) { console.error("Cloud Delete Fail:", e); }
      }
   }, [months, activeMonthId, currentUserEmail]);
@@ -291,15 +351,22 @@ const App: React.FC = () => {
     } else {
       const nAcc = { id: generateUUID(), name, balance, colorTheme: theme, month: act?.month, year: act?.year };
       setAccounts(prev => [...prev, nAcc]);
-      if (currentUserEmail) upsertItem(currentUserEmail, 'accounts', nAcc);
+      setDashboardOrder(prev => [...prev, nAcc.id]); // Add to order list immediately
+      if (currentUserEmail) {
+         upsertItem(currentUserEmail, 'accounts', nAcc);
+         saveUserField(currentUserEmail, 'dashboardOrder', [...dashboardOrder, nAcc.id]);
+      }
     }
-  }, [editingAccount, activeMonthId, currentUserEmail]);
+  }, [editingAccount, activeMonthId, currentUserEmail, dashboardOrder]);
 
   const handleDeleteAccount = useCallback((id: string) => {
     setAccounts(p => p.filter(a => a.id !== id));
     setDashboardOrder(p => p.filter(o => o !== id));
-    if (currentUserEmail) deleteItem(currentUserEmail, 'accounts', id);
-  }, [currentUserEmail]);
+    if (currentUserEmail) {
+       deleteItem(currentUserEmail, 'accounts', id);
+       saveUserField(currentUserEmail, 'dashboardOrder', dashboardOrder.filter(o => o !== id));
+    }
+  }, [currentUserEmail, dashboardOrder]);
 
   const handleDeleteTransaction = useCallback((id: string) => {
       setTransactions(p => p.filter(t => t.id !== id));
@@ -308,17 +375,22 @@ const App: React.FC = () => {
 
   const filteredTx = useMemo(() => {
     const act = months.find(m => m.id === activeMonthId) || months[0];
+    if (!act) return [];
     return transactions.filter(t => (t.month || getMonthFromDateStr(t.date)) === act.month && (t.year || getYearFromDateStr(t.date, act.year)) === act.year);
   }, [transactions, months, activeMonthId]);
 
   const filteredAcc = useMemo(() => {
     const act = months.find(m => m.id === activeMonthId) || months[0];
+    if (!act) return [];
     return accounts.filter(a => a.month === act.month && a.year === act.year);
   }, [accounts, months, activeMonthId]);
 
   const dItems = useMemo(() => {
     const items: string[] = [];
-    dashboardOrder.forEach(id => { if (id === BALANCE_CARD_ID || filteredAcc.find(a => a.id === id)) items.push(id); });
+    dashboardOrder.forEach(id => { 
+       if (id === BALANCE_CARD_ID || filteredAcc.find(a => a.id === id)) items.push(id); 
+    });
+    // Add any missing filtered accounts to the end (failsafe)
     filteredAcc.forEach(a => { if (!items.includes(a.id)) items.push(a.id); });
     if (!items.includes(BALANCE_CARD_ID)) items.unshift(BALANCE_CARD_ID);
     return Array.from(new Set(items));
