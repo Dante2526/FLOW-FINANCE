@@ -335,6 +335,7 @@ const App: React.FC = () => {
   const dragItem = useRef<string | null>(null);
   const lastDragUpdate = useRef<number>(0);
   const mainScrollRef = useRef<HTMLDivElement>(null);
+  const lastActionTimeRef = useRef<number>(0);
   
   // Use a string ref to lock creation of specific months to prevent duplicates
   const pendingMonthCreationRef = useRef<string | null>(null);
@@ -669,6 +670,9 @@ const App: React.FC = () => {
     let debounceTimer: ReturnType<typeof setTimeout>;
 
     const handleRealtimeUpdate = () => {
+       // SAFETY LOCK: Ignore updates shortly after user actions
+       if (Date.now() - lastActionTimeRef.current < 4000) return;
+
        clearTimeout(debounceTimer);
        debounceTimer = setTimeout(() => {
           loadUserData(currentUserEmail).then((data) => {
@@ -780,7 +784,7 @@ const App: React.FC = () => {
 
   // --- ACTIONS ---
   
-  const handleDuplicateMonth = useCallback(() => {
+  const handleDuplicateMonth = useCallback(async () => {
     const currentData = currentStateRef.current;
     const activeMonthRef = currentData.months.find(m => m.id === activeMonthId) || currentData.months[0];
     if (!activeMonthRef) return;
@@ -809,6 +813,10 @@ const App: React.FC = () => {
                        currentData.transactions.some(t => t.month === nextMonthName && t.year === nextYearStr);
 
     pendingMonthCreationRef.current = creationKey;
+    
+    // START SAFE ACTION LOCK
+    lastActionTimeRef.current = Date.now();
+
     const newMonthId = generateUUID();
     
     // Generate New Transactions
@@ -901,8 +909,10 @@ const App: React.FC = () => {
         finalAcc = [...currentData.accounts, ...newAccounts];
     }
 
+    const updatedMonths = sortMonths([...currentData.months, newMonth]);
+
     // Update States
-    setMonths(prev => sortMonths([...prev, newMonth]));
+    setMonths(updatedMonths);
     setTransactions(finalTx);
     setAccounts(finalAcc);
     
@@ -914,8 +924,15 @@ const App: React.FC = () => {
     setActiveMonthId(newMonthId);
 
     if (currentUserEmail) {
+        // FORCE SAVE MONTHS FIRST TO PREVENT ORPHANS
+        // Prevent debounce effect from firing by updating the ref immediately
+        prevMonthsRef.current = JSON.stringify(updatedMonths);
+        await saveCollection(currentUserEmail, "months", updatedMonths);
+
+        // Then save contents
         saveCollection(currentUserEmail, "transactions", finalTx);
         saveCollection(currentUserEmail, "accounts", finalAcc);
+        
         // Explicitly save order for safety
         const safeOrder = Array.from(new Set([...currentData.dashboardOrder.filter(id => id !== BALANCE_CARD_ID), ...newOrderSegment]));
         saveUserField(currentUserEmail, "dashboardOrder", safeOrder);
@@ -935,6 +952,9 @@ const App: React.FC = () => {
      if (!monthToDelete) return;
      
      const currentData = currentStateRef.current; // Access latest data synchronously
+
+     // START SAFE ACTION LOCK
+     lastActionTimeRef.current = Date.now();
 
      // 1. Calculate new state locally (Items to KEEP)
      const updatedMonths = months.filter(m => m.id !== id);
@@ -965,12 +985,12 @@ const App: React.FC = () => {
 
      // 3. Save to Cloud
      if (currentUserEmail) {
-        // Use the calculated variables, NOT variables assigned inside setTransactions callback
+        // Prevent debounce
+        prevMonthsRef.current = JSON.stringify(updatedMonths);
+        saveCollection(currentUserEmail, "months", updatedMonths);
+
         saveCollection(currentUserEmail, "transactions", updatedTx);
         saveCollection(currentUserEmail, "accounts", updatedAcc);
-        // Also save months to ensure consistency
-        saveCollection(currentUserEmail, "months", updatedMonths);
-        // Save cleaned dashboard order to prevent ghosts
         saveUserField(currentUserEmail, "dashboardOrder", updatedDashboardOrder);
      }
   }, [months, activeMonthId, currentUserEmail]);
