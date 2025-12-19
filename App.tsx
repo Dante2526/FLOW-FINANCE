@@ -72,7 +72,7 @@ const SplashScreen = () => (
     </div>
     <div className="flex flex-col items-center gap-2">
        <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-       <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">v1.4.2 • Layout Consistency Fix</p>
+       <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">v1.4.3 • Order Stability Fix</p>
     </div>
   </div>
 );
@@ -206,7 +206,7 @@ const App: React.FC = () => {
     }
   }, [months, currentUserEmail, isLoadingData]);
 
-  // Sync dashboardOrder global list automatically when new accounts are added externally
+  // Sincronização automática da ordem global
   useEffect(() => {
     if (accounts.length > 0 && Date.now() - lastActionTimeRef.current > 20000) {
       setDashboardOrder(prev => {
@@ -230,12 +230,12 @@ const App: React.FC = () => {
     lastActionTimeRef.current = Date.now();
     const nId = generateUUID();
     
-    // Duplicate Transactions
+    // Duplicar Transações
     const nTx: Transaction[] = cur.transactions
       .filter(t => (t.month || getMonthFromDateStr(t.date)) === act.month && (t.year || getYearFromDateStr(t.date, act.year)) === act.year)
       .map((t, i) => ({ ...t, id: generateUUID(), month: nName, year: nYrS, paid: false, createdAt: new Date(Date.now() - i * 10).toISOString() }));
 
-    // Duplicate Accounts + Maintain ID mapping for order preservation
+    // Duplicar Contas + Map de IDs para preservar ordem
     const oldToNewAccMap = new Map<string, string>();
     const sourceAcc = cur.accounts.filter(a => a.month === act.month && a.year === act.year);
     const nAcc: Account[] = sourceAcc.map(a => {
@@ -247,22 +247,23 @@ const App: React.FC = () => {
     const nMonth = { id: nId, month: nName, year: nYrS, total: roundMoney(nTx.reduce((s, t) => s + t.amount, 0)), count: nTx.length };
     const updMonths = sortMonths([...cur.months, nMonth]);
 
-    // PRESERVE DASHBOARD ORDER: Construct new order list mirroring the source month
+    // PRESERVAR ORDEM DO DASHBOARD (Intercalação Inteligente)
+    // Criamos uma nova ordem global onde cada ID novo é inserido LOGO APÓS o seu ID original.
+    // Isso garante que se LUCRO estava entre duas contas, o novo LUCRO continuará entre as novas contas.
     const currentOrder = cur.dashboardOrder;
-    const newOrderSegment: string[] = [];
+    const newGlobalOrder: string[] = [];
+    
     currentOrder.forEach(id => {
-       if (id === BALANCE_CARD_ID) {
-          // Balance card is singleton, no new ID
-       } else if (oldToNewAccMap.has(id)) {
-          newOrderSegment.push(oldToNewAccMap.get(id)!);
+       newGlobalOrder.push(id); // Mantém o antigo
+       if (oldToNewAccMap.has(id)) {
+          newGlobalOrder.push(oldToNewAccMap.get(id)!); // Insere o novo imediatamente após
        }
     });
     
-    // Ensure all new accounts are in the order list even if source wasn't (safety)
-    nAcc.forEach(a => { if (!newOrderSegment.includes(a.id)) newOrderSegment.push(a.id); });
+    // Failsafe: Adicionar contas que talvez não estivessem na lista de ordem (raro)
+    nAcc.forEach(a => { if (!newGlobalOrder.includes(a.id)) newGlobalOrder.push(a.id); });
 
-    // Join with existing global order (appends new IDs at the end but they will be filtered correctly in dItems)
-    const finalDashboardOrder = Array.from(new Set([...currentOrder, ...newOrderSegment]));
+    const finalDashboardOrder = Array.from(new Set(newGlobalOrder));
 
     prevMonthsRef.current = JSON.stringify(updMonths);
     prevDashboardOrderRef.current = JSON.stringify(finalDashboardOrder);
@@ -298,7 +299,6 @@ const App: React.FC = () => {
      const deletedAccIds = new Set(deletedAccs.map(a => a.id));
      const updAcc = currentStateRef.current.accounts.filter(a => !deletedAccIds.has(a.id));
      
-     // Clean up dashboard order to remove deleted account IDs
      const updDashboardOrder = currentStateRef.current.dashboardOrder.filter(oid => oid === BALANCE_CARD_ID || !deletedAccIds.has(oid));
 
      prevMonthsRef.current = JSON.stringify(updMonths);
@@ -350,21 +350,23 @@ const App: React.FC = () => {
       setEditingAccount(null);
     } else {
       const nAcc = { id: generateUUID(), name, balance, colorTheme: theme, month: act?.month, year: act?.year };
+      const newOrder = [...dashboardOrder, nAcc.id];
       setAccounts(prev => [...prev, nAcc]);
-      setDashboardOrder(prev => [...prev, nAcc.id]); // Add to order list immediately
+      setDashboardOrder(newOrder); 
       if (currentUserEmail) {
          upsertItem(currentUserEmail, 'accounts', nAcc);
-         saveUserField(currentUserEmail, 'dashboardOrder', [...dashboardOrder, nAcc.id]);
+         saveUserField(currentUserEmail, 'dashboardOrder', newOrder);
       }
     }
   }, [editingAccount, activeMonthId, currentUserEmail, dashboardOrder]);
 
   const handleDeleteAccount = useCallback((id: string) => {
+    const newOrder = dashboardOrder.filter(o => o !== id);
     setAccounts(p => p.filter(a => a.id !== id));
-    setDashboardOrder(p => p.filter(o => o !== id));
+    setDashboardOrder(newOrder);
     if (currentUserEmail) {
        deleteItem(currentUserEmail, 'accounts', id);
-       saveUserField(currentUserEmail, 'dashboardOrder', dashboardOrder.filter(o => o !== id));
+       saveUserField(currentUserEmail, 'dashboardOrder', newOrder);
     }
   }, [currentUserEmail, dashboardOrder]);
 
@@ -390,7 +392,6 @@ const App: React.FC = () => {
     dashboardOrder.forEach(id => { 
        if (id === BALANCE_CARD_ID || filteredAcc.find(a => a.id === id)) items.push(id); 
     });
-    // Add any missing filtered accounts to the end (failsafe)
     filteredAcc.forEach(a => { if (!items.includes(a.id)) items.push(a.id); });
     if (!items.includes(BALANCE_CARD_ID)) items.unshift(BALANCE_CARD_ID);
     return Array.from(new Set(items));
@@ -418,9 +419,9 @@ const App: React.FC = () => {
             </div>
             <div className="flex flex-col gap-2 mb-6">
                {dItems.map(id => {
-                  if (id === BALANCE_CARD_ID) return <BalanceCard key={id} id={id} balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} onAddClick={() => setIsAddTransactionOpen(true)} onDuplicateClick={handleDuplicateMonth} onCalculatorClick={() => setIsCalculatorOpen(true)} draggable onDragStart={id => dragItem.current = id} onDragEnter={tId => { if (dragItem.current && dragItem.current !== tId) { const nO = [...dashboardOrder]; const dI = nO.indexOf(dragItem.current), tI = nO.indexOf(tId); if (dI !== -1 && tI !== -1) { nO.splice(dI, 1); nO.splice(tI, 0, dragItem.current); setDashboardOrder(nO); } } }} onDragEnd={() => dragItem.current = null} />;
+                  if (id === BALANCE_CARD_ID) return <BalanceCard key={id} id={id} balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} onAddClick={() => setIsAddTransactionOpen(true)} onDuplicateClick={handleDuplicateMonth} onCalculatorClick={() => setIsCalculatorOpen(true)} draggable onDragStart={id => dragItem.current = id} onDragEnter={tId => { if (dragItem.current && dragItem.current !== tId) { const nO = [...dashboardOrder]; const dI = nO.indexOf(dragItem.current), tI = nO.indexOf(tId); if (dI !== -1 && tI !== -1) { nO.splice(dI, 1); nO.splice(tI, 0, dragItem.current); setDashboardOrder(nO); if(currentUserEmail) saveUserField(currentUserEmail, 'dashboardOrder', nO); } } }} onDragEnd={() => dragItem.current = null} />;
                   const a = filteredAcc.find(x => x.id === id);
-                  if (a) return <SecondaryCard key={a.id} account={a} onDelete={handleDeleteAccount} onEdit={x => { setEditingAccount(x); setIsAddAccountOpen(true); }} draggable onDragStart={id => dragItem.current = id} onDragEnter={tId => { if (dragItem.current && dragItem.current !== tId) { const nO = [...dashboardOrder]; const dI = nO.indexOf(dragItem.current), tI = nO.indexOf(tId); if (dI !== -1 && tI !== -1) { nO.splice(dI, 1); nO.splice(tI, 0, dragItem.current); setDashboardOrder(nO); } } }} onDragEnd={() => dragItem.current = null} />;
+                  if (a) return <SecondaryCard key={a.id} account={a} onDelete={handleDeleteAccount} onEdit={x => { setEditingAccount(x); setIsAddAccountOpen(true); }} draggable onDragStart={id => dragItem.current = id} onDragEnter={tId => { if (dragItem.current && dragItem.current !== tId) { const nO = [...dashboardOrder]; const dI = nO.indexOf(dragItem.current), tI = nO.indexOf(tId); if (dI !== -1 && tI !== -1) { nO.splice(dI, 1); nO.splice(tI, 0, dragItem.current); setDashboardOrder(nO); if(currentUserEmail) saveUserField(currentUserEmail, 'dashboardOrder', nO); } } }} onDragEnd={() => dragItem.current = null} />;
                   return null;
                })}
             </div>
