@@ -24,11 +24,16 @@ const formatDateDisplay = (dateStr: string) => {
   
   // Handle ISO YYYY-MM-DD
   if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
-    const d = new Date(dateStr.split(' ')[0] + 'T00:00:00');
-    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
+    try {
+      const d = new Date(dateStr.split(' ')[0] + 'T00:00:00');
+      // Verificação de data válida
+      if (isNaN(d.getTime())) return dateStr; 
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
+    } catch (e) {
+      return dateStr;
+    }
   }
   
-  // Handle "24 Jan"
   return dateStr;
 };
 
