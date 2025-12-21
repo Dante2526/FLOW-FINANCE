@@ -73,28 +73,32 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     }
 
     setIsLoading(true);
+    console.log(`[FlowAuth] Iniciando processo de envio de OTP para: ${email} (Modo: ${mode})`);
 
     try {
       // RLS FIX: Check if we actually have a valid session before skipping OTP.
-      // We cannot rely on local storage settings (requireOtp=false) alone because RLS needs a valid server token.
       const { data: sessionData } = await supabase.auth.getSession();
       const currentSessionEmail = sessionData.session?.user?.email;
       const isSessionValid = currentSessionEmail && currentSessionEmail.toLowerCase() === email.toLowerCase().trim();
 
       // If we have a valid session, we can proceed directly without OTP
       if (mode === 'login' && isSessionValid) {
+         console.log(`[FlowAuth] Sessão válida encontrada para ${email}. Pulando OTP.`);
          await onLogin(email);
          return; 
       }
 
       // If no valid session, we MUST send OTP to authenticate and get the token for RLS.
-      await sendAuthOtp(email);
+      console.log(`[FlowAuth] Chamando Supabase Auth para enviar OTP...`);
+      const response = await sendAuthOtp(email);
+      console.log(`[FlowAuth] Resposta do servidor recebida com sucesso:`, response);
+      
       setStep('otp');
       setError('');
       // Inicia um cooldown mais seguro de 60s
       setResendTimer(60);
     } catch (err: any) {
-      console.error(err);
+      console.error(`[FlowAuth] Erro crítico ao solicitar OTP:`, err);
       const msg = err.message || 'Erro ao enviar código.';
       setError(msg);
 
@@ -122,19 +126,23 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     }
 
     setIsLoading(true);
+    console.log(`[FlowAuth] Iniciando verificação do código OTP para: ${email}`);
 
     try {
       // 1. Verifica o código no Supabase Auth
-      await verifyAuthOtp(email, otpCode);
+      const verificationData = await verifyAuthOtp(email, otpCode);
+      console.log(`[FlowAuth] Código verificado com sucesso. Dados da sessão:`, verificationData);
       
       // 2. Prossegue com a lógica do App (Sync de dados ou Criação)
       if (mode === 'register') {
+        console.log(`[FlowAuth] Prosseguindo com registro do usuário: ${name}`);
         await onLogin(email, name);
       } else {
+        console.log(`[FlowAuth] Prosseguindo com login do usuário.`);
         await onLogin(email);
       }
     } catch (err: any) {
-      console.error(err);
+      console.error(`[FlowAuth] Erro ao verificar código OTP:`, err);
       setError(err.message || 'Erro de verificação. Tente novamente.');
       setIsLoading(false);
     }
