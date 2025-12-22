@@ -415,6 +415,47 @@ const App: React.FC = () => {
     if (currentUserEmail) { upsertItem(currentUserEmail, 'transactions', updatedTx); lastActionTimeRef.current = Date.now(); }
   }, [currentUserEmail]);
 
+  const handleLogout = useCallback(async () => {
+    // 1. Reset UI State immediately to prevent "flash" of open modals on next login
+    setIsProfileModalOpen(false);
+    setIsAddTransactionOpen(false);
+    setIsAddAccountOpen(false);
+    setIsCalculatorOpen(false);
+    setIsNotepadOpen(false);
+    setIsCalendarOpen(false);
+    setIsNotificationOpen(false);
+    setIsAnalyticsOpen(false);
+    setIsProModalOpen(false);
+    setCurrentView('home');
+
+    // 2. Clear Session
+    localStorage.removeItem(STORAGE_KEYS.USER_SESSION);
+    await supabase.auth.signOut();
+    setCurrentUserEmail(null);
+  }, []);
+
+  const handleLoginSuccess = useCallback(async (email: string, name?: string) => {
+    // 1. Perform Login/Register
+    if (name) await registerUser(email, name, { months: [SYSTEM_INITIAL_MONTH] }); 
+    else await loginUser(email);
+    
+    // 2. Ensure clean UI state upon login
+    setIsProfileModalOpen(false);
+    setIsAddTransactionOpen(false);
+    setIsAddAccountOpen(false);
+    setIsCalculatorOpen(false);
+    setIsNotepadOpen(false);
+    setIsCalendarOpen(false);
+    setIsNotificationOpen(false);
+    setIsAnalyticsOpen(false);
+    setIsProModalOpen(false);
+    setCurrentView('home');
+
+    // 3. Set Session
+    setCurrentUserEmail(email); 
+    saveData(STORAGE_KEYS.USER_SESSION, email); 
+  }, []);
+
   const activeMonth = useMemo(() => months.find(m => m.id === activeMonthId) || months[0], [months, activeMonthId]);
 
   const filteredTx = useMemo(() => {
@@ -443,17 +484,7 @@ const App: React.FC = () => {
     return Array.from(new Set(items));
   }, [dashboardOrder, filteredAcc]);
 
-  if (!currentUserEmail) return <LoginScreen onLogin={async (e, n) => { 
-    if (n) await registerUser(e, n, { months: [SYSTEM_INITIAL_MONTH] }); 
-    else await loginUser(e); 
-    
-    // Força o estado correto da UI ao logar: Fecha modal de perfil e vai para Home
-    setIsProfileModalOpen(false);
-    setCurrentView('home');
-
-    setCurrentUserEmail(e); 
-    saveData(STORAGE_KEYS.USER_SESSION, e); 
-  }} />;
+  if (!currentUserEmail) return <LoginScreen onLogin={handleLoginSuccess} />;
 
   if (isLoadingData && !userProfile.name) return <SplashScreen />;
 
@@ -503,7 +534,7 @@ const App: React.FC = () => {
       <AddTransactionModal isOpen={isAddTransactionOpen} onClose={() => { setIsAddTransactionOpen(false); setEditingTransaction(null); }} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} />
       <AddAccountModal isOpen={isAddAccountOpen} onClose={() => { setIsAddAccountOpen(false); setEditingAccount(null); }} onSave={handleSaveAccount} accountToEdit={editingAccount} isPro={!!userProfile.isPro} onOpenProModal={() => setIsProModalOpen(true)} />
       <CalculatorModal isOpen={isCalculatorOpen} onClose={() => setIsCalculatorOpen(false)} />
-      <EditProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} onSave={p => { setUserProfile(p); if(currentUserEmail) { saveUserField(currentUserEmail, 'profile', p); lastActionTimeRef.current = Date.now(); } }} onLogout={async () => { localStorage.removeItem(STORAGE_KEYS.USER_SESSION); await supabase.auth.signOut(); setCurrentUserEmail(null); }} onDeleteAccount={() => {}} currentProfile={userProfile} />
+      <EditProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} onSave={p => { setUserProfile(p); if(currentUserEmail) { saveUserField(currentUserEmail, 'profile', p); lastActionTimeRef.current = Date.now(); } }} onLogout={handleLogout} onDeleteAccount={() => {}} currentProfile={userProfile} />
       <NotepadModal isOpen={isNotepadOpen} onClose={() => setIsNotepadOpen(false)} initialContent={notepadContent} initialDrawing={notepadDrawing} onSave={(c, d) => { setNotepadContent(c); setNotepadDrawing(d); if(currentUserEmail) { saveUserField(currentUserEmail, 'notepadContent', c); saveUserField(currentUserEmail, 'notepadDrawing', d); lastActionTimeRef.current = Date.now(); } }} />
       <CalendarModal isOpen={isCalendarOpen} onClose={() => setIsCalendarOpen(false)} transactions={transactions} />
       <NotificationModal isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} notifications={notifications} onMarkAllRead={() => { setNotifications([]); if(currentUserEmail) { saveCollection(currentUserEmail, 'notifications', []); lastActionTimeRef.current = Date.now(); } }} onDelete={id => { setNotifications(p => p.filter(n => n.id !== id)); if(currentUserEmail) { deleteItem(currentUserEmail, 'notifications', id); lastActionTimeRef.current = Date.now(); } }} currentUserEmail={currentUserEmail} />
