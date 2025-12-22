@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef, Suspense, useCallback } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -442,7 +443,18 @@ const App: React.FC = () => {
     return Array.from(new Set(items));
   }, [dashboardOrder, filteredAcc]);
 
-  if (!currentUserEmail) return <LoginScreen onLogin={async (e, n) => { if (n) await registerUser(e, n, { months: [SYSTEM_INITIAL_MONTH] }); else await loginUser(e); setCurrentUserEmail(e); saveData(STORAGE_KEYS.USER_SESSION, e); }} />;
+  if (!currentUserEmail) return <LoginScreen onLogin={async (e, n) => { 
+    if (n) await registerUser(e, n, { months: [SYSTEM_INITIAL_MONTH] }); 
+    else await loginUser(e); 
+    
+    // Força o estado correto da UI ao logar: Fecha modal de perfil e vai para Home
+    setIsProfileModalOpen(false);
+    setCurrentView('home');
+
+    setCurrentUserEmail(e); 
+    saveData(STORAGE_KEYS.USER_SESSION, e); 
+  }} />;
+
   if (isLoadingData && !userProfile.name) return <SplashScreen />;
 
   return (
