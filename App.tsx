@@ -182,6 +182,22 @@ const App: React.FC = () => {
     loadUserData(currentUserEmail).then(data => { if (data) applyData(data); }).finally(() => setIsLoadingData(false));
   }, [currentUserEmail, isSessionReady]);
 
+  // HARD RESET STATE WHEN USER CHANGES (Prevents "Ghost" modals)
+  useEffect(() => {
+     if (!currentUserEmail) {
+        setIsProfileModalOpen(false);
+        setIsAddTransactionOpen(false);
+        setIsAddAccountOpen(false);
+        setIsCalculatorOpen(false);
+        setIsNotepadOpen(false);
+        setIsCalendarOpen(false);
+        setIsNotificationOpen(false);
+        setIsAnalyticsOpen(false);
+        setIsProModalOpen(false);
+        setCurrentView('home');
+     }
+  }, [currentUserEmail]);
+
   useEffect(() => {
     if (!currentUserEmail || !isSessionReady) return;
     const handleSync = () => {
@@ -416,7 +432,7 @@ const App: React.FC = () => {
   }, [currentUserEmail]);
 
   const handleLogout = useCallback(async () => {
-    // 1. Reset UI State immediately to prevent "flash" of open modals on next login
+    // 1. Reset UI State immediately
     setIsProfileModalOpen(false);
     setIsAddTransactionOpen(false);
     setIsAddAccountOpen(false);
@@ -439,16 +455,8 @@ const App: React.FC = () => {
     if (name) await registerUser(email, name, { months: [SYSTEM_INITIAL_MONTH] }); 
     else await loginUser(email);
     
-    // 2. Ensure clean UI state upon login
+    // 2. State resets handled by KEY prop and useEffect, but we ensure here too
     setIsProfileModalOpen(false);
-    setIsAddTransactionOpen(false);
-    setIsAddAccountOpen(false);
-    setIsCalculatorOpen(false);
-    setIsNotepadOpen(false);
-    setIsCalendarOpen(false);
-    setIsNotificationOpen(false);
-    setIsAnalyticsOpen(false);
-    setIsProModalOpen(false);
     setCurrentView('home');
 
     // 3. Set Session
@@ -489,7 +497,9 @@ const App: React.FC = () => {
   if (isLoadingData && !userProfile.name) return <SplashScreen />;
 
   return (
-    <div ref={mainScrollRef} className={`h-full overflow-y-auto bg-[#0a0a0b] text-white px-2 pt-4 pb-32 font-sans selection:bg-accent selection:text-black no-scrollbar ${isAnyModalOpen ? 'overflow-hidden' : ''}`} style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+    // THE KEY IS THE SECRET: Changing the key forces React to destroy and recreate the DOM
+    // This wipes any previous state of modals and prevents "closing" animations on mount.
+    <div key={currentUserEmail} ref={mainScrollRef} className={`h-full overflow-y-auto bg-[#0a0a0b] text-white px-2 pt-4 pb-32 font-sans selection:bg-accent selection:text-black no-scrollbar ${isAnyModalOpen ? 'overflow-hidden' : ''}`} style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
       {currentView === 'home' ? (
           <>
             <div className="flex justify-between items-center mb-6 pl-1">
