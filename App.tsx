@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef, Suspense, useCallback } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -126,6 +125,13 @@ const App: React.FC = () => {
   
   const currentStateRef = useRef({ transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder });
   useEffect(() => { currentStateRef.current = { transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder }; });
+
+  // Reset scroll on view change
+  useEffect(() => {
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  }, [currentView]);
 
   useEffect(() => {
     const root = document.documentElement;
