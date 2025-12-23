@@ -81,7 +81,7 @@ const SplashScreen = () => (
     </div>
     <div className="flex flex-col items-center gap-2">
        <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-       <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">v1.4.9 • Stable Date Engine</p>
+       <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">v1.5.0 • Performance 100%</p>
     </div>
   </div>
 );
@@ -182,7 +182,6 @@ const App: React.FC = () => {
     loadUserData(currentUserEmail).then(data => { if (data) applyData(data); }).finally(() => setIsLoadingData(false));
   }, [currentUserEmail, isSessionReady]);
 
-  // HARD RESET STATE WHEN USER CHANGES (Prevents "Ghost" modals)
   useEffect(() => {
      if (!currentUserEmail) {
         setIsProfileModalOpen(false);
@@ -239,10 +238,7 @@ const App: React.FC = () => {
     let nIdx = MONTH_NAMES.indexOf(actMonthNorm) + 1;
     let nYr = parseInt(actYear);
     
-    if (nIdx > 11) { 
-        nIdx = 0; 
-        nYr += 1; 
-    }
+    if (nIdx > 11) { nIdx = 0; nYr += 1; }
 
     const nName = MONTH_NAMES[nIdx];
     const nYrS = nYr.toString();
@@ -259,11 +255,7 @@ const App: React.FC = () => {
         (t.month || getMonthFromDateStr(t.date) || "").toUpperCase().trim() === actMonthNorm && 
         (t.year || getYearFromDateStr(t.date, actYear)) === actYear
     );
-    
-    const sourceAcc = cur.accounts.filter(a => 
-        (a.month || "").toUpperCase().trim() === actMonthNorm && 
-        (a.year || "") === actYear
-    );
+    const sourceAcc = cur.accounts.filter(a => (a.month || "").toUpperCase().trim() === actMonthNorm && (a.year || "") === actYear);
 
     const nTx: Transaction[] = sourceTx.map((t, i) => {
         let newDate = t.date;
@@ -275,16 +267,7 @@ const App: React.FC = () => {
         } else {
            newDate = `01 ${nName.charAt(0).toUpperCase() + nName.slice(1, 3).toLowerCase()}`;
         }
-
-        return { 
-          ...t, 
-          id: generateUUID(), 
-          month: nName, 
-          year: nYrS, 
-          date: newDate,
-          paid: false, 
-          createdAt: new Date(Date.now() - i * 10).toISOString() 
-        };
+        return { ...t, id: generateUUID(), month: nName, year: nYrS, date: newDate, paid: false, createdAt: new Date(Date.now() - i * 10).toISOString() };
     });
     
     const oldToNewAccMap = new Map<string, string>();
@@ -294,13 +277,7 @@ const App: React.FC = () => {
         return { ...a, id: newId, month: nName, year: nYrS };
     });
 
-    const nMonth = { 
-        id: nId, 
-        month: nName, 
-        year: nYrS, 
-        total: roundMoney(nTx.reduce((s, t) => s + t.amount, 0)), 
-        count: nTx.length 
-    };
+    const nMonth = { id: nId, month: nName, year: nYrS, total: roundMoney(nTx.reduce((s, t) => s + t.amount, 0)), count: nTx.length };
     
     const updMonths = sortMonths([...cur.months, nMonth]);
     const currentOrder = cur.dashboardOrder;
@@ -356,17 +333,11 @@ const App: React.FC = () => {
       setTransactions(prev => {
          if (editingTransaction) {
              const upd = { ...editingTransaction, ...data };
-             if(currentUserEmail) {
-                upsertItem(currentUserEmail, 'transactions', upd);
-                lastActionTimeRef.current = Date.now();
-             }
+             if(currentUserEmail) { upsertItem(currentUserEmail, 'transactions', upd); lastActionTimeRef.current = Date.now(); }
              return prev.map(t => t.id === editingTransaction.id ? upd : t);
          } else {
              const nTx = { id: generateUUID(), ...data, month: act?.month, year: act?.year, createdAt: new Date().toISOString() };
-             if(currentUserEmail) {
-                upsertItem(currentUserEmail, 'transactions', nTx);
-                lastActionTimeRef.current = Date.now();
-             }
+             if(currentUserEmail) { upsertItem(currentUserEmail, 'transactions', nTx); lastActionTimeRef.current = Date.now(); }
              return [nTx, ...prev];
          }
       });
@@ -378,21 +349,14 @@ const App: React.FC = () => {
     if (editingAccount) {
       const upd = { ...editingAccount, name, balance, colorTheme: theme };
       setAccounts(prev => prev.map(a => a.id === editingAccount.id ? upd : a));
-      if (currentUserEmail) {
-        upsertItem(currentUserEmail, 'accounts', upd);
-        lastActionTimeRef.current = Date.now();
-      }
+      if (currentUserEmail) { upsertItem(currentUserEmail, 'accounts', upd); lastActionTimeRef.current = Date.now(); }
       setEditingAccount(null);
     } else {
       const nAcc = { id: generateUUID(), name, balance, colorTheme: theme, month: act?.month, year: act?.year };
       const newOrder = [...dashboardOrder, nAcc.id];
       setAccounts(prev => [...prev, nAcc]);
       setDashboardOrder(newOrder); 
-      if (currentUserEmail) { 
-        upsertItem(currentUserEmail, 'accounts', nAcc); 
-        saveUserField(currentUserEmail, 'dashboardOrder', newOrder); 
-        lastActionTimeRef.current = Date.now();
-      }
+      if (currentUserEmail) { upsertItem(currentUserEmail, 'accounts', nAcc); saveUserField(currentUserEmail, 'dashboardOrder', newOrder); lastActionTimeRef.current = Date.now(); }
     }
   }, [editingAccount, activeMonthId, currentUserEmail, dashboardOrder]);
 
@@ -400,19 +364,12 @@ const App: React.FC = () => {
     const newOrder = dashboardOrder.filter(o => o !== id);
     setAccounts(p => p.filter(a => a.id !== id));
     setDashboardOrder(newOrder);
-    if (currentUserEmail) { 
-      deleteItem(currentUserEmail, 'accounts', id); 
-      saveUserField(currentUserEmail, 'dashboardOrder', newOrder); 
-      lastActionTimeRef.current = Date.now();
-    }
+    if (currentUserEmail) { deleteItem(currentUserEmail, 'accounts', id); saveUserField(currentUserEmail, 'dashboardOrder', newOrder); lastActionTimeRef.current = Date.now(); }
   }, [currentUserEmail, dashboardOrder]);
 
   const handleDeleteTransaction = useCallback((id: string) => { 
     setTransactions(p => p.filter(t => t.id !== id)); 
-    if (currentUserEmail) {
-      deleteItem(currentUserEmail, 'transactions', id); 
-      lastActionTimeRef.current = Date.now();
-    }
+    if (currentUserEmail) { deleteItem(currentUserEmail, 'transactions', id); lastActionTimeRef.current = Date.now(); }
   }, [currentUserEmail]);
 
   const handleToggleStatus = useCallback((id: string) => {
@@ -431,8 +388,74 @@ const App: React.FC = () => {
     if (currentUserEmail) { upsertItem(currentUserEmail, 'transactions', updatedTx); lastActionTimeRef.current = Date.now(); }
   }, [currentUserEmail]);
 
+  // --- OPTIMIZED HANDLERS (Callback) ---
+  const handleOpenAddTransaction = useCallback(() => setIsAddTransactionOpen(true), []);
+  const handleOpenCalculator = useCallback(() => setIsCalculatorOpen(true), []);
+  const handleOpenAddAccount = useCallback(() => setIsAddAccountOpen(true), []);
+  const handleOpenProfile = useCallback(() => setIsProfileModalOpen(true), []);
+  
+  const handleEditAccount = useCallback((acc: Account) => {
+    setEditingAccount(acc);
+    setIsAddAccountOpen(true);
+  }, []);
+
+  const handleEditTransaction = useCallback((tx: Transaction) => {
+    setEditingTransaction(tx);
+    setIsAddTransactionOpen(true);
+  }, []);
+
+  const handleContactClick = useCallback((c: Contact) => {
+    if (c.id === '1') setIsNotepadOpen(true);
+    else if (c.id === '2') setIsCalendarOpen(true);
+    else if (c.id === '3') {
+       // Check prop inside component, but here we can check state ref or pass logic
+       if (!currentStateRef.current.userProfile.isPro) setIsProModalOpen(true);
+       else setIsAnalyticsOpen(true);
+    }
+  }, []);
+
+  // --- VIEW HANDLERS ---
+  const handleInvestmentAdd = useCallback((i: Omit<Investment, 'id'>) => {
+     const n = { ...i, id: generateUUID() };
+     setInvestments(p => [...p, n]);
+     if (currentUserEmail) { upsertItem(currentUserEmail, 'investments', n); lastActionTimeRef.current = Date.now(); }
+  }, [currentUserEmail]);
+
+  const handleInvestmentEdit = useCallback((i: Investment) => {
+     setInvestments(p => p.map(o => o.id === i.id ? i : o));
+     if (currentUserEmail) { upsertItem(currentUserEmail, 'investments', i); lastActionTimeRef.current = Date.now(); }
+  }, [currentUserEmail]);
+
+  const handleInvestmentDelete = useCallback((id: string) => {
+     setInvestments(p => p.filter(i => i.id !== id));
+     if (currentUserEmail) { deleteItem(currentUserEmail, 'investments', id); lastActionTimeRef.current = Date.now(); }
+  }, [currentUserEmail]);
+
+  const handleInvestmentUpdateRate = useCallback((r: number) => {
+     setCdiRate(r);
+     if (currentUserEmail) { saveUserField(currentUserEmail, 'cdiRate', r); lastActionTimeRef.current = Date.now(); }
+  }, [currentUserEmail]);
+
+  const handleLongTermAdd = useCallback((i: Omit<LongTermTransaction, 'id' | 'installmentsPaid'>) => {
+     const n = { ...i, id: generateUUID(), installmentsPaid: 0 };
+     setLongTermTransactions(p => [...p, n]);
+     if (currentUserEmail) { upsertItem(currentUserEmail, 'longTerm', n); lastActionTimeRef.current = Date.now(); }
+  }, [currentUserEmail]);
+
+  const handleLongTermEdit = useCallback((i: LongTermTransaction) => {
+     setLongTermTransactions(p => p.map(o => o.id === i.id ? i : o));
+     if (currentUserEmail) { upsertItem(currentUserEmail, 'longTerm', i); lastActionTimeRef.current = Date.now(); }
+  }, [currentUserEmail]);
+
+  const handleLongTermDelete = useCallback((id: string) => {
+     setLongTermTransactions(p => p.filter(i => i.id !== id));
+     if (currentUserEmail) { deleteItem(currentUserEmail, 'longTerm', id); lastActionTimeRef.current = Date.now(); }
+  }, [currentUserEmail]);
+
+  const handleGoHome = useCallback(() => setCurrentView('home'), []);
+  const handleOpenPro = useCallback(() => setIsProModalOpen(true), []);
+
   const handleLogout = useCallback(async () => {
-    // 1. Reset UI State immediately
     setIsProfileModalOpen(false);
     setIsAddTransactionOpen(false);
     setIsAddAccountOpen(false);
@@ -443,26 +466,39 @@ const App: React.FC = () => {
     setIsAnalyticsOpen(false);
     setIsProModalOpen(false);
     setCurrentView('home');
-
-    // 2. Clear Session
     localStorage.removeItem(STORAGE_KEYS.USER_SESSION);
     await supabase.auth.signOut();
     setCurrentUserEmail(null);
   }, []);
 
   const handleLoginSuccess = useCallback(async (email: string, name?: string) => {
-    // 1. Perform Login/Register
     if (name) await registerUser(email, name, { months: [SYSTEM_INITIAL_MONTH] }); 
     else await loginUser(email);
-    
-    // 2. State resets handled by KEY prop and useEffect, but we ensure here too
     setIsProfileModalOpen(false);
     setCurrentView('home');
-
-    // 3. Set Session
     setCurrentUserEmail(email); 
     saveData(STORAGE_KEYS.USER_SESSION, email); 
   }, []);
+
+  const handleDragStart = useCallback((id: string) => { dragItem.current = id; }, []);
+  const handleDragEnd = useCallback(() => { dragItem.current = null; }, []);
+  
+  const handleDragEnter = useCallback((tId: string) => {
+      if (dragItem.current && dragItem.current !== tId) {
+          const nO = [...currentStateRef.current.dashboardOrder];
+          const dI = nO.indexOf(dragItem.current);
+          const tI = nO.indexOf(tId);
+          if (dI !== -1 && tI !== -1) {
+              nO.splice(dI, 1);
+              nO.splice(tI, 0, dragItem.current);
+              setDashboardOrder(nO);
+              if (currentUserEmail) {
+                  saveUserField(currentUserEmail, 'dashboardOrder', nO);
+                  lastActionTimeRef.current = Date.now();
+              }
+          }
+      }
+  }, [currentUserEmail]);
 
   const activeMonth = useMemo(() => months.find(m => m.id === activeMonthId) || months[0], [months, activeMonthId]);
 
@@ -497,13 +533,11 @@ const App: React.FC = () => {
   if (isLoadingData && !userProfile.name) return <SplashScreen />;
 
   return (
-    // THE KEY IS THE SECRET: Changing the key forces React to destroy and recreate the DOM
-    // This wipes any previous state of modals and prevents "closing" animations on mount.
     <div key={currentUserEmail} ref={mainScrollRef} className={`h-full overflow-y-auto bg-[#0a0a0b] text-white px-2 pt-4 pb-32 font-sans selection:bg-accent selection:text-black no-scrollbar ${isAnyModalOpen ? 'overflow-hidden' : ''}`} style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
       {currentView === 'home' ? (
           <>
             <div className="flex justify-between items-center mb-6 pl-1">
-              <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setIsProfileModalOpen(true)}>
+              <div className="flex items-center gap-3 cursor-pointer group" onClick={handleOpenProfile}>
                 <div className="relative">
                   <div className={`w-12 h-12 rounded-full border-2 overflow-hidden shadow-lg ${userProfile.isPro ? 'border-yellow-500' : 'border-transparent group-hover:border-accent'}`}><img src={userProfile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" /></div>
                   {userProfile.isPro && <div className="absolute -bottom-1 -right-1 bg-yellow-500 rounded-full p-0.5 border-2 border-[#0a0a0b]"><Crown className="w-3 h-3 text-black fill-black" /></div>}
@@ -517,36 +551,36 @@ const App: React.FC = () => {
             </div>
             <div className="flex flex-col gap-2 mb-6">
                {dItems.map(id => {
-                  if (id === BALANCE_CARD_ID) return <BalanceCard key={id} id={id} balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} onAddClick={() => setIsAddTransactionOpen(true)} onDuplicateClick={handleDuplicateMonth} onCalculatorClick={() => setIsCalculatorOpen(true)} draggable onDragStart={id => dragItem.current = id} onDragEnter={tId => { if (dragItem.current && dragItem.current !== tId) { const nO = [...dashboardOrder]; const dI = nO.indexOf(dragItem.current), tI = nO.indexOf(tId); if (dI !== -1 && tI !== -1) { nO.splice(dI, 1); nO.splice(tI, 0, dragItem.current); setDashboardOrder(nO); if(currentUserEmail) { saveUserField(currentUserEmail, 'dashboardOrder', nO); lastActionTimeRef.current = Date.now(); } } } }} onDragEnd={() => dragItem.current = null} />;
+                  if (id === BALANCE_CARD_ID) return <BalanceCard key={id} id={id} balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} onAddClick={handleOpenAddTransaction} onDuplicateClick={handleDuplicateMonth} onCalculatorClick={handleOpenCalculator} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} />;
                   const a = filteredAcc.find(x => x.id === id);
-                  if (a) return <SecondaryCard key={a.id} account={a} onDelete={handleDeleteAccount} onEdit={x => { setEditingAccount(x); setIsAddAccountOpen(true); }} draggable onDragStart={id => dragItem.current = id} onDragEnter={tId => { if (dragItem.current && dragItem.current !== tId) { const nO = [...dashboardOrder]; const dI = nO.indexOf(dragItem.current), tI = nO.indexOf(tId); if (dI !== -1 && tI !== -1) { nO.splice(dI, 1); nO.splice(tI, 0, dragItem.current); setDashboardOrder(nO); if(currentUserEmail) { saveUserField(currentUserEmail, 'dashboardOrder', nO); lastActionTimeRef.current = Date.now(); } } } }} onDragEnd={() => dragItem.current = null} />;
+                  if (a) return <SecondaryCard key={a.id} account={a} onDelete={handleDeleteAccount} onEdit={handleEditAccount} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} />;
                   return null;
                })}
             </div>
-            <ContactsRow contacts={MOCK_CONTACTS} onAddClick={() => setIsAddAccountOpen(true)} onContactClick={c => { if (c.id === '1') setIsNotepadOpen(true); else if (c.id === '2') setIsCalendarOpen(true); else if (c.id === '3') { if (!userProfile.isPro) setIsProModalOpen(true); else setIsAnalyticsOpen(true); } }} isPro={!!userProfile.isPro} />
+            <ContactsRow contacts={MOCK_CONTACTS} onAddClick={handleOpenAddAccount} onContactClick={handleContactClick} isPro={!!userProfile.isPro} />
             <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} />
             <TransactionList 
               transactions={filteredTx} 
               onDelete={handleDeleteTransaction} 
-              onEdit={t => { setEditingTransaction(t); setIsAddTransactionOpen(true); }} 
+              onEdit={handleEditTransaction} 
               onToggleStatus={handleToggleStatus} 
               onTogglePaymentMethod={handleTogglePaymentMethod} 
             />
           </>
       ) : currentView === 'settings' ? (
-          <SettingsView currentThemeId={appTheme.id} onSaveTheme={t => { setAppTheme(t); saveData(STORAGE_KEYS.APP_THEME, t); if(currentUserEmail) { saveUserField(currentUserEmail, 'theme', t); lastActionTimeRef.current = Date.now(); } setCurrentView('home'); }} isPro={!!userProfile.isPro} onOpenProModal={() => setIsProModalOpen(true)} />
+          <SettingsView currentThemeId={appTheme.id} onSaveTheme={t => { setAppTheme(t); saveData(STORAGE_KEYS.APP_THEME, t); if(currentUserEmail) { saveUserField(currentUserEmail, 'theme', t); lastActionTimeRef.current = Date.now(); } setCurrentView('home'); }} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} />
       ) : currentView === 'long-term' ? (
-          <LongTermView items={longTermTransactions} onAdd={i => { const n = { ...i, id: generateUUID(), installmentsPaid: 0 }; setLongTermTransactions(p => [...p, n]); if(currentUserEmail) { upsertItem(currentUserEmail, 'longTerm', n); lastActionTimeRef.current = Date.now(); } }} onEdit={i => { setLongTermTransactions(p => p.map(o => o.id === i.id ? i : o)); if(currentUserEmail) { upsertItem(currentUserEmail, 'longTerm', i); lastActionTimeRef.current = Date.now(); } }} onDelete={id => { setLongTermTransactions(p => p.filter(i => i.id !== id)); if(currentUserEmail) { deleteItem(currentUserEmail, 'longTerm', id); lastActionTimeRef.current = Date.now(); } }} />
+          <LongTermView items={longTermTransactions} onAdd={handleLongTermAdd} onEdit={handleLongTermEdit} onDelete={handleLongTermDelete} />
       ) : (
-          <InvestmentsView investments={investments} onAdd={i => { const n = { ...i, id: generateUUID() }; setInvestments(p => [...p, n]); if(currentUserEmail) { upsertItem(currentUserEmail, 'investments', n); lastActionTimeRef.current = Date.now(); } }} onEdit={i => { setInvestments(p => p.map(o => o.id === i.id ? i : o)); if(currentUserEmail) { upsertItem(currentUserEmail, 'investments', i); lastActionTimeRef.current = Date.now(); } }} onDelete={id => { setInvestments(p => p.filter(i => i.id !== id)); if(currentUserEmail) { deleteItem(currentUserEmail, 'investments', id); lastActionTimeRef.current = Date.now(); } }} onBack={() => setCurrentView('home')} cdiRate={cdiRate} onUpdateCdiRate={r => { setCdiRate(r); if(currentUserEmail) { saveUserField(currentUserEmail, 'cdiRate', r); lastActionTimeRef.current = Date.now(); } }} isPro={!!userProfile.isPro} onOpenProModal={() => setIsProModalOpen(true)} />
+          <InvestmentsView investments={investments} onAdd={handleInvestmentAdd} onEdit={handleInvestmentEdit} onDelete={handleInvestmentDelete} onBack={handleGoHome} cdiRate={cdiRate} onUpdateCdiRate={handleInvestmentUpdateRate} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} />
       )}
       <BottomNav currentView={currentView} onChangeView={setCurrentView} />
-      <AddTransactionModal isOpen={isAddTransactionOpen} onClose={() => { setIsAddTransactionOpen(false); setEditingTransaction(null); }} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} />
-      <AddAccountModal isOpen={isAddAccountOpen} onClose={() => { setIsAddAccountOpen(false); setEditingAccount(null); }} onSave={handleSaveAccount} accountToEdit={editingAccount} isPro={!!userProfile.isPro} onOpenProModal={() => setIsProModalOpen(true)} />
+      <AddTransactionModal isOpen={isAddTransactionOpen} onClose={() => { setIsAddTransactionOpen(false); setEditingTransaction(null); }} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} activeMonthContext={{ monthIndex: MONTH_NAMES.indexOf((activeMonth.month || "").toUpperCase()), year: parseInt(activeMonth.year) }} />
+      <AddAccountModal isOpen={isAddAccountOpen} onClose={() => { setIsAddAccountOpen(false); setEditingAccount(null); }} onSave={handleSaveAccount} accountToEdit={editingAccount} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} />
       <CalculatorModal isOpen={isCalculatorOpen} onClose={() => setIsCalculatorOpen(false)} />
       <EditProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} onSave={p => { setUserProfile(p); if(currentUserEmail) { saveUserField(currentUserEmail, 'profile', p); lastActionTimeRef.current = Date.now(); } }} onLogout={handleLogout} onDeleteAccount={() => {}} currentProfile={userProfile} />
       <NotepadModal isOpen={isNotepadOpen} onClose={() => setIsNotepadOpen(false)} initialContent={notepadContent} initialDrawing={notepadDrawing} onSave={(c, d) => { setNotepadContent(c); setNotepadDrawing(d); if(currentUserEmail) { saveUserField(currentUserEmail, 'notepadContent', c); saveUserField(currentUserEmail, 'notepadDrawing', d); lastActionTimeRef.current = Date.now(); } }} />
-      <CalendarModal isOpen={isCalendarOpen} onClose={() => setIsCalendarOpen(false)} transactions={transactions} />
+      <CalendarModal isOpen={isCalendarOpen} onClose={() => setIsCalendarOpen(false)} transactions={transactions} activeMonthContext={{ monthIndex: MONTH_NAMES.indexOf((activeMonth.month || "").toUpperCase()), year: parseInt(activeMonth.year) }} />
       <NotificationModal isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} notifications={notifications} onMarkAllRead={() => { setNotifications([]); if(currentUserEmail) { saveCollection(currentUserEmail, 'notifications', []); lastActionTimeRef.current = Date.now(); } }} onDelete={id => { setNotifications(p => p.filter(n => n.id !== id)); if(currentUserEmail) { deleteItem(currentUserEmail, 'notifications', id); lastActionTimeRef.current = Date.now(); } }} currentUserEmail={currentUserEmail} />
       <Suspense fallback={null}>{isAnalyticsOpen && <AnalyticsModal isOpen={isAnalyticsOpen} onClose={() => setIsAnalyticsOpen(false)} transactions={transactions} months={months} />}</Suspense>
       <ProModal isOpen={isProModalOpen} onClose={() => setIsProModalOpen(false)} onUpgrade={() => { setUserProfile(p => ({...p, isPro: true})); setIsProModalOpen(false); if(currentUserEmail) { saveUserField(currentUserEmail, 'profile', { ...userProfile, isPro: true }); lastActionTimeRef.current = Date.now(); } }} />
