@@ -27,7 +27,7 @@ const calculate = (first: number, second: number, op: string) => {
   return parseFloat(result.toFixed(10));
 };
 
-// Formatter extracted to avoid recreation on render
+// Formatter extracted
 const getFormattedDisplay = (val: string) => {
     if (!val) return '0';
     if (val === 'Erro') return 'Erro';
@@ -42,24 +42,23 @@ const getFormattedDisplay = (val: string) => {
     if (val.endsWith('.')) return `${formattedInt},`;
     if (decimalPart !== null) return `${formattedInt},${decimalPart}`;
     return formattedInt;
-};
+  };
 
 interface ButtonProps {
   label: React.ReactNode;
-  onClick: (val?: any) => void;
-  param?: any; 
+  onClick: () => void;
   variant?: 'default' | 'accent-text' | 'red-text' | 'accent-filled' | 'secondary';
   className?: string;
 }
 
+// Memoized Button Component
 const CalculatorButton = React.memo(({ 
   label, 
   onClick, 
-  param,
   variant = 'default',
   className = '' 
 }: ButtonProps) => {
-  // touch-manipulation: removes 300ms delay on mobile browsers (Performance Native)
+  // touch-manipulation: removes 300ms delay on mobile browsers
   const baseStyles = "w-full h-16 sm:h-20 rounded-[1.5rem] text-2xl font-bold flex items-center justify-center transition-transform active:scale-90 select-none shadow-md touch-manipulation";
   
   let colorStyles = "bg-[#2c2c2e] text-white active:bg-[#3a3a3c]"; 
@@ -74,12 +73,12 @@ const CalculatorButton = React.memo(({
     colorStyles = "bg-[#3a3a3c] text-white active:bg-[#4a4a4c]";
   }
 
-  // Using standard onClick is safer against crashes than onPointerDown manual handling
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+     // Trigger vibration on click if available
      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-         try { navigator.vibrate(10); } catch(e) {}
+         try { navigator.vibrate(10); } catch(err) {}
      }
-     onClick(param);
+     onClick();
   };
 
   return (
@@ -107,61 +106,62 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  const inputDigit = useCallback((digit: string) => {
+  const inputDigit = (digit: string) => {
     if (waitingForOperand) {
       setDisplay(digit);
       setWaitingForOperand(false);
     } else {
       setDisplay(prev => prev === '0' ? digit : prev + digit);
     }
-  }, [waitingForOperand]);
+  };
 
-  const inputDot = useCallback(() => {
+  const inputDot = () => {
     if (waitingForOperand) {
       setDisplay('0.');
       setWaitingForOperand(false);
     } else {
       setDisplay(prev => prev.indexOf('.') === -1 ? prev + '.' : prev);
     }
-  }, [waitingForOperand]);
+  };
 
-  const clear = useCallback(() => {
+  const clear = () => {
     setDisplay('0');
     setPreviousValue(null);
     setOperator(null);
     setWaitingForOperand(false);
     setHistoryLine('');
-  }, []);
+  };
 
-  const handleClose = useCallback(() => {
+  const handleClose = () => {
       onClose();
-      setTimeout(clear, 200); 
-  }, [onClose, clear]);
+      // Ensure we clear state safely after animation starts
+      setTimeout(() => clear(), 200); 
+  };
 
-  const handleDelete = useCallback(() => {
+  const handleDelete = () => {
     if (waitingForOperand) return;
     setDisplay(prev => {
         if (prev.length === 1) return '0';
         return prev.slice(0, -1);
     });
-  }, [waitingForOperand]);
+  };
 
-  const toggleSign = useCallback(() => {
+  const toggleSign = () => {
     setDisplay(prev => {
         const value = parseFloat(prev);
         if (value === 0) return prev;
         return String(value * -1);
     });
-  }, []);
+  };
 
-  const percentage = useCallback(() => {
+  const percentage = () => {
     setDisplay(prev => {
         const value = parseFloat(prev);
         return String(value / 100);
     });
-  }, []);
+  };
 
-  const performOperation = useCallback((nextOperator: string) => {
+  const performOperation = (nextOperator: string) => {
     const inputValue = parseFloat(display);
     const opSymbol = nextOperator === '*' ? '×' : nextOperator === '/' ? '÷' : nextOperator;
 
@@ -187,9 +187,9 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
     setWaitingForOperand(true);
     setOperator(nextOperator);
-  }, [display, previousValue, operator, waitingForOperand]);
+  };
 
-  const handleEquals = useCallback(() => {
+  const handleEquals = () => {
     if (!operator || previousValue === null) return;
     
     const inputValue = parseFloat(display);
@@ -202,7 +202,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
     setPreviousValue(null);
     setOperator(null);
     setWaitingForOperand(true);
-  }, [operator, previousValue, display]);
+  };
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -240,25 +240,25 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
           <CalculatorButton label="C" onClick={clear} variant="red-text" />
           <CalculatorButton label={<DeleteIcon />} onClick={handleDelete} variant="secondary" />
           <CalculatorButton label="%" onClick={percentage} variant="secondary" />
-          <CalculatorButton label="÷" onClick={performOperation} param="/" variant="accent-filled" />
+          <CalculatorButton label="÷" onClick={() => performOperation('/')} variant="accent-filled" />
 
-          <CalculatorButton label="7" onClick={inputDigit} param="7" />
-          <CalculatorButton label="8" onClick={inputDigit} param="8" />
-          <CalculatorButton label="9" onClick={inputDigit} param="9" />
-          <CalculatorButton label="×" onClick={performOperation} param="*" variant="accent-filled" />
+          <CalculatorButton label="7" onClick={() => inputDigit('7')} />
+          <CalculatorButton label="8" onClick={() => inputDigit('8')} />
+          <CalculatorButton label="9" onClick={() => inputDigit('9')} />
+          <CalculatorButton label="×" onClick={() => performOperation('*')} variant="accent-filled" />
 
-          <CalculatorButton label="4" onClick={inputDigit} param="4" />
-          <CalculatorButton label="5" onClick={inputDigit} param="5" />
-          <CalculatorButton label="6" onClick={inputDigit} param="6" />
-          <CalculatorButton label="-" onClick={performOperation} param="-" variant="accent-filled" />
+          <CalculatorButton label="4" onClick={() => inputDigit('4')} />
+          <CalculatorButton label="5" onClick={() => inputDigit('5')} />
+          <CalculatorButton label="6" onClick={() => inputDigit('6')} />
+          <CalculatorButton label="-" onClick={() => performOperation('-')} variant="accent-filled" />
 
-          <CalculatorButton label="1" onClick={inputDigit} param="1" />
-          <CalculatorButton label="2" onClick={inputDigit} param="2" />
-          <CalculatorButton label="3" onClick={inputDigit} param="3" />
-          <CalculatorButton label="+" onClick={performOperation} param="+" variant="accent-filled" />
+          <CalculatorButton label="1" onClick={() => inputDigit('1')} />
+          <CalculatorButton label="2" onClick={() => inputDigit('2')} />
+          <CalculatorButton label="3" onClick={() => inputDigit('3')} />
+          <CalculatorButton label="+" onClick={() => performOperation('+')} variant="accent-filled" />
 
           <CalculatorButton label="+/-" onClick={toggleSign} className="text-xl" />
-          <CalculatorButton label="0" onClick={inputDigit} param="0" />
+          <CalculatorButton label="0" onClick={() => inputDigit('0')} />
           <CalculatorButton label="," onClick={inputDot} />
           <CalculatorButton label="=" onClick={handleEquals} variant="accent-filled" />
 
