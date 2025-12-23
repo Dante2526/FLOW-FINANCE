@@ -1,10 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { X, Delete } from 'lucide-react';
 
+// Interface otimizada para evitar funções anônimas no render
 interface ButtonProps {
   label: React.ReactNode;
-  onClick: () => void;
+  onClick: (val?: any) => void;
+  param?: any; // Parâmetro estável para passar ao onClick
   variant?: 'default' | 'accent-text' | 'red-text' | 'accent-filled' | 'secondary';
   className?: string;
 }
@@ -13,35 +15,42 @@ interface ButtonProps {
 const CalculatorButton = React.memo(({ 
   label, 
   onClick, 
+  param,
   variant = 'default',
   className = '' 
 }: ButtonProps) => {
-  const baseStyles = "w-full h-16 sm:h-20 rounded-[1.5rem] text-2xl font-bold flex items-center justify-center transition-all active:scale-95 select-none shadow-md touch-manipulation";
+  // touch-action: none remove delay de 300ms em mobile
+  const baseStyles = "w-full h-16 sm:h-20 rounded-[1.5rem] text-2xl font-bold flex items-center justify-center transition-transform duration-100 active:scale-90 select-none shadow-md touch-none will-change-transform";
   
-  let colorStyles = "bg-[#2c2c2e] text-white hover:bg-[#3a3a3c]"; 
+  let colorStyles = "bg-[#2c2c2e] text-white active:bg-[#3a3a3c]"; 
 
   if (variant === 'accent-text') {
-    colorStyles = "bg-[#3a3a3c] text-accent hover:bg-[#4a4a4c]";
+    colorStyles = "bg-[#3a3a3c] text-accent active:bg-[#4a4a4c]";
   } else if (variant === 'red-text') {
-    colorStyles = "bg-[#3a3a3c] text-red-500 hover:bg-[#4a4a4c]";
+    colorStyles = "bg-[#3a3a3c] text-red-500 active:bg-[#4a4a4c]";
   } else if (variant === 'accent-filled') {
-    colorStyles = "bg-accent text-black hover:bg-accentDark shadow-accent/20";
+    colorStyles = "bg-accent text-black active:bg-accentDark shadow-accent/20";
   } else if (variant === 'secondary') {
-    colorStyles = "bg-[#3a3a3c] text-white hover:bg-[#4a4a4c]";
+    colorStyles = "bg-[#3a3a3c] text-white active:bg-[#4a4a4c]";
   }
 
-  const handleClick = (e: React.MouseEvent) => {
-      // Otimização Tátil: Vibração curta e seca (10ms) para sensação de click físico
+  const handleClick = (e: React.PointerEvent<HTMLButtonElement>) => {
+      // Previne comportamentos fantasmas de mouse em telas touch
+      e.preventDefault();
+      
+      // Otimização Tátil: Vibração curta e seca (10ms)
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
           try { navigator.vibrate(10); } catch(e) {}
       }
-      onClick();
+      
+      // Chama a função passando o parâmetro (se existir)
+      onClick(param);
   };
 
   return (
     <button 
       type="button"
-      onClick={handleClick}
+      onPointerDown={handleClick} // Pointer events são mais rápidos que onClick em mobile
       className={`${baseStyles} ${colorStyles} ${className}`}
     >
       {label}
@@ -79,56 +88,61 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
     return formattedInt;
   };
 
-  const inputDigit = (digit: string) => {
+  // Wrapped in useCallback to act as a stable handler
+  const inputDigit = useCallback((digit: string) => {
+    // Usando functional updates onde possível para garantir estado fresco
     if (waitingForOperand) {
       setDisplay(digit);
       setWaitingForOperand(false);
     } else {
-      setDisplay(display === '0' ? digit : display + digit);
+      setDisplay(prev => prev === '0' ? digit : prev + digit);
     }
-  };
+  }, [waitingForOperand]);
 
-  const inputDot = () => {
+  const inputDot = useCallback(() => {
     if (waitingForOperand) {
       setDisplay('0.');
       setWaitingForOperand(false);
-    } else if (display.indexOf('.') === -1) {
-      setDisplay(display + '.');
+    } else {
+      setDisplay(prev => prev.indexOf('.') === -1 ? prev + '.' : prev);
     }
-  };
+  }, [waitingForOperand]);
 
-  const clear = () => {
+  const clear = useCallback(() => {
     setDisplay('0');
     setPreviousValue(null);
     setOperator(null);
     setWaitingForOperand(false);
     setHistoryLine('');
-  };
+  }, []);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
       onClose();
       setTimeout(clear, 200); 
-  };
+  }, [onClose, clear]);
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     if (waitingForOperand) return;
-    if (display.length === 1) {
-      setDisplay('0');
-    } else {
-      setDisplay(display.slice(0, -1));
-    }
-  };
+    setDisplay(prev => {
+        if (prev.length === 1) return '0';
+        return prev.slice(0, -1);
+    });
+  }, [waitingForOperand]);
 
-  const toggleSign = () => {
-    const value = parseFloat(display);
-    if (value === 0) return;
-    setDisplay(String(value * -1));
-  };
+  const toggleSign = useCallback(() => {
+    setDisplay(prev => {
+        const value = parseFloat(prev);
+        if (value === 0) return prev;
+        return String(value * -1);
+    });
+  }, []);
 
-  const percentage = () => {
-    const value = parseFloat(display);
-    setDisplay(String(value / 100));
-  };
+  const percentage = useCallback(() => {
+    setDisplay(prev => {
+        const value = parseFloat(prev);
+        return String(value / 100);
+    });
+  }, []);
 
   const calculate = (first: number, second: number, op: string) => {
     let result = 0;
@@ -223,25 +237,25 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
           <CalculatorButton label="C" onClick={clear} variant="red-text" />
           <CalculatorButton label={<Delete className="w-6 h-6" />} onClick={handleDelete} variant="secondary" />
           <CalculatorButton label="%" onClick={percentage} variant="secondary" />
-          <CalculatorButton label="÷" onClick={() => performOperation('/')} variant="accent-filled" />
+          <CalculatorButton label="÷" onClick={performOperation} param="/" variant="accent-filled" />
 
-          <CalculatorButton label="7" onClick={() => inputDigit('7')} />
-          <CalculatorButton label="8" onClick={() => inputDigit('8')} />
-          <CalculatorButton label="9" onClick={() => inputDigit('9')} />
-          <CalculatorButton label="×" onClick={() => performOperation('*')} variant="accent-filled" />
+          <CalculatorButton label="7" onClick={inputDigit} param="7" />
+          <CalculatorButton label="8" onClick={inputDigit} param="8" />
+          <CalculatorButton label="9" onClick={inputDigit} param="9" />
+          <CalculatorButton label="×" onClick={performOperation} param="*" variant="accent-filled" />
 
-          <CalculatorButton label="4" onClick={() => inputDigit('4')} />
-          <CalculatorButton label="5" onClick={() => inputDigit('5')} />
-          <CalculatorButton label="6" onClick={() => inputDigit('6')} />
-          <CalculatorButton label="-" onClick={() => performOperation('-')} variant="accent-filled" />
+          <CalculatorButton label="4" onClick={inputDigit} param="4" />
+          <CalculatorButton label="5" onClick={inputDigit} param="5" />
+          <CalculatorButton label="6" onClick={inputDigit} param="6" />
+          <CalculatorButton label="-" onClick={performOperation} param="-" variant="accent-filled" />
 
-          <CalculatorButton label="1" onClick={() => inputDigit('1')} />
-          <CalculatorButton label="2" onClick={() => inputDigit('2')} />
-          <CalculatorButton label="3" onClick={() => inputDigit('3')} />
-          <CalculatorButton label="+" onClick={() => performOperation('+')} variant="accent-filled" />
+          <CalculatorButton label="1" onClick={inputDigit} param="1" />
+          <CalculatorButton label="2" onClick={inputDigit} param="2" />
+          <CalculatorButton label="3" onClick={inputDigit} param="3" />
+          <CalculatorButton label="+" onClick={performOperation} param="+" variant="accent-filled" />
 
           <CalculatorButton label="+/-" onClick={toggleSign} className="text-xl" />
-          <CalculatorButton label="0" onClick={() => inputDigit('0')} />
+          <CalculatorButton label="0" onClick={inputDigit} param="0" />
           <CalculatorButton label="," onClick={inputDot} />
           <CalculatorButton label="=" onClick={handleEquals} variant="accent-filled" />
 
