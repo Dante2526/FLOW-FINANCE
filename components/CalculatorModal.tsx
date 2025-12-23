@@ -1,6 +1,53 @@
 
 import React, { useState } from 'react';
-import { X, Delete, Clock, Ruler, Pi } from 'lucide-react';
+import { X, Delete } from 'lucide-react';
+
+interface ButtonProps {
+  label: React.ReactNode;
+  onClick: () => void;
+  variant?: 'default' | 'accent-text' | 'red-text' | 'accent-filled' | 'secondary';
+  className?: string;
+}
+
+// Extracted & Memoized Component for Maximum Performance
+const CalculatorButton = React.memo(({ 
+  label, 
+  onClick, 
+  variant = 'default',
+  className = '' 
+}: ButtonProps) => {
+  const baseStyles = "w-full h-16 sm:h-20 rounded-[1.5rem] text-2xl font-bold flex items-center justify-center transition-all active:scale-95 select-none shadow-md touch-manipulation";
+  
+  let colorStyles = "bg-[#2c2c2e] text-white hover:bg-[#3a3a3c]"; 
+
+  if (variant === 'accent-text') {
+    colorStyles = "bg-[#3a3a3c] text-accent hover:bg-[#4a4a4c]";
+  } else if (variant === 'red-text') {
+    colorStyles = "bg-[#3a3a3c] text-red-500 hover:bg-[#4a4a4c]";
+  } else if (variant === 'accent-filled') {
+    colorStyles = "bg-accent text-black hover:bg-accentDark shadow-accent/20";
+  } else if (variant === 'secondary') {
+    colorStyles = "bg-[#3a3a3c] text-white hover:bg-[#4a4a4c]";
+  }
+
+  const handleClick = (e: React.MouseEvent) => {
+      // Otimização Tátil: Vibração curta e seca (10ms) para sensação de click físico
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+          try { navigator.vibrate(10); } catch(e) {}
+      }
+      onClick();
+  };
+
+  return (
+    <button 
+      type="button"
+      onClick={handleClick}
+      className={`${baseStyles} ${colorStyles} ${className}`}
+    >
+      {label}
+    </button>
+  );
+});
 
 interface Props {
   isOpen: boolean;
@@ -16,29 +63,19 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
-  // Format display value: 1000.5 -> 1.000,5
   const getFormattedDisplay = (val: string) => {
     if (!val) return '0';
     if (val === 'Erro') return 'Erro';
-    
-    // Tratamento para números muito grandes ou científicos
     const num = parseFloat(val);
-    if (Math.abs(num) > 999999999999) {
-       return num.toExponential(4).replace('.', ',');
-    }
-
+    if (Math.abs(num) > 999999999999) return num.toExponential(4).replace('.', ',');
+    
     const parts = val.split('.');
     const integerPart = parts[0];
     const decimalPart = parts.length > 1 ? parts[1] : null;
-    
     const formattedInt = parseInt(integerPart || '0').toLocaleString('pt-BR');
     
-    if (val.endsWith('.')) {
-      return `${formattedInt},`;
-    }
-    if (decimalPart !== null) {
-      return `${formattedInt},${decimalPart}`;
-    }
+    if (val.endsWith('.')) return `${formattedInt},`;
+    if (decimalPart !== null) return `${formattedInt},${decimalPart}`;
     return formattedInt;
   };
 
@@ -105,7 +142,6 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
         break;
       default: return second;
     }
-    // CORREÇÃO DE PRECISÃO: Arredonda para 10 casas decimais para evitar 0.999999...
     return parseFloat(result.toFixed(10));
   };
 
@@ -152,50 +188,6 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
     setWaitingForOperand(true);
   };
 
-  const Button = ({ 
-    label, 
-    onClick, 
-    variant = 'default',
-    className = ''
-  }: { 
-    label: React.ReactNode, 
-    onClick: () => void, 
-    variant?: 'default' | 'accent-text' | 'red-text' | 'accent-filled' | 'secondary',
-    className?: string
-  }) => {
-    // Design restaurado: Botões retangulares arredondados (padrão Flow Finance)
-    const baseStyles = "w-full h-16 sm:h-20 rounded-[1.5rem] text-2xl font-bold flex items-center justify-center transition-all active:scale-95 select-none shadow-md";
-    
-    let colorStyles = "bg-[#2c2c2e] text-white hover:bg-[#3a3a3c]"; // Default Number
-
-    if (variant === 'accent-text') {
-      colorStyles = "bg-[#3a3a3c] text-accent hover:bg-[#4a4a4c]";
-    } else if (variant === 'red-text') {
-      colorStyles = "bg-[#3a3a3c] text-red-500 hover:bg-[#4a4a4c]";
-    } else if (variant === 'accent-filled') {
-      colorStyles = "bg-accent text-black hover:bg-accentDark shadow-accent/20";
-    } else if (variant === 'secondary') {
-      colorStyles = "bg-[#3a3a3c] text-white hover:bg-[#4a4a4c]";
-    }
-
-    const handleClick = () => {
-        // Vibração tátil ao clicar (Haptic Feedback)
-        if (typeof navigator !== 'undefined' && navigator.vibrate) {
-            navigator.vibrate(15); // 15ms de vibração (leve clique)
-        }
-        onClick();
-    };
-
-    return (
-      <button 
-        onClick={handleClick}
-        className={`${baseStyles} ${colorStyles} ${className}`}
-      >
-        {label}
-      </button>
-    );
-  };
-
   return (
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-[#1c1c1e] w-full max-w-sm h-auto rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col justify-end overflow-hidden">
@@ -213,15 +205,12 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
         {/* Display Area */}
         <div className="bg-[#0a0a0b] rounded-[2rem] p-6 mb-6 border border-white/5 relative overflow-hidden">
-           {/* Background Decor */}
            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-2xl pointer-events-none" />
 
            <div className="relative z-10 flex flex-col items-end justify-end h-32">
-              {/* History / Equation Line */}
               <span className="text-gray-500 text-lg font-medium mb-1 tracking-wide h-6 block">
                 {historyLine}
               </span>
-              {/* Main Result */}
               <span className="text-5xl font-bold text-white tracking-tight break-all text-right leading-none">
                 {getFormattedDisplay(display)}
               </span>
@@ -231,35 +220,30 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
         {/* Keypad Grid */}
         <div className="grid grid-cols-4 gap-3">
           
-          {/* Row 1 */}
-          <Button label="C" onClick={clear} variant="red-text" />
-          <Button label={<Delete className="w-6 h-6" />} onClick={handleDelete} variant="secondary" />
-          <Button label="%" onClick={percentage} variant="secondary" />
-          <Button label="÷" onClick={() => performOperation('/')} variant="accent-filled" />
+          <CalculatorButton label="C" onClick={clear} variant="red-text" />
+          <CalculatorButton label={<Delete className="w-6 h-6" />} onClick={handleDelete} variant="secondary" />
+          <CalculatorButton label="%" onClick={percentage} variant="secondary" />
+          <CalculatorButton label="÷" onClick={() => performOperation('/')} variant="accent-filled" />
 
-          {/* Row 2 */}
-          <Button label="7" onClick={() => inputDigit('7')} />
-          <Button label="8" onClick={() => inputDigit('8')} />
-          <Button label="9" onClick={() => inputDigit('9')} />
-          <Button label="×" onClick={() => performOperation('*')} variant="accent-filled" />
+          <CalculatorButton label="7" onClick={() => inputDigit('7')} />
+          <CalculatorButton label="8" onClick={() => inputDigit('8')} />
+          <CalculatorButton label="9" onClick={() => inputDigit('9')} />
+          <CalculatorButton label="×" onClick={() => performOperation('*')} variant="accent-filled" />
 
-          {/* Row 3 */}
-          <Button label="4" onClick={() => inputDigit('4')} />
-          <Button label="5" onClick={() => inputDigit('5')} />
-          <Button label="6" onClick={() => inputDigit('6')} />
-          <Button label="-" onClick={() => performOperation('-')} variant="accent-filled" />
+          <CalculatorButton label="4" onClick={() => inputDigit('4')} />
+          <CalculatorButton label="5" onClick={() => inputDigit('5')} />
+          <CalculatorButton label="6" onClick={() => inputDigit('6')} />
+          <CalculatorButton label="-" onClick={() => performOperation('-')} variant="accent-filled" />
 
-          {/* Row 4 */}
-          <Button label="1" onClick={() => inputDigit('1')} />
-          <Button label="2" onClick={() => inputDigit('2')} />
-          <Button label="3" onClick={() => inputDigit('3')} />
-          <Button label="+" onClick={() => performOperation('+')} variant="accent-filled" />
+          <CalculatorButton label="1" onClick={() => inputDigit('1')} />
+          <CalculatorButton label="2" onClick={() => inputDigit('2')} />
+          <CalculatorButton label="3" onClick={() => inputDigit('3')} />
+          <CalculatorButton label="+" onClick={() => performOperation('+')} variant="accent-filled" />
 
-          {/* Row 5 */}
-          <Button label="+/-" onClick={toggleSign} className="text-xl" />
-          <Button label="0" onClick={() => inputDigit('0')} />
-          <Button label="," onClick={inputDot} />
-          <Button label="=" onClick={handleEquals} variant="accent-filled" />
+          <CalculatorButton label="+/-" onClick={toggleSign} className="text-xl" />
+          <CalculatorButton label="0" onClick={() => inputDigit('0')} />
+          <CalculatorButton label="," onClick={inputDot} />
+          <CalculatorButton label="=" onClick={handleEquals} variant="accent-filled" />
 
         </div>
 
