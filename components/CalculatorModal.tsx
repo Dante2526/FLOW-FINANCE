@@ -2,16 +2,31 @@
 import React, { useState, useCallback } from 'react';
 import { X, Delete } from 'lucide-react';
 
-// Interface otimizada para evitar funções anônimas no render
+// Pure calculation logic extracted to avoid re-creation
+const calculate = (first: number, second: number, op: string) => {
+  let result = 0;
+  switch (op) {
+    case '+': result = first + second; break;
+    case '-': result = first - second; break;
+    case '*': result = first * second; break;
+    case '/': 
+      if (second === 0) return Infinity;
+      result = first / second; 
+      break;
+    default: return second;
+  }
+  // Precision handling
+  return parseFloat(result.toFixed(10));
+};
+
 interface ButtonProps {
   label: React.ReactNode;
   onClick: (val?: any) => void;
-  param?: any; // Parâmetro estável para passar ao onClick
+  param?: any; 
   variant?: 'default' | 'accent-text' | 'red-text' | 'accent-filled' | 'secondary';
   className?: string;
 }
 
-// Extracted & Memoized Component for Maximum Performance
 const CalculatorButton = React.memo(({ 
   label, 
   onClick, 
@@ -19,8 +34,7 @@ const CalculatorButton = React.memo(({
   variant = 'default',
   className = '' 
 }: ButtonProps) => {
-  // touch-action: none remove delay de 300ms em mobile
-  const baseStyles = "w-full h-16 sm:h-20 rounded-[1.5rem] text-2xl font-bold flex items-center justify-center transition-transform duration-100 active:scale-90 select-none shadow-md touch-none will-change-transform";
+  const baseStyles = "w-full h-16 sm:h-20 rounded-[1.5rem] text-2xl font-bold flex items-center justify-center transition-all duration-75 active:scale-90 select-none shadow-md touch-none";
   
   let colorStyles = "bg-[#2c2c2e] text-white active:bg-[#3a3a3c]"; 
 
@@ -34,23 +48,22 @@ const CalculatorButton = React.memo(({
     colorStyles = "bg-[#3a3a3c] text-white active:bg-[#4a4a4c]";
   }
 
-  const handleClick = (e: React.PointerEvent<HTMLButtonElement>) => {
-      // Previne comportamentos fantasmas de mouse em telas touch
-      e.preventDefault();
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+      // Prevent focus/scrolling issues
+      e.preventDefault(); 
       
-      // Otimização Tátil: Vibração curta e seca (10ms)
+      // Haptic Feedback
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
-          try { navigator.vibrate(10); } catch(e) {}
+          try { navigator.vibrate(15); } catch(e) {}
       }
       
-      // Chama a função passando o parâmetro (se existir)
       onClick(param);
   };
 
   return (
     <button 
       type="button"
-      onPointerDown={handleClick} // Pointer events são mais rápidos que onClick em mobile
+      onPointerDown={handlePointerDown}
       className={`${baseStyles} ${colorStyles} ${className}`}
     >
       {label}
@@ -88,9 +101,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
     return formattedInt;
   };
 
-  // Wrapped in useCallback to act as a stable handler
   const inputDigit = useCallback((digit: string) => {
-    // Usando functional updates onde possível para garantir estado fresco
     if (waitingForOperand) {
       setDisplay(digit);
       setWaitingForOperand(false);
@@ -118,6 +129,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   const handleClose = useCallback(() => {
       onClose();
+      // Delay clear to avoid UI flash during close animation
       setTimeout(clear, 200); 
   }, [onClose, clear]);
 
@@ -144,22 +156,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
     });
   }, []);
 
-  const calculate = (first: number, second: number, op: string) => {
-    let result = 0;
-    switch (op) {
-      case '+': result = first + second; break;
-      case '-': result = first - second; break;
-      case '*': result = first * second; break;
-      case '/': 
-        if (second === 0) return Infinity;
-        result = first / second; 
-        break;
-      default: return second;
-    }
-    return parseFloat(result.toFixed(10));
-  };
-
-  const performOperation = (nextOperator: string) => {
+  const performOperation = useCallback((nextOperator: string) => {
     const inputValue = parseFloat(display);
     const opSymbol = nextOperator === '*' ? '×' : nextOperator === '/' ? '÷' : nextOperator;
 
@@ -185,9 +182,9 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
     setWaitingForOperand(true);
     setOperator(nextOperator);
-  };
+  }, [display, previousValue, operator, waitingForOperand]);
 
-  const handleEquals = () => {
+  const handleEquals = useCallback(() => {
     if (!operator || previousValue === null) return;
     
     const inputValue = parseFloat(display);
@@ -200,7 +197,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
     setPreviousValue(null);
     setOperator(null);
     setWaitingForOperand(true);
-  };
+  }, [operator, previousValue, display]);
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -211,7 +208,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
            <h2 className="text-xl font-bold text-white ml-2">Calculadora</h2>
            <button 
             onClick={handleClose} 
-            className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-white/10 transition-colors"
+            className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-white/10 transition-colors active:scale-90"
            >
             <X className="w-5 h-5 text-gray-400" />
            </button>
@@ -219,6 +216,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
         {/* Display Area */}
         <div className="bg-[#0a0a0b] rounded-[2rem] p-6 mb-6 border border-white/5 relative overflow-hidden">
+           {/* Background Decor */}
            <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-2xl pointer-events-none" />
 
            <div className="relative z-10 flex flex-col items-end justify-end h-32">
