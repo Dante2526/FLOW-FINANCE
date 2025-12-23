@@ -1,6 +1,6 @@
 
-import React, { useReducer, useEffect, useMemo } from 'react';
-import { X } from 'lucide-react';
+import React, { useReducer, useEffect, useMemo, useState } from 'react';
+import { X, Copy, Check } from 'lucide-react';
 
 // --- STATIC ASSETS & HELPERS ---
 
@@ -30,7 +30,7 @@ const calculate = (first: number, second: number, op: string) => {
 
 const formatDisplay = (val: string) => {
     if (!val) return '0';
-    if (val === 'Erro' || val === 'Infinity') return 'Erro';
+    if (val === 'Erro' || val === 'Infinity' || val === 'NaN') return 'Erro';
     
     // Check if number is too large for standard formatting
     const num = parseFloat(val);
@@ -41,7 +41,8 @@ const formatDisplay = (val: string) => {
     const decimalPart = parts.length > 1 ? parts[1] : null;
     
     // Format integer part with thousands separators
-    const formattedInt = parseInt(integerPart || '0').toLocaleString('pt-BR');
+    const parsedInt = parseInt(integerPart || '0');
+    const formattedInt = isNaN(parsedInt) ? '0' : parsedInt.toLocaleString('pt-BR');
     
     if (val.endsWith('.')) return `${formattedInt},`;
     if (decimalPart !== null) return `${formattedInt},${decimalPart}`;
@@ -59,7 +60,7 @@ type CalculatorState = {
 };
 
 type CalculatorAction = {
-  type: 'DIGIT' | 'OP' | 'EXEC' | 'CLEAR' | 'DEL' | 'SIGN' | 'PERCENT' | 'DOT';
+  type: 'DIGIT' | 'OP' | 'EXEC' | 'CLEAR' | 'DEL' | 'SIGN' | 'PERCENT' | 'DOT' | 'PASTE';
   payload?: string;
 };
 
@@ -76,8 +77,20 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
     case 'DIGIT':
       if (action.payload) {
         if (state.waitingForOperand) {
-          return { ...state, display: action.payload, waitingForOperand: false };
+          // New Analysis Fix: Clear history if starting fresh after '=' (both op and prev are null/reset)
+          // Actually in EXEC we reset op/prev. So if waitingForOperand is true and op is null, we are post-exec.
+          const shouldClearHistory = state.operator === null;
+
+          return { 
+             ...state, 
+             display: action.payload, 
+             waitingForOperand: false, 
+             history: shouldClearHistory ? '' : state.history
+          };
         }
+        // Limit max digits to prevent UI break
+        if (state.display.replace('.', '').length >= 15) return state;
+        
         return { 
           ...state, 
           display: state.display === '0' ? action.payload : state.display + action.payload 
@@ -85,9 +98,19 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
       }
       return state;
 
+    case 'PASTE':
+      if (action.payload) {
+          return {
+              ...state,
+              display: action.payload,
+              waitingForOperand: false
+          };
+      }
+      return state;
+
     case 'DOT':
       if (state.waitingForOperand) {
-        return { ...state, display: '0.', waitingForOperand: false };
+        return { ...state, display: '0.', waitingForOperand: false, history: state.operator === null ? '' : state.history };
       }
       if (state.display.indexOf('.') === -1) {
         return { ...state, display: state.display + '.' };
@@ -205,7 +228,6 @@ const CalculatorButton = React.memo(({
       case 'secondary': colorStyles = "bg-[#3a3a3c] text-white active:bg-[#4a4a4c]"; break;
   }
 
-  // Stable handler
   const handlePress = () => {
      if (typeof navigator !== 'undefined' && navigator.vibrate) {
          try { navigator.vibrate(10); } catch(e) {}
@@ -233,72 +255,69 @@ interface Props {
 
 const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [state, dispatch] = useReducer(calculatorReducer, INITIAL_STATE);
+  const [copied, setCopied] = useState(false);
 
-  // Optimization: Memoize the Delete Icon to prevent unnecessary re-renders of that specific button
-  // when the parent re-renders due to display changes.
+  // Optimization: Memoize the Delete Icon
   const deleteIconNode = useMemo(() => <DeleteIcon />, []);
 
-  // Optimization: Add Keyboard Support for Desktop/Hybrid users
+  // Keyboard & Paste Support
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key;
       
-      // Numbers
-      if (/^[0-9]$/.test(key)) {
-        e.preventDefault();
-        dispatch({ type: 'DIGIT', payload: key });
+      if (/^[0-9]$/.test(key)) { e.preventDefault(); dispatch({ type: 'DIGIT', payload: key }); }
+      if (['+', '-', '*', '/'].includes(key)) { e.preventDefault(); dispatch({ type: 'OP', payload: key }); }
+      if (key === 'x' || key === 'X') { e.preventDefault(); dispatch({ type: 'OP', payload: '*' }); }
+      if (key === 'Enter' || key === '=') { e.preventDefault(); dispatch({ type: 'EXEC' }); }
+      if (key === '.' || key === ',') { e.preventDefault(); dispatch({ type: 'DOT' }); }
+      if (key === 'Backspace' || key === 'Delete') { e.preventDefault(); dispatch({ type: 'DEL' }); }
+      if (key === 'Escape' || key.toLowerCase() === 'c') { 
+          e.preventDefault(); 
+          dispatch({ type: 'CLEAR' });
       }
-      
-      // Operators
-      if (['+', '-', '*', '/'].includes(key)) {
+      if (key === '%') { e.preventDefault(); dispatch({ type: 'PERCENT' }); }
+    };
+
+    const handlePaste = (e: ClipboardEvent) => {
         e.preventDefault();
-        dispatch({ type: 'OP', payload: key });
-      }
-      
-      // Equals / Enter
-      if (key === 'Enter' || key === '=') {
-        e.preventDefault();
-        dispatch({ type: 'EXEC' });
-      }
-      
-      // Dot / Comma
-      if (key === '.' || key === ',') {
-        e.preventDefault();
-        dispatch({ type: 'DOT' });
-      }
-      
-      // Delete / Backspace
-      if (key === 'Backspace') {
-        e.preventDefault();
-        dispatch({ type: 'DEL' });
-      }
-      
-      // Clear (Escape or C)
-      if (key === 'Escape' || key.toLowerCase() === 'c') {
-        e.preventDefault();
-        if (key === 'Escape') {
-             // Optional: Close modal on Esc if you prefer
-             // onClose();
-             dispatch({ type: 'CLEAR' });
-        } else {
-             dispatch({ type: 'CLEAR' });
+        const pastedData = e.clipboardData?.getData('text');
+        if (pastedData) {
+            const clean = pastedData.replace(/[^0-9.,-]/g, '').replace(',', '.');
+            if (clean && !isNaN(parseFloat(clean))) {
+                dispatch({ type: 'PASTE', payload: clean });
+            }
         }
-      }
-      
-      // Percent
-      if (key === '%') {
-        e.preventDefault();
-        dispatch({ type: 'PERCENT' });
-      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('paste', handlePaste);
+    return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('paste', handlePaste);
+    };
   }, [isOpen]);
 
+  // Copy Functionality
+  const handleCopy = () => {
+     if (navigator.clipboard) {
+         const textToCopy = state.display.replace('.', ',');
+         navigator.clipboard.writeText(textToCopy);
+         setCopied(true);
+         if (navigator.vibrate) navigator.vibrate(50);
+         setTimeout(() => setCopied(false), 2000);
+     }
+  };
+
   if (!isOpen) return null;
+
+  // Dynamic Font Size
+  const formattedValue = formatDisplay(state.display);
+  const displayLength = formattedValue.length;
+  let fontSizeClass = "text-5xl";
+  if (displayLength > 13) fontSizeClass = "text-3xl";
+  else if (displayLength > 9) fontSizeClass = "text-4xl";
 
   return (
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
@@ -316,21 +335,36 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Display Area */}
-        <div className="bg-[#0a0a0b] rounded-[2rem] p-6 mb-6 border border-white/5 relative overflow-hidden shadow-inner">
+        <div 
+           onClick={handleCopy}
+           className="bg-[#0a0a0b] rounded-[2rem] p-6 mb-6 border border-white/5 relative overflow-hidden shadow-inner group cursor-pointer active:scale-[0.99] transition-transform"
+        >
            {/* Background Decor */}
            <div className="absolute top-0 right-0 w-40 h-40 bg-accent/5 rounded-full blur-3xl pointer-events-none translate-x-10 -translate-y-10" />
+
+           {/* Copy Feedback */}
+           <div className={`absolute top-4 left-4 bg-white/10 backdrop-blur-md px-2 py-1 rounded-lg flex items-center gap-1 transition-opacity duration-300 ${copied ? 'opacity-100' : 'opacity-0'}`}>
+              <Check className="w-3 h-3 text-green-400" />
+              <span className="text-[10px] text-white font-bold">Copiado</span>
+           </div>
+           
+           {/* Copy Hint (Hover) */}
+           <div className={`absolute top-4 left-4 bg-white/5 px-2 py-1 rounded-lg flex items-center gap-1 transition-opacity duration-300 ${!copied ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
+              <Copy className="w-3 h-3 text-gray-400" />
+              <span className="text-[10px] text-gray-400 font-bold">Copiar</span>
+           </div>
 
            <div className="relative z-10 flex flex-col items-end justify-end h-32">
               <span className="text-gray-500 text-lg font-medium mb-1 tracking-wide h-6 block w-full text-right truncate opacity-80">
                 {state.history}
               </span>
-              <span className="text-5xl font-bold text-white tracking-tight break-all text-right leading-none w-full">
-                {formatDisplay(state.display)}
+              <span className={`${fontSizeClass} font-bold text-white tracking-tight break-all text-right leading-none w-full transition-all duration-100`}>
+                {formattedValue}
               </span>
            </div>
         </div>
 
-        {/* Keypad Grid - Zero Re-renders for static keys */}
+        {/* Keypad Grid */}
         <div className="grid grid-cols-4 gap-3">
           
           <CalculatorButton label="C" action="CLEAR" dispatch={dispatch} variant="red-text" />
