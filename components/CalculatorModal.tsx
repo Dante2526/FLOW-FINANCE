@@ -32,7 +32,7 @@ const formatDisplay = (val: string) => {
     if (!val) return '0';
     if (val === 'Erro' || val === 'Infinity' || val === 'NaN') return 'Erro';
     
-    // Check if number is too large for standard formatting
+    // Check if number is too large for standard formatting or very small
     const num = parseFloat(val);
     if (Math.abs(num) > 999999999999) return num.toExponential(4).replace('.', ',');
     
@@ -77,8 +77,7 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
     case 'DIGIT':
       if (action.payload) {
         if (state.waitingForOperand) {
-          // New Analysis Fix: Clear history if starting fresh after '=' (both op and prev are null/reset)
-          // Actually in EXEC we reset op/prev. So if waitingForOperand is true and op is null, we are post-exec.
+          // Clear history if starting fresh after '=' (both op and prev are null/reset)
           const shouldClearHistory = state.operator === null;
 
           return { 
@@ -123,6 +122,12 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
       return { ...state, display: state.display.slice(0, -1) };
 
     case 'CLEAR':
+      // Smart Clear Logic (iOS Style)
+      // If user is typing (not waiting for operand) and display is not 0, clear only current entry
+      if (!state.waitingForOperand && state.display !== '0') {
+         return { ...state, display: '0' };
+      }
+      // Otherwise (waiting for operand OR display is 0), clear everything (AC)
       return INITIAL_STATE;
 
     case 'SIGN':
@@ -131,7 +136,23 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
       return { ...state, display: String(val * -1) };
 
     case 'PERCENT':
-      return { ...state, display: String(parseFloat(state.display) / 100) };
+      const currentVal = parseFloat(state.display);
+      
+      // Smart Percentage Logic for Finance (e.g. 100 + 10% = 110)
+      // This is crucial for financial apps: 50 + 10% should be 55, not 50.1
+      if (state.previousValue !== null && state.operator && !state.waitingForOperand) {
+         if (state.operator === '+' || state.operator === '-') {
+             // Calculate percentage relative to the previous value
+             const pctValue = (state.previousValue * currentVal) / 100;
+             return {
+                 ...state,
+                 display: String(pctValue)
+             };
+         }
+      }
+      
+      // Default behavior (conversion to decimal) for mult/div
+      return { ...state, display: String(currentVal / 100) };
 
     case 'OP':
       if (action.payload) {
@@ -205,6 +226,7 @@ interface ButtonProps {
   payload?: string;
   dispatch: React.Dispatch<CalculatorAction>;
   variant?: 'default' | 'accent-text' | 'red-text' | 'accent-filled' | 'secondary';
+  isActive?: boolean;
   className?: string;
 }
 
@@ -214,23 +236,30 @@ const CalculatorButton = React.memo(({
   payload, 
   dispatch, 
   variant = 'default',
+  isActive = false,
   className = '' 
 }: ButtonProps) => {
   
-  const baseStyles = "w-full h-16 sm:h-20 rounded-[1.75rem] text-2xl font-bold flex items-center justify-center transition-transform active:scale-90 select-none shadow-sm touch-manipulation focus:outline-none";
+  // UX Tweaks: scale-95 for solid feel, duration-100 for snappiness
+  const baseStyles = "w-full h-16 sm:h-20 rounded-[2.5rem] sm:rounded-[1.75rem] text-3xl sm:text-2xl font-medium sm:font-bold flex items-center justify-center transition-all duration-100 active:scale-95 select-none shadow-sm touch-manipulation focus:outline-none";
   
   let colorStyles = "bg-[#2c2c2e] text-white active:bg-[#3a3a3c]"; 
 
-  switch(variant) {
-      case 'accent-text': colorStyles = "bg-[#3a3a3c] text-accent active:bg-[#4a4a4c]"; break;
-      case 'red-text': colorStyles = "bg-[#3a3a3c] text-red-500 active:bg-[#4a4a4c]"; break;
-      case 'accent-filled': colorStyles = "bg-accent text-black active:bg-accentDark shadow-accent/20"; break;
-      case 'secondary': colorStyles = "bg-[#3a3a3c] text-white active:bg-[#4a4a4c]"; break;
+  // UX Improvement: Highlighting active operator (iOS Style)
+  if (isActive && variant === 'accent-filled') {
+      colorStyles = "bg-white text-accent shadow-white/20";
+  } else {
+      switch(variant) {
+          case 'accent-text': colorStyles = "bg-[#3a3a3c] text-accent active:bg-[#4a4a4c]"; break;
+          case 'red-text': colorStyles = "bg-[#3a3a3c] text-red-500 active:bg-[#4a4a4c]"; break;
+          case 'accent-filled': colorStyles = "bg-accent text-black active:bg-accentDark shadow-accent/20"; break;
+          case 'secondary': colorStyles = "bg-[#3a3a3c] text-white active:bg-[#4a4a4c]"; break;
+      }
   }
 
   const handlePress = () => {
      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-         try { navigator.vibrate(10); } catch(e) {}
+         try { navigator.vibrate(15); } catch(e) {}
      }
      dispatch({ type: action, payload });
   };
@@ -260,6 +289,10 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
   // Optimization: Memoize the Delete Icon
   const deleteIconNode = useMemo(() => <DeleteIcon />, []);
 
+  // Determine if we should show 'C' (Clear Entry) or 'AC' (All Clear)
+  const isClearEntry = !state.waitingForOperand && state.display !== '0';
+  const clearButtonLabel = isClearEntry ? 'C' : 'AC';
+
   // Keyboard & Paste Support
   useEffect(() => {
     if (!isOpen) return;
@@ -284,7 +317,23 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
         e.preventDefault();
         const pastedData = e.clipboardData?.getData('text');
         if (pastedData) {
-            const clean = pastedData.replace(/[^0-9.,-]/g, '').replace(',', '.');
+            let clean = pastedData.replace(/[^0-9.,-]/g, '');
+
+            // Advanced BR Format Detection
+            // Pattern: 1.000 (Thousand only) OR 1.000,00 (Thousand + Decimal)
+            const isThousandDot = /^\d{1,3}(\.\d{3})+$/.test(clean); // e.g. 1.000 or 1.000.000
+            
+            if (clean.includes('.') && clean.includes(',')) {
+               // Standard BR Currency: 1.250,50 -> 1250.50
+               clean = clean.replace(/\./g, '').replace(',', '.');
+            } else if (clean.includes(',')) {
+               // Decimal only: 1250,50 -> 1250.50
+               clean = clean.replace(',', '.');
+            } else if (isThousandDot) {
+               // Thousand only (No decimal): 1.000 -> 1000
+               clean = clean.replace(/\./g, '');
+            }
+            
             if (clean && !isNaN(parseFloat(clean))) {
                 dispatch({ type: 'PASTE', payload: clean });
             }
@@ -315,19 +364,23 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
   // Dynamic Font Size
   const formattedValue = formatDisplay(state.display);
   const displayLength = formattedValue.length;
-  let fontSizeClass = "text-5xl";
+  let fontSizeClass = "text-6xl sm:text-5xl"; // Larger on mobile
   if (displayLength > 13) fontSizeClass = "text-3xl";
-  else if (displayLength > 9) fontSizeClass = "text-4xl";
+  else if (displayLength > 9) fontSizeClass = "text-4xl sm:text-4xl";
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-[#1c1c1e] w-full max-w-sm h-auto rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col justify-end overflow-hidden ring-1 ring-white/10">
+    <div 
+      // Click outside to close handler
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 touch-manipulation"
+    >
+      <div className="bg-[#1c1c1e] w-full max-w-sm h-auto rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl border-t sm:border border-white/5 relative flex flex-col justify-end overflow-hidden ring-1 ring-white/10 pb-10 sm:pb-6">
         
         {/* Header/Close */}
         <div className="flex justify-between items-center mb-6 pl-2">
            <h2 className="text-xl font-bold text-white tracking-tight">Calculadora</h2>
            <button 
-            onClick={() => { onClose(); setTimeout(() => dispatch({ type: 'CLEAR' }), 200); }} 
+            onClick={onClose} 
             className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-white/10 transition-colors active:scale-90"
            >
             <X className="w-5 h-5 text-gray-400" />
@@ -358,34 +411,34 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
               <span className="text-gray-500 text-lg font-medium mb-1 tracking-wide h-6 block w-full text-right truncate opacity-80">
                 {state.history}
               </span>
-              <span className={`${fontSizeClass} font-bold text-white tracking-tight break-all text-right leading-none w-full transition-all duration-100`}>
+              <span className={`${fontSizeClass} font-medium text-white tracking-tight break-all text-right leading-none w-full transition-all duration-100`}>
                 {formattedValue}
               </span>
            </div>
         </div>
 
         {/* Keypad Grid */}
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-4 gap-3 sm:gap-3">
           
-          <CalculatorButton label="C" action="CLEAR" dispatch={dispatch} variant="red-text" />
+          <CalculatorButton label={clearButtonLabel} action="CLEAR" dispatch={dispatch} variant="red-text" />
           <CalculatorButton label={deleteIconNode} action="DEL" dispatch={dispatch} variant="secondary" />
           <CalculatorButton label="%" action="PERCENT" dispatch={dispatch} variant="secondary" />
-          <CalculatorButton label="÷" action="OP" payload="/" dispatch={dispatch} variant="accent-filled" />
+          <CalculatorButton label="÷" action="OP" payload="/" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '/' && state.waitingForOperand} />
 
           <CalculatorButton label="7" action="DIGIT" payload="7" dispatch={dispatch} />
           <CalculatorButton label="8" action="DIGIT" payload="8" dispatch={dispatch} />
           <CalculatorButton label="9" action="DIGIT" payload="9" dispatch={dispatch} />
-          <CalculatorButton label="×" action="OP" payload="*" dispatch={dispatch} variant="accent-filled" />
+          <CalculatorButton label="×" action="OP" payload="*" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '*' && state.waitingForOperand} />
 
           <CalculatorButton label="4" action="DIGIT" payload="4" dispatch={dispatch} />
           <CalculatorButton label="5" action="DIGIT" payload="5" dispatch={dispatch} />
           <CalculatorButton label="6" action="DIGIT" payload="6" dispatch={dispatch} />
-          <CalculatorButton label="-" action="OP" payload="-" dispatch={dispatch} variant="accent-filled" />
+          <CalculatorButton label="-" action="OP" payload="-" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '-' && state.waitingForOperand} />
 
           <CalculatorButton label="1" action="DIGIT" payload="1" dispatch={dispatch} />
           <CalculatorButton label="2" action="DIGIT" payload="2" dispatch={dispatch} />
           <CalculatorButton label="3" action="DIGIT" payload="3" dispatch={dispatch} />
-          <CalculatorButton label="+" action="OP" payload="+" dispatch={dispatch} variant="accent-filled" />
+          <CalculatorButton label="+" action="OP" payload="+" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '+' && state.waitingForOperand} />
 
           <CalculatorButton label="+/-" action="SIGN" dispatch={dispatch} className="text-xl" />
           <CalculatorButton label="0" action="DIGIT" payload="0" dispatch={dispatch} />
