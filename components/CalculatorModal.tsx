@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { X, Delete, Clock, Ruler, Pi, History } from 'lucide-react';
+import { X, Delete, Clock, Ruler, Pi } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -106,7 +106,6 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
       default: return second;
     }
     // CORREÇÃO DE PRECISÃO: Arredonda para 10 casas decimais para evitar 0.999999...
-    // Em seguida, converte para número novamente para remover zeros à direita desnecessários.
     return parseFloat(result.toFixed(10));
   };
 
@@ -144,7 +143,6 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
     const inputValue = parseFloat(display);
     const result = calculate(previousValue, inputValue, operator);
     
-    // Atualiza o histórico para mostrar a conta completa: Ex: 38,29 + 13,45
     const opSymbol = operator === '*' ? '×' : operator === '/' ? '÷' : operator;
     setHistoryLine(`${getFormattedDisplay(String(previousValue))} ${opSymbol} ${getFormattedDisplay(String(inputValue))}`);
 
@@ -162,20 +160,22 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
   }: { 
     label: React.ReactNode, 
     onClick: () => void, 
-    variant?: 'default' | 'accent-text' | 'red-text' | 'accent-filled',
+    variant?: 'default' | 'accent-text' | 'red-text' | 'accent-filled' | 'secondary',
     className?: string
   }) => {
-    // Round buttons style matching the reference image
-    const baseStyles = "w-16 h-16 sm:w-20 sm:h-20 rounded-full text-2xl sm:text-3xl font-medium flex items-center justify-center transition-all active:scale-90 select-none";
+    // Design restaurado: Botões retangulares arredondados (padrão Flow Finance)
+    const baseStyles = "w-full h-16 sm:h-20 rounded-[1.5rem] text-2xl font-bold flex items-center justify-center transition-all active:scale-95 select-none shadow-md";
     
     let colorStyles = "bg-[#2c2c2e] text-white hover:bg-[#3a3a3c]"; // Default Number
 
     if (variant === 'accent-text') {
-      colorStyles = "bg-[#2c2c2e] text-accent font-bold hover:bg-[#3a3a3c]";
+      colorStyles = "bg-[#3a3a3c] text-accent hover:bg-[#4a4a4c]";
     } else if (variant === 'red-text') {
-      colorStyles = "bg-[#2c2c2e] text-red-500 font-bold hover:bg-[#3a3a3c]";
+      colorStyles = "bg-[#3a3a3c] text-red-500 hover:bg-[#4a4a4c]";
     } else if (variant === 'accent-filled') {
-      colorStyles = "bg-accent text-black font-bold hover:bg-accentDark shadow-lg shadow-accent/20";
+      colorStyles = "bg-accent text-black hover:bg-accentDark shadow-accent/20";
+    } else if (variant === 'secondary') {
+      colorStyles = "bg-[#3a3a3c] text-white hover:bg-[#4a4a4c]";
     }
 
     return (
@@ -189,70 +189,63 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-[#0a0a0b] w-full max-w-sm h-full sm:h-auto sm:rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col justify-end sm:justify-between overflow-hidden">
+    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="bg-[#1c1c1e] w-full max-w-sm h-auto rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col justify-end overflow-hidden">
         
-        {/* Header/Close (Mobile friendly positioning) */}
-        <div className="absolute top-6 right-6 z-20">
-          <button 
+        {/* Header/Close */}
+        <div className="flex justify-between items-center mb-6">
+           <h2 className="text-xl font-bold text-white ml-2">Calculadora</h2>
+           <button 
             onClick={handleClose} 
-            className="w-8 h-8 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-white/10 transition-colors"
-          >
-            <X className="w-4 h-4 text-gray-400" />
-          </button>
+            className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-white/10 transition-colors"
+           >
+            <X className="w-5 h-5 text-gray-400" />
+           </button>
         </div>
 
         {/* Display Area */}
-        <div className="flex-1 flex flex-col items-end justify-end mb-4 px-2">
-          {/* History / Equation Line */}
-          <span className="text-gray-500 text-xl font-medium mb-1 tracking-wide h-8">
-            {historyLine}
-          </span>
-          {/* Main Result */}
-          <span className="text-6xl font-light text-white tracking-tight break-all text-right leading-none">
-            {getFormattedDisplay(display)}
-          </span>
-        </div>
+        <div className="bg-[#0a0a0b] rounded-[2rem] p-6 mb-6 border border-white/5 relative overflow-hidden">
+           {/* Background Decor */}
+           <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-2xl pointer-events-none" />
 
-        {/* Toolbar Icons (Visual from reference) */}
-        <div className="flex justify-between items-center px-4 mb-4 text-gray-500">
-             <Clock className="w-5 h-5 hover:text-white cursor-pointer transition-colors" />
-             <Ruler className="w-5 h-5 hover:text-white cursor-pointer transition-colors" />
-             <Pi className="w-5 h-5 hover:text-white cursor-pointer transition-colors" />
-             <button onClick={handleDelete} className="active:scale-90 transition-transform">
-                <Delete className="w-6 h-6 text-accent" />
-             </button>
+           <div className="relative z-10 flex flex-col items-end justify-end h-32">
+              {/* History / Equation Line */}
+              <span className="text-gray-500 text-lg font-medium mb-1 tracking-wide h-6 block">
+                {historyLine}
+              </span>
+              {/* Main Result */}
+              <span className="text-5xl font-bold text-white tracking-tight break-all text-right leading-none">
+                {getFormattedDisplay(display)}
+              </span>
+           </div>
         </div>
-        
-        {/* Separator */}
-        <div className="h-px bg-white/10 w-full mb-6" />
 
         {/* Keypad Grid */}
-        <div className="grid grid-cols-4 gap-3 sm:gap-4 place-items-center">
+        <div className="grid grid-cols-4 gap-3">
           
           {/* Row 1 */}
           <Button label="C" onClick={clear} variant="red-text" />
-          <Button label="( )" onClick={() => {}} variant="accent-text" className="text-xl" />
-          <Button label="%" onClick={percentage} variant="accent-text" />
-          <Button label="÷" onClick={() => performOperation('/')} variant="accent-text" />
+          <Button label={<Delete className="w-6 h-6" />} onClick={handleDelete} variant="secondary" />
+          <Button label="%" onClick={percentage} variant="secondary" />
+          <Button label="÷" onClick={() => performOperation('/')} variant="accent-filled" />
 
           {/* Row 2 */}
           <Button label="7" onClick={() => inputDigit('7')} />
           <Button label="8" onClick={() => inputDigit('8')} />
           <Button label="9" onClick={() => inputDigit('9')} />
-          <Button label="×" onClick={() => performOperation('*')} variant="accent-text" />
+          <Button label="×" onClick={() => performOperation('*')} variant="accent-filled" />
 
           {/* Row 3 */}
           <Button label="4" onClick={() => inputDigit('4')} />
           <Button label="5" onClick={() => inputDigit('5')} />
           <Button label="6" onClick={() => inputDigit('6')} />
-          <Button label="-" onClick={() => performOperation('-')} variant="accent-text" />
+          <Button label="-" onClick={() => performOperation('-')} variant="accent-filled" />
 
           {/* Row 4 */}
           <Button label="1" onClick={() => inputDigit('1')} />
           <Button label="2" onClick={() => inputDigit('2')} />
           <Button label="3" onClick={() => inputDigit('3')} />
-          <Button label="+" onClick={() => performOperation('+')} variant="accent-text" />
+          <Button label="+" onClick={() => performOperation('+')} variant="accent-filled" />
 
           {/* Row 5 */}
           <Button label="+/-" onClick={toggleSign} className="text-xl" />
