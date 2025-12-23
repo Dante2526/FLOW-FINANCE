@@ -1,8 +1,17 @@
 
 import React, { useState, useCallback } from 'react';
-import { X, Delete } from 'lucide-react';
+import { X } from 'lucide-react';
 
-// Pure calculation logic extracted to avoid re-creation
+// Custom Delete Icon to ensure it always renders without crashing
+const DeleteIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 5H9l-7 7 7 7h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Z"/>
+    <line x1="18" y1="9" x2="12" y2="15"/>
+    <line x1="12" y1="9" x2="18" y2="15"/>
+  </svg>
+);
+
+// Pure calculation logic extracted
 const calculate = (first: number, second: number, op: string) => {
   let result = 0;
   switch (op) {
@@ -15,8 +24,24 @@ const calculate = (first: number, second: number, op: string) => {
       break;
     default: return second;
   }
-  // Precision handling
   return parseFloat(result.toFixed(10));
+};
+
+// Formatter extracted to avoid recreation on render
+const getFormattedDisplay = (val: string) => {
+    if (!val) return '0';
+    if (val === 'Erro') return 'Erro';
+    const num = parseFloat(val);
+    if (Math.abs(num) > 999999999999) return num.toExponential(4).replace('.', ',');
+    
+    const parts = val.split('.');
+    const integerPart = parts[0];
+    const decimalPart = parts.length > 1 ? parts[1] : null;
+    const formattedInt = parseInt(integerPart || '0').toLocaleString('pt-BR');
+    
+    if (val.endsWith('.')) return `${formattedInt},`;
+    if (decimalPart !== null) return `${formattedInt},${decimalPart}`;
+    return formattedInt;
 };
 
 interface ButtonProps {
@@ -34,7 +59,8 @@ const CalculatorButton = React.memo(({
   variant = 'default',
   className = '' 
 }: ButtonProps) => {
-  const baseStyles = "w-full h-16 sm:h-20 rounded-[1.5rem] text-2xl font-bold flex items-center justify-center transition-all duration-75 active:scale-90 select-none shadow-md touch-none";
+  // touch-manipulation: removes 300ms delay on mobile browsers (Performance Native)
+  const baseStyles = "w-full h-16 sm:h-20 rounded-[1.5rem] text-2xl font-bold flex items-center justify-center transition-transform active:scale-90 select-none shadow-md touch-manipulation";
   
   let colorStyles = "bg-[#2c2c2e] text-white active:bg-[#3a3a3c]"; 
 
@@ -48,22 +74,18 @@ const CalculatorButton = React.memo(({
     colorStyles = "bg-[#3a3a3c] text-white active:bg-[#4a4a4c]";
   }
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-      // Prevent focus/scrolling issues
-      e.preventDefault(); 
-      
-      // Haptic Feedback
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-          try { navigator.vibrate(15); } catch(e) {}
-      }
-      
-      onClick(param);
+  // Using standard onClick is safer against crashes than onPointerDown manual handling
+  const handleClick = () => {
+     if (typeof navigator !== 'undefined' && navigator.vibrate) {
+         try { navigator.vibrate(10); } catch(e) {}
+     }
+     onClick(param);
   };
 
   return (
     <button 
       type="button"
-      onPointerDown={handlePointerDown}
+      onClick={handleClick}
       className={`${baseStyles} ${colorStyles} ${className}`}
     >
       {label}
@@ -84,22 +106,6 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [historyLine, setHistoryLine] = useState('');
 
   if (!isOpen) return null;
-
-  const getFormattedDisplay = (val: string) => {
-    if (!val) return '0';
-    if (val === 'Erro') return 'Erro';
-    const num = parseFloat(val);
-    if (Math.abs(num) > 999999999999) return num.toExponential(4).replace('.', ',');
-    
-    const parts = val.split('.');
-    const integerPart = parts[0];
-    const decimalPart = parts.length > 1 ? parts[1] : null;
-    const formattedInt = parseInt(integerPart || '0').toLocaleString('pt-BR');
-    
-    if (val.endsWith('.')) return `${formattedInt},`;
-    if (decimalPart !== null) return `${formattedInt},${decimalPart}`;
-    return formattedInt;
-  };
 
   const inputDigit = useCallback((digit: string) => {
     if (waitingForOperand) {
@@ -129,7 +135,6 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   const handleClose = useCallback(() => {
       onClose();
-      // Delay clear to avoid UI flash during close animation
       setTimeout(clear, 200); 
   }, [onClose, clear]);
 
@@ -233,7 +238,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
         <div className="grid grid-cols-4 gap-3">
           
           <CalculatorButton label="C" onClick={clear} variant="red-text" />
-          <CalculatorButton label={<Delete className="w-6 h-6" />} onClick={handleDelete} variant="secondary" />
+          <CalculatorButton label={<DeleteIcon />} onClick={handleDelete} variant="secondary" />
           <CalculatorButton label="%" onClick={percentage} variant="secondary" />
           <CalculatorButton label="÷" onClick={performOperation} param="/" variant="accent-filled" />
 
