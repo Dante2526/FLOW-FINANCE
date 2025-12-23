@@ -241,7 +241,8 @@ const CalculatorButton = React.memo(({
 }: ButtonProps) => {
   
   // UX Tweaks: scale-95 for solid feel, duration-100 for snappiness
-  const baseStyles = "w-full h-16 sm:h-20 rounded-[2.5rem] sm:rounded-[1.75rem] text-3xl sm:text-2xl font-medium sm:font-bold flex items-center justify-center transition-all duration-100 active:scale-95 select-none shadow-sm touch-manipulation focus:outline-none";
+  // UPDATED: Reduced height from h-16 to h-14 on mobile to fit Samsung Internet viewports better
+  const baseStyles = "w-full h-14 sm:h-20 rounded-[2rem] sm:rounded-[1.75rem] text-2xl sm:text-2xl font-medium sm:font-bold flex items-center justify-center transition-all duration-100 active:scale-95 select-none shadow-sm touch-manipulation focus:outline-none";
   
   let colorStyles = "bg-[#2c2c2e] text-white active:bg-[#3a3a3c]"; 
 
@@ -374,10 +375,12 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
       onClick={(e) => e.target === e.currentTarget && onClose()}
       className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 touch-manipulation"
     >
-      <div className="bg-[#1c1c1e] w-full max-w-sm h-auto rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl border-t sm:border border-white/5 relative flex flex-col justify-end overflow-hidden ring-1 ring-white/10 pb-10 sm:pb-6">
+      {/* UPDATED CONTAINER: Added max-h-[90dvh] and overflow handling to fix cutout issue on small screens (Samsung Internet) */}
+      {/* Reduced padding p-6 -> p-5 on mobile to save space */}
+      <div className="bg-[#1c1c1e] w-full max-w-sm h-auto max-h-[95dvh] rounded-t-[2.5rem] sm:rounded-[2.5rem] p-5 sm:p-6 shadow-2xl border-t sm:border border-white/5 relative flex flex-col justify-end overflow-hidden ring-1 ring-white/10 pb-8 sm:pb-6 overflow-y-auto no-scrollbar">
         
-        {/* Header/Close */}
-        <div className="flex justify-between items-center mb-6 pl-2">
+        {/* Header/Close - Reduced margin mb-6 -> mb-4 */}
+        <div className="flex justify-between items-center mb-4 pl-2 shrink-0">
            <h2 className="text-xl font-bold text-white tracking-tight">Calculadora</h2>
            <button 
             onClick={onClose} 
@@ -387,10 +390,10 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
            </button>
         </div>
 
-        {/* Display Area */}
+        {/* Display Area - Reduced margin mb-6 -> mb-4 */}
         <div 
            onClick={handleCopy}
-           className="bg-[#0a0a0b] rounded-[2rem] p-6 mb-6 border border-white/5 relative overflow-hidden shadow-inner group cursor-pointer active:scale-[0.99] transition-transform"
+           className="bg-[#0a0a0b] rounded-[2rem] p-5 mb-4 border border-white/5 relative overflow-hidden shadow-inner group cursor-pointer active:scale-[0.99] transition-transform shrink-0"
         >
            {/* Background Decor */}
            <div className="absolute top-0 right-0 w-40 h-40 bg-accent/5 rounded-full blur-3xl pointer-events-none translate-x-10 -translate-y-10" />
@@ -407,7 +410,8 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
               <span className="text-[10px] text-gray-400 font-bold">Copiar</span>
            </div>
 
-           <div className="relative z-10 flex flex-col items-end justify-end h-32">
+           {/* Reduced display height h-32 -> h-24 on mobile */}
+           <div className="relative z-10 flex flex-col items-end justify-end h-24 sm:h-32">
               <span className="text-gray-500 text-lg font-medium mb-1 tracking-wide h-6 block w-full text-right truncate opacity-80">
                 {state.history}
               </span>
@@ -417,8 +421,8 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
            </div>
         </div>
 
-        {/* Keypad Grid */}
-        <div className="grid grid-cols-4 gap-3 sm:gap-3">
+        {/* Keypad Grid - Reduced gap gap-3 -> gap-2 on mobile */}
+        <div className="grid grid-cols-4 gap-2 sm:gap-3 shrink-0">
           
           <CalculatorButton label={clearButtonLabel} action="CLEAR" dispatch={dispatch} variant="red-text" />
           <CalculatorButton label={deleteIconNode} action="DEL" dispatch={dispatch} variant="secondary" />
