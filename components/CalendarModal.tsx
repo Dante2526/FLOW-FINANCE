@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, AlertCircle, Check } from 'lucide-react';
 import { Transaction } from '../types';
 
@@ -70,7 +70,9 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
   }
 
   // --- Helper to parse transaction dates ---
-  const parseTransactionDate = (dateStr: string): Date | null => {
+  // Memoized to prevent re-creation, though simple enough to be inline.
+  // We keep it stable to be used in useMemo below.
+  const parseTransactionDate = (dateStr: string, currentViewDate: Date): Date | null => {
     if (!dateStr) return null;
     const lower = dateStr.toLowerCase();
     const now = new Date();
@@ -100,8 +102,10 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
            const txMonthIndex = months[monthStr];
            let txYear = now.getFullYear();
            
-           if (viewDate.getMonth() === txMonthIndex) {
-              txYear = viewDate.getFullYear();
+           // Heuristic: If the transaction month matches the view month, assume it's for the viewed year.
+           // This helps mapping "05 Jan" to "2026" if we are viewing Jan 2026.
+           if (currentViewDate.getMonth() === txMonthIndex) {
+              txYear = currentViewDate.getFullYear();
            }
 
            return new Date(txYear, txMonthIndex, day);
@@ -111,32 +115,46 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
     return null;
   };
 
-  // Check if a specific day has transactions
-  const getDayStatus = (day: number) => {
-      const dayTransactions = transactions.filter(t => {
-          const d = parseTransactionDate(t.date);
-          if (!d) return false;
-          return d.getDate() === day && 
-                 d.getMonth() === viewDate.getMonth() && 
-                 d.getFullYear() === viewDate.getFullYear();
+  // --- OPTIMIZATION: DAY STATUS MAP ---
+  // Instead of filtering the whole array 30 times (once per day), we iterate ONCE and build a map.
+  // Complexity: O(Transactions) instead of O(Days * Transactions)
+  const dayStatusMap = useMemo(() => {
+      const map = new Map<number, { count: number; hasUnpaid: boolean; hasSubscription: boolean }>();
+      const targetMonth = viewDate.getMonth();
+      const targetYear = viewDate.getFullYear();
+
+      transactions.forEach(t => {
+          const d = parseTransactionDate(t.date, viewDate);
+          if (!d) return;
+
+          // Check if transaction belongs to the currently viewed month
+          if (d.getMonth() === targetMonth && d.getFullYear() === targetYear) {
+              const day = d.getDate();
+              
+              const current = map.get(day) || { count: 0, hasUnpaid: false, hasSubscription: false };
+              
+              current.count += 1;
+              if (!t.paid) current.hasUnpaid = true;
+              if (t.type === 'subscription') current.hasSubscription = true;
+              
+              map.set(day, current);
+          }
       });
 
-      if (dayTransactions.length === 0) return null;
-      
-      const hasUnpaid = dayTransactions.some(t => !t.paid);
-      const hasSubscription = dayTransactions.some(t => t.type === 'subscription');
-      
-      return { count: dayTransactions.length, hasUnpaid, hasSubscription };
-  };
+      return map;
+  }, [transactions, viewDate]);
 
   // Filter transactions for the list (Selected Day)
-  const selectedDayTransactions = transactions.filter(t => {
-      const d = parseTransactionDate(t.date);
-      if (!d) return false;
-      return d.getDate() === selectedDate.getDate() && 
-             d.getMonth() === selectedDate.getMonth() && 
-             d.getFullYear() === selectedDate.getFullYear();
-  });
+  // This is still a filter, but only happens when selection changes, which is fine (user interaction latency vs render latency)
+  const selectedDayTransactions = useMemo(() => {
+      return transactions.filter(t => {
+        const d = parseTransactionDate(t.date, viewDate); // Use viewDate context for year guessing
+        if (!d) return false;
+        return d.getDate() === selectedDate.getDate() && 
+                d.getMonth() === selectedDate.getMonth() && 
+                d.getFullYear() === selectedDate.getFullYear();
+      });
+  }, [selectedDate, transactions, viewDate]);
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -196,7 +214,9 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
                 {days.map((day, i) => {
                     if (!day) return <div key={i} />;
 
-                    const status = getDayStatus(day);
+                    // O(1) Lookup
+                    const status = dayStatusMap.get(day);
+                    
                     const isSelected = selectedDate.getDate() === day && selectedDate.getMonth() === viewDate.getMonth();
                     const isToday = isCurrentMonth && day === currentDay;
 
