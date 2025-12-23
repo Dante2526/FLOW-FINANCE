@@ -178,9 +178,17 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
       colorStyles = "bg-[#3a3a3c] text-white hover:bg-[#4a4a4c]";
     }
 
+    const handleClick = () => {
+        // Vibração tátil ao clicar (Haptic Feedback)
+        if (typeof navigator !== 'undefined' && navigator.vibrate) {
+            navigator.vibrate(15); // 15ms de vibração (leve clique)
+        }
+        onClick();
+    };
+
     return (
       <button 
-        onClick={onClick}
+        onClick={handleClick}
         className={`${baseStyles} ${colorStyles} ${className}`}
       >
         {label}
