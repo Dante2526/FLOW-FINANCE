@@ -118,9 +118,16 @@ export const loadUserData = async (email: string) => {
 
     const user = userRes.data || {};
     
-    // --- VERIFICAÇÃO DE ASSINATURA ---
+    // --- CORREÇÃO DE PERFIL ANINHADO ---
+    // Verifica se existe um objeto 'profile' DENTRO do objeto 'profile' (bug visual)
     let profile = user.profile || {};
-    
+    if (profile.profile && typeof profile.profile === 'object') {
+        // Se encontrar, traz os dados internos para a raiz, corrigindo o objeto
+        // Mantém as chaves da raiz (como isPro, subscriptionExpiry) se existirem
+        profile = { ...profile, ...profile.profile };
+    }
+
+    // --- VERIFICAÇÃO DE ASSINATURA ---
     // Se for PRO e tiver data de expiração, verifica se já venceu
     if (profile.isPro && profile.subscriptionExpiry) {
         const expiry = new Date(profile.subscriptionExpiry);
@@ -129,7 +136,7 @@ export const loadUserData = async (email: string) => {
             // Assinatura venceu
             console.log("Assinatura PRO expirada. Revertendo para básico.");
             profile.isPro = false;
-            // Opcional: Poderíamos atualizar o banco aqui, mas deixar o front tratar é mais rápido
+            // Opcional: Atualização silenciosa pode ser feita aqui se necessário
         }
     }
 
@@ -175,24 +182,14 @@ export const deleteItem = async (email: string, collection: string, id: string) 
   } catch (e) { return false; }
 };
 
-/**
- * EXCLUSÃO ATÔMICA DE MÊS
- * Apaga o mês e limpa todos os registros vinculados por texto (mês/ano)
- */
 export const hardDeleteMonth = async (monthId: string, monthName: string, year: string) => {
     try {
         const userId = await getAuthUserId();
-        
-        // 1. Apaga Transações do mês
         const deleteTx = supabase.from('transactions').delete().eq('user_id', userId).eq('month', monthName).eq('year', year);
-        // 2. Apaga Contas do mês
         const deleteAcc = supabase.from('accounts').delete().eq('user_id', userId).eq('month', monthName).eq('year', year);
-        // 3. Apaga o registro do Mês
         const deleteMonth = supabase.from('months').delete().eq('user_id', userId).eq('id', monthId);
-
         const results = await Promise.all([deleteTx, deleteAcc, deleteMonth]);
         const hasError = results.some(r => r.error);
-        
         if (hasError) console.error("Erro na exclusão atômica:", results.map(r => r.error));
         return !hasError;
     } catch (e) {
@@ -230,9 +227,20 @@ export const saveUserField = async (email: string, field: string, data: any): Pr
   try {
     let payload: any = {};
     const profileFields = ['notepadDrawing', 'dashboardOrder', 'pushSubscription', 'profile'];
+    
     if (profileFields.includes(field)) {
+        // Busca o perfil atual para não perder dados
         const { data: user } = await supabase.from('users').select('profile').eq('email', email.toLowerCase().trim()).maybeSingle();
-        payload = { profile: { ...(user?.profile || {}), [field]: data } };
+        const currentProfile = user?.profile || {};
+
+        if (field === 'profile') {
+             // CORREÇÃO: Mescla os dados na raiz ao invés de aninhar
+             // Isso evita criar { profile: { profile: ... } }
+             payload = { profile: { ...currentProfile, ...data } };
+        } else {
+             // Para outros campos (ex: ordem dos cards), adiciona como chave normal
+             payload = { profile: { ...currentProfile, [field]: data } };
+        }
     } else {
         const map: any = { notepadContent: 'notepad_content', cdiRate: 'cdi_rate', theme: 'theme' };
         payload = { [map[field] || toSnakeCase(field)]: data };
