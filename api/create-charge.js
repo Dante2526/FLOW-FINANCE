@@ -76,7 +76,8 @@ export default async function handler(req, res) {
       billingType: billingType,
       value: value,
       dueDate: new Date().toISOString().split('T')[0], // Vence hoje
-      description: 'Assinatura Flow Finance PRO'
+      description: 'Assinatura Flow Finance PRO',
+      externalReference: user.email // VINCULO ESSENCIAL PARA O WEBHOOK
     };
 
     if (paymentType === 'credit_card' && billingInfo) {
