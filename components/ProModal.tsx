@@ -1,105 +1,124 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { X, Crown, CheckCircle2, Copy, Upload, Loader2, AlertCircle, ScanLine, BarChart3, Building, Palette, CloudLightning, ArrowRight, ChevronLeft, Clock } from 'lucide-react';
-import { verifyPaymentReceipt } from '../services/geminiService';
+import React, { useState, useEffect } from 'react';
+import { X, Crown, CheckCircle2, Copy, Loader2, ArrowRight, ChevronLeft, CreditCard, QrCode, Lock, Building, Palette, CloudLightning, BarChart3 } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   onUpgrade: () => void;
+  userEmail?: string;
+  userName?: string;
 }
 
-const PIX_CODE = "00020101021126580014br.gov.bcb.pix01363b390a38-81c6-46c8-93a9-038136c6736f52040000530398654047.005802BR5917NAYLAN M DA CUNHA6008SAO LUIS62070503***6304B611";
+type Step = 'benefits' | 'payment';
+type PaymentType = 'pix' | 'credit_card';
 
-type Step = 'benefits' | 'payment' | 'verify';
-
-const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade }) => {
+const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, userName }) => {
   const [step, setStep] = useState<Step>('benefits');
-  const [isCopied, setIsCopied] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(20 * 60); // 20 minutes in seconds
+  const [paymentType, setPaymentType] = useState<PaymentType>('pix');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   
-  // Upload States
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [verificationResult, setVerificationResult] = useState<{ success: boolean; message: string } | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Data for Pix
+  const [pixData, setPixData] = useState<{ encodedImage: string; payload: string; expirationDate: string } | null>(null);
+  const [isCopied, setIsCopied] = useState(false);
+  const [paymentId, setPaymentId] = useState<string | null>(null);
 
-  // Reset step when opening
+  // Data for Credit Card
+  const [cardData, setCardData] = useState({
+    holderName: '',
+    number: '',
+    expiryMonth: '',
+    expiryYear: '',
+    ccv: '',
+    cpf: ''
+  });
+
+  // Reset when opening
   useEffect(() => {
     if (isOpen) {
         setStep('benefits');
-        setVerificationResult(null);
-        setSelectedImage(null);
-        setTimeLeft(20 * 60); // Reset timer
+        setPaymentType('pix');
+        setPixData(null);
+        setPaymentId(null);
+        setError('');
+        setLoading(false);
     }
   }, [isOpen]);
 
-  // Timer Logic
+  // Polling for Payment Status
   useEffect(() => {
     let interval: any;
-    // O timer deve rodar tanto na etapa de pagamento quanto na de verificação
-    if (isOpen && (step === 'payment' || step === 'verify') && timeLeft > 0) {
-      interval = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
+    if (isOpen && paymentId) {
+       interval = setInterval(async () => {
+          try {
+             const res = await fetch(`/api/check-status?id=${paymentId}`);
+             const data = await res.json();
+             if (data.paid) {
+                clearInterval(interval);
+                onUpgrade();
+             }
+          } catch (e) {
+             console.error("Erro no polling", e);
+          }
+       }, 5000);
     }
     return () => clearInterval(interval);
-  }, [isOpen, step, timeLeft]);
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
+  }, [paymentId, isOpen, onUpgrade]);
 
   if (!isOpen) return null;
 
   const handleCopyPix = () => {
-    navigator.clipboard.writeText(PIX_CODE);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSelectedImage(reader.result as string);
-        setVerificationResult(null); // Reset previous result
-      };
-      reader.readAsDataURL(file);
+    if (pixData?.payload) {
+        navigator.clipboard.writeText(pixData.payload);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
     }
   };
 
-  const handleVerify = async () => {
-    if (!selectedImage) return;
-
-    setIsVerifying(true);
-    setVerificationResult(null);
+  const handleCreatePayment = async () => {
+    setLoading(true);
+    setError('');
 
     try {
-      // Call Gemini Service
-      const result = await verifyPaymentReceipt(selectedImage);
+       const res = await fetch('/api/create-charge', {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({
+            paymentType,
+            user: { email: userEmail, name: userName },
+            cardData: paymentType === 'credit_card' ? cardData : undefined
+         })
+       });
 
-      if (result.valid) {
-        setVerificationResult({ success: true, message: "Pagamento confirmado! Ativando PRO..." });
-        setTimeout(() => {
-          onUpgrade();
-        }, 2000);
-      } else {
-        setVerificationResult({ success: false, message: result.reason });
-      }
-    } catch (error) {
-      setVerificationResult({ success: false, message: "Erro ao processar imagem." });
+       const data = await res.json();
+
+       if (!res.ok) {
+         throw new Error(data.error || 'Erro ao criar cobrança');
+       }
+
+       setPaymentId(data.paymentId);
+
+       if (paymentType === 'pix') {
+          setPixData(data.pix);
+       } else {
+          // Se for cartão e retornou sucesso (PENDING/CONFIRMED), aguarda o polling confirmar ou já libera
+          if (data.status === 'CONFIRMED' || data.status === 'RECEIVED') {
+             onUpgrade();
+          } else {
+             // Mantém polling para processamento do cartão
+          }
+       }
+
+    } catch (err: any) {
+       setError(err.message);
     } finally {
-      setIsVerifying(false);
+       setLoading(false);
     }
   };
 
-  const handleBack = () => {
-      if (step === 'payment') setStep('benefits');
-      if (step === 'verify') setStep('payment');
+  const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCardData({ ...cardData, [e.target.name]: e.target.value });
   };
 
   return (
@@ -110,10 +129,9 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade }) => {
         <div className="bg-gradient-to-br from-yellow-400 via-yellow-500 to-amber-600 h-24 w-full relative flex items-center justify-center shrink-0">
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
             
-            {/* Back Button (Only for steps > 1) */}
             {step !== 'benefits' && (
                 <button 
-                    onClick={handleBack}
+                    onClick={() => setStep('benefits')}
                     className="absolute top-4 left-4 w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 flex items-center justify-center text-white transition-colors z-20"
                 >
                     <ChevronLeft className="w-5 h-5" />
@@ -133,13 +151,6 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade }) => {
             </button>
         </div>
 
-        {/* Progress Indicator */}
-        <div className="flex justify-center gap-2 mt-4">
-            <div className={`h-1.5 rounded-full transition-all duration-300 ${step === 'benefits' ? 'w-8 bg-yellow-500' : 'w-2 bg-gray-600'}`} />
-            <div className={`h-1.5 rounded-full transition-all duration-300 ${step === 'payment' ? 'w-8 bg-yellow-500' : 'w-2 bg-gray-600'}`} />
-            <div className={`h-1.5 rounded-full transition-all duration-300 ${step === 'verify' ? 'w-8 bg-yellow-500' : 'w-2 bg-gray-600'}`} />
-        </div>
-
         <div className="p-6 pt-4 flex flex-col items-center text-center overflow-y-auto no-scrollbar flex-1">
             
             {/* --- STEP 1: BENEFITS --- */}
@@ -151,46 +162,30 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade }) => {
                       <h2 className="text-2xl font-bold text-white">Desbloqueie Tudo</h2>
                   </div>
 
-                  {/* Advantages Card */}
-                  <div className="w-full bg-[#2c2c2e] rounded-2xl p-5 border border-white/5 shadow-lg relative overflow-hidden group flex-1">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-yellow-500/10 to-transparent rounded-bl-full pointer-events-none" />
-                      
+                  <div className="w-full bg-[#2c2c2e] rounded-2xl p-5 border border-white/5 shadow-lg relative overflow-hidden group flex-1 text-left">
                       <ul className="flex flex-col gap-4">
-                        <li className="flex items-center gap-3 text-left">
+                        <li className="flex items-center gap-3">
                           <div className="p-2 bg-blue-500/10 rounded-xl shrink-0"><BarChart3 className="w-5 h-5 text-blue-400" /></div>
-                          <div>
-                              <span className="text-sm text-white font-bold block">Análise Avançada</span>
-                              <span className="text-xs text-gray-400">Gráficos detalhados de gastos.</span>
-                          </div>
+                          <div><span className="text-sm text-white font-bold block">Análise Avançada</span><span className="text-xs text-gray-400">Gráficos detalhados.</span></div>
                         </li>
-                        <li className="flex items-center gap-3 text-left">
+                        <li className="flex items-center gap-3">
                           <div className="p-2 bg-purple-500/10 rounded-xl shrink-0"><Building className="w-5 h-5 text-purple-400" /></div>
-                          <div>
-                              <span className="text-sm text-white font-bold block">Investimentos</span>
-                              <span className="text-xs text-gray-400">Controle FIIs e Renda Fixa.</span>
-                          </div>
+                          <div><span className="text-sm text-white font-bold block">Investimentos</span><span className="text-xs text-gray-400">Controle FIIs e Renda Fixa.</span></div>
                         </li>
-                        <li className="flex items-center gap-3 text-left">
+                        <li className="flex items-center gap-3">
                           <div className="p-2 bg-pink-500/10 rounded-xl shrink-0"><Palette className="w-5 h-5 text-pink-400" /></div>
-                          <div>
-                              <span className="text-sm text-white font-bold block">Personalização</span>
-                              <span className="text-xs text-gray-400">Acesso a todos os temas de cores.</span>
-                          </div>
+                          <div><span className="text-sm text-white font-bold block">Temas Exclusivos</span><span className="text-xs text-gray-400">Personalize o app.</span></div>
                         </li>
-                        <li className="flex items-center gap-3 text-left">
+                         <li className="flex items-center gap-3">
                             <div className="p-2 bg-green-500/10 rounded-xl shrink-0"><CloudLightning className="w-5 h-5 text-green-400" /></div>
-                            <div>
-                                <span className="text-sm text-white font-bold block">Backup em Nuvem</span>
-                                <span className="text-xs text-gray-400">Seus dados sempre seguros.</span>
-                            </div>
+                            <div><span className="text-sm text-white font-bold block">Backup Nuvem</span><span className="text-xs text-gray-400">Dados seguros sempre.</span></div>
                         </li>
                       </ul>
                   </div>
 
-                  {/* Price & CTA */}
                   <div className="w-full mt-auto">
                       <div className="flex justify-between items-center px-4 mb-4">
-                          <span className="text-gray-400 text-sm">Valor Mensal</span>
+                          <span className="text-gray-400 text-sm">Valor Único</span>
                           <div className="flex items-baseline gap-1">
                              <span className="text-yellow-500 font-bold text-sm">R$</span>
                              <span className="text-white font-black text-2xl">7,00</span>
@@ -212,146 +207,156 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade }) => {
             {step === 'payment' && (
                <div className="w-full flex flex-col items-center animate-in slide-in-from-right-4 duration-300 pb-4 h-full">
                   
-                  <h3 className="text-white font-bold text-lg mb-2">Pagamento via Pix</h3>
-
-                  {/* Visual Timer */}
-                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full mb-4 font-mono font-bold text-sm ${
-                      timeLeft < 60 ? 'bg-red-500/10 text-red-500 animate-pulse' : 'bg-yellow-500/10 text-yellow-500'
-                  }`}>
-                      <Clock className="w-4 h-4" />
-                      <span>{formatTime(timeLeft)}</span>
+                  {/* Payment Type Selector */}
+                  <div className="flex bg-[#2c2c2e] p-1 rounded-xl w-full mb-4">
+                     <button 
+                       onClick={() => { setPaymentType('pix'); setPaymentId(null); setPixData(null); }}
+                       className={`flex-1 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${paymentType === 'pix' ? 'bg-[#3a3a3c] text-white shadow-md' : 'text-gray-500'}`}
+                     >
+                        <QrCode className="w-4 h-4" /> Pix
+                     </button>
+                     <button 
+                       onClick={() => { setPaymentType('credit_card'); setPaymentId(null); }}
+                       className={`flex-1 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${paymentType === 'credit_card' ? 'bg-[#3a3a3c] text-white shadow-md' : 'text-gray-500'}`}
+                     >
+                        <CreditCard className="w-4 h-4" /> Cartão
+                     </button>
                   </div>
 
-                  {/* Payment Card */}
-                  <div className="w-full bg-[#2c2c2e] rounded-2xl p-5 border border-white/5 shadow-lg flex flex-col items-center flex-1 justify-center">
-                      
-                      {/* QR Code Container */}
-                      <div className="p-3 bg-white rounded-xl mb-4 shadow-sm relative">
-                          <img 
-                            src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(PIX_CODE)}`} 
-                            alt="QR Code Pix"
-                            className="w-40 h-40 mix-blend-multiply" 
-                          />
-                          <div className="absolute -bottom-2 -right-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm">
-                             R$ 7,00
-                          </div>
-                      </div>
-
-                      {/* Copy Paste Code */}
-                      <div className="w-full bg-[#1c1c1e] p-3 rounded-xl border border-white/5 flex flex-col gap-2 mb-4">
-                         <span className="text-[10px] text-gray-500 uppercase font-bold text-left">Pix Copia e Cola</span>
-                         <p className="text-xs text-gray-300 font-mono truncate text-left opacity-60">
-                           {PIX_CODE}
-                         </p>
-                      </div>
-
-                      <button 
-                        onClick={handleCopyPix}
-                        className={`w-full h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
-                           isCopied ? 'bg-green-500 text-white' : 'bg-white text-black hover:bg-gray-200'
-                        }`}
-                      >
-                        {isCopied ? (
-                           <>
-                             <CheckCircle2 className="w-4 h-4" />
-                             Código Copiado!
-                           </>
+                  {/* PIX AREA */}
+                  {paymentType === 'pix' && (
+                     <div className="w-full flex flex-col items-center gap-4 flex-1 justify-center">
+                        {loading ? (
+                           <div className="flex flex-col items-center py-10">
+                              <Loader2 className="w-10 h-10 text-yellow-500 animate-spin mb-2" />
+                              <span className="text-gray-400 text-sm">Gerando Cobrança...</span>
+                           </div>
+                        ) : !pixData ? (
+                            <div className="flex flex-col items-center justify-center py-6 text-center">
+                                <QrCode className="w-16 h-16 text-gray-600 mb-4" />
+                                <p className="text-gray-400 text-sm mb-6 max-w-[200px]">
+                                   Clique abaixo para gerar o QR Code único para pagamento.
+                                </p>
+                                <button 
+                                  onClick={handleCreatePayment}
+                                  className="w-full h-12 bg-yellow-500 text-black rounded-xl font-bold hover:bg-yellow-400 transition-colors"
+                                >
+                                   Gerar Pix de R$ 7,00
+                                </button>
+                            </div>
                         ) : (
                            <>
-                             <Copy className="w-4 h-4" />
-                             Copiar Código Pix
+                              <div className="bg-white p-2 rounded-xl">
+                                 <img src={`data:image/jpeg;base64,${pixData.encodedImage}`} alt="QR Code Pix" className="w-48 h-48 mix-blend-multiply" />
+                              </div>
+                              <div className="w-full">
+                                 <p className="text-gray-400 text-xs mb-2">Ou copie e cole o código:</p>
+                                 <button onClick={handleCopyPix} className={`w-full h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all border border-white/10 ${isCopied ? 'bg-green-500/20 text-green-500' : 'bg-[#2c2c2e] text-white'}`}>
+                                    {isCopied ? <><CheckCircle2 className="w-4 h-4" /> Copiado!</> : <><Copy className="w-4 h-4" /> Copiar Código</>}
+                                 </button>
+                              </div>
+                              <div className="flex items-center gap-2 mt-2 animate-pulse">
+                                 <Loader2 className="w-3 h-3 text-yellow-500 animate-spin" />
+                                 <span className="text-[10px] text-yellow-500 font-bold uppercase">Aguardando Pagamento...</span>
+                              </div>
                            </>
                         )}
-                      </button>
-                  </div>
-
-                  <div className="w-full mt-4">
-                      <p className="text-gray-500 text-xs mb-3">
-                         Após realizar o pagamento, clique abaixo para validar.
-                      </p>
-                      <button 
-                        onClick={() => setStep('verify')}
-                        className="w-full h-14 bg-[#2c2c2e] border border-yellow-500/30 text-yellow-500 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-2 hover:bg-yellow-500/10 transition-all"
-                      >
-                        Já fiz o pagamento
-                        <ArrowRight className="w-5 h-5" />
-                      </button>
-                  </div>
-               </div>
-            )}
-
-            {/* --- STEP 3: VERIFY --- */}
-            {step === 'verify' && (
-               <div className="w-full flex flex-col items-center animate-in slide-in-from-right-4 duration-300 h-full">
-                  
-                  <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center mb-4">
-                     <ScanLine className="w-8 h-8 text-blue-500" />
-                  </div>
-
-                  {/* Visual Timer (Também presente aqui) */}
-                  <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full mb-4 font-mono font-bold text-sm ${
-                      timeLeft < 60 ? 'bg-red-500/10 text-red-500 animate-pulse' : 'bg-yellow-500/10 text-yellow-500'
-                  }`}>
-                      <Clock className="w-4 h-4" />
-                      <span>{formatTime(timeLeft)}</span>
-                  </div>
-
-                  <h3 className="text-white font-bold text-lg mb-1">Anexar Comprovante</h3>
-                  <p className="text-gray-400 text-xs mb-6 px-4">
-                     Envie o print do comprovante. Nossa IA verificará se o pagamento de <strong className="text-white">R$ 7,00</strong> foi concluído.
-                  </p>
-
-                  {/* Upload Area */}
-                  <div 
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`w-full flex-1 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all mb-4 overflow-hidden relative min-h-[200px] ${
-                       selectedImage ? 'border-yellow-500/50 bg-[#2c2c2e]' : 'border-gray-600 bg-[#2c2c2e]/50 hover:bg-[#2c2c2e]'
-                    }`}
-                  >
-                     {selectedImage ? (
-                        <img src={selectedImage} alt="Receipt" className="w-full h-full object-contain" />
-                     ) : (
-                        <>
-                           <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                           <span className="text-xs text-gray-400 font-bold">Toque para selecionar</span>
-                        </>
-                     )}
-                     <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        onChange={handleFileChange} 
-                        accept="image/*" 
-                        className="hidden" 
-                     />
-                  </div>
-
-                  {/* Verification Status */}
-                  {verificationResult && (
-                     <div className={`w-full p-3 rounded-xl mb-4 flex items-center gap-3 text-left ${
-                        verificationResult.success ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                     }`}>
-                        {verificationResult.success ? <CheckCircle2 className="w-5 h-5 shrink-0" /> : <AlertCircle className="w-5 h-5 shrink-0" />}
-                        <p className="text-xs font-bold leading-tight">{verificationResult.message}</p>
                      </div>
                   )}
 
-                  <button 
-                     onClick={handleVerify}
-                     disabled={!selectedImage || isVerifying || verificationResult?.success}
-                     className="w-full h-14 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[1.5rem] font-bold text-white flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all mb-2"
-                  >
-                     {isVerifying ? (
-                        <>
-                           <Loader2 className="w-5 h-5 animate-spin" />
-                           Verificando...
-                        </>
-                     ) : (
-                        <>
-                           <CheckCircle2 className="w-5 h-5" />
-                           Enviar Comprovante
-                        </>
-                     )}
-                  </button>
+                  {/* CREDIT CARD AREA */}
+                  {paymentType === 'credit_card' && (
+                     <div className="w-full flex flex-col gap-3 overflow-y-auto no-scrollbar pt-2 pb-2">
+                        {loading ? (
+                           <div className="flex flex-col items-center py-12">
+                              <Loader2 className="w-10 h-10 text-yellow-500 animate-spin mb-2" />
+                              <span className="text-gray-400 text-sm">Processando Pagamento...</span>
+                           </div>
+                        ) : paymentId ? (
+                           <div className="flex flex-col items-center py-10 gap-4">
+                              <Lock className="w-12 h-12 text-yellow-500" />
+                              <h3 className="text-white font-bold text-lg">Processando...</h3>
+                              <p className="text-gray-400 text-xs px-4">
+                                 Seu pagamento está sendo analisado pela operadora. Assim que aprovado, o PRO será liberado automaticamente.
+                              </p>
+                              <div className="flex items-center gap-2 mt-2 animate-pulse">
+                                 <Loader2 className="w-4 h-4 text-yellow-500 animate-spin" />
+                                 <span className="text-xs text-yellow-500 font-bold uppercase">Verificando...</span>
+                              </div>
+                           </div>
+                        ) : (
+                           <>
+                              <input 
+                                name="holderName"
+                                placeholder="Nome no Cartão"
+                                value={cardData.holderName}
+                                onChange={handleCardChange}
+                                className="w-full bg-[#2c2c2e] p-3 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm uppercase"
+                              />
+                              <input 
+                                name="cpf"
+                                placeholder="CPF do Titular"
+                                value={cardData.cpf}
+                                onChange={handleCardChange}
+                                className="w-full bg-[#2c2c2e] p-3 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+                              />
+                              <input 
+                                name="number"
+                                placeholder="Número do Cartão"
+                                value={cardData.number}
+                                onChange={handleCardChange}
+                                maxLength={16}
+                                className="w-full bg-[#2c2c2e] p-3 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+                              />
+                              <div className="flex gap-3">
+                                 <input 
+                                    name="expiryMonth"
+                                    placeholder="MM"
+                                    maxLength={2}
+                                    value={cardData.expiryMonth}
+                                    onChange={handleCardChange}
+                                    className="w-full bg-[#2c2c2e] p-3 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm text-center"
+                                 />
+                                 <input 
+                                    name="expiryYear"
+                                    placeholder="AAAA"
+                                    maxLength={4}
+                                    value={cardData.expiryYear}
+                                    onChange={handleCardChange}
+                                    className="w-full bg-[#2c2c2e] p-3 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm text-center"
+                                 />
+                                 <input 
+                                    name="ccv"
+                                    placeholder="CVV"
+                                    maxLength={4}
+                                    value={cardData.ccv}
+                                    onChange={handleCardChange}
+                                    className="w-full bg-[#2c2c2e] p-3 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm text-center"
+                                 />
+                              </div>
+
+                              <button 
+                                 onClick={handleCreatePayment}
+                                 className="w-full h-12 bg-yellow-500 text-black rounded-xl font-bold hover:bg-yellow-400 transition-colors mt-2"
+                              >
+                                 Pagar R$ 7,00
+                              </button>
+                           </>
+                        )}
+                     </div>
+                  )}
+
+                  {error && (
+                     <div className="w-full mt-2 p-3 bg-red-500/20 rounded-xl border border-red-500/50">
+                        <p className="text-red-400 text-xs text-center font-bold">{error}</p>
+                     </div>
+                  )}
+                  
+                  <div className="mt-auto pt-4 flex items-center justify-center gap-1 opacity-50">
+                     <Lock className="w-3 h-3 text-gray-500" />
+                     <span className="text-[10px] text-gray-500 uppercase font-bold">Pagamento Seguro via Asaas</span>
+                  </div>
+
                </div>
             )}
             
