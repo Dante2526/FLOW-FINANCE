@@ -82,7 +82,13 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
             <h2 className="text-xl font-bold text-white">Editar Perfil</h2>
             {currentProfile.isPro && (
                <div className="bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full text-[10px] font-bold border border-yellow-500/50 flex items-center gap-1">
-                 <Crown className="w-3 h-3" fill="currentColor" /> PRO
+                 <Crown className="w-3 h-3" fill="currentColor" /> 
+                 <span>PRO</span>
+                 {currentProfile.subscriptionExpiry && (
+                    <span className="font-medium opacity-80 border-l border-yellow-500/30 pl-1 ml-1">
+                       até {new Date(currentProfile.subscriptionExpiry).toLocaleDateString('pt-BR')}
+                    </span>
+                 )}
                </div>
             )}
           </div>
