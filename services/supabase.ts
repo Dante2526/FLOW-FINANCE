@@ -117,8 +117,24 @@ export const loadUserData = async (email: string) => {
     ]);
 
     const user = userRes.data || {};
+    
+    // --- VERIFICAÇÃO DE ASSINATURA ---
+    let profile = user.profile || {};
+    
+    // Se for PRO e tiver data de expiração, verifica se já venceu
+    if (profile.isPro && profile.subscriptionExpiry) {
+        const expiry = new Date(profile.subscriptionExpiry);
+        const now = new Date();
+        if (now > expiry) {
+            // Assinatura venceu
+            console.log("Assinatura PRO expirada. Revertendo para básico.");
+            profile.isPro = false;
+            // Opcional: Poderíamos atualizar o banco aqui, mas deixar o front tratar é mais rápido
+        }
+    }
+
     return {
-        profile: user.profile || {},
+        profile: profile,
         cdiRate: user.cdi_rate ?? 11.25,
         notepadContent: user.notepad_content || '',
         notepadDrawing: user.profile?.notepadDrawing || null,

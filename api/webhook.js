@@ -59,14 +59,18 @@ export default async function handler(req, res) {
           return res.status(404).json({ error: 'User not found' });
       }
 
-      // 7. Atualizar para PRO
-      // Preserva os dados antigos e define isPro = true
+      // 7. LÓGICA DE 30 DIAS
+      const now = new Date();
+      // Adiciona 30 dias à data atual
+      const expiryDate = new Date(now.setDate(now.getDate() + 30));
+
       const updatedProfile = {
           ...user.profile,
           isPro: true,
-          subscriptionDate: new Date().toISOString(),
+          subscriptionExpiry: expiryDate.toISOString(), // Salva a data de expiração
+          subscriptionDate: new Date().toISOString(),   // Data do pagamento
           paymentId: payment.id,
-          plan: 'LIFETIME'
+          plan: 'MONTHLY'
       };
 
       const { error: updateError } = await supabase
@@ -79,7 +83,7 @@ export default async function handler(req, res) {
           throw updateError;
       }
 
-      console.log(`[Webhook Asaas] SUCESSO: Usuário ${userEmail} atualizado para PRO.`);
+      console.log(`[Webhook Asaas] SUCESSO: Usuário ${userEmail} renovado até ${expiryDate.toISOString()}.`);
       return res.status(200).json({ success: true });
 
   } catch (err) {
