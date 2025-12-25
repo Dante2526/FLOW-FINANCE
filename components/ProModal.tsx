@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Crown, CheckCircle2, Copy, Loader2, ArrowRight, ChevronLeft, CreditCard, QrCode, Lock, Building, Palette, CloudLightning, BarChart3 } from 'lucide-react';
+import { X, Crown, CheckCircle2, Copy, Loader2, ArrowRight, ChevronLeft, CreditCard, QrCode, Lock, Building, Palette, CloudLightning, BarChart3, User, ShieldCheck } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -24,8 +24,8 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
   const [isCopied, setIsCopied] = useState(false);
   const [paymentId, setPaymentId] = useState<string | null>(null);
 
-  // Data for Credit Card
-  const [cardData, setCardData] = useState({
+  // Data for Billing (Used for both Pix and Card)
+  const [billingData, setBillingData] = useState({
     holderName: '',
     number: '',
     expiryMonth: '',
@@ -43,8 +43,10 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
         setPaymentId(null);
         setError('');
         setLoading(false);
+        // Pre-fill name if available
+        setBillingData(prev => ({ ...prev, holderName: userName || '' }));
     }
-  }, [isOpen]);
+  }, [isOpen, userName]);
 
   // Polling for Payment Status
   useEffect(() => {
@@ -77,6 +79,16 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
   };
 
   const handleCreatePayment = async () => {
+    // Basic Validation
+    if (!billingData.cpf || billingData.cpf.length < 11) {
+        setError('Por favor, informe um CPF válido.');
+        return;
+    }
+    if (!billingData.holderName) {
+        setError('Por favor, informe o nome completo.');
+        return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -87,7 +99,16 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
          body: JSON.stringify({
             paymentType,
             user: { email: userEmail, name: userName },
-            cardData: paymentType === 'credit_card' ? cardData : undefined
+            // Send billing info for both Pix and Card
+            billingInfo: {
+                name: billingData.holderName,
+                cpf: billingData.cpf,
+                // Card specific fields
+                number: billingData.number,
+                expiryMonth: billingData.expiryMonth,
+                expiryYear: billingData.expiryYear,
+                ccv: billingData.ccv
+            }
          })
        });
 
@@ -117,8 +138,8 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
     }
   };
 
-  const handleCardChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCardData({ ...cardData, [e.target.name]: e.target.value });
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBillingData({ ...billingData, [e.target.name]: e.target.value });
   };
 
   return (
@@ -225,21 +246,46 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
 
                   {/* PIX AREA */}
                   {paymentType === 'pix' && (
-                     <div className="w-full flex flex-col items-center gap-4 flex-1 justify-center">
+                     <div className="w-full flex flex-col items-center gap-3 flex-1 justify-center">
                         {loading ? (
                            <div className="flex flex-col items-center py-10">
                               <Loader2 className="w-10 h-10 text-yellow-500 animate-spin mb-2" />
                               <span className="text-gray-400 text-sm">Gerando Cobrança...</span>
                            </div>
                         ) : !pixData ? (
-                            <div className="flex flex-col items-center justify-center py-6 text-center">
-                                <QrCode className="w-16 h-16 text-gray-600 mb-4" />
-                                <p className="text-gray-400 text-sm mb-6 max-w-[200px]">
-                                   Clique abaixo para gerar o QR Code único para pagamento.
-                                </p>
+                            <div className="w-full flex flex-col gap-3">
+                                <div className="bg-yellow-500/10 p-3 rounded-xl border border-yellow-500/20 mb-2">
+                                   <p className="text-[10px] text-yellow-500 text-center leading-tight">
+                                      O Asaas exige <strong>CPF</strong> para gerar o Pix.
+                                   </p>
+                                </div>
+
+                                <div className="relative group">
+                                   <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"><User className="w-4 h-4" /></div>
+                                   <input 
+                                      name="holderName"
+                                      placeholder="Nome Completo"
+                                      value={billingData.holderName}
+                                      onChange={handleInputChange}
+                                      className="w-full bg-[#2c2c2e] p-3 pl-10 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm uppercase"
+                                   />
+                                </div>
+
+                                <div className="relative group">
+                                   <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"><ShieldCheck className="w-4 h-4" /></div>
+                                   <input 
+                                      name="cpf"
+                                      placeholder="CPF (Somente números)"
+                                      value={billingData.cpf}
+                                      onChange={handleInputChange}
+                                      maxLength={14}
+                                      className="w-full bg-[#2c2c2e] p-3 pl-10 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
+                                   />
+                                </div>
+
                                 <button 
                                   onClick={handleCreatePayment}
-                                  className="w-full h-12 bg-yellow-500 text-black rounded-xl font-bold hover:bg-yellow-400 transition-colors"
+                                  className="w-full h-12 bg-yellow-500 text-black rounded-xl font-bold hover:bg-yellow-400 transition-colors mt-2"
                                 >
                                    Gerar Pix de R$ 7,00
                                 </button>
@@ -289,22 +335,22 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                               <input 
                                 name="holderName"
                                 placeholder="Nome no Cartão"
-                                value={cardData.holderName}
-                                onChange={handleCardChange}
+                                value={billingData.holderName}
+                                onChange={handleInputChange}
                                 className="w-full bg-[#2c2c2e] p-3 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm uppercase"
                               />
                               <input 
                                 name="cpf"
                                 placeholder="CPF do Titular"
-                                value={cardData.cpf}
-                                onChange={handleCardChange}
+                                value={billingData.cpf}
+                                onChange={handleInputChange}
                                 className="w-full bg-[#2c2c2e] p-3 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
                               />
                               <input 
                                 name="number"
                                 placeholder="Número do Cartão"
-                                value={cardData.number}
-                                onChange={handleCardChange}
+                                value={billingData.number}
+                                onChange={handleInputChange}
                                 maxLength={16}
                                 className="w-full bg-[#2c2c2e] p-3 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
                               />
@@ -313,24 +359,24 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                                     name="expiryMonth"
                                     placeholder="MM"
                                     maxLength={2}
-                                    value={cardData.expiryMonth}
-                                    onChange={handleCardChange}
+                                    value={billingData.expiryMonth}
+                                    onChange={handleInputChange}
                                     className="w-full bg-[#2c2c2e] p-3 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm text-center"
                                  />
                                  <input 
                                     name="expiryYear"
                                     placeholder="AAAA"
                                     maxLength={4}
-                                    value={cardData.expiryYear}
-                                    onChange={handleCardChange}
+                                    value={billingData.expiryYear}
+                                    onChange={handleInputChange}
                                     className="w-full bg-[#2c2c2e] p-3 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm text-center"
                                  />
                                  <input 
                                     name="ccv"
                                     placeholder="CVV"
                                     maxLength={4}
-                                    value={cardData.ccv}
-                                    onChange={handleCardChange}
+                                    value={billingData.ccv}
+                                    onChange={handleInputChange}
                                     className="w-full bg-[#2c2c2e] p-3 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm text-center"
                                  />
                               </div>
