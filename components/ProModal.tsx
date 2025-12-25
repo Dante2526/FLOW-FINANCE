@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Crown, CheckCircle2, Copy, Loader2, ArrowRight, ChevronLeft, CreditCard, QrCode, Lock, Building, Palette, CloudLightning, BarChart3, User, ShieldCheck, Clock } from 'lucide-react';
+import { X, Crown, CheckCircle2, Copy, Loader2, ArrowRight, ChevronLeft, CreditCard, QrCode, Lock, Building, Palette, CloudLightning, BarChart3, User, ShieldCheck, Clock, AlertCircle, AlertTriangle } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -328,7 +328,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                               </div>
                               
                               <div className="w-full">
-                                 <p className="text-gray-400 text-xs mb-2 font-bold uppercase">Copia e Cola:</p>
+                                 <p className="text-gray-400 text-xs mb-2 font-bold uppercase text-left">Copia e Cola:</p>
                                  
                                  {/* Explicit Text Area for Copy Paste */}
                                  <textarea
@@ -341,6 +341,19 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                                  <button onClick={handleCopyPix} className={`w-full h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all border border-white/10 ${isCopied ? 'bg-green-500/20 text-green-500' : 'bg-[#2c2c2e] text-white'}`}>
                                     {isCopied ? <><CheckCircle2 className="w-4 h-4" /> Copiado!</> : <><Copy className="w-4 h-4" /> Copiar Código</>}
                                  </button>
+
+                                 {/* Warning Box - ENHANCED based on user feedback */}
+                                 <div className="bg-red-500/10 p-3 rounded-xl mt-3 border border-red-500/20 flex items-start gap-2 text-left">
+                                    <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+                                    <div className="flex flex-col gap-1">
+                                       <p className="text-[11px] text-white font-bold leading-tight">
+                                          Não use a Carteira do Google / Google Pay
+                                       </p>
+                                       <p className="text-[10px] text-gray-400 leading-tight">
+                                          Este código Pix <strong>não funciona</strong> na Carteira do Google (Erro: QR code inválido). Use o aplicativo do seu banco (Nubank, Inter, Itaú, etc) e escolha "Pix Copia e Cola".
+                                       </p>
+                                    </div>
+                                 </div>
                               </div>
                               
                               <div className="flex items-center gap-2 mt-2">
