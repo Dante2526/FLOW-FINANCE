@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Crown, CheckCircle2, Copy, Loader2, ArrowRight, ChevronLeft, CreditCard, QrCode, Lock, Building, Palette, CloudLightning, BarChart3, User, ShieldCheck } from 'lucide-react';
+import { X, Crown, CheckCircle2, Copy, Loader2, ArrowRight, ChevronLeft, CreditCard, QrCode, Lock, Building, Palette, CloudLightning, BarChart3, User, ShieldCheck, Clock } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -23,6 +23,9 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
   const [pixData, setPixData] = useState<{ encodedImage: string; payload: string; expirationDate: string } | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [paymentId, setPaymentId] = useState<string | null>(null);
+  
+  // Timer State
+  const [timeLeft, setTimeLeft] = useState(600); // 10 minutes in seconds
 
   // Data for Billing (Used for both Pix and Card)
   const [billingData, setBillingData] = useState({
@@ -47,6 +50,28 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
         setBillingData(prev => ({ ...prev, holderName: userName || '' }));
     }
   }, [isOpen, userName]);
+
+  // Timer Logic
+  useEffect(() => {
+    let timer: any;
+    if (isOpen && step === 'payment' && pixData && timeLeft > 0) {
+        timer = setInterval(() => {
+            setTimeLeft((prev) => prev - 1);
+        }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isOpen, step, pixData, timeLeft]);
+
+  // Reset timer when Pix is generated
+  useEffect(() => {
+     if (pixData) setTimeLeft(600);
+  }, [pixData]);
+
+  const formatTime = (seconds: number) => {
+     const m = Math.floor(seconds / 60);
+     const s = seconds % 60;
+     return `${m}:${s.toString().padStart(2, '0')}`;
+  };
 
   // Polling for Payment Status
   useEffect(() => {
@@ -292,16 +317,33 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                             </div>
                         ) : (
                            <>
+                              {/* TIMER VISUAL */}
+                              <div className="bg-red-500/10 text-red-500 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 mb-1 animate-pulse border border-red-500/20">
+                                 <Clock className="w-3 h-3" />
+                                 <span>Expira em {formatTime(timeLeft)}</span>
+                              </div>
+
                               <div className="bg-white p-2 rounded-xl">
                                  <img src={`data:image/jpeg;base64,${pixData.encodedImage}`} alt="QR Code Pix" className="w-48 h-48 mix-blend-multiply" />
                               </div>
+                              
                               <div className="w-full">
-                                 <p className="text-gray-400 text-xs mb-2">Ou copie e cole o código:</p>
+                                 <p className="text-gray-400 text-xs mb-2 font-bold uppercase">Copia e Cola:</p>
+                                 
+                                 {/* Explicit Text Area for Copy Paste */}
+                                 <textarea
+                                    readOnly
+                                    value={pixData.payload}
+                                    className="w-full bg-[#0a0a0b] text-gray-400 text-[10px] p-3 rounded-xl resize-none h-16 outline-none border border-white/5 break-all mb-2 font-mono"
+                                    onClick={(e) => e.currentTarget.select()}
+                                 />
+
                                  <button onClick={handleCopyPix} className={`w-full h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all border border-white/10 ${isCopied ? 'bg-green-500/20 text-green-500' : 'bg-[#2c2c2e] text-white'}`}>
                                     {isCopied ? <><CheckCircle2 className="w-4 h-4" /> Copiado!</> : <><Copy className="w-4 h-4" /> Copiar Código</>}
                                  </button>
                               </div>
-                              <div className="flex items-center gap-2 mt-2 animate-pulse">
+                              
+                              <div className="flex items-center gap-2 mt-2">
                                  <Loader2 className="w-3 h-3 text-yellow-500 animate-spin" />
                                  <span className="text-[10px] text-yellow-500 font-bold uppercase">Aguardando Pagamento...</span>
                               </div>
