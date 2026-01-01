@@ -1,9 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Check, Calendar } from 'lucide-react';
-import { LogoType, Transaction, AppLanguage } from '../types';
+import { LogoType, Transaction } from '../types';
 import { TransactionIcon } from './Icons';
-import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -11,76 +9,85 @@ interface Props {
   onSave: (transaction: Omit<Transaction, 'id'>) => void;
   transactionToEdit?: Transaction | null;
   activeMonthContext?: { monthIndex: number; year: number };
-  lang: AppLanguage;
 }
+
+const PURCHASE_ICONS: { type: LogoType; label: string }[] = [
+  { type: 'shopping', label: 'Compras' },
+  { type: 'food', label: 'Comida' },
+  { type: 'transport', label: 'Carro' },
+  { type: 'motorcycle', label: 'Moto' },
+  { type: 'insurance', label: 'Seguro' },
+  { type: 'wifi', label: 'Wifi' },
+  { type: 'mobile', label: 'Celular' },
+  { type: 'rent', label: 'Aluguel' },
+  { type: 'home', label: 'Casa' },
+  { type: 'utility', label: 'Contas' },
+  // New Items
+  { type: 'education', label: 'Estudos' },
+  { type: 'project', label: 'Projetos' },
+  { type: 'funeral', label: 'Funeral' },
+  { type: 'health', label: 'Saúde' },
+  { type: 'medicine', label: 'Remédio' },
+  { type: 'pet', label: 'Pets' },
+  { type: 'travel', label: 'Viagem' },
+  
+  // Specific & Extras
+  { type: 'leisure', label: 'Lazer' },
+  { type: 'bar', label: 'Bar' },
+  { type: 'game', label: 'Jogos' },
+  { type: 'gift', label: 'Presentes' },
+  
+  // Beauty & Wellness
+  { type: 'beauty', label: 'Salão' },
+  { type: 'makeup', label: 'Beleza Fem.' },
+  { type: 'aesthetic', label: 'Estética' },
+  
+  // Events
+  { type: 'wedding', label: 'Casamento' },
+  
+  { type: 'generic', label: 'Outros' },
+];
+
+const SUBSCRIPTION_ICONS: { type: LogoType; label: string }[] = [
+  { type: 'netflix', label: 'Netflix' },
+  { type: 'spotify', label: 'Spotify' },
+  { type: 'amazon', label: 'Prime' },
+  { type: 'youtube', label: 'YouTube' },
+  { type: 'apple', label: 'Apple' },
+  { type: 'disney', label: 'Disney+' },
+  { type: 'max', label: 'Max' },
+  { type: 'globo', label: 'Globoplay' },
+  { type: 'mercadolivre', label: 'Meli+' },
+];
 
 const MONTH_MAP: Record<string, string> = {
   'jan': '01', 'fev': '02', 'mar': '03', 'abr': '04', 'mai': '05', 'jun': '06',
   'jul': '07', 'ago': '08', 'set': '09', 'out': '10', 'nov': '11', 'dez': '12'
 };
 
-const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transactionToEdit, activeMonthContext, lang }) => {
+const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transactionToEdit, activeMonthContext }) => {
   const [amount, setAmount] = useState('');
   const [name, setName] = useState('');
   const [type, setType] = useState<'purchase' | 'subscription'>('purchase');
   const [date, setDate] = useState('');
+  // Default icons based on initial type
   const [selectedIcon, setSelectedIcon] = useState<LogoType>('shopping');
 
-  const t = TRANSLATIONS[lang];
-  const cat = t.addTransaction.categories;
-
-  const PURCHASE_ICONS: { type: LogoType; label: string }[] = [
-    { type: 'shopping', label: cat.shopping },
-    { type: 'food', label: cat.food },
-    { type: 'transport', label: cat.transport },
-    { type: 'motorcycle', label: cat.motorcycle },
-    { type: 'insurance', label: cat.insurance },
-    { type: 'wifi', label: cat.wifi },
-    { type: 'mobile', label: cat.mobile },
-    { type: 'rent', label: cat.rent },
-    { type: 'home', label: cat.home },
-    { type: 'utility', label: cat.utility },
-    { type: 'education', label: cat.education },
-    { type: 'project', label: cat.project },
-    { type: 'funeral', label: cat.funeral },
-    { type: 'health', label: cat.health },
-    { type: 'medicine', label: cat.medicine },
-    { type: 'pet', label: cat.pet },
-    { type: 'travel', label: cat.travel },
-    { type: 'leisure', label: cat.leisure },
-    { type: 'bar', label: cat.bar },
-    { type: 'game', label: cat.game },
-    { type: 'gift', label: cat.gift },
-    { type: 'beauty', label: cat.beauty },
-    { type: 'makeup', label: cat.makeup },
-    { type: 'aesthetic', label: cat.aesthetic },
-    { type: 'wedding', label: cat.wedding },
-    { type: 'generic', label: cat.generic },
-  ];
-
-  const SUBSCRIPTION_ICONS: { type: LogoType; label: string }[] = [
-    { type: 'netflix', label: 'Netflix' },
-    { type: 'spotify', label: 'Spotify' },
-    { type: 'amazon', label: 'Prime' },
-    { type: 'youtube', label: 'YouTube' },
-    { type: 'apple', label: 'Apple' },
-    { type: 'disney', label: 'Disney+' },
-    { type: 'max', label: 'Max' },
-    { type: 'globo', label: 'Globoplay' },
-    { type: 'mercadolivre', label: 'Meli+' },
-  ];
-
+  // Determine which icon set to show
   const visibleIcons = type === 'subscription' ? SUBSCRIPTION_ICONS : PURCHASE_ICONS;
 
+  // Helper to parse "24 Dez" back to "YYYY-MM-DD"
   const parseDateFromDisplay = (displayDate: string): string => {
     try {
       if (!displayDate) return new Date().toISOString().split('T')[0];
       if (displayDate.toLowerCase().includes('hoje')) return new Date().toISOString().split('T')[0];
       
+      // Handle "YYYY-MM-DD" format (already ISO)
       if (displayDate.match(/^\d{4}-\d{2}-\d{2}/)) {
           return displayDate.split(' ')[0];
       }
 
+      // Handle "DD Mmm" format (e.g. "24 Jan")
       const parts = displayDate.split(' ');
       if (parts.length >= 2) {
         const day = parts[0].padStart(2, '0');
@@ -88,6 +95,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
         const month = MONTH_MAP[monthCode];
         
         if (month) {
+          // Use the Year from context if available, otherwise default to current year
           const year = activeMonthContext ? activeMonthContext.year : new Date().getFullYear();
           return `${year}-${month}-${day}`;
         }
@@ -101,19 +109,24 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
   useEffect(() => {
     if (isOpen && transactionToEdit) {
       setAmount(transactionToEdit.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-      setName(transactionToEdit.name); 
+      setName(transactionToEdit.name); // Removed explicit toUpperCase here to respect stored data style until edit
       setSelectedIcon(transactionToEdit.logoType);
       setType(transactionToEdit.type as 'purchase' | 'subscription');
+      
+      // Use the helper to correctly set the date input value
       setDate(parseDateFromDisplay(transactionToEdit.date));
+      
     } else if (isOpen && !transactionToEdit) {
       setAmount('');
       setName('');
       setSelectedIcon('shopping');
       setType('purchase');
       
+      // Default to the 1st day of the ACTIVE month, not today (if contexts differ)
       if (activeMonthContext) {
           const y = activeMonthContext.year;
           const m = String(activeMonthContext.monthIndex + 1).padStart(2, '0');
+          // If the active month is current month, use today. Else use 1st.
           const now = new Date();
           if (now.getMonth() === activeMonthContext.monthIndex && now.getFullYear() === activeMonthContext.year) {
              setDate(now.toISOString().split('T')[0]);
@@ -126,14 +139,19 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
     }
   }, [isOpen, transactionToEdit, activeMonthContext]);
 
+  // When type changes, reset icon to first of that list if not editing or if mismatched
   useEffect(() => {
     if (!isOpen) return;
+    
+    // Check if current icon exists in the new list
     const currentIconExists = visibleIcons.some(i => i.type === selectedIcon);
+    
     if (!currentIconExists) {
       setSelectedIcon(visibleIcons[0].type);
     }
   }, [type, visibleIcons, isOpen, selectedIcon]);
 
+  // Currency Handler
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value.replace(/\D/g, '');
     if (!rawValue) {
@@ -150,19 +168,22 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
     e.preventDefault();
     if (!amount || !name || !date) return;
 
+    // Check if selected date is today to use "Hoje"
     const today = new Date().toISOString().split('T')[0];
     let finalDateString = '';
     
     if (date === today) {
        finalDateString = `Hoje ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
     } else {
+       // IMPORTANT: Save as ISO YYYY-MM-DD to preserve year information for future dates
        finalDateString = date;
     }
 
+    // Parse amount from string "1.000,00" to float
     const parsedAmount = parseFloat(amount.replace(/\./g, '').replace(',', '.'));
 
     onSave({
-      name: name.toUpperCase(),
+      name: name.toUpperCase(), // Convert to Uppercase ONLY on submit
       amount: parsedAmount,
       type,
       paymentMethod: transactionToEdit?.paymentMethod || 'card', 
@@ -185,9 +206,10 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-5 max-h-[90dvh] overflow-y-auto no-scrollbar">
         
+        {/* Header */}
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold text-white">
-            {transactionToEdit ? t.addTransaction.titleEdit : t.addTransaction.titleNew}
+            {transactionToEdit ? 'Editar Conta' : 'Nova Conta'}
           </h2>
           <button 
             onClick={onClose} 
@@ -199,8 +221,9 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5" autoComplete="off">
           
+          {/* Amount Input */}
           <div className="flex flex-col gap-2">
-            <label className="text-gray-400 text-sm ml-2">{t.addTransaction.amount}</label>
+            <label className="text-gray-400 text-sm ml-2">Valor</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-accent">R$</span>
               <input 
@@ -218,14 +241,15 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
             </div>
           </div>
 
+          {/* Name Input */}
           <div className="flex flex-col gap-2">
-            <label className="text-gray-400 text-sm ml-2">{t.addTransaction.description}</label>
+            <label className="text-gray-400 text-sm ml-2">Descrição</label>
             <input 
               type="text" 
               name="transaction_desc_hidden"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={t.addTransaction.descPlaceholder}
+              placeholder="DO QUE SE TRATA?"
               className="w-full bg-[#2c2c2e] text-white text-lg py-4 px-6 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600 uppercase"
               required
               autoComplete="off"
@@ -235,8 +259,9 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
             />
           </div>
 
+          {/* Date Input */}
           <div className="flex flex-col gap-2">
-             <label className="text-gray-400 text-sm ml-2">{t.addTransaction.date}</label>
+             <label className="text-gray-400 text-sm ml-2">Data de Vencimento</label>
              <div className="relative">
                <input 
                   type="date"
@@ -251,6 +276,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
              </div>
           </div>
 
+          {/* Type Toggle */}
           <div className="flex p-1 bg-[#2c2c2e] rounded-xl">
             <button
               type="button"
@@ -259,7 +285,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
                 type === 'purchase' ? 'bg-[#3a3a3c] text-white shadow-md' : 'text-gray-500 hover:text-gray-300'
               }`}
             >
-              {t.addTransaction.typePurchase}
+              Compra
             </button>
             <button
               type="button"
@@ -268,12 +294,13 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
                 type === 'subscription' ? 'bg-[#3a3a3c] text-white shadow-md' : 'text-gray-500 hover:text-gray-300'
               }`}
             >
-              {t.addTransaction.typeSub}
+              Assinatura
             </button>
           </div>
 
+          {/* Icon Selection */}
           <div className="flex flex-col gap-2">
-            <label className="text-gray-400 text-sm ml-2">{t.addTransaction.icon}</label>
+            <label className="text-gray-400 text-sm ml-2">Ícone</label>
             <div className="grid grid-cols-5 gap-3 p-1">
               {visibleIcons.map((icon) => (
                 <button
@@ -295,12 +322,13 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
             </div>
           </div>
 
+          {/* Submit Button */}
           <button 
             type="submit"
             disabled={!isFormValid}
             className="w-full bg-accent text-black disabled:bg-surfaceLight disabled:text-gray-500 h-16 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-2 hover:bg-accentDark disabled:hover:bg-surfaceLight transition-colors mt-2"
           >
-            {transactionToEdit ? t.addTransaction.submitEdit : t.addTransaction.submitNew}
+            {transactionToEdit ? 'Salvar Alterações' : 'Adicionar Conta'}
             <Check className="w-5 h-5" />
           </button>
 

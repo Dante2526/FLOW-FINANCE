@@ -1,8 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Check, Lock, Crown } from 'lucide-react';
-import { CardTheme, Account, AppLanguage } from '../types';
-import { TRANSLATIONS } from '../i18n';
+import { CardTheme, Account } from '../types';
 
 interface Props {
   isOpen: boolean;
@@ -11,31 +9,30 @@ interface Props {
   accountToEdit?: Account | null;
   isPro?: boolean;
   onOpenProModal?: () => void;
-  lang: AppLanguage;
 }
 
-const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEdit, isPro = false, onOpenProModal, lang }) => {
+const THEMES: { id: CardTheme; color: string; label: string; isPro?: boolean }[] = [
+  { id: 'default', color: 'bg-[#1c1c1e]', label: 'Padrão' },
+  { id: 'lime', color: 'bg-[#65a30d]', label: 'Verde Cana' },
+  { id: 'purple', color: 'bg-purple-600', label: 'Roxo' },
+  { id: 'blue', color: 'bg-blue-600', label: 'Azul', isPro: true },
+  { id: 'orange', color: 'bg-orange-500', label: 'Laranja', isPro: true },
+  { id: 'red', color: 'bg-red-600', label: 'Vermelho', isPro: true },
+];
+
+const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEdit, isPro = false, onOpenProModal }) => {
   const [balance, setBalance] = useState('');
   const [name, setName] = useState('');
   const [selectedTheme, setSelectedTheme] = useState<CardTheme>('default');
-  
-  const t = TRANSLATIONS[lang];
 
-  const THEMES: { id: CardTheme; color: string; label: string; isPro?: boolean }[] = [
-    { id: 'default', color: 'bg-[#1c1c1e]', label: t.themes.default },
-    { id: 'lime', color: 'bg-[#65a30d]', label: t.themes.lime },
-    { id: 'purple', color: 'bg-purple-600', label: t.themes.purple },
-    { id: 'blue', color: 'bg-blue-600', label: t.themes.blue, isPro: true },
-    { id: 'orange', color: 'bg-orange-500', label: t.themes.orange, isPro: true },
-    { id: 'red', color: 'bg-red-600', label: t.themes.red, isPro: true },
-  ];
-
+  // Load data when entering edit mode
   useEffect(() => {
     if (isOpen && accountToEdit) {
       setName(accountToEdit.name);
       setBalance(accountToEdit.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       setSelectedTheme(accountToEdit.colorTheme);
     } else if (isOpen && !accountToEdit) {
+      // Reset if opening in create mode
       setName('');
       setBalance('');
       setSelectedTheme('default');
@@ -58,6 +55,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
     e.preventDefault();
     if (!name) return;
 
+    // Parse back to float
     let finalBalance = 0;
     if (balance) {
        finalBalance = parseFloat(balance.replace(/\./g, '').replace(',', '.'));
@@ -65,6 +63,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
 
     onSave(name, finalBalance, selectedTheme);
     
+    // Only reset if we are not editing (to prevent flickering before close)
     if (!accountToEdit) {
       setBalance('');
       setName('');
@@ -87,9 +86,10 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-6 max-h-[90dvh] overflow-y-auto no-scrollbar">
         
+        {/* Header */}
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold text-white">
-            {accountToEdit ? t.addAccount.titleEdit : t.addAccount.titleNew}
+            {accountToEdit ? 'Editar Fonte de Renda' : 'Nova Fonte de Renda'}
           </h2>
           <button 
             onClick={onClose} 
@@ -101,8 +101,9 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6" autoComplete="off">
           
+          {/* Balance Input */}
           <div className="flex flex-col gap-2">
-            <label className="text-gray-400 text-sm ml-2">{t.addAccount.balance}</label>
+            <label className="text-gray-400 text-sm ml-2">Valor Atual (Opcional)</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-accent">R$</span>
               <input 
@@ -119,14 +120,15 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
             </div>
           </div>
 
+          {/* Name Input */}
           <div className="flex flex-col gap-2">
-            <label className="text-gray-400 text-sm ml-2">{t.addAccount.name}</label>
+            <label className="text-gray-400 text-sm ml-2">Nome da Fonte de Renda</label>
             <input 
               type="text" 
               name="account_name_hidden"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={t.addAccount.namePlaceholder}
+              placeholder="Ex: Reserva, Salário..."
               className="w-full bg-[#2c2c2e] text-white text-lg py-4 px-6 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600"
               required
               autoComplete="off"
@@ -136,8 +138,9 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
             />
           </div>
 
+          {/* Color Selection */}
           <div className="flex flex-col gap-2">
-            <label className="text-gray-400 text-sm ml-2">{t.addAccount.color}</label>
+            <label className="text-gray-400 text-sm ml-2">Cor do Cartão</label>
             <div className="flex gap-3 overflow-x-auto py-1 px-1 no-scrollbar pb-2">
               {THEMES.map((theme) => {
                 const isLocked = theme.isPro && !isPro;
@@ -174,12 +177,13 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
             </div>
           </div>
 
+          {/* Submit Button */}
           <button 
             type="submit"
             disabled={!isFormValid}
             className="w-full bg-accent text-black disabled:bg-surfaceLight disabled:text-gray-500 h-16 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-2 hover:bg-accentDark disabled:hover:bg-surfaceLight transition-colors mt-2"
           >
-            {accountToEdit ? t.addAccount.submitEdit : t.addAccount.submitNew}
+            {accountToEdit ? 'Salvar Alterações' : 'Criar Fonte de Renda'}
             <Check className="w-5 h-5" />
           </button>
 

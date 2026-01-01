@@ -1,8 +1,6 @@
 
 import React, { useState } from 'react';
 import { Plus, Copy, Calculator, GripVertical, Eye, EyeOff } from 'lucide-react';
-import { TRANSLATIONS } from '../i18n';
-import { AppLanguage } from '../types';
 
 interface Props {
   balance: number;
@@ -11,12 +9,12 @@ interface Props {
   onAddClick: () => void;
   onDuplicateClick: () => void;
   onCalculatorClick: () => void;
+  // DnD Props
   id?: string;
   draggable?: boolean;
   onDragStart?: (id: string) => void;
   onDragEnter?: (id: string) => void;
   onDragEnd?: () => void;
-  lang?: AppLanguage;
 }
 
 const BalanceCard: React.FC<Props> = ({ 
@@ -30,9 +28,9 @@ const BalanceCard: React.FC<Props> = ({
   draggable,
   onDragStart,
   onDragEnter,
-  onDragEnd,
-  lang = 'pt'
+  onDragEnd
 }) => {
+  // State for balance visibility
   const [isVisible, setIsVisible] = useState(() => {
     try {
       const saved = localStorage.getItem('flow_balance_visible');
@@ -42,17 +40,17 @@ const BalanceCard: React.FC<Props> = ({
     }
   });
 
-  const t = TRANSLATIONS[lang];
-
   const toggleVisibility = () => {
     const newState = !isVisible;
     setIsVisible(newState);
     localStorage.setItem('flow_balance_visible', JSON.stringify(newState));
   };
 
-  const formattedBalance = balance.toLocaleString(lang === 'en' ? 'en-US' : 'pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const [integerPart, decimalPart] = formattedBalance.split(lang === 'en' ? '.' : ',');
+  // Format the balance to maintain the visual style (large integer, smaller decimals)
+  const formattedBalance = balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const [integerPart, decimalPart] = formattedBalance.split(',');
 
+  // Native DnD Handlers
   const handleDragStart = (e: React.DragEvent) => {
      if (onDragStart && id) onDragStart(id);
   };
@@ -61,8 +59,11 @@ const BalanceCard: React.FC<Props> = ({
      if (onDragEnter && id) onDragEnter(id);
   };
 
+  // Touch Handler for Mobile Drag Simulation
   const handleTouchMove = (e: React.TouchEvent) => {
-    e.stopPropagation(); 
+    e.stopPropagation(); // Stop scrolling interference
+    
+    // Rely on touch-action: none for scroll prevention
     const touch = e.touches[0];
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
     const cardRow = element?.closest('[data-card-id]');
@@ -83,18 +84,21 @@ const BalanceCard: React.FC<Props> = ({
       onDragOver={(e) => e.preventDefault()}
       onDragEnd={onDragEnd}
     >
+      
+      {/* Header of Card */}
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-3">
           <span className="text-lg font-extrabold text-white drop-shadow-sm tracking-wide">{label}</span>
           <button 
             onClick={toggleVisibility}
             className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors active:scale-95 flex items-center justify-center backdrop-blur-sm"
-            title={isVisible ? t.balanceCard.hide : t.balanceCard.show}
+            title={isVisible ? "Esconder saldo" : "Mostrar saldo"}
           >
             {isVisible ? <Eye className="w-4 h-4 text-white" /> : <EyeOff className="w-4 h-4 text-white" />}
           </button>
         </div>
         
+        {/* Drag Handle */}
         {draggable && (
            <div 
              className="p-2 -mt-2 -mr-2 cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100 transition-opacity touch-none"
@@ -102,6 +106,7 @@ const BalanceCard: React.FC<Props> = ({
              draggable={true}
              onDragStart={handleDragStart}
              onDragEnd={onDragEnd}
+             // Manual Touch Handlers for Mobile
              onTouchStart={(e) => {
                 e.stopPropagation();
                 if (onDragStart && id) onDragStart(id);
@@ -117,19 +122,22 @@ const BalanceCard: React.FC<Props> = ({
         )}
       </div>
 
+      {/* Main Balance */}
       <div className="mt-2 mb-6">
         {isVisible ? (
           <h1 className="text-4xl font-bold tracking-tight drop-shadow-md">
-            {lang === 'en' ? '$' : 'R$'} {integerPart}<span className="text-3xl text-white">{lang === 'en' ? '.' : ','}{decimalPart}</span>
+            R$ {integerPart}<span className="text-3xl text-white">,{decimalPart}</span>
           </h1>
         ) : (
           <h1 className="text-4xl font-bold tracking-tight drop-shadow-md opacity-80">
-            {lang === 'en' ? '$' : 'R$'} ••••
+            R$ ••••
           </h1>
         )}
       </div>
 
+      {/* Action Buttons Row */}
       <div className="flex items-center gap-3">
+        {/* Add Button (Promoted to Primary - replaces Send) */}
         <button 
           onClick={(e) => { e.stopPropagation(); onAddClick(); }}
           className="flex-1 bg-[#121214] text-white h-16 rounded-[1.5rem] flex items-center justify-center gap-2 hover:bg-black transition-colors shadow-lg"
@@ -138,10 +146,11 @@ const BalanceCard: React.FC<Props> = ({
           <Plus className="w-5 h-5" />
         </button>
 
+        {/* Duplicate Button (Copy Icon) */}
         <button 
           onClick={(e) => { e.stopPropagation(); onDuplicateClick(); }}
           className="w-16 h-16 bg-[#121214] text-white rounded-[1.5rem] flex items-center justify-center hover:bg-black transition-colors shadow-lg"
-          title={t.balanceCard.duplicate}
+          title="Duplicar contas para o próximo mês"
         >
           <Copy className="w-6 h-6" />
         </button>

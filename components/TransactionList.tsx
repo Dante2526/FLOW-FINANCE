@@ -1,9 +1,8 @@
 
 import React, { useState, useRef } from 'react';
-import { Transaction, AppLanguage } from '../types';
+import { Transaction } from '../types';
 import { TransactionIcon } from './Icons';
-import { Trash2, Edit2, Check, CreditCard, QrCode } from 'lucide-react';
-import { TRANSLATIONS } from '../i18n';
+import { Trash2, Edit2, Check, CreditCard, QrCode, RotateCcw } from 'lucide-react';
 
 interface Props {
   transactions: Transaction[];
@@ -12,12 +11,17 @@ interface Props {
   onToggleStatus: (id: string) => void;
   onTogglePaymentMethod: (id: string) => void;
   title?: string;
-  lang: AppLanguage;
 }
 
-const formatDateDisplay = (dateStr: string, t: any) => {
+const typeTranslation = {
+  purchase: 'Compra',
+  subscription: 'Assinatura',
+  transfer: 'Transferência'
+};
+
+const formatDateDisplay = (dateStr: string) => {
   if (!dateStr) return '';
-  if (dateStr.toLowerCase().includes('hoje')) return t.card.today;
+  if (dateStr.toLowerCase().includes('hoje')) return 'Hoje';
   
   // Handle ISO YYYY-MM-DD
   if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
@@ -25,13 +29,7 @@ const formatDateDisplay = (dateStr: string, t: any) => {
       const d = new Date(dateStr.split(' ')[0] + 'T00:00:00');
       // Verificação de data válida
       if (isNaN(d.getTime())) return dateStr; 
-      // Manually getting date parts to avoid locale issues mixing with our custom "Hoje" logic
-      const day = String(d.getDate()).padStart(2, '0');
-      const monthNames = [
-          t.months.jan, t.months.fev, t.months.mar, t.months.abr, t.months.mai, t.months.jun,
-          t.months.jul, t.months.ago, t.months.set, t.months.out, t.months.nov, t.months.dez
-      ];
-      return `${day} ${monthNames[d.getMonth()].slice(0, 3)}`;
+      return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }).replace('.', '');
     } catch (e) {
       return dateStr;
     }
@@ -46,7 +44,6 @@ interface SwipeableTransactionItemProps {
   onEdit: (tx: Transaction) => void;
   onToggleStatus: (id: string) => void;
   onTogglePaymentMethod: (id: string) => void;
-  lang: AppLanguage;
 }
 
 // MEMOIZED ATOMIC COMPONENT
@@ -55,13 +52,10 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
   onDelete,
   onEdit,
   onToggleStatus,
-  onTogglePaymentMethod,
-  lang
+  onTogglePaymentMethod
 }) => {
   const [offsetX, setOffsetX] = useState(0);
   
-  const t = TRANSLATIONS[lang];
-
   // Refs to track gestures without re-renders
   const startX = useRef<number | null>(null);
   const startY = useRef<number | null>(null); // Track vertical start
@@ -212,7 +206,7 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
             {/* Date Display (Tiny) */}
             {!tx.paid && (
               <span className="text-[10px] text-gray-500 font-medium uppercase whitespace-nowrap overflow-hidden w-full">
-                {t.card.expires} <span className="text-gray-400">{formatDateDisplay(tx.date, t)}</span>
+                Vence: <span className="text-gray-400">{formatDateDisplay(tx.date)}</span>
               </span>
             )}
             
@@ -229,7 +223,7 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
                   : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
               }`}>
                  {tx.paymentMethod === 'pix' ? <QrCode className="w-3 h-3" /> : <CreditCard className="w-3 h-3" />}
-                 {tx.paymentMethod === 'pix' ? t.card.pix : t.card.card}
+                 {tx.paymentMethod === 'pix' ? 'PIX' : 'CARTAO'}
               </div>
             )}
           </div>
@@ -250,7 +244,7 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
                 ? 'bg-purple-500/10 text-purple-300 border border-purple-500/20' 
                 : 'bg-cyan-500/10 text-cyan-100 border border-cyan-500/20'
             }`}>
-              {tx.type === 'subscription' ? t.addTransaction.typeSub : t.addTransaction.typePurchase}
+              {typeTranslation[tx.type]}
             </div>
           </div>
 
@@ -275,7 +269,7 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
   );
 });
 
-const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onToggleStatus, onTogglePaymentMethod, title = 'CONTAS', lang }) => {
+const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onToggleStatus, onTogglePaymentMethod, title = 'CONTAS' }) => {
   return (
     <div className="mt-6 flex flex-col">
       <h2 className="text-xl font-medium text-gray-400 mb-4 pl-1">{title}</h2>
@@ -288,7 +282,6 @@ const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onTo
           onEdit={onEdit}
           onToggleStatus={onToggleStatus}
           onTogglePaymentMethod={onTogglePaymentMethod}
-          lang={lang}
         />
       ))}
     </div>

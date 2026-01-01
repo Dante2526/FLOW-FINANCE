@@ -1,8 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Check, TrendingUp, Building, Layers, Search, Lock } from 'lucide-react';
-import { Investment, InvestmentType, AppLanguage } from '../types';
-import { TRANSLATIONS } from '../i18n';
+import { Investment, InvestmentType } from '../types';
 
 interface Props {
   isOpen: boolean;
@@ -11,18 +9,15 @@ interface Props {
   investmentToEdit?: Investment | null;
   isPro?: boolean;
   onOpenProModal?: () => void;
-  lang: AppLanguage;
 }
 
-const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investmentToEdit, isPro = false, onOpenProModal, lang }) => {
+const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investmentToEdit, isPro = false, onOpenProModal }) => {
   const [name, setName] = useState('');
   const [institution, setInstitution] = useState('');
   const [type, setType] = useState<InvestmentType>('cdi');
   const [amount, setAmount] = useState('');
   const [quantity, setQuantity] = useState('');
   const [yieldRate, setYieldRate] = useState('');
-  
-  const t = TRANSLATIONS[lang];
 
   useEffect(() => {
     if (isOpen && investmentToEdit) {
@@ -104,7 +99,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
         {/* Header */}
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold text-white">
-            {investmentToEdit ? t.investments.add.titleEdit : t.investments.add.titleNew}
+            {investmentToEdit ? 'Editar Investimento' : 'Novo Investimento'}
           </h2>
           <button 
             onClick={onClose} 
@@ -128,7 +123,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
                 }`}
               >
                 <TrendingUp className="w-5 h-5 mb-1" />
-                <span className="text-[10px] font-bold uppercase">{t.investments.add.typeFixed}</span>
+                <span className="text-[10px] font-bold uppercase">Renda Fixa / CDI</span>
               </button>
               
               <button 
@@ -146,18 +141,18 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
                    </div>
                 )}
                 <Building className="w-5 h-5 mb-1" />
-                <span className="text-[10px] font-bold uppercase">{t.investments.add.typeFii}</span>
+                <span className="text-[10px] font-bold uppercase">Fundo Imob (FII)</span>
               </button>
            </div>
 
            {/* Institution */}
            <div className="flex flex-col gap-2">
-              <label className="text-gray-400 text-xs ml-2 font-bold uppercase">{t.investments.add.institution}</label>
+              <label className="text-gray-400 text-xs ml-2 font-bold uppercase">Instituição</label>
               <input 
                 type="text" 
                 value={institution}
                 onChange={(e) => setInstitution(e.target.value)}
-                placeholder={t.investments.add.institutionPlaceholder}
+                placeholder={type === 'cdi' ? "Ex: PICPAY, NUBANK..." : "Ex: RICO, XP..."}
                 className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium uppercase text-sm"
                 autoComplete="off"
                 spellCheck="false"
@@ -166,12 +161,12 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
 
            {/* Asset Name */}
            <div className="flex flex-col gap-2">
-              <label className="text-gray-400 text-xs ml-2 font-bold uppercase">{t.investments.add.name}</label>
+              <label className="text-gray-400 text-xs ml-2 font-bold uppercase">Nome do Ativo</label>
               <input 
                  type="text" 
                  value={name}
                  onChange={(e) => setName(e.target.value)}
-                 placeholder={t.investments.add.namePlaceholder}
+                 placeholder={type === 'cdi' ? "Ex: CAIXINHA RESERVA" : "Ex: MXRF11"}
                  className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium uppercase text-sm"
                  autoComplete="off"
                  spellCheck="false"
@@ -183,7 +178,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
               {/* Quantity Input - ONLY for FII */}
               {type === 'fii' && (
                  <div className="w-[35%] flex flex-col gap-2">
-                   <label className="text-gray-400 text-xs ml-2 font-bold uppercase">{t.investments.add.quantity}</label>
+                   <label className="text-gray-400 text-xs ml-2 font-bold uppercase">Qtd</label>
                    <div className="relative">
                        <input 
                           type="number"
@@ -200,7 +195,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
               )}
 
               <div className="flex-1 flex flex-col gap-2">
-                 <label className="text-gray-400 text-xs ml-2 font-bold uppercase">{t.investments.add.totalValue}</label>
+                 <label className="text-gray-400 text-xs ml-2 font-bold uppercase">Valor Total</label>
                  <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-accent font-bold text-sm">R$</span>
                     <input 
@@ -219,14 +214,14 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
            {/* Yield */}
            <div className="flex flex-col gap-2">
               <label className="text-gray-400 text-xs ml-2 font-bold uppercase">
-                 {type === 'cdi' ? t.investments.add.yieldCdi : t.investments.add.yieldFii}
+                 {type === 'cdi' ? '% do CDI (Rentabilidade)' : 'Dividend Yield (Anual Estimado)'}
               </label>
               <div className="relative flex items-center">
                  <input 
                    type="number" 
                    value={yieldRate}
                    onChange={(e) => setYieldRate(e.target.value)}
-                   placeholder={type === 'cdi' ? "Ex: 100" : "Ex: 12.5"}
+                   placeholder={type === 'cdi' ? "Ex: 100 (para 100%)" : "Ex: 12.5"}
                    className="w-full bg-[#2c2c2e] text-white p-4 pr-24 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold text-sm"
                    autoComplete="off"
                  />
@@ -257,7 +252,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
              }`}
            >
              <Check className="w-5 h-5" />
-             {investmentToEdit ? t.investments.add.submitEdit : t.investments.add.submitNew}
+             {investmentToEdit ? 'Salvar Alterações' : 'Adicionar'}
            </button>
         </form>
 

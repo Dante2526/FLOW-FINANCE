@@ -1,15 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Mail, ArrowRight, ShieldCheck, User, KeyRound, ChevronLeft, AlertCircle, Languages } from 'lucide-react';
+import { Mail, ArrowRight, ShieldCheck, User, KeyRound, ChevronLeft, AlertCircle } from 'lucide-react';
 import { loadData, STORAGE_KEYS } from '../services/storage';
 import { sendAuthOtp, verifyAuthOtp, supabase } from '../services/supabase';
-import { AppLanguage } from '../types';
-import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   onLogin: (email: string, name?: string) => Promise<void>;
-  lang?: AppLanguage;
-  onLanguageChange?: (lang: AppLanguage) => void;
 }
 
 // Custom SVG Logo matching the brand (F with dots)
@@ -33,10 +29,9 @@ export const FlowLogo = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const LoginScreen: React.FC<Props> = ({ onLogin, lang = 'pt', onLanguageChange }) => {
+const LoginScreen: React.FC<Props> = ({ onLogin }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [step, setStep] = useState<'email' | 'otp'>('email');
-  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
   
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -44,8 +39,6 @@ const LoginScreen: React.FC<Props> = ({ onLogin, lang = 'pt', onLanguageChange }
   
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  const t = TRANSLATIONS[lang];
 
   // Timer para evitar spam no botão de reenvio
   const [resendTimer, setResendTimer] = useState(0);
@@ -70,12 +63,12 @@ const LoginScreen: React.FC<Props> = ({ onLogin, lang = 'pt', onLanguageChange }
 
     // Validação Básica
     if (!email || !email.includes('@') || !email.includes('.')) {
-      setError(t.auth.errorEmail);
+      setError('Por favor, insira um e-mail válido.');
       return;
     }
 
     if (mode === 'register' && !name.trim()) {
-      setError(t.auth.errorName);
+      setError('Por favor, informe seu nome.');
       return;
     }
 
@@ -128,7 +121,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin, lang = 'pt', onLanguageChange }
     setError('');
     
     if (otpCode.length !== 6) {
-      setError(t.auth.errorCode);
+      setError('O código deve ter exatamente 6 dígitos.');
       return;
     }
 
@@ -170,40 +163,12 @@ const LoginScreen: React.FC<Props> = ({ onLogin, lang = 'pt', onLanguageChange }
     // Não zeramos o timer aqui propositalmente para manter o cooldown se o usuário voltar rápido
   };
 
-  const handleLangChange = (l: AppLanguage) => {
-      if (onLanguageChange) onLanguageChange(l);
-      setIsLangMenuOpen(false);
-  };
-
   return (
     <div className="h-[100dvh] w-full bg-[#0a0a0b] flex flex-col items-center p-4 relative overflow-hidden">
       
       {/* Background Decor */}
       <div className="absolute top-[-20%] left-[-20%] w-[500px] h-[500px] bg-accent/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-20%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
-
-      {/* Language Switcher */}
-      <div className="absolute top-4 right-4 z-50">
-         <button 
-           onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-           className="p-2 bg-[#1c1c1e] rounded-xl hover:bg-white/10 transition-colors border border-white/5 text-gray-400"
-         >
-            <Languages className="w-5 h-5" />
-         </button>
-         {isLangMenuOpen && (
-            <div className="absolute top-full right-0 mt-2 bg-[#1c1c1e] border border-white/5 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 w-28 animate-in fade-in zoom-in duration-200">
-               <button onClick={() => handleLangChange('pt')} className={`p-2 rounded-xl text-xs font-bold text-left transition-colors ${lang === 'pt' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
-                  Português
-               </button>
-               <button onClick={() => handleLangChange('en')} className={`p-2 rounded-xl text-xs font-bold text-left transition-colors ${lang === 'en' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
-                  English
-               </button>
-               <button onClick={() => handleLangChange('es')} className={`p-2 rounded-xl text-xs font-bold text-left transition-colors ${lang === 'es' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
-                  Español
-               </button>
-            </div>
-         )}
-      </div>
 
       {/* Main Content Wrapper */}
       <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-md relative z-10 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700 min-h-0`}>
@@ -218,7 +183,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin, lang = 'pt', onLanguageChange }
           {step === 'email' && (
             <div className="items-center flex flex-col">
               <h1 className="text-2xl sm:text-4xl font-bold text-white tracking-tight leading-none text-center">Flow Finance</h1>
-              <p className="text-gray-400 text-xs sm:text-sm mt-1 text-center">{t.auth.tagline}</p>
+              <p className="text-gray-400 text-xs sm:text-sm mt-1 text-center">Controle financeiro inteligente.</p>
             </div>
           )}
         </div>
@@ -231,10 +196,10 @@ const LoginScreen: React.FC<Props> = ({ onLogin, lang = 'pt', onLanguageChange }
              <div className="animate-in fade-in slide-in-from-right-8 duration-300">
                 <div className="mb-6 flex flex-col gap-1 items-center text-center">
                   <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">
-                      {mode === 'login' ? t.auth.welcomeBack : t.auth.createAccount}
+                      {mode === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta'}
                   </h2>
                   <p className="text-xs sm:text-sm text-gray-500">
-                      {mode === 'login' ? t.auth.loginDesc : t.auth.registerDesc}
+                      {mode === 'login' ? 'Entre para acessar suas finanças.' : 'Comece a controlar seu dinheiro hoje.'}
                   </p>
                 </div>
 
@@ -252,7 +217,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin, lang = 'pt', onLanguageChange }
                                 type="text" 
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder={t.auth.namePlaceholder}
+                                placeholder="Seu Nome"
                                 className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium capitalize"
                               />
                             </div>
@@ -271,7 +236,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin, lang = 'pt', onLanguageChange }
                               type="email" 
                               value={email}
                               onChange={(e) => setEmail(e.target.value)}
-                              placeholder={t.auth.emailPlaceholder}
+                              placeholder="seu@email.com"
                               className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium"
                               autoComplete="email"
                               autoFocus
@@ -290,10 +255,10 @@ const LoginScreen: React.FC<Props> = ({ onLogin, lang = 'pt', onLanguageChange }
                       {isLoading ? (
                         <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
                       ) : resendTimer > 0 ? (
-                        <span className="text-sm">{t.auth.resendWait.replace('{s}', resendTimer.toString())}</span>
+                        <span className="text-sm">Aguarde {resendTimer}s</span>
                       ) : (
                         <>
-                          {mode === 'login' ? t.auth.btnEnter : t.auth.btnRegister}
+                          {mode === 'login' ? 'Entrar' : 'Criar Conta'}
                           <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </>
                       )}
@@ -307,8 +272,8 @@ const LoginScreen: React.FC<Props> = ({ onLogin, lang = 'pt', onLanguageChange }
                       className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors underline decoration-transparent hover:decoration-white/30 underline-offset-4"
                   >
                     {mode === 'login' 
-                      ? t.auth.toggleRegister 
-                      : t.auth.toggleLogin}
+                      ? 'Não tem uma conta? Cadastre-se' 
+                      : 'Já possui conta? Fazer Login'}
                   </button>
                 </div>
              </div>
@@ -319,21 +284,21 @@ const LoginScreen: React.FC<Props> = ({ onLogin, lang = 'pt', onLanguageChange }
              <div className="animate-in fade-in slide-in-from-right-8 duration-300">
                
                <button onClick={handleBackToEmail} className="flex items-center gap-1 text-gray-500 hover:text-white mb-4 text-xs transition-colors">
-                  <ChevronLeft className="w-4 h-4" /> {t.auth.back}
+                  <ChevronLeft className="w-4 h-4" /> Voltar
                </button>
 
                <div className="mb-6 flex flex-col gap-1 items-center text-center">
                  <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">
-                    {t.auth.verifyTitle}
+                    Verificar Código
                  </h2>
                  <p className="text-xs sm:text-sm text-gray-500">
-                    {t.auth.verifyDesc} <strong>{email}</strong>
+                    Enviamos um código para <strong>{email}</strong>
                  </p>
                  
                  {/* Spam Warning */}
                  <div className="mt-2 flex items-center gap-2 bg-yellow-500/10 text-yellow-500 px-3 py-1.5 rounded-lg border border-yellow-500/20">
                     <AlertCircle className="w-3 h-3" />
-                    <p className="text-[10px] font-bold uppercase">{t.auth.spam}</p>
+                    <p className="text-[10px] font-bold uppercase">Verifique a caixa de Spam</p>
                  </div>
                </div>
 
@@ -354,7 +319,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin, lang = 'pt', onLanguageChange }
                              maxLength={6}
                              value={otpCode}
                              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                             placeholder={t.auth.otpPlaceholder}
+                             placeholder="000000"
                              className="w-full bg-transparent text-white text-center p-4 px-12 outline-none placeholder-gray-700 font-mono text-2xl tracking-widest font-bold"
                              autoFocus
                            />
@@ -373,7 +338,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin, lang = 'pt', onLanguageChange }
                       <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <>
-                        {t.auth.btnVerify}
+                        Verificar
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                       </>
                     )}
@@ -386,7 +351,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin, lang = 'pt', onLanguageChange }
                     disabled={resendTimer > 0 || isLoading}
                     className={`text-xs transition-colors ${resendTimer > 0 ? 'text-gray-600 cursor-not-allowed' : 'text-gray-500 hover:text-accent'}`}
                  >
-                   {resendTimer > 0 ? t.auth.resendWait.replace('{s}', resendTimer.toString()) : t.auth.resend}
+                   {resendTimer > 0 ? `Aguarde ${resendTimer}s para reenviar` : 'Não recebeu? Reenviar código'}
                  </button>
                </div>
              </div>
@@ -396,7 +361,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin, lang = 'pt', onLanguageChange }
            <div className={`mt-8 flex justify-center transition-all`}>
               <div className="flex items-center gap-2 bg-[#0a0a0b]/50 px-3 py-1.5 rounded-full border border-white/5">
                   <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{t.auth.security}</span>
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">SEM SENHA · ACESSO SEGURO</span>
               </div>
            </div>
 
