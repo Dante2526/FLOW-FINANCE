@@ -1,8 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { Mail, ArrowRight, ShieldCheck, User, KeyRound, ChevronLeft, AlertCircle } from 'lucide-react';
-import { loadData, STORAGE_KEYS } from '../services/storage';
+import { Mail, ArrowRight, ShieldCheck, User, KeyRound, ChevronLeft, AlertCircle, Languages } from 'lucide-react';
+import { loadData, saveData, STORAGE_KEYS } from '../services/storage';
 import { sendAuthOtp, verifyAuthOtp, supabase } from '../services/supabase';
+import { TRANSLATIONS } from '../i18n';
+import { AppLanguage } from '../types';
 
 interface Props {
   onLogin: (email: string, name?: string) => Promise<void>;
@@ -43,6 +45,13 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
   // Timer para evitar spam no botão de reenvio
   const [resendTimer, setResendTimer] = useState(0);
 
+  // Language State
+  const [language, setLanguage] = useState<AppLanguage>(() => loadData(STORAGE_KEYS.APP_LANGUAGE, 'pt'));
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+
+  // Translations shortcut
+  const t = TRANSLATIONS[language].auth;
+
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
     if (resendTimer > 0) {
@@ -52,6 +61,12 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     }
     return () => clearInterval(interval);
   }, [resendTimer]);
+
+  const handleLanguageChange = (lang: AppLanguage) => {
+    setLanguage(lang);
+    saveData(STORAGE_KEYS.APP_LANGUAGE, lang);
+    setIsLangMenuOpen(false);
+  };
 
   const handleSendCode = async (e?: React.FormEvent | React.MouseEvent) => {
     if (e) e.preventDefault();
@@ -63,12 +78,12 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
 
     // Validação Básica
     if (!email || !email.includes('@') || !email.includes('.')) {
-      setError('Por favor, insira um e-mail válido.');
+      setError(t.errors.invalidEmail);
       return;
     }
 
     if (mode === 'register' && !name.trim()) {
-      setError('Por favor, informe seu nome.');
+      setError(t.errors.missingName);
       return;
     }
 
@@ -121,7 +136,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     setError('');
     
     if (otpCode.length !== 6) {
-      setError('O código deve ter exatamente 6 dígitos.');
+      setError(t.errors.invalidCode);
       return;
     }
 
@@ -170,6 +185,31 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
       <div className="absolute top-[-20%] left-[-20%] w-[500px] h-[500px] bg-accent/20 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-20%] w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none" />
 
+      {/* Language Selector (Top Right) */}
+      <div className="absolute top-4 right-4 z-50">
+        <div className="relative">
+            <button 
+              onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+              className="p-2.5 bg-[#1c1c1e] border border-white/5 rounded-2xl hover:bg-[#2c2c2e] transition-colors cursor-pointer active:scale-95 text-gray-400 flex items-center justify-center shadow-lg"
+            >
+              <Languages className="w-5 h-5" />
+            </button>
+            {isLangMenuOpen && (
+              <div className="absolute top-full right-0 mt-2 bg-[#1c1c1e] border border-white/5 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 w-32 animate-in fade-in zoom-in duration-200">
+                  <button onClick={() => handleLanguageChange('pt')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${language === 'pt' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
+                    Português
+                  </button>
+                  <button onClick={() => handleLanguageChange('en')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${language === 'en' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
+                    English
+                  </button>
+                  <button onClick={() => handleLanguageChange('es')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${language === 'es' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
+                    Español
+                  </button>
+              </div>
+            )}
+        </div>
+      </div>
+
       {/* Main Content Wrapper */}
       <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-md relative z-10 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700 min-h-0`}>
         
@@ -183,7 +223,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
           {step === 'email' && (
             <div className="items-center flex flex-col">
               <h1 className="text-2xl sm:text-4xl font-bold text-white tracking-tight leading-none text-center">Flow Finance</h1>
-              <p className="text-gray-400 text-xs sm:text-sm mt-1 text-center">Controle financeiro inteligente.</p>
+              <p className="text-gray-400 text-xs sm:text-sm mt-1 text-center">{t.appSubtitle}</p>
             </div>
           )}
         </div>
@@ -196,10 +236,10 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
              <div className="animate-in fade-in slide-in-from-right-8 duration-300">
                 <div className="mb-6 flex flex-col gap-1 items-center text-center">
                   <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">
-                      {mode === 'login' ? 'Bem-vindo de volta' : 'Crie sua conta'}
+                      {mode === 'login' ? t.welcomeBack : t.createAccount}
                   </h2>
                   <p className="text-xs sm:text-sm text-gray-500">
-                      {mode === 'login' ? 'Entre para acessar suas finanças.' : 'Comece a controlar seu dinheiro hoje.'}
+                      {mode === 'login' ? t.loginSub : t.registerSub}
                   </p>
                 </div>
 
@@ -217,7 +257,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                                 type="text" 
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                placeholder="Seu Nome"
+                                placeholder={t.namePlaceholder}
                                 className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium capitalize"
                               />
                             </div>
@@ -236,7 +276,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                               type="email" 
                               value={email}
                               onChange={(e) => setEmail(e.target.value)}
-                              placeholder="seu@email.com"
+                              placeholder={t.emailPlaceholder}
                               className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium"
                               autoComplete="email"
                               autoFocus
@@ -255,10 +295,10 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                       {isLoading ? (
                         <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
                       ) : resendTimer > 0 ? (
-                        <span className="text-sm">Aguarde {resendTimer}s</span>
+                        <span className="text-sm">{t.resendWait.replace('{s}', resendTimer.toString())}</span>
                       ) : (
                         <>
-                          {mode === 'login' ? 'Entrar' : 'Criar Conta'}
+                          {mode === 'login' ? t.btnEnter : t.btnCreate}
                           <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                         </>
                       )}
@@ -272,8 +312,8 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                       className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors underline decoration-transparent hover:decoration-white/30 underline-offset-4"
                   >
                     {mode === 'login' 
-                      ? 'Não tem uma conta? Cadastre-se' 
-                      : 'Já possui conta? Fazer Login'}
+                      ? t.noAccount
+                      : t.haveAccount}
                   </button>
                 </div>
              </div>
@@ -284,21 +324,21 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
              <div className="animate-in fade-in slide-in-from-right-8 duration-300">
                
                <button onClick={handleBackToEmail} className="flex items-center gap-1 text-gray-500 hover:text-white mb-4 text-xs transition-colors">
-                  <ChevronLeft className="w-4 h-4" /> Voltar
+                  <ChevronLeft className="w-4 h-4" /> {t.back}
                </button>
 
                <div className="mb-6 flex flex-col gap-1 items-center text-center">
                  <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">
-                    Verificar Código
+                    {t.verifyTitle}
                  </h2>
                  <p className="text-xs sm:text-sm text-gray-500">
-                    Enviamos um código para <strong>{email}</strong>
+                    {t.verifySub} <strong>{email}</strong>
                  </p>
                  
                  {/* Spam Warning */}
                  <div className="mt-2 flex items-center gap-2 bg-yellow-500/10 text-yellow-500 px-3 py-1.5 rounded-lg border border-yellow-500/20">
                     <AlertCircle className="w-3 h-3" />
-                    <p className="text-[10px] font-bold uppercase">Verifique a caixa de Spam</p>
+                    <p className="text-[10px] font-bold uppercase">{t.spamWarning}</p>
                  </div>
                </div>
 
@@ -319,7 +359,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                              maxLength={6}
                              value={otpCode}
                              onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                             placeholder="000000"
+                             placeholder={t.otpPlaceholder}
                              className="w-full bg-transparent text-white text-center p-4 px-12 outline-none placeholder-gray-700 font-mono text-2xl tracking-widest font-bold"
                              autoFocus
                            />
@@ -338,7 +378,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                       <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <>
-                        Verificar
+                        {t.btnVerify}
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                       </>
                     )}
@@ -351,7 +391,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
                     disabled={resendTimer > 0 || isLoading}
                     className={`text-xs transition-colors ${resendTimer > 0 ? 'text-gray-600 cursor-not-allowed' : 'text-gray-500 hover:text-accent'}`}
                  >
-                   {resendTimer > 0 ? `Aguarde ${resendTimer}s para reenviar` : 'Não recebeu? Reenviar código'}
+                   {resendTimer > 0 ? t.resendWait.replace('{s}', resendTimer.toString()) : t.resendBtn}
                  </button>
                </div>
              </div>
@@ -361,7 +401,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
            <div className={`mt-8 flex justify-center transition-all`}>
               <div className="flex items-center gap-2 bg-[#0a0a0b]/50 px-3 py-1.5 rounded-full border border-white/5">
                   <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">SEM SENHA · ACESSO SEGURO</span>
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{t.security}</span>
               </div>
            </div>
 
