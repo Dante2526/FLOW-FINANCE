@@ -7,9 +7,15 @@ interface Props {
   currentView: AppView;
   onChangeView: (view: AppView) => void;
   onInvestmentClick?: () => void;
+  labels: {
+    home: string;
+    invest: string;
+    wallet: string;
+    config: string;
+  };
 }
 
-const BottomNav: React.FC<Props> = ({ currentView, onChangeView }) => {
+const BottomNav: React.FC<Props> = ({ currentView, onChangeView, labels }) => {
   return (
     <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-md z-50">
       <div className="bg-[#1c1c1e] border border-white/5 rounded-[1.5rem] h-20 px-6 flex items-center justify-between shadow-2xl shadow-black/50 transition-all duration-300">
@@ -18,7 +24,7 @@ const BottomNav: React.FC<Props> = ({ currentView, onChangeView }) => {
         {currentView === 'home' ? (
           <button className="h-14 px-6 bg-[#0a0a0b] rounded-2xl flex items-center justify-center gap-3 shadow-lg border border-white/5 transition-all">
              <LayoutGrid className="w-6 h-6 text-accent" />
-             <span className="text-accent font-bold text-sm tracking-wide">INÍCIO</span>
+             <span className="text-accent font-bold text-sm tracking-wide">{labels.home}</span>
           </button>
         ) : (
           <button 
@@ -33,7 +39,7 @@ const BottomNav: React.FC<Props> = ({ currentView, onChangeView }) => {
         {currentView === 'investments' ? (
            <button className="h-14 px-6 bg-[#0a0a0b] rounded-2xl flex items-center justify-center gap-3 shadow-lg border border-white/5 transition-all">
              <TrendingUp className="w-6 h-6 text-accent" />
-             <span className="text-accent font-bold text-sm tracking-wide">INVEST</span>
+             <span className="text-accent font-bold text-sm tracking-wide">{labels.invest}</span>
           </button>
         ) : (
           <button 
@@ -49,7 +55,7 @@ const BottomNav: React.FC<Props> = ({ currentView, onChangeView }) => {
         {currentView === 'long-term' ? (
            <button className="h-14 px-6 bg-[#0a0a0b] rounded-2xl flex items-center justify-center gap-3 shadow-lg border border-white/5 transition-all">
              <Wallet className="w-6 h-6 text-accent" />
-             <span className="text-accent font-bold text-sm tracking-wide">CARTEIRA</span>
+             <span className="text-accent font-bold text-sm tracking-wide">{labels.wallet}</span>
           </button>
         ) : (
           <button 
@@ -64,7 +70,7 @@ const BottomNav: React.FC<Props> = ({ currentView, onChangeView }) => {
         {currentView === 'settings' ? (
            <button className="h-14 px-6 bg-[#0a0a0b] rounded-2xl flex items-center justify-center gap-3 shadow-lg border border-white/5 transition-all">
              <Settings className="w-6 h-6 text-accent" />
-             <span className="text-accent font-bold text-sm tracking-wide">CONFIG</span>
+             <span className="text-accent font-bold text-sm tracking-wide">{labels.config}</span>
           </button>
         ) : (
           <button 

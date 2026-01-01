@@ -38,6 +38,8 @@ export type LogoType =
   | 'makeup'
   | 'medicine';
 
+export type AppLanguage = 'pt' | 'en' | 'es';
+
 export interface Transaction {
   id: string;
   name: string;

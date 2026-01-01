@@ -17,6 +17,7 @@ export const STORAGE_KEYS = {
   SETTINGS_REQUIRE_OTP: 'flow_settings_require_otp',
   KNOWN_USER_EMAIL: 'flow_known_user_email',
   DASHBOARD_ORDER: 'flow_dashboard_order',
+  APP_LANGUAGE: 'flow_app_language', // New Key
 };
 
 // Generic load function

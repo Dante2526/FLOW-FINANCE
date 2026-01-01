@@ -10,6 +10,7 @@ interface Props {
   onEdit: (tx: Transaction) => void;
   onToggleStatus: (id: string) => void;
   onTogglePaymentMethod: (id: string) => void;
+  title?: string;
 }
 
 const typeTranslation = {
@@ -268,10 +269,10 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
   );
 });
 
-const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onToggleStatus, onTogglePaymentMethod }) => {
+const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onToggleStatus, onTogglePaymentMethod, title = 'CONTAS' }) => {
   return (
     <div className="mt-6 flex flex-col">
-      <h2 className="text-xl font-medium text-gray-400 mb-4 pl-1">CONTAS</h2>
+      <h2 className="text-xl font-medium text-gray-400 mb-4 pl-1">{title}</h2>
       
       {transactions.map((tx) => (
         <SwipeableTransactionItem 

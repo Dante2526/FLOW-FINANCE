@@ -4,6 +4,8 @@ import { Plus, Copy, Calculator, GripVertical, Eye, EyeOff } from 'lucide-react'
 
 interface Props {
   balance: number;
+  label?: string;
+  addButtonLabel?: string;
   onAddClick: () => void;
   onDuplicateClick: () => void;
   onCalculatorClick: () => void;
@@ -17,6 +19,8 @@ interface Props {
 
 const BalanceCard: React.FC<Props> = ({ 
   balance, 
+  label = 'LUCRO',
+  addButtonLabel = 'Adicionar',
   onAddClick, 
   onDuplicateClick, 
   onCalculatorClick,
@@ -84,7 +88,7 @@ const BalanceCard: React.FC<Props> = ({
       {/* Header of Card */}
       <div className="flex justify-between items-start">
         <div className="flex items-center gap-3">
-          <span className="text-lg font-extrabold text-white drop-shadow-sm tracking-wide">LUCRO</span>
+          <span className="text-lg font-extrabold text-white drop-shadow-sm tracking-wide">{label}</span>
           <button 
             onClick={toggleVisibility}
             className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors active:scale-95 flex items-center justify-center backdrop-blur-sm"
@@ -138,7 +142,7 @@ const BalanceCard: React.FC<Props> = ({
           onClick={(e) => { e.stopPropagation(); onAddClick(); }}
           className="flex-1 bg-[#121214] text-white h-16 rounded-[1.5rem] flex items-center justify-center gap-2 hover:bg-black transition-colors shadow-lg"
         >
-          <span className="text-lg font-medium">Adicionar</span>
+          <span className="text-lg font-medium">{addButtonLabel}</span>
           <Plus className="w-5 h-5" />
         </button>
 

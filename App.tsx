@@ -18,10 +18,11 @@ import LongTermView from './components/LongTermView';
 import InvestmentsView from './components/InvestmentsView';
 import LoginScreen, { FlowLogo } from './components/LoginScreen';
 import ProModal from './components/ProModal'; 
-import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification } from './types';
+import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification, AppLanguage } from './types';
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
+import { TRANSLATIONS } from './i18n';
 import { IconBell } from './components/Icons';
-import { Crown } from 'lucide-react';
+import { Crown, Languages } from 'lucide-react';
 
 // Supabase Services
 import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, VAPID_PUBLIC_KEY, upsertItem, deleteItem, hardDeleteMonth } from './services/supabase';
@@ -91,6 +92,8 @@ const App: React.FC = () => {
   const [isLoadingData, setIsLoadingData] = useState<boolean>(() => !!loadData(STORAGE_KEYS.USER_SESSION, null));
   const [isSessionReady, setIsSessionReady] = useState(false);
   const [currentView, setCurrentView] = useState<AppView>('home');
+  const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => loadData(STORAGE_KEYS.APP_LANGUAGE, 'pt'));
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
   const [isAddAccountOpen, setIsAddAccountOpen] = useState(false);
@@ -124,8 +127,10 @@ const App: React.FC = () => {
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const lastActionTimeRef = useRef<number>(0); 
   
-  const currentStateRef = useRef({ transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder });
-  useEffect(() => { currentStateRef.current = { transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder }; });
+  const t = TRANSLATIONS[appLanguage];
+
+  const currentStateRef = useRef({ transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder, appLanguage });
+  useEffect(() => { currentStateRef.current = { transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder, appLanguage }; });
 
   // Reset scroll on view change
   useEffect(() => {
@@ -269,6 +274,12 @@ const App: React.FC = () => {
       }
       if (data.cdiRate !== undefined) setCdiRate(data.cdiRate);
       if (data.dashboardOrder) setDashboardOrder(data.dashboardOrder);
+  };
+
+  const handleChangeLanguage = (lang: AppLanguage) => {
+      setAppLanguage(lang);
+      saveData(STORAGE_KEYS.APP_LANGUAGE, lang);
+      setIsLangMenuOpen(false);
   };
 
   const handleDuplicateMonth = useCallback(async () => {
@@ -587,21 +598,47 @@ const App: React.FC = () => {
                   {userProfile.isPro && <div className="absolute -bottom-1 -right-1 bg-yellow-500 rounded-full p-0.5 border-2 border-[#0a0a0b]"><Crown className="w-3 h-3 text-black fill-black" /></div>}
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">Bem vindo,</span>
+                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">{t.welcome},</span>
                   <div className="flex items-center gap-1"><h1 className="text-white text-xl font-bold leading-none">{userProfile.name || 'Usuário'}</h1>{userProfile.isPro && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-2"><IconBell count={notifications.filter(n => !n.read).length} onClick={() => setIsNotificationOpen(true)} /></div>
+              <div className="flex items-center gap-2">
+                
+                {/* Language Selector */}
+                <div className="relative">
+                   <button 
+                     onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+                     className="p-3 bg-surface rounded-2xl hover:bg-surfaceLight transition-colors cursor-pointer active:scale-95 text-gray-400"
+                   >
+                      <Languages className="w-6 h-6" />
+                   </button>
+                   {isLangMenuOpen && (
+                      <div className="absolute top-full right-0 mt-2 bg-[#1c1c1e] border border-white/5 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 z-50 w-28 animate-in fade-in zoom-in duration-200">
+                         <button onClick={() => handleChangeLanguage('pt')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${appLanguage === 'pt' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
+                            Português
+                         </button>
+                         <button onClick={() => handleChangeLanguage('en')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${appLanguage === 'en' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
+                            English
+                         </button>
+                         <button onClick={() => handleChangeLanguage('es')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${appLanguage === 'es' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
+                            Español
+                         </button>
+                      </div>
+                   )}
+                </div>
+
+                <IconBell count={notifications.filter(n => !n.read).length} onClick={() => setIsNotificationOpen(true)} />
+              </div>
             </div>
             <div className="flex flex-col gap-2 mb-6">
                {dItems.map(id => {
-                  if (id === BALANCE_CARD_ID) return <BalanceCard key={id} id={id} balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} onAddClick={handleOpenAddTransaction} onDuplicateClick={handleDuplicateMonth} onCalculatorClick={handleOpenCalculator} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} />;
+                  if (id === BALANCE_CARD_ID) return <BalanceCard key={id} id={id} balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} label={t.balanceLabel} addButtonLabel={t.addBtn} onAddClick={handleOpenAddTransaction} onDuplicateClick={handleDuplicateMonth} onCalculatorClick={handleOpenCalculator} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} />;
                   const a = filteredAcc.find(x => x.id === id);
                   if (a) return <SecondaryCard key={a.id} account={a} onDelete={handleDeleteAccount} onEdit={handleEditAccount} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} />;
                   return null;
                })}
             </div>
-            <ContactsRow contacts={MOCK_CONTACTS} onAddClick={handleOpenAddAccount} onContactClick={handleContactClick} isPro={!!userProfile.isPro} />
+            <ContactsRow contacts={MOCK_CONTACTS} onAddClick={handleOpenAddAccount} onContactClick={handleContactClick} isPro={!!userProfile.isPro} title={t.quickAccessTitle} />
             <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} />
             <TransactionList 
               transactions={filteredTx} 
@@ -609,6 +646,7 @@ const App: React.FC = () => {
               onEdit={handleEditTransaction} 
               onToggleStatus={handleToggleStatus} 
               onTogglePaymentMethod={handleTogglePaymentMethod} 
+              title={t.billsTitle}
             />
           </>
       ) : currentView === 'settings' ? (
@@ -618,7 +656,7 @@ const App: React.FC = () => {
       ) : (
           <InvestmentsView investments={investments} onAdd={handleInvestmentAdd} onEdit={handleInvestmentEdit} onDelete={handleInvestmentDelete} onBack={handleGoHome} cdiRate={cdiRate} onUpdateCdiRate={handleInvestmentUpdateRate} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} />
       )}
-      <BottomNav currentView={currentView} onChangeView={setCurrentView} />
+      <BottomNav currentView={currentView} onChangeView={setCurrentView} labels={t.nav} />
       <AddTransactionModal isOpen={isAddTransactionOpen} onClose={() => { setIsAddTransactionOpen(false); setEditingTransaction(null); }} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} activeMonthContext={{ monthIndex: MONTH_NAMES.indexOf((activeMonth.month || "").toUpperCase()), year: parseInt(activeMonth.year) }} />
       <AddAccountModal isOpen={isAddAccountOpen} onClose={() => { setIsAddAccountOpen(false); setEditingAccount(null); }} onSave={handleSaveAccount} accountToEdit={editingAccount} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} />
       <CalculatorModal isOpen={isCalculatorOpen} onClose={() => setIsCalculatorOpen(false)} />

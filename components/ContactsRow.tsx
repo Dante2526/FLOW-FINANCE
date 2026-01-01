@@ -8,12 +8,13 @@ interface Props {
   onAddClick: () => void;
   onContactClick: (contact: Contact) => void;
   isPro?: boolean;
+  title?: string;
 }
 
-const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, isPro = false }) => {
+const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, isPro = false, title = 'ACESSO RÁPIDO' }) => {
   return (
     <div className="mt-8">
-      <h2 className="text-xl font-medium text-gray-400 mb-4 pl-1">ACESSO RÁPIDO</h2>
+      <h2 className="text-xl font-medium text-gray-400 mb-4 pl-1">{title}</h2>
       <div className="grid grid-cols-4 gap-2">
         
         {/* Add Button - Bank/Finance */}
