@@ -234,7 +234,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                           <span className="text-gray-400 text-sm">Valor Único</span>
                           <div className="flex items-baseline gap-1">
                              <span className="text-yellow-500 font-bold text-sm">R$</span>
-                             <span className="text-white font-black text-2xl">7,00</span>
+                             <span className="text-white font-black text-2xl">3,00</span>
                           </div>
                       </div>
 
@@ -312,7 +312,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                                   onClick={handleCreatePayment}
                                   className="w-full h-12 bg-yellow-500 text-black rounded-xl font-bold hover:bg-yellow-400 transition-colors mt-2"
                                 >
-                                   Gerar Pix de R$ 7,00
+                                   Gerar Pix de R$ 3,00
                                 </button>
                             </div>
                         ) : (
@@ -440,7 +440,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                                  onClick={handleCreatePayment}
                                  className="w-full h-12 bg-yellow-500 text-black rounded-xl font-bold hover:bg-yellow-400 transition-colors mt-2"
                               >
-                                 Pagar R$ 7,00
+                                 Pagar R$ 3,00
                               </button>
                            </>
                         )}

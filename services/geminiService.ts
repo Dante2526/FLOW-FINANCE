@@ -10,7 +10,7 @@ export const getFinancialAdvice = async (query: string, contextData: any): Promi
  * Verifies a payment receipt image using Gemini Vision.
  * Checks for:
  * 1. Transaction validity (successful transfer)
- * 2. Amount (R$ 7,00)
+ * 2. Amount (R$ 3,00)
  * 3. Not a scheduled transfer (Agendamento)
  * 4. Recipient matching (relaxed to partial match)
  * 5. Date validation (must be recent/today)
@@ -50,7 +50,7 @@ export const verifyPaymentReceipt = async (base64Image: string): Promise<{ valid
             - Hora Agora: ${currentTime}
             
             DADOS OBRIGATÓRIOS PARA APROVAÇÃO:
-            1. VALOR: Deve ser exatamente "R$ 7,00" ou "7,00".
+            1. VALOR: Deve ser exatamente "R$ 3,00" ou "3,00".
             2. DESTINATÁRIO: Deve conter "NAYLAN" (ignore case sensitive).
             3. STATUS: Deve indicar sucesso ("Transferência realizada", "Enviado", "Concluído").
             4. DATA: Deve ser HOJE (${todayDate}). Aceite datas com formato diferente (ex: "24 mai") desde que correspondam a hoje.

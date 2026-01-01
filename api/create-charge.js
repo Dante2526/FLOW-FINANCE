@@ -69,7 +69,7 @@ export default async function handler(req, res) {
 
     // 2. Criar Cobrança
     const billingType = paymentType === 'pix' ? 'PIX' : 'CREDIT_CARD';
-    const value = 7.00; // Valor fixo do PRO
+    const value = 3.00; // Valor fixo do PRO
 
     const paymentPayload = {
       customer: customerId,
