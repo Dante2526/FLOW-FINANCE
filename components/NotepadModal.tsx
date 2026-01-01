@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { X, Eraser, NotebookPen, PenTool, Trash2, Keyboard } from 'lucide-react';
+import { TRANSLATIONS } from '../i18n';
+import { AppLanguage } from '../types';
 
 interface Props {
   isOpen: boolean;
@@ -8,6 +10,7 @@ interface Props {
   initialContent: string;
   initialDrawing: string | null;
   onSave: (content: string, drawing: string | null) => void;
+  lang?: AppLanguage;
 }
 
 const COLORS = [
@@ -20,37 +23,31 @@ const COLORS = [
 
 type Tool = 'cursor' | 'pen' | 'eraser';
 
-const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initialDrawing, onSave }) => {
+const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initialDrawing, onSave, lang = 'pt' }) => {
   const [content, setContent] = useState('');
   const [dynamicMaxHeight, setDynamicMaxHeight] = useState<string | number>('85vh');
   
-  // Tool State
   const [activeTool, setActiveTool] = useState<Tool>('cursor');
   const [strokeColor, setStrokeColor] = useState('#ffffff');
   const [lineWidth, setLineWidth] = useState(3);
   
-  // Clear Confirmation State
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  // Layout & Resizing States
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const contentWrapperRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  // Height of the inner content (grows with text)
   const [totalHeight, setTotalHeight] = useState(600); 
-  // Width of the container (for canvas resize)
   const [containerWidth, setContainerWidth] = useState(0);
 
-  // Drawing States
   const [isDrawing, setIsDrawing] = useState(false);
   const [canvasData, setCanvasData] = useState<string | null>(initialDrawing);
 
-  // Buffer to preserve drawing during height expansion
   const savedImageDataRef = useRef<ImageData | null>(null);
+  
+  const t = TRANSLATIONS[lang];
 
-  // --- INITIALIZATION ---
   useEffect(() => {
     if (isOpen) {
       setContent(initialContent);
@@ -58,35 +55,27 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
       setActiveTool('cursor');
       setShowClearConfirm(false);
       
-      // Measure width immediately
       if (scrollContainerRef.current) {
         setContainerWidth(scrollContainerRef.current.clientWidth);
       }
-      
-      // Reset height calculation on open with a slight delay for layout
       setTimeout(adjustHeight, 50); 
     }
   }, [isOpen, initialContent, initialDrawing]);
 
-  // --- HEIGHT ADJUSTMENT LOGIC ---
   const adjustHeight = () => {
     if (!textareaRef.current || !scrollContainerRef.current) return;
     
     const textarea = textareaRef.current;
     
-    // Reset height temporarily to get the correct scrollHeight shrinkage
     textarea.style.height = 'auto'; 
     const currentScrollHeight = textarea.scrollHeight;
-    textarea.style.height = '100%'; // Revert to full height of wrapper
+    textarea.style.height = '100%'; 
 
-    // Minimum height is the visible container height
     const minHeight = scrollContainerRef.current.clientHeight;
     
-    // New height is strictly the content height or minHeight
     const newHeight = Math.max(minHeight, currentScrollHeight);
 
     if (newHeight !== totalHeight) {
-       // SAVE CANVAS DATA BEFORE RESIZE (Height change clears canvas)
        if (canvasRef.current) {
          const ctx = canvasRef.current.getContext('2d');
          if (ctx && canvasRef.current.width > 0 && canvasRef.current.height > 0) {
@@ -101,23 +90,19 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
     }
   };
 
-  // Restore canvas pixels AFTER height change
   useLayoutEffect(() => {
      if (canvasRef.current && savedImageDataRef.current) {
         const ctx = canvasRef.current.getContext('2d');
         if (ctx) {
-           // We put the image data back exactly where it was.
            ctx.putImageData(savedImageDataRef.current, 0, 0);
         }
      }
   }, [totalHeight]);
 
-  // Adjust height whenever content changes
   useEffect(() => {
      adjustHeight();
   }, [content]);
 
-  // --- WINDOW RESIZE OBSERVER ---
   useEffect(() => {
     if (!isOpen || !scrollContainerRef.current) return;
 
@@ -125,7 +110,6 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
         for (const entry of entries) {
             if (entry.contentRect.width > 0) {
                 setContainerWidth(entry.contentRect.width);
-                // Trigger height check in case width change affected text wrap
                 adjustHeight();
             }
         }
@@ -135,25 +119,19 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
     return () => resizeObserver.disconnect();
   }, [isOpen]);
 
-  // --- IMAGE RESTORATION ON LOAD/WIDTH CHANGE ---
   useEffect(() => {
-     // This runs when the modal opens or width changes.
-     // We reload the saved "canvasData" (base64) string.
      if (isOpen && containerWidth > 0 && canvasRef.current && canvasData) {
          const ctx = canvasRef.current.getContext('2d');
          const img = new Image();
          img.src = canvasData;
          img.onload = () => {
              if (ctx && canvasRef.current) {
-                 // IMPORTANT: Draw 1:1 at (0,0). Do NOT stretch to fit width/height.
-                 // This ensures circles stay circles and alignment relative to top-left is preserved.
                  ctx.drawImage(img, 0, 0);
              }
          };
      }
-  }, [containerWidth, isOpen]); // Don't depend on canvasData to avoid overwrite loops while drawing
+  }, [containerWidth, isOpen]); 
 
-  // Visual Viewport Fix for Mobile Keyboards
   useEffect(() => {
     if (!isOpen) return;
     const handleVisualResize = () => {
@@ -205,7 +183,6 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
      }
   };
 
-  // --- DRAWING HANDLERS ---
   const getCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
     if (!canvasRef.current) return { x: 0, y: 0 };
     const rect = canvasRef.current.getBoundingClientRect();
@@ -288,15 +265,14 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
           }}
         >
           
-          {/* Header */}
           <div className="flex justify-between items-center p-5 shrink-0 bg-[#1c1c1e] z-20 border-b border-white/5 shadow-sm">
             <div className="flex items-center gap-3">
                <div className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center border border-white/5">
                   <NotebookPen className="w-5 h-5 text-yellow-500" />
                </div>
                <div>
-                  <h2 className="text-lg font-bold text-white leading-none">Bloco de Notas</h2>
-                  <p className="text-[10px] text-gray-400 mt-1">Texto e Desenho livres</p>
+                  <h2 className="text-lg font-bold text-white leading-none">{t.notepad.title}</h2>
+                  <p className="text-[10px] text-gray-400 mt-1">{t.notepad.subtitle}</p>
                </div>
             </div>
             
@@ -311,54 +287,31 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
                      ? 'bg-red-500 w-auto px-3' 
                      : 'bg-[#2c2c2e] w-10 hover:bg-white/10'
                 }`}
-                title="Limpar Tudo"
               >
                 {showClearConfirm ? (
-                   <span className="text-white text-xs font-bold whitespace-nowrap">Confirmar?</span>
+                   <span className="text-white text-xs font-bold whitespace-nowrap">{t.notepad.clearConfirm}</span>
                 ) : (
                    <Trash2 className="w-5 h-5 text-gray-400" />
                 )}
               </button>
               
-              <button 
-                onClick={handleClose} 
-                className="w-10 h-10 rounded-full bg-accent flex items-center justify-center hover:bg-accentDark transition-colors"
-              >
+              <button onClick={handleClose} className="w-10 h-10 rounded-full bg-accent flex items-center justify-center hover:bg-accentDark transition-colors">
                 <X className="w-5 h-5 text-black" />
               </button>
             </div>
           </div>
 
-          {/* 
-             SCROLLABLE CONTAINER 
-             This div handles the scrolling for BOTH Text and Canvas 
-          */}
-          <div 
-            ref={scrollContainerRef}
-            className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden relative bg-[#2c2c2e]/50 scrollbar-thin scrollbar-thumb-gray-600"
-          >
-             {/* 
-                GROWING WRAPPER
-                This div grows to fit the text content. 
-                Both Textarea and Canvas are absolutely positioned to fill this wrapper.
-             */}
-             <div 
-                ref={contentWrapperRef}
-                className="relative w-full"
-                style={{ height: totalHeight }}
-             >
-                {/* Layer 1: Text Area */}
+          <div ref={scrollContainerRef} className="flex-1 min-h-0 w-full overflow-y-auto overflow-x-hidden relative bg-[#2c2c2e]/50 scrollbar-thin scrollbar-thumb-gray-600">
+             <div ref={contentWrapperRef} className="relative w-full" style={{ height: totalHeight }}>
                 <textarea
                   ref={textareaRef}
                   value={content}
                   onChange={handleTextChange}
-                  placeholder="Digite suas anotações aqui..."
+                  placeholder={t.notepad.placeholder}
                   className="absolute inset-0 w-full h-full bg-transparent text-white text-lg leading-relaxed outline-none resize-none placeholder-gray-600 font-medium p-5 overflow-hidden z-0"
                   style={{ fontFamily: 'Inter, sans-serif' }}
                   disabled={activeTool !== 'cursor'} 
                 />
-
-                {/* Layer 2: Canvas */}
                 <canvas
                    ref={canvasRef}
                    width={containerWidth}
@@ -375,10 +328,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
              </div>
           </div>
 
-          {/* Unified Toolbar */}
           <div className="p-4 shrink-0 bg-[#1c1c1e] border-t border-white/5 flex flex-col gap-3 z-20 shadow-[0_-5px_15px_rgba(0,0,0,0.3)]">
-             
-             {/* Tool Selector */}
              <div className="flex bg-[#2c2c2e] p-1.5 rounded-2xl gap-2">
                 <button 
                   onClick={() => setActiveTool('cursor')}
@@ -389,7 +339,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
                   }`}
                 >
                    <Keyboard className="w-5 h-5" />
-                   <span className="text-xs">Digitar</span>
+                   <span className="text-xs">{t.notepad.type}</span>
                 </button>
                 
                 <button 
@@ -401,7 +351,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
                   }`}
                 >
                    <PenTool className="w-5 h-5" />
-                   <span className="text-xs">Desenhar</span>
+                   <span className="text-xs">{t.notepad.draw}</span>
                 </button>
 
                 <button 
@@ -416,7 +366,6 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
                 </button>
              </div>
 
-             {/* Color Palette (Visible when Drawing) */}
              {activeTool === 'pen' && (
                 <div className="flex justify-between items-center px-2 animate-in slide-in-from-bottom-2 fade-in">
                    {COLORS.map((c) => (
@@ -427,7 +376,6 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
                         style={{ backgroundColor: c.value }}
                       />
                    ))}
-                   {/* Line Width Indicator */}
                    <div className="w-px h-6 bg-gray-700 mx-2" />
                    <div className="flex gap-2">
                       {[3, 6, 9].map((w) => (
@@ -443,15 +391,11 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
                 </div>
              )}
 
-             {/* Helper Text */}
              {activeTool === 'cursor' && (
                 <div className="flex justify-center items-center gap-2 pb-1">
-                   <p className="text-[10px] text-gray-500">
-                      Modo Digitação: O desenho acompanha o texto.
-                   </p>
+                   <p className="text-[10px] text-gray-500">{t.notepad.hint}</p>
                 </div>
              )}
-
           </div>
 
         </div>

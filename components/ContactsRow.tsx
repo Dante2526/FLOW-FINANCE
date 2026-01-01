@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { NotebookPen, Landmark, Calendar, BarChart3, Lock } from 'lucide-react';
-import { Contact } from '../types';
+import { Contact, AppLanguage } from '../types';
+import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   contacts: Contact[];
@@ -9,19 +10,22 @@ interface Props {
   onContactClick: (contact: Contact) => void;
   isPro?: boolean;
   title?: string;
+  lang?: AppLanguage;
 }
 
-const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, isPro = false, title = 'ACESSO RÁPIDO' }) => {
+const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, isPro = false, title, lang = 'pt' }) => {
+  const t = TRANSLATIONS[lang];
+
   return (
     <div className="mt-8">
-      <h2 className="text-xl font-medium text-gray-400 mb-4 pl-1">{title}</h2>
+      <h2 className="text-xl font-medium text-gray-400 mb-4 pl-1">{title || t.quickAccessTitle}</h2>
       <div className="grid grid-cols-4 gap-2">
         
         {/* Add Button - Bank/Finance */}
         <button 
           onClick={onAddClick}
           className="w-full aspect-[5/4] rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-lg shadow-black/20 hover:brightness-110 transition-all group border-2 border-transparent hover:border-purple-500/50"
-          title="Adicionar Nova Fonte de Renda"
+          title={t.contacts.addIncome}
         >
           <Landmark className="w-7 h-7 text-purple-500 group-hover:text-purple-400 transition-colors" />
         </button>
@@ -35,6 +39,7 @@ const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, is
                 key={contact.id} 
                 onClick={() => onContactClick(contact)}
                 className="w-full relative group cursor-pointer active:scale-95 transition-transform"
+                title={t.contacts.notes}
               >
                 <div className="w-full aspect-[5/4] rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-lg shadow-black/20 group-hover:brightness-110 transition-all border-2 border-transparent group-hover:border-yellow-500/50">
                    <NotebookPen className="w-7 h-7 text-yellow-500" strokeWidth={2} />
@@ -50,6 +55,7 @@ const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, is
                 key={contact.id} 
                 onClick={() => onContactClick(contact)}
                 className="w-full relative group cursor-pointer active:scale-95 transition-transform"
+                title={t.contacts.calendar}
               >
                 <div className="w-full aspect-[5/4] rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-lg shadow-black/20 group-hover:brightness-110 transition-all border-2 border-transparent group-hover:border-red-500/50">
                    <Calendar className="w-7 h-7 text-red-500" strokeWidth={2} />
@@ -65,13 +71,13 @@ const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, is
                 key={contact.id} 
                 onClick={() => onContactClick(contact)}
                 className="w-full relative group cursor-pointer active:scale-95 transition-transform"
+                title={t.contacts.analytics}
               >
                 <div className={`w-full aspect-[5/4] rounded-2xl flex items-center justify-center shadow-lg shadow-black/20 transition-all border-2 relative overflow-hidden ${
                   isPro 
                     ? 'bg-[#2c2c2e] group-hover:brightness-110 border-transparent group-hover:border-blue-500/50' 
                     : 'bg-[#1c1c1e] border-white/5 opacity-80'
                 }`}>
-                   {/* Se não for PRO, mostra ícone desativado + cadeado */}
                    {isPro ? (
                       <BarChart3 className="w-7 h-7 text-blue-500" strokeWidth={2} />
                    ) : (

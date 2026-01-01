@@ -1,13 +1,17 @@
 
 import React from 'react';
 import { X, ShieldCheck, Lock, Database, Eye } from 'lucide-react';
+import { TRANSLATIONS } from '../i18n';
+import { AppLanguage } from '../types';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  lang: AppLanguage;
 }
 
-const PrivacyPolicyModal: React.FC<Props> = ({ isOpen, onClose }) => {
+const PrivacyPolicyModal: React.FC<Props> = ({ isOpen, onClose, lang }) => {
+  const t = TRANSLATIONS[lang];
   if (!isOpen) return null;
 
   return (
@@ -21,8 +25,8 @@ const PrivacyPolicyModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 <ShieldCheck className="w-5 h-5 text-emerald-500" />
              </div>
              <div>
-                <h2 className="text-lg font-bold text-white leading-none">Privacidade</h2>
-                <p className="text-[10px] text-gray-400 mt-1">Termos e Condições</p>
+                <h2 className="text-lg font-bold text-white leading-none">{t.privacy.title}</h2>
+                <p className="text-[10px] text-gray-400 mt-1">{t.privacy.subtitle}</p>
              </div>
           </div>
           
@@ -39,42 +43,42 @@ const PrivacyPolicyModal: React.FC<Props> = ({ isOpen, onClose }) => {
            
            <div className="flex flex-col gap-2">
               <h3 className="text-white font-bold flex items-center gap-2">
-                 <Database className="w-4 h-4 text-accent" /> 1. Coleta de Dados
+                 <Database className="w-4 h-4 text-accent" /> {t.privacy.collection}
               </h3>
               <p className="text-xs text-gray-400 text-justify">
-                 O Flow Finance coleta apenas as informações estritamente necessárias para o funcionamento do aplicativo, como seu endereço de e-mail (para autenticação) e os dados financeiros inseridos manualmente por você (transações, contas e investimentos).
+                 {t.privacy.collectionText}
               </p>
            </div>
 
            <div className="flex flex-col gap-2">
               <h3 className="text-white font-bold flex items-center gap-2">
-                 <Lock className="w-4 h-4 text-accent" /> 2. Armazenamento e Segurança
+                 <Lock className="w-4 h-4 text-accent" /> {t.privacy.storage}
               </h3>
               <p className="text-xs text-gray-400 text-justify">
-                 Seus dados são armazenados de forma segura utilizando serviços de nuvem criptografados (Supabase/Firebase). O aplicativo também utiliza o armazenamento local do seu dispositivo para garantir o funcionamento offline e melhorar a performance. Não compartilhamos seus dados financeiros com terceiros.
+                 {t.privacy.storageText}
               </p>
            </div>
 
            <div className="flex flex-col gap-2">
               <h3 className="text-white font-bold flex items-center gap-2">
-                 <Eye className="w-4 h-4 text-accent" /> 3. Uso das Informações
+                 <Eye className="w-4 h-4 text-accent" /> {t.privacy.usage}
               </h3>
               <p className="text-xs text-gray-400 text-justify">
-                 As informações inseridas são utilizadas exclusivamente para gerar os gráficos, relatórios e cálculos exibidos no seu painel. O Flow Finance não analisa seus dados para fins de publicidade ou venda de informações.
+                 {t.privacy.usageText}
               </p>
            </div>
 
            <div className="flex flex-col gap-2">
-              <h3 className="text-white font-bold">4. Notificações</h3>
+              <h3 className="text-white font-bold">{t.privacy.notifications}</h3>
               <p className="text-xs text-gray-400 text-justify">
-                 Ao ativar as notificações, você concorda em receber alertas sobre vencimentos de contas. Você pode desativar este recurso a qualquer momento nas configurações do seu navegador ou dispositivo.
+                 {t.privacy.notificationsText}
               </p>
            </div>
 
            <div className="flex flex-col gap-2">
-              <h3 className="text-white font-bold">5. Exclusão de Conta</h3>
+              <h3 className="text-white font-bold">{t.privacy.deletion}</h3>
               <p className="text-xs text-gray-400 text-justify">
-                 Você tem o direito de solicitar a exclusão total dos seus dados a qualquer momento através da opção "Excluir Conta" presente no menu de perfil. Esta ação é irreversível e remove todas as informações dos nossos servidores.
+                 {t.privacy.deletionText}
               </p>
            </div>
            
@@ -92,7 +96,7 @@ const PrivacyPolicyModal: React.FC<Props> = ({ isOpen, onClose }) => {
              onClick={onClose}
              className="w-full h-12 bg-[#2c2c2e] hover:bg-[#3a3a3c] text-white rounded-xl font-bold text-sm transition-colors"
            >
-             Entendi
+             {t.privacy.btn}
            </button>
         </div>
 

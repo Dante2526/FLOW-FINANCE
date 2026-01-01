@@ -1,31 +1,29 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, AlertCircle, Check } from 'lucide-react';
-import { Transaction } from '../types';
+import { Transaction, AppLanguage } from '../types';
+import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   transactions?: Transaction[];
   activeMonthContext?: { monthIndex: number; year: number };
+  lang: AppLanguage;
 }
 
-export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions = [], activeMonthContext }) => {
+export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions = [], activeMonthContext, lang }) => {
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const t = TRANSLATIONS[lang];
 
-  // Sync view with active month context when opening
   useEffect(() => {
     if (isOpen) {
       if (activeMonthContext) {
-        // Set view to the 1st of the active month
         const newViewDate = new Date(activeMonthContext.year, activeMonthContext.monthIndex, 1);
         setViewDate(newViewDate);
-        
-        // Also set selected date to 1st of that month so the list shows relevant items immediately
         setSelectedDate(newViewDate);
       } else {
-        // Fallback to today
         const now = new Date();
         setViewDate(now);
         setSelectedDate(now);
@@ -48,8 +46,11 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
     setSelectedDate(newDate);
   };
 
-  // Updated to 3 letters to avoid ambiguity between T/Q/S
-  const weekDays = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+  const weekDays = lang === 'pt' 
+    ? ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB']
+    : lang === 'es'
+        ? ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB']
+        : ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   
   const currentDay = new Date().getDate();
   const currentMonth = new Date().getMonth();
@@ -60,7 +61,6 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
   const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
   const firstDayOfWeek = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay();
 
-  // Generate days array
   const days = [];
   for (let i = 0; i < firstDayOfWeek; i++) {
     days.push(null);
@@ -69,25 +69,19 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
     days.push(i);
   }
 
-  // --- Helper to parse transaction dates ---
-  // Memoized to prevent re-creation, though simple enough to be inline.
-  // We keep it stable to be used in useMemo below.
   const parseTransactionDate = (dateStr: string, currentViewDate: Date): Date | null => {
     if (!dateStr) return null;
     const lower = dateStr.toLowerCase();
     const now = new Date();
     
-    // Case 1: "Hoje ..."
     if (lower.includes('hoje')) {
       return now;
     }
 
-    // Case 2: ISO String "YYYY-MM-DD"
     if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
         return new Date(dateStr.split(' ')[0] + 'T00:00:00'); 
     }
 
-    // Case 3: "DD Mmm" (e.g. "24 Jan")
     const parts = dateStr.split(' ');
     if (parts.length >= 2) {
        const day = parseInt(parts[0]);
@@ -101,23 +95,15 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
        if (months[monthStr] !== undefined && !isNaN(day)) {
            const txMonthIndex = months[monthStr];
            let txYear = now.getFullYear();
-           
-           // Heuristic: If the transaction month matches the view month, assume it's for the viewed year.
-           // This helps mapping "05 Jan" to "2026" if we are viewing Jan 2026.
            if (currentViewDate.getMonth() === txMonthIndex) {
               txYear = currentViewDate.getFullYear();
            }
-
            return new Date(txYear, txMonthIndex, day);
        }
     }
-
     return null;
   };
 
-  // --- OPTIMIZATION: DAY STATUS MAP ---
-  // Instead of filtering the whole array 30 times (once per day), we iterate ONCE and build a map.
-  // Complexity: O(Transactions) instead of O(Days * Transactions)
   const dayStatusMap = useMemo(() => {
       const map = new Map<number, { count: number; hasUnpaid: boolean; hasSubscription: boolean }>();
       const targetMonth = viewDate.getMonth();
@@ -127,28 +113,21 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
           const d = parseTransactionDate(t.date, viewDate);
           if (!d) return;
 
-          // Check if transaction belongs to the currently viewed month
           if (d.getMonth() === targetMonth && d.getFullYear() === targetYear) {
               const day = d.getDate();
-              
               const current = map.get(day) || { count: 0, hasUnpaid: false, hasSubscription: false };
-              
               current.count += 1;
               if (!t.paid) current.hasUnpaid = true;
               if (t.type === 'subscription') current.hasSubscription = true;
-              
               map.set(day, current);
           }
       });
-
       return map;
   }, [transactions, viewDate]);
 
-  // Filter transactions for the list (Selected Day)
-  // This is still a filter, but only happens when selection changes, which is fine (user interaction latency vs render latency)
   const selectedDayTransactions = useMemo(() => {
       return transactions.filter(t => {
-        const d = parseTransactionDate(t.date, viewDate); // Use viewDate context for year guessing
+        const d = parseTransactionDate(t.date, viewDate);
         if (!d) return false;
         return d.getDate() === selectedDate.getDate() && 
                 d.getMonth() === selectedDate.getMonth() && 
@@ -160,63 +139,45 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] shadow-2xl border border-white/5 relative flex flex-col max-h-[90dvh] overflow-hidden">
         
-        {/* Header */}
         <div className="flex justify-between items-center p-7 shrink-0">
           <div className="flex items-center gap-3">
              <div className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center border border-white/5">
                 <CalendarIcon className="w-5 h-5 text-red-500" />
              </div>
              <div>
-                <h2 className="text-lg font-bold text-white leading-none">Calendário</h2>
-                <p className="text-[10px] text-gray-400 mt-1">Agenda Financeira</p>
+                <h2 className="text-lg font-bold text-white leading-none">{t.calendar.title}</h2>
+                <p className="text-[10px] text-gray-400 mt-1">{t.calendar.subtitle}</p>
              </div>
           </div>
           
-          <button 
-            onClick={() => onClose()} 
-            className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-white/10 transition-colors"
-          >
+          <button onClick={() => onClose()} className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-white/10 transition-colors">
             <X className="w-5 h-5 text-gray-400" />
           </button>
         </div>
 
-        {/* Calendar Grid Area */}
         <div className="px-6 pb-6 shrink-0">
-            {/* Month Nav */}
             <div className="flex items-center justify-between mb-6">
-                <button 
-                    onClick={() => handlePrevMonth()}
-                    className="p-2 hover:bg-white/5 rounded-full active:scale-95 transition-transform"
-                >
+                <button onClick={() => handlePrevMonth()} className="p-2 hover:bg-white/5 rounded-full active:scale-95 transition-transform">
                     <ChevronLeft className="w-5 h-5 text-gray-400" />
                 </button>
                 <span className="text-base font-bold text-white uppercase tracking-wider select-none">
-                    {viewDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+                    {viewDate.toLocaleString(lang === 'pt' ? 'pt-BR' : (lang === 'es' ? 'es-ES' : 'en-US'), { month: 'long', year: 'numeric' })}
                 </span>
-                <button 
-                    onClick={() => handleNextMonth()}
-                    className="p-2 hover:bg-white/5 rounded-full active:scale-95 transition-transform"
-                >
+                <button onClick={() => handleNextMonth()} className="p-2 hover:bg-white/5 rounded-full active:scale-95 transition-transform">
                     <ChevronRight className="w-5 h-5 text-gray-400" />
                 </button>
             </div>
 
-            {/* Grid - Reduced gap-y from 6 to 3 for tighter layout */}
             <div className="grid grid-cols-7 gap-y-3 gap-x-1 mb-4 select-none">
-                {/* Weekday Headers */}
                 {weekDays.map((d, i) => (
                     <div key={i} className="text-center text-[9px] font-bold text-gray-500 uppercase tracking-wide">
                         {d}
                     </div>
                 ))}
                 
-                {/* Days */}
                 {days.map((day, i) => {
                     if (!day) return <div key={i} />;
-
-                    // O(1) Lookup
                     const status = dayStatusMap.get(day);
-                    
                     const isSelected = selectedDate.getDate() === day && selectedDate.getMonth() === viewDate.getMonth();
                     const isToday = isCurrentMonth && day === currentDay;
 
@@ -234,8 +195,6 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
                             >
                                 {day}
                             </button>
-                                
-                            {/* Transaction Indicator Dots - Positioned absolutely relative to the cell container */}
                             {status && !isSelected && (
                                 <div className="absolute bottom-0 flex gap-1">
                                     <div className={`w-1 h-1 rounded-full ${status.hasSubscription ? 'bg-purple-500' : 'bg-cyan-400'}`} />
@@ -248,10 +207,9 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
             </div>
         </div>
 
-        {/* Selected Day List */}
         <div className="mt-0 bg-[#2c2c2e]/30 rounded-t-[2.5rem] border-t border-white/5 px-6 pt-6 pb-16 flex flex-col flex-1 min-h-[150px] overflow-y-auto no-scrollbar">
             <h3 className="text-xs font-bold text-gray-400 uppercase mb-4 flex items-center gap-2 shrink-0">
-                {selectedDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
+                {selectedDate.toLocaleDateString(lang === 'pt' ? 'pt-BR' : (lang === 'es' ? 'es-ES' : 'en-US'), { day: '2-digit', month: 'long' })}
                 <span className="h-px flex-1 bg-white/10"></span>
             </h3>
             
@@ -259,7 +217,7 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
                 {selectedDayTransactions.length === 0 ? (
                      <div className="flex flex-col items-center justify-center py-8 opacity-40">
                          <AlertCircle className="w-8 h-8 text-gray-500 mb-2" />
-                         <span className="text-xs text-gray-500 font-medium">Nada agendado.</span>
+                         <span className="text-xs text-gray-500 font-medium">{t.calendar.empty}</span>
                      </div>
                 ) : (
                     selectedDayTransactions.map((tx) => (
@@ -271,13 +229,13 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
                                 <p className={`text-sm font-bold truncate ${tx.paid ? 'text-gray-500 line-through' : 'text-white'}`}>
                                     {tx.name}
                                 </p>
-                                <p className="text-[10px] text-gray-500 uppercase">{tx.type === 'subscription' ? 'Assinatura' : 'Compra'}</p>
+                                <p className="text-[10px] text-gray-500 uppercase">{tx.type === 'subscription' ? t.addTransaction.typeSub : t.addTransaction.typePurchase}</p>
                             </div>
                             <div className="text-right">
                                 <span className={`text-sm font-bold block whitespace-nowrap ${tx.paid ? 'text-gray-500' : 'text-white'}`}>
                                     R$ {tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
                                 </span>
-                                {tx.paid && <span className="text-[10px] text-green-500 font-bold flex items-center justify-end gap-1"><Check className="w-3 h-3" /> PAGO</span>}
+                                {tx.paid && <span className="text-[10px] text-green-500 font-bold flex items-center justify-end gap-1"><Check className="w-3 h-3" /> {t.calendar.paid}</span>}
                             </div>
                         </div>
                     ))

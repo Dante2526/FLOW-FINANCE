@@ -1,28 +1,27 @@
+
 import React, { useState } from 'react';
 import { Palette, Check, Lock, Crown, Shield, ChevronRight } from 'lucide-react';
-import { AppTheme } from '../types';
+import { AppTheme, AppLanguage } from '../types';
 import PrivacyPolicyModal from './PrivacyPolicyModal';
+import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   currentThemeId: string;
   onSaveTheme: (theme: AppTheme) => void;
   isPro: boolean;
   onOpenProModal: () => void;
+  lang: AppLanguage;
 }
 
-// Extended interface internally to handle UI logic
 interface ThemeOption extends AppTheme {
   isPro?: boolean;
 }
 
 export const AVAILABLE_THEMES: ThemeOption[] = [
-  // FREE THEMES (4)
   { id: 'sunset-orange', name: 'Sunset', primary: '#f97316', secondary: '#ea580c' },
   { id: 'cyber-yellow', name: 'Cyber', primary: '#eab308', secondary: '#ca8a04' },
   { id: 'crimson-red', name: 'Crimson', primary: '#ef4444', secondary: '#dc2626' },
   { id: 'emerald-green', name: 'Emerald', primary: '#10b981', secondary: '#059669' },
-  
-  // PRO THEMES (7)
   { id: 'neon-lime', name: 'Neon', primary: '#84cc16', secondary: '#65a30d', isPro: true },
   { id: 'ocean-blue', name: 'Ocean', primary: '#3b82f6', secondary: '#2563eb', isPro: true },
   { id: 'royal-purple', name: 'Royal', primary: '#a855f7', secondary: '#9333ea', isPro: true },
@@ -32,9 +31,10 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
   { id: 'aqua', name: 'Aqua', primary: '#22d3ee', secondary: '#0891b2', isPro: true },
 ];
 
-const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onOpenProModal }) => {
+const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onOpenProModal, lang }) => {
   const [selectedThemeId, setSelectedThemeId] = useState(currentThemeId);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const t = TRANSLATIONS[lang];
 
   const handleConfirm = () => {
     const theme = AVAILABLE_THEMES.find(t => t.id === selectedThemeId);
@@ -54,27 +54,25 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
   return (
     <div className="flex flex-col animate-in fade-in duration-300 relative">
       
-      {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <div className="w-12 h-12 rounded-full bg-[#1c1c1e] flex items-center justify-center border border-white/10">
           <Palette className="w-6 h-6 text-accent" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-white">Configuração</h2>
+          <h2 className="text-2xl font-bold text-white">{t.settings.title}</h2>
           <div className="flex items-center gap-2">
-             <p className="text-gray-400 text-sm">Personalize sua experiência</p>
+             <p className="text-gray-400 text-sm">{t.settings.subtitle}</p>
              {isPro && (
                 <span className="bg-yellow-500/20 text-yellow-500 text-[10px] font-bold px-2 py-0.5 rounded-full border border-yellow-500/50 flex items-center gap-1">
-                  <Crown className="w-3 h-3 fill-yellow-500" /> PRO ATIVO
+                  <Crown className="w-3 h-3 fill-yellow-500" /> PRO
                 </span>
              )}
           </div>
         </div>
       </div>
 
-      {/* Theme Selection - Native Scroll */}
       <div className="pb-40">
-        <h3 className="text-gray-400 text-sm font-bold ml-2 mb-4 uppercase tracking-wider">Cores do Sistema</h3>
+        <h3 className="text-gray-400 text-sm font-bold ml-2 mb-4 uppercase tracking-wider">{t.settings.colors}</h3>
         
         <div className="grid grid-cols-2 gap-4 mb-8">
           {AVAILABLE_THEMES.map((theme) => {
@@ -93,7 +91,6 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
                       : 'border-transparent bg-[#1c1c1e] hover:bg-[#2c2c2e]'
                 }`}
               >
-                {/* Side Color Bar */}
                 <div 
                   className={`absolute left-0 top-0 bottom-0 w-2 ${isLocked ? 'grayscale' : ''}`} 
                   style={{ backgroundColor: theme.primary }}
@@ -110,7 +107,6 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
                   )}
                 </div>
 
-                {/* Indicator (Check or Lock) */}
                 <div 
                   className={`w-8 h-8 rounded-full shadow-lg flex items-center justify-center transition-transform ${isActive ? 'scale-110' : 'scale-100'}`}
                   style={{ backgroundColor: isActive ? theme.primary : (isLocked ? '#2c2c2e' : '#2c2c2e') }}
@@ -123,7 +119,6 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
           })}
         </div>
 
-        {/* Privacy Policy Link */}
         <div className="px-1">
            <button 
              onClick={() => setIsPrivacyOpen(true)}
@@ -134,20 +129,19 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
                     <Shield className="w-4 h-4 text-gray-400" />
                  </div>
                  <div className="text-left">
-                    <span className="text-white font-bold text-sm block">Política de Privacidade</span>
-                    <span className="text-gray-500 text-xs">Termos de uso e dados</span>
+                    <span className="text-white font-bold text-sm block">{t.settings.privacy}</span>
+                    <span className="text-gray-500 text-xs">{t.settings.terms}</span>
                  </div>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
            </button>
            
            <p className="text-center text-[10px] text-gray-600 mt-6 pb-4">
-              Flow Finance v1.4.0 • Performance 100%
+              Flow Finance v1.6.0 • Performance 100%
            </p>
         </div>
       </div>
 
-      {/* Confirm Button - Fixed at bottom of view area with blur */}
       <div className="fixed bottom-24 left-0 right-0 px-4 pt-6 pb-4 flex justify-center pointer-events-none z-50 bg-gradient-to-t from-black via-black/80 to-transparent backdrop-blur-[2px]">
         <button 
           onClick={handleConfirm}
@@ -158,7 +152,7 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
               : 'bg-accent text-black hover:scale-105 opacity-100 translate-y-0'
           }`}
         >
-          Confirmar Cor
+          {t.settings.confirmColor}
           <Check className="w-5 h-5" />
         </button>
       </div>
