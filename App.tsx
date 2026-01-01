@@ -208,6 +208,50 @@ const App: React.FC = () => {
     return () => { unsubscribe(); window.removeEventListener('focus', handleSync); };
   }, [currentUserEmail, isSessionReady]);
 
+  // SYSTEM: Check for bills due today and generate notifications
+  useEffect(() => {
+    if (isLoadingData) return;
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const nowTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const missingNotifs: AppNotification[] = [];
+
+    transactions.forEach(t => {
+       if (t.paid) return;
+
+       let isToday = false;
+       // Check explicit "Hoje"
+       if (t.date.toLowerCase().includes('hoje')) isToday = true;
+       // Check ISO date
+       else if (t.date.startsWith(todayStr)) isToday = true;
+
+       if (isToday) {
+           const notifId = `bill-alert-${t.id}`;
+           const exists = notifications.some(n => n.id === notifId);
+           if (!exists) {
+               missingNotifs.push({
+                   id: notifId,
+                   title: 'Conta Vencendo Hoje',
+                   message: `A conta "${t.name}" no valor de R$ ${t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} vence hoje.`,
+                   date: `Hoje, ${nowTime}`,
+                   read: false,
+                   type: 'alert'
+               });
+           }
+       }
+    });
+
+    if (missingNotifs.length > 0) {
+        const updatedNotifications = [...missingNotifs, ...notifications];
+        setNotifications(updatedNotifications);
+        
+        if (currentUserEmail) {
+            saveCollection(currentUserEmail, 'notifications', updatedNotifications);
+            lastActionTimeRef.current = Date.now();
+        }
+    }
+  }, [transactions, notifications, isLoadingData, currentUserEmail]);
+
   const applyData = (data: any) => {
       if (data.profile) setUserProfile(data.profile);
       if (data.transactions) setTransactions(data.transactions);
