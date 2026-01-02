@@ -639,7 +639,7 @@ const App: React.FC = () => {
                })}
             </div>
             <ContactsRow contacts={MOCK_CONTACTS} onAddClick={handleOpenAddAccount} onContactClick={handleContactClick} isPro={!!userProfile.isPro} title={t.quickAccessTitle} />
-            <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} />
+            <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} appLanguage={appLanguage} />
             <TransactionList 
               transactions={filteredTx} 
               onDelete={handleDeleteTransaction} 

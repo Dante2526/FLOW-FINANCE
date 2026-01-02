@@ -1,13 +1,15 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { ArrowUpRight, Trash2, X, Check } from 'lucide-react';
-import { MonthSummary } from '../types';
+import { MonthSummary, AppLanguage } from '../types';
+import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   months: MonthSummary[];
   activeMonthId: string;
   onSelectMonth: (id: string) => void;
   onDeleteMonth: (id: string) => void;
+  appLanguage: AppLanguage;
 }
 
 interface MonthCardProps {
@@ -16,10 +18,28 @@ interface MonthCardProps {
   canDelete: boolean;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
+  appLanguage: AppLanguage;
 }
 
+// Map mapping internal DB values (PT-BR) to Translation Keys
+const PT_TO_KEY_MAP: Record<string, string> = {
+  'JANEIRO': 'jan', 'FEVEREIRO': 'fev', 'MARÇO': 'mar', 'ABRIL': 'abr', 'MAIO': 'mai', 'JUNHO': 'jun',
+  'JULHO': 'jul', 'AGOSTO': 'ago', 'SETEMBRO': 'set', 'OUTUBRO': 'out', 'NOVEMBRO': 'nov', 'DEZEMBRO': 'dez'
+};
+
+const getMonthDisplayName = (dbName: string, lang: AppLanguage): string => {
+  if (!dbName) return '';
+  const key = PT_TO_KEY_MAP[dbName.toUpperCase().trim()];
+  if (key) {
+    // Access translation safely
+    const translated = TRANSLATIONS[lang]?.months?.[key as keyof typeof TRANSLATIONS['pt']['months']];
+    return translated || dbName;
+  }
+  return dbName;
+};
+
 // MEMOIZED ATOMIC COMPONENT
-const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSelect, onDelete }) => {
+const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSelect, onDelete, appLanguage }) => {
   const [isConfirming, setIsConfirming] = useState(false);
 
   // Reset confirmation state if active month changes
@@ -41,6 +61,8 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
     e.stopPropagation();
     setIsConfirming(false);
   };
+
+  const displayName = getMonthDisplayName(item.month, appLanguage);
 
   return (
     <div 
@@ -92,7 +114,7 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
                 {/* Bottom Content (Month & Total) */}
                 <div className="absolute bottom-4 left-4 flex flex-col pointer-events-none">
                   <h3 className="text-white font-black text-sm tracking-wide uppercase leading-none mb-1">
-                    {item.month}
+                    {displayName}
                   </h3>
                   <div className="flex items-center gap-1.5">
                     <span className="text-white font-bold text-sm opacity-90 leading-none">
@@ -130,7 +152,7 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
   );
 });
 
-const TransactionSummary: React.FC<Props> = ({ months, activeMonthId, onSelectMonth, onDeleteMonth }) => {
+const TransactionSummary: React.FC<Props> = ({ months, activeMonthId, onSelectMonth, onDeleteMonth, appLanguage }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to active month
@@ -163,6 +185,7 @@ const TransactionSummary: React.FC<Props> = ({ months, activeMonthId, onSelectMo
             canDelete={months.length > 1}
             onSelect={onSelectMonth}
             onDelete={onDeleteMonth}
+            appLanguage={appLanguage}
           />
         ))}
       </div>
