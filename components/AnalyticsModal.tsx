@@ -2,13 +2,15 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { X, BarChart3, TrendingUp, Calendar, Award, Repeat } from 'lucide-react';
 import { BarChart, Bar, XAxis, Tooltip, Cell } from 'recharts';
-import { Transaction, MonthSummary } from '../types';
+import { Transaction, MonthSummary, AppLanguage } from '../types';
+import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   transactions: Transaction[];
   months: MonthSummary[];
+  appLanguage: AppLanguage;
 }
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -25,10 +27,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months }) => {
+const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months, appLanguage }) => {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const [chartDims, setChartDims] = useState({ width: 0, height: 0 });
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
+  const t = TRANSLATIONS[appLanguage].analytics;
 
   // Safety checks
   const safeTransactions = Array.isArray(transactions) ? transactions : [];
@@ -166,8 +170,8 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
                 <BarChart3 className="w-5 h-5 text-blue-500" />
              </div>
              <div>
-                <h2 className="text-lg font-bold text-white leading-none">Análise</h2>
-                <p className="text-[10px] text-gray-400 mt-1">Estatísticas de Gastos</p>
+                <h2 className="text-lg font-bold text-white leading-none">{t.title}</h2>
+                <p className="text-[10px] text-gray-400 mt-1">{t.subtitle}</p>
              </div>
           </div>
           
@@ -190,7 +194,7 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
                style={{ WebkitTapHighlightColor: 'transparent' }}
              >
                 <div className="absolute top-4 left-4 z-10">
-                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Histórico Mensal</p>
+                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">{t.chartTitle}</p>
                 </div>
                 
                 <div className="w-full h-full pt-10 px-2 pb-2" ref={chartContainerRef}>
@@ -269,7 +273,7 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
                   <div className="p-1.5 rounded-lg bg-orange-500/10">
                     <TrendingUp className="w-4 h-4 text-orange-500" />
                   </div>
-                  <span className="text-[10px] text-gray-400 font-bold uppercase">Média Mensal</span>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase">{t.kpiAverage}</span>
                 </div>
                 <span className="text-lg font-bold text-white">
                   R$ {stats.averageSpend.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
@@ -282,7 +286,7 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
                   <div className="p-1.5 rounded-lg bg-red-500/10">
                     <Calendar className="w-4 h-4 text-red-500" />
                   </div>
-                  <span className="text-[10px] text-gray-400 font-bold uppercase">Maior Gasto</span>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase">{t.kpiHighest}</span>
                 </div>
                 <div className="flex flex-col">
                    <span className="text-lg font-bold text-white leading-none mb-1">
@@ -296,7 +300,7 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
           </div>
 
           {/* Insights Section */}
-          <h3 className="text-xs font-bold text-gray-400 uppercase mb-3 ml-1">Insights</h3>
+          <h3 className="text-xs font-bold text-gray-400 uppercase mb-3 ml-1">{t.insightsTitle}</h3>
           <div className="flex flex-col gap-3">
              
              {/* Frequent Item */}
@@ -305,7 +309,7 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
                    <Repeat className="w-5 h-5 text-purple-500" />
                 </div>
                 <div className="flex-1">
-                   <p className="text-xs text-gray-400 font-medium mb-0.5">Mais Frequente</p>
+                   <p className="text-xs text-gray-400 font-medium mb-0.5">{t.insightFrequent}</p>
                    <p className="text-sm font-bold text-white">{stats.mostFrequent.name}</p>
                 </div>
                 <div className="text-right">
@@ -320,8 +324,8 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
                       <Award className="w-5 h-5 text-blue-500" />
                     </div>
                     <div>
-                      <p className="text-xs text-gray-400 font-medium">Assinaturas vs Compras</p>
-                      <p className="text-[10px] text-gray-500">Distribuição de gastos</p>
+                      <p className="text-xs text-gray-400 font-medium">{t.insightSplitTitle}</p>
+                      <p className="text-[10px] text-gray-500">{t.insightSplitSubtitle}</p>
                     </div>
                  </div>
                  
@@ -340,11 +344,11 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
                  <div className="flex justify-between text-[10px] font-bold mt-1">
                     <span className="text-purple-400 flex items-center gap-1">
                        <div className="w-2 h-2 rounded-full bg-purple-500" />
-                       Assinaturas ({Math.round((stats.split.subscription / stats.safeTotalSpend) * 100) || 0}%)
+                       {t.subscriptions} ({Math.round((stats.split.subscription / stats.safeTotalSpend) * 100) || 0}%)
                     </span>
                     <span className="text-cyan-400 flex items-center gap-1">
                        <div className="w-2 h-2 rounded-full bg-cyan-500" />
-                       Compras ({Math.round((stats.split.purchase / stats.safeTotalSpend) * 100) || 0}%)
+                       {t.purchases} ({Math.round((stats.split.purchase / stats.safeTotalSpend) * 100) || 0}%)
                     </span>
                  </div>
              </div>

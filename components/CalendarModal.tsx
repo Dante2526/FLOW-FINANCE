@@ -1,18 +1,23 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Calendar as CalendarIcon, ChevronLeft, ChevronRight, AlertCircle, Check } from 'lucide-react';
-import { Transaction } from '../types';
+import { Transaction, AppLanguage } from '../types';
+import { TRANSLATIONS, getLocale } from '../i18n';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   transactions?: Transaction[];
   activeMonthContext?: { monthIndex: number; year: number };
+  appLanguage: AppLanguage;
 }
 
-export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions = [], activeMonthContext }) => {
+export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions = [], activeMonthContext, appLanguage }) => {
   const [viewDate, setViewDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const t = TRANSLATIONS[appLanguage].calendar;
+  const locale = getLocale(appLanguage);
 
   // Sync view with active month context when opening
   useEffect(() => {
@@ -50,19 +55,18 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
         return new Date(dateStr.split(' ')[0] + 'T00:00:00'); 
     }
 
-    // Case 3: "DD Mmm" (e.g. "24 Jan")
+    // Case 3: "DD Mmm" (e.g. "24 Jan") - LEGACY SUPPORT
+    // This relies on the translation map to parse the month name
     const parts = dateStr.split(' ');
     if (parts.length >= 2) {
        const day = parseInt(parts[0]);
        const monthStr = parts[1].toLowerCase().slice(0, 3);
        
-       const months: {[key: string]: number} = {
-           'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3, 'mai': 4, 'jun': 5,
-           'jul': 6, 'ago': 7, 'set': 8, 'out': 9, 'nov': 10, 'dez': 11
-       };
+       // Use the localized map to find the month index
+       const monthsMap = t.monthsShort as Record<string, number>;
        
-       if (months[monthStr] !== undefined && !isNaN(day)) {
-           const txMonthIndex = months[monthStr];
+       if (monthsMap[monthStr] !== undefined && !isNaN(day)) {
+           const txMonthIndex = monthsMap[monthStr];
            let txYear = now.getFullYear();
            
            // Heuristic: If the transaction month matches the view month, assume it's for the viewed year.
@@ -104,7 +108,7 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
       });
 
       return map;
-  }, [transactions, viewDate]);
+  }, [transactions, viewDate, appLanguage]); // Re-calc if language changes (month map changes)
 
   // Filter transactions for the list (Selected Day)
   // MOVED UP: Must be called before any conditional return
@@ -116,7 +120,7 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
                 d.getMonth() === selectedDate.getMonth() && 
                 d.getFullYear() === selectedDate.getFullYear();
       });
-  }, [selectedDate, transactions, viewDate]);
+  }, [selectedDate, transactions, viewDate, appLanguage]);
 
   if (!isOpen) return null;
 
@@ -133,8 +137,7 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
     setSelectedDate(newDate);
   };
 
-  // Updated to 3 letters to avoid ambiguity between T/Q/S
-  const weekDays = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
+  const weekDays = t.weekDays;
   
   const currentDay = new Date().getDate();
   const currentMonth = new Date().getMonth();
@@ -165,8 +168,8 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
                 <CalendarIcon className="w-5 h-5 text-red-500" />
              </div>
              <div>
-                <h2 className="text-lg font-bold text-white leading-none">Calendário</h2>
-                <p className="text-[10px] text-gray-400 mt-1">Agenda Financeira</p>
+                <h2 className="text-lg font-bold text-white leading-none">{t.title}</h2>
+                <p className="text-[10px] text-gray-400 mt-1">{t.subtitle}</p>
              </div>
           </div>
           
@@ -189,7 +192,7 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
                     <ChevronLeft className="w-5 h-5 text-gray-400" />
                 </button>
                 <span className="text-base font-bold text-white uppercase tracking-wider select-none">
-                    {viewDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+                    {viewDate.toLocaleString(locale, { month: 'long', year: 'numeric' })}
                 </span>
                 <button 
                     onClick={() => handleNextMonth()}
@@ -249,7 +252,7 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
         {/* Selected Day List */}
         <div className="mt-0 bg-[#2c2c2e]/30 rounded-t-[2.5rem] border-t border-white/5 px-6 pt-6 pb-16 flex flex-col flex-1 min-h-[150px] overflow-y-auto no-scrollbar">
             <h3 className="text-xs font-bold text-gray-400 uppercase mb-4 flex items-center gap-2 shrink-0">
-                {selectedDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long' })}
+                {selectedDate.toLocaleDateString(locale, { day: '2-digit', month: 'long' })}
                 <span className="h-px flex-1 bg-white/10"></span>
             </h3>
             
@@ -257,7 +260,7 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
                 {selectedDayTransactions.length === 0 ? (
                      <div className="flex flex-col items-center justify-center py-8 opacity-40">
                          <AlertCircle className="w-8 h-8 text-gray-500 mb-2" />
-                         <span className="text-xs text-gray-500 font-medium">Nada agendado.</span>
+                         <span className="text-xs text-gray-500 font-medium">{t.empty}</span>
                      </div>
                 ) : (
                     selectedDayTransactions.map((tx) => (
@@ -269,13 +272,13 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
                                 <p className={`text-sm font-bold truncate ${tx.paid ? 'text-gray-500 line-through' : 'text-white'}`}>
                                     {tx.name}
                                 </p>
-                                <p className="text-[10px] text-gray-500 uppercase">{tx.type === 'subscription' ? 'Assinatura' : 'Compra'}</p>
+                                <p className="text-[10px] text-gray-500 uppercase">{tx.type === 'subscription' ? t.typeSubscription : t.typePurchase}</p>
                             </div>
                             <div className="text-right">
                                 <span className={`text-sm font-bold block whitespace-nowrap ${tx.paid ? 'text-gray-500' : 'text-white'}`}>
                                     R$ {tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
                                 </span>
-                                {tx.paid && <span className="text-[10px] text-green-500 font-bold flex items-center justify-end gap-1"><Check className="w-3 h-3" /> PAGO</span>}
+                                {tx.paid && <span className="text-[10px] text-green-500 font-bold flex items-center justify-end gap-1"><Check className="w-3 h-3" /> {t.paidTag}</span>}
                             </div>
                         </div>
                     ))

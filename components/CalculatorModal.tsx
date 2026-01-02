@@ -1,6 +1,8 @@
 
 import React, { useReducer, useEffect, useMemo, useState } from 'react';
 import { X, Copy, Check } from 'lucide-react';
+import { AppLanguage } from '../types';
+import { TRANSLATIONS, getLocale } from '../i18n';
 
 // --- STATIC ASSETS & HELPERS ---
 
@@ -28,7 +30,7 @@ const calculate = (first: number, second: number, op: string) => {
   return parseFloat(result.toFixed(10));
 };
 
-const formatDisplay = (val: string) => {
+const formatDisplay = (val: string, locale: string = 'pt-BR') => {
     if (!val) return '0';
     if (val === 'Erro' || val === 'Infinity' || val === 'NaN') return 'Erro';
     
@@ -42,10 +44,15 @@ const formatDisplay = (val: string) => {
     
     // Format integer part with thousands separators
     const parsedInt = parseInt(integerPart || '0');
-    const formattedInt = isNaN(parsedInt) ? '0' : parsedInt.toLocaleString('pt-BR');
+    const formattedInt = isNaN(parsedInt) ? '0' : parsedInt.toLocaleString(locale);
     
-    if (val.endsWith('.')) return `${formattedInt},`;
-    if (decimalPart !== null) return `${formattedInt},${decimalPart}`;
+    // Determine decimal separator based on locale
+    // PT/ES use comma, EN uses dot
+    const isCommaDecimal = locale === 'pt-BR' || locale === 'es-ES';
+    const decimalSep = isCommaDecimal ? ',' : '.';
+
+    if (val.endsWith('.')) return `${formattedInt}${decimalSep}`;
+    if (decimalPart !== null) return `${formattedInt}${decimalSep}${decimalPart}`;
     return formattedInt;
 };
 
@@ -62,6 +69,7 @@ type CalculatorState = {
 type CalculatorAction = {
   type: 'DIGIT' | 'OP' | 'EXEC' | 'CLEAR' | 'DEL' | 'SIGN' | 'PERCENT' | 'DOT' | 'PASTE';
   payload?: string;
+  locale?: string; // Optional locale for formatting history
 };
 
 const INITIAL_STATE: CalculatorState = {
@@ -73,6 +81,8 @@ const INITIAL_STATE: CalculatorState = {
 };
 
 const calculatorReducer = (state: CalculatorState, action: CalculatorAction): CalculatorState => {
+  const locale = action.locale || 'pt-BR'; // Default fallback
+
   switch (action.type) {
     case 'DIGIT':
       if (action.payload) {
@@ -164,7 +174,7 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
           return {
             ...state,
             previousValue: inputValue,
-            history: `${formatDisplay(String(inputValue))} ${opSym}`,
+            history: `${formatDisplay(String(inputValue), locale)} ${opSym}`,
             waitingForOperand: true,
             operator: nextOp
           };
@@ -173,7 +183,7 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
             return {
               ...state,
               operator: nextOp,
-              history: `${formatDisplay(String(state.previousValue))} ${opSym}`
+              history: `${formatDisplay(String(state.previousValue), locale)} ${opSym}`
             };
           }
           const result = calculate(state.previousValue, inputValue, state.operator);
@@ -181,7 +191,7 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
             ...state,
             previousValue: result,
             display: String(result),
-            history: `${formatDisplay(String(result))} ${opSym}`,
+            history: `${formatDisplay(String(result), locale)} ${opSym}`,
             waitingForOperand: true,
             operator: nextOp
           };
@@ -190,7 +200,7 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
            return {
              ...state,
              previousValue: inputValue,
-             history: `${formatDisplay(String(inputValue))} ${opSym}`,
+             history: `${formatDisplay(String(inputValue), locale)} ${opSym}`,
              waitingForOperand: true,
              operator: nextOp
            };
@@ -207,7 +217,7 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
       return {
         ...state,
         display: String(finalResult),
-        history: `${formatDisplay(String(state.previousValue))} ${finalSym} ${formatDisplay(String(finalInput))} =`,
+        history: `${formatDisplay(String(state.previousValue), locale)} ${finalSym} ${formatDisplay(String(finalInput), locale)} =`,
         previousValue: null,
         operator: null,
         waitingForOperand: true
@@ -228,6 +238,7 @@ interface ButtonProps {
   variant?: 'default' | 'accent-text' | 'red-text' | 'accent-filled' | 'secondary';
   isActive?: boolean;
   className?: string;
+  locale?: string;
 }
 
 const CalculatorButton = React.memo(({ 
@@ -237,7 +248,8 @@ const CalculatorButton = React.memo(({
   dispatch, 
   variant = 'default',
   isActive = false,
-  className = '' 
+  className = '',
+  locale
 }: ButtonProps) => {
   
   // UX Tweaks: scale-95 for solid feel, duration-100 for snappiness
@@ -262,7 +274,7 @@ const CalculatorButton = React.memo(({
      if (typeof navigator !== 'undefined' && navigator.vibrate) {
          try { navigator.vibrate(15); } catch(e) {}
      }
-     dispatch({ type: action, payload });
+     dispatch({ type: action, payload, locale });
   };
 
   return (
@@ -281,11 +293,15 @@ const CalculatorButton = React.memo(({
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  appLanguage: AppLanguage;
 }
 
-const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
+const CalculatorModal: React.FC<Props> = ({ isOpen, onClose, appLanguage }) => {
   const [state, dispatch] = useReducer(calculatorReducer, INITIAL_STATE);
   const [copied, setCopied] = useState(false);
+
+  const t = TRANSLATIONS[appLanguage].calculator;
+  const locale = getLocale(appLanguage);
 
   // Optimization: Memoize the Delete Icon
   const deleteIconNode = useMemo(() => <DeleteIcon />, []);
@@ -301,17 +317,17 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key;
       
-      if (/^[0-9]$/.test(key)) { e.preventDefault(); dispatch({ type: 'DIGIT', payload: key }); }
-      if (['+', '-', '*', '/'].includes(key)) { e.preventDefault(); dispatch({ type: 'OP', payload: key }); }
-      if (key === 'x' || key === 'X') { e.preventDefault(); dispatch({ type: 'OP', payload: '*' }); }
-      if (key === 'Enter' || key === '=') { e.preventDefault(); dispatch({ type: 'EXEC' }); }
-      if (key === '.' || key === ',') { e.preventDefault(); dispatch({ type: 'DOT' }); }
-      if (key === 'Backspace' || key === 'Delete') { e.preventDefault(); dispatch({ type: 'DEL' }); }
+      if (/^[0-9]$/.test(key)) { e.preventDefault(); dispatch({ type: 'DIGIT', payload: key, locale }); }
+      if (['+', '-', '*', '/'].includes(key)) { e.preventDefault(); dispatch({ type: 'OP', payload: key, locale }); }
+      if (key === 'x' || key === 'X') { e.preventDefault(); dispatch({ type: 'OP', payload: '*', locale }); }
+      if (key === 'Enter' || key === '=') { e.preventDefault(); dispatch({ type: 'EXEC', locale }); }
+      if (key === '.' || key === ',') { e.preventDefault(); dispatch({ type: 'DOT', locale }); }
+      if (key === 'Backspace' || key === 'Delete') { e.preventDefault(); dispatch({ type: 'DEL', locale }); }
       if (key === 'Escape' || key.toLowerCase() === 'c') { 
           e.preventDefault(); 
-          dispatch({ type: 'CLEAR' });
+          dispatch({ type: 'CLEAR', locale });
       }
-      if (key === '%') { e.preventDefault(); dispatch({ type: 'PERCENT' }); }
+      if (key === '%') { e.preventDefault(); dispatch({ type: 'PERCENT', locale }); }
     };
 
     const handlePaste = (e: ClipboardEvent) => {
@@ -320,23 +336,31 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
         if (pastedData) {
             let clean = pastedData.replace(/[^0-9.,-]/g, '');
 
-            // Advanced BR Format Detection
-            // Pattern: 1.000 (Thousand only) OR 1.000,00 (Thousand + Decimal)
-            const isThousandDot = /^\d{1,3}(\.\d{3})+$/.test(clean); // e.g. 1.000 or 1.000.000
-            
-            if (clean.includes('.') && clean.includes(',')) {
-               // Standard BR Currency: 1.250,50 -> 1250.50
-               clean = clean.replace(/\./g, '').replace(',', '.');
-            } else if (clean.includes(',')) {
-               // Decimal only: 1250,50 -> 1250.50
-               clean = clean.replace(',', '.');
-            } else if (isThousandDot) {
-               // Thousand only (No decimal): 1.000 -> 1000
-               clean = clean.replace(/\./g, '');
+            // Advanced Format Detection based on Locale
+            const isCommaDecimal = locale === 'pt-BR' || locale === 'es-ES';
+
+            if (isCommaDecimal) {
+                // PT/ES Format: 1.000,50 -> 1000.50
+                if (clean.includes('.') && clean.includes(',')) {
+                   clean = clean.replace(/\./g, '').replace(',', '.');
+                } else if (clean.includes(',')) {
+                   clean = clean.replace(',', '.');
+                } else if (clean.includes('.')) {
+                   // Ambiguous: 1.000 could be thousand or 1.0 decimal (in EN)
+                   // Assume thousand separator if in PT/ES context unless it looks very small
+                   clean = clean.replace(/\./g, '');
+                }
+            } else {
+                // EN Format: 1,000.50 -> 1000.50
+                if (clean.includes(',') && clean.includes('.')) {
+                   clean = clean.replace(/,/g, '');
+                } else if (clean.includes(',')) {
+                   clean = clean.replace(/,/g, '');
+                }
             }
             
             if (clean && !isNaN(parseFloat(clean))) {
-                dispatch({ type: 'PASTE', payload: clean });
+                dispatch({ type: 'PASTE', payload: clean, locale });
             }
         }
     };
@@ -347,12 +371,15 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
         window.removeEventListener('keydown', handleKeyDown);
         window.removeEventListener('paste', handlePaste);
     };
-  }, [isOpen]);
+  }, [isOpen, locale]);
 
   // Copy Functionality
   const handleCopy = () => {
      if (navigator.clipboard) {
-         const textToCopy = state.display.replace('.', ',');
+         // Format based on locale for copying
+         const isCommaDecimal = locale === 'pt-BR' || locale === 'es-ES';
+         const textToCopy = isCommaDecimal ? state.display.replace('.', ',') : state.display;
+         
          navigator.clipboard.writeText(textToCopy);
          setCopied(true);
          if (navigator.vibrate) navigator.vibrate(50);
@@ -363,7 +390,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   // Dynamic Font Size
-  const formattedValue = formatDisplay(state.display);
+  const formattedValue = formatDisplay(state.display, locale);
   const displayLength = formattedValue.length;
   let fontSizeClass = "text-6xl sm:text-5xl"; // Larger on mobile
   if (displayLength > 13) fontSizeClass = "text-3xl";
@@ -381,7 +408,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
         
         {/* Header/Close - Reduced margin mb-6 -> mb-4 */}
         <div className="flex justify-between items-center mb-4 pl-2 shrink-0">
-           <h2 className="text-xl font-bold text-white tracking-tight">Calculadora</h2>
+           <h2 className="text-xl font-bold text-white tracking-tight">{t.title}</h2>
            <button 
             onClick={onClose} 
             className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-white/10 transition-colors active:scale-90"
@@ -401,13 +428,13 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
            {/* Copy Feedback */}
            <div className={`absolute top-4 left-4 bg-white/10 backdrop-blur-md px-2 py-1 rounded-lg flex items-center gap-1 transition-opacity duration-300 ${copied ? 'opacity-100' : 'opacity-0'}`}>
               <Check className="w-3 h-3 text-green-400" />
-              <span className="text-[10px] text-white font-bold">Copiado</span>
+              <span className="text-[10px] text-white font-bold">{t.copied}</span>
            </div>
            
            {/* Copy Hint (Hover) */}
            <div className={`absolute top-4 left-4 bg-white/5 px-2 py-1 rounded-lg flex items-center gap-1 transition-opacity duration-300 ${!copied ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`}>
               <Copy className="w-3 h-3 text-gray-400" />
-              <span className="text-[10px] text-gray-400 font-bold">Copiar</span>
+              <span className="text-[10px] text-gray-400 font-bold">{t.copy}</span>
            </div>
 
            {/* Reduced display height h-32 -> h-24 on mobile */}
@@ -424,30 +451,30 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose }) => {
         {/* Keypad Grid - Reduced gap gap-3 -> gap-2 on mobile */}
         <div className="grid grid-cols-4 gap-2 sm:gap-3 shrink-0">
           
-          <CalculatorButton label={clearButtonLabel} action="CLEAR" dispatch={dispatch} variant="red-text" />
-          <CalculatorButton label={deleteIconNode} action="DEL" dispatch={dispatch} variant="secondary" />
-          <CalculatorButton label="%" action="PERCENT" dispatch={dispatch} variant="secondary" />
-          <CalculatorButton label="÷" action="OP" payload="/" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '/' && state.waitingForOperand} />
+          <CalculatorButton label={clearButtonLabel} action="CLEAR" dispatch={dispatch} variant="red-text" locale={locale} />
+          <CalculatorButton label={deleteIconNode} action="DEL" dispatch={dispatch} variant="secondary" locale={locale} />
+          <CalculatorButton label="%" action="PERCENT" dispatch={dispatch} variant="secondary" locale={locale} />
+          <CalculatorButton label="÷" action="OP" payload="/" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '/' && state.waitingForOperand} locale={locale} />
 
-          <CalculatorButton label="7" action="DIGIT" payload="7" dispatch={dispatch} />
-          <CalculatorButton label="8" action="DIGIT" payload="8" dispatch={dispatch} />
-          <CalculatorButton label="9" action="DIGIT" payload="9" dispatch={dispatch} />
-          <CalculatorButton label="×" action="OP" payload="*" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '*' && state.waitingForOperand} />
+          <CalculatorButton label="7" action="DIGIT" payload="7" dispatch={dispatch} locale={locale} />
+          <CalculatorButton label="8" action="DIGIT" payload="8" dispatch={dispatch} locale={locale} />
+          <CalculatorButton label="9" action="DIGIT" payload="9" dispatch={dispatch} locale={locale} />
+          <CalculatorButton label="×" action="OP" payload="*" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '*' && state.waitingForOperand} locale={locale} />
 
-          <CalculatorButton label="4" action="DIGIT" payload="4" dispatch={dispatch} />
-          <CalculatorButton label="5" action="DIGIT" payload="5" dispatch={dispatch} />
-          <CalculatorButton label="6" action="DIGIT" payload="6" dispatch={dispatch} />
-          <CalculatorButton label="-" action="OP" payload="-" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '-' && state.waitingForOperand} />
+          <CalculatorButton label="4" action="DIGIT" payload="4" dispatch={dispatch} locale={locale} />
+          <CalculatorButton label="5" action="DIGIT" payload="5" dispatch={dispatch} locale={locale} />
+          <CalculatorButton label="6" action="DIGIT" payload="6" dispatch={dispatch} locale={locale} />
+          <CalculatorButton label="-" action="OP" payload="-" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '-' && state.waitingForOperand} locale={locale} />
 
-          <CalculatorButton label="1" action="DIGIT" payload="1" dispatch={dispatch} />
-          <CalculatorButton label="2" action="DIGIT" payload="2" dispatch={dispatch} />
-          <CalculatorButton label="3" action="DIGIT" payload="3" dispatch={dispatch} />
-          <CalculatorButton label="+" action="OP" payload="+" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '+' && state.waitingForOperand} />
+          <CalculatorButton label="1" action="DIGIT" payload="1" dispatch={dispatch} locale={locale} />
+          <CalculatorButton label="2" action="DIGIT" payload="2" dispatch={dispatch} locale={locale} />
+          <CalculatorButton label="3" action="DIGIT" payload="3" dispatch={dispatch} locale={locale} />
+          <CalculatorButton label="+" action="OP" payload="+" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '+' && state.waitingForOperand} locale={locale} />
 
-          <CalculatorButton label="+/-" action="SIGN" dispatch={dispatch} className="text-xl" />
-          <CalculatorButton label="0" action="DIGIT" payload="0" dispatch={dispatch} />
-          <CalculatorButton label="," action="DOT" dispatch={dispatch} />
-          <CalculatorButton label="=" action="EXEC" dispatch={dispatch} variant="accent-filled" />
+          <CalculatorButton label="+/-" action="SIGN" dispatch={dispatch} className="text-xl" locale={locale} />
+          <CalculatorButton label="0" action="DIGIT" payload="0" dispatch={dispatch} locale={locale} />
+          <CalculatorButton label={locale === 'en-US' ? '.' : ','} action="DOT" dispatch={dispatch} locale={locale} />
+          <CalculatorButton label="=" action="EXEC" dispatch={dispatch} variant="accent-filled" locale={locale} />
 
         </div>
 

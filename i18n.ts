@@ -18,6 +18,38 @@ export const TRANSLATIONS = {
         jan: 'JANEIRO', fev: 'FEVEREIRO', mar: 'MARÇO', abr: 'ABRIL', mai: 'MAIO', jun: 'JUNHO',
         jul: 'JULHO', ago: 'AGOSTO', set: 'SETEMBRO', out: 'OUTUBRO', nov: 'NOVEMBRO', dez: 'DEZEMBRO'
     },
+    calculator: {
+      title: "Calculadora",
+      copied: "Copiado",
+      copy: "Copiar",
+      error: "Erro"
+    },
+    analytics: {
+      title: "Análise",
+      subtitle: "Estatísticas de Gastos",
+      chartTitle: "Histórico Mensal",
+      kpiAverage: "Média Mensal",
+      kpiHighest: "Maior Gasto",
+      insightsTitle: "Insights",
+      insightFrequent: "Mais Frequente",
+      insightSplitTitle: "Assinaturas vs Compras",
+      insightSplitSubtitle: "Distribuição de gastos",
+      subscriptions: "Assinaturas",
+      purchases: "Compras"
+    },
+    calendar: {
+      title: "Calendário",
+      subtitle: "Agenda Financeira",
+      weekDays: ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'],
+      empty: "Nada agendado.",
+      typeSubscription: "Assinatura",
+      typePurchase: "Compra",
+      paidTag: "PAGO",
+      monthsShort: {
+        'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3, 'mai': 4, 'jun': 5,
+        'jul': 6, 'ago': 7, 'set': 8, 'out': 9, 'nov': 10, 'dez': 11
+      }
+    },
     notepad: {
       title: "Bloco de Notas",
       subtitle: "Texto e Desenho livres",
@@ -261,6 +293,38 @@ export const TRANSLATIONS = {
         jan: 'JANUARY', fev: 'FEBRUARY', mar: 'MARCH', abr: 'APRIL', mai: 'MAY', jun: 'JUNE',
         jul: 'JULY', ago: 'AUGUST', set: 'SEPTEMBER', out: 'OCTOBER', nov: 'NOVEMBER', dez: 'DECEMBER'
     },
+    calculator: {
+      title: "Calculator",
+      copied: "Copied",
+      copy: "Copy",
+      error: "Error"
+    },
+    analytics: {
+      title: "Analytics",
+      subtitle: "Spending Statistics",
+      chartTitle: "Monthly History",
+      kpiAverage: "Monthly Average",
+      kpiHighest: "Highest Spend",
+      insightsTitle: "Insights",
+      insightFrequent: "Most Frequent",
+      insightSplitTitle: "Subscriptions vs Purchases",
+      insightSplitSubtitle: "Spending distribution",
+      subscriptions: "Subscriptions",
+      purchases: "Purchases"
+    },
+    calendar: {
+      title: "Calendar",
+      subtitle: "Financial Agenda",
+      weekDays: ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'],
+      empty: "Nothing scheduled.",
+      typeSubscription: "Subscription",
+      typePurchase: "Bill",
+      paidTag: "PAID",
+      monthsShort: {
+        'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
+        'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
+      }
+    },
     notepad: {
       title: "Notepad",
       subtitle: "Free text and drawing",
@@ -503,6 +567,38 @@ export const TRANSLATIONS = {
     months: {
         jan: 'ENERO', fev: 'FEBRERO', mar: 'MARZO', abr: 'ABRIL', mai: 'MAYO', jun: 'JUNIO',
         jul: 'JULIO', ago: 'AGOSTO', set: 'SEPTIEMBRE', out: 'OCTUBRE', nov: 'NOVIEMBRE', dez: 'DICIEMBRE'
+    },
+    calculator: {
+      title: "Calculadora",
+      copied: "Copiado",
+      copy: "Copiar",
+      error: "Error"
+    },
+    analytics: {
+      title: "Análisis",
+      subtitle: "Estadísticas de Gastos",
+      chartTitle: "Historial Mensual",
+      kpiAverage: "Promedio Mensual",
+      kpiHighest: "Mayor Gasto",
+      insightsTitle: "Insights",
+      insightFrequent: "Más Frecuente",
+      insightSplitTitle: "Suscripciones vs Compras",
+      insightSplitSubtitle: "Distribución de gastos",
+      subscriptions: "Suscripciones",
+      purchases: "Compras"
+    },
+    calendar: {
+      title: "Calendario",
+      subtitle: "Agenda Financiera",
+      weekDays: ['DOM', 'LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB'],
+      empty: "Nada programado.",
+      typeSubscription: "Suscripción",
+      typePurchase: "Compra",
+      paidTag: "PAGADO",
+      monthsShort: {
+        'ene': 0, 'feb': 1, 'mar': 2, 'abr': 3, 'may': 4, 'jun': 5,
+        'jul': 6, 'ago': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dic': 11
+      }
     },
     notepad: {
       title: "Bloc de Notas",
