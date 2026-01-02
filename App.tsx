@@ -316,50 +316,44 @@ const App: React.FC = () => {
         let d: Date;
         const currentYear = parseInt(actYear);
 
-        // 1. ISO Check (Standard)
+        // 1. ISO Check
         if (t.date.match(/^\d{4}-\d{2}-\d{2}/)) {
-           d = new Date(t.date + 'T00:00:00'); 
+           // Parse explicitly as local time YYYY, MM-1, DD to avoid timezone shifts
+           const parts = t.date.split('-');
+           d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
         } else {
-           // 2. Text Parser (e.g. "15 Jan", "11 Fev")
+           // 2. Text Parsers
+           // Default to source dashboard month
+           let monthIndex = MONTH_NAMES.indexOf(actMonthNorm); 
+           let year = currentYear;
+           
+           // Try to find explicit day
            const dayMatch = t.date.match(/(\d{1,2})/);
            const day = dayMatch ? parseInt(dayMatch[0]) : 1;
 
-           // Find month in text
+           // Try to find explicit month in text (e.g. "11 Fev")
            const shortMonths = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
            const foundMonthShort = shortMonths.find(m => t.date.toLowerCase().includes(m));
            
-           let monthIndex = MONTH_NAMES.indexOf(actMonthNorm); // Default: Source Dashboard Month
-           let year = currentYear;
-
            if (foundMonthShort) {
                monthIndex = shortMonths.indexOf(foundMonthShort);
                
-               // Handle Year Rollover for text dates (e.g. Dec Dash -> Jan Bill)
-               const dashMonthIndex = MONTH_NAMES.indexOf(actMonthNorm);
-               if (dashMonthIndex === 11 && monthIndex === 0) {
-                   year++;
-               }
-               // Handle reverse (Jan Dash -> Dec Bill)
-               if (dashMonthIndex === 0 && monthIndex === 11) {
-                   year--;
-               }
+               // Year adjustment heuristics
+               // If dash is Dec and found is Jan -> Next Year
+               if (MONTH_NAMES.indexOf(actMonthNorm) === 11 && monthIndex === 0) year++;
+               // If dash is Jan and found is Dec -> Prev Year
+               if (MONTH_NAMES.indexOf(actMonthNorm) === 0 && monthIndex === 11) year--;
            }
 
            d = new Date(year, monthIndex, day);
         }
 
-        // --- CORE LOGIC: INCREMENT 1 MONTH ---
-        // 15 Jan -> 15 Feb
-        // 11 Feb -> 11 Mar
-        const originalDay = d.getDate();
+        // --- THE FIX: ALWAYS ADD 1 MONTH ---
+        // This shifts Jan 15 -> Feb 15
+        // And Feb 11 -> Mar 11
         d.setMonth(d.getMonth() + 1);
         
-        // Auto-correct month overflow (e.g., 31 Jan -> 3 Mar, force to 28/29 Feb)
-        if (d.getDate() !== originalDay) {
-            d.setDate(0); // Set to last day of previous month (which is the target month)
-        }
-        
-        // Format back to ISO YYYY-MM-DD
+        // Output ISO
         const y = d.getFullYear();
         const m = String(d.getMonth() + 1).padStart(2, '0');
         const dayStr = String(d.getDate()).padStart(2, '0');
@@ -368,8 +362,8 @@ const App: React.FC = () => {
         return { 
             ...t, 
             id: generateUUID(), 
-            month: nName, // Assign to New Dashboard
-            year: nYrS,   // Assign to New Year context
+            month: nName, // New Dashboard Name
+            year: nYrS,   // New Dashboard Year
             date: newDate, 
             paid: false, 
             createdAt: new Date(Date.now() - i * 10).toISOString() 
