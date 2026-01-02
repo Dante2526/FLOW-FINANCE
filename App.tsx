@@ -314,15 +314,31 @@ const App: React.FC = () => {
 
     const nTx: Transaction[] = sourceTx.map((t, i) => {
         let newDate = t.date;
+        
+        // Smart Date Logic: Add 1 Month to the original date
         if (t.date.match(/^\d{4}-\d{2}-\d{2}/)) {
-           const parts = t.date.split('-');
-           const day = parts[2].split(' ')[0];
-           const paddedMonth = String(nIdx + 1).padStart(2, '0');
-           newDate = `${nYrS}-${paddedMonth}-${day}`;
+           const d = new Date(t.date + 'T00:00:00'); // Force local time
+           d.setMonth(d.getMonth() + 1);
+           
+           const y = d.getFullYear();
+           const m = String(d.getMonth() + 1).padStart(2, '0');
+           const day = String(d.getDate()).padStart(2, '0');
+           
+           newDate = `${y}-${m}-${day}`;
         } else {
-           newDate = `01 ${nName.charAt(0).toUpperCase() + nName.slice(1, 3).toLowerCase()}`;
+           // Fallback for non-iso dates (like 'Hoje' or legacy text) - defaults to 1st of new dashboard month
+           newDate = `${nYrS}-${String(nIdx + 1).padStart(2, '0')}-01`;
         }
-        return { ...t, id: generateUUID(), month: nName, year: nYrS, date: newDate, paid: false, createdAt: new Date(Date.now() - i * 10).toISOString() };
+
+        return { 
+            ...t, 
+            id: generateUUID(), 
+            month: nName, // Assign to New Dashboard
+            year: nYrS,   // Assign to New Year context
+            date: newDate, 
+            paid: false, 
+            createdAt: new Date(Date.now() - i * 10).toISOString() 
+        };
     });
     
     const oldToNewAccMap = new Map<string, string>();
