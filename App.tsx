@@ -25,7 +25,7 @@ import { IconBell } from './components/Icons';
 import { Crown, Languages } from 'lucide-react';
 
 // Supabase Services
-import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, VAPID_PUBLIC_KEY, upsertItem, deleteItem, hardDeleteMonth } from './services/supabase';
+import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, upsertItem, deleteItem, hardDeleteMonth } from './services/supabase';
 
 const AnalyticsModal = React.lazy(() => import('./components/AnalyticsModal'));
 
@@ -291,8 +291,11 @@ const App: React.FC = () => {
     const actYear = act.year || "";
     
     // Determine Target Month Index (Next Month)
-    let nIdx = MONTH_NAMES.indexOf(actMonthNorm) + 1;
-    let nYr = parseInt(actYear);
+    let currentIdx = MONTH_NAMES.indexOf(actMonthNorm);
+    if (currentIdx === -1) currentIdx = 0;
+
+    let nIdx = currentIdx + 1;
+    let nYr = parseInt(actYear) || new Date().getFullYear();
     
     if (nIdx > 11) { nIdx = 0; nYr += 1; }
 
@@ -313,38 +316,54 @@ const App: React.FC = () => {
     );
     const sourceAcc = cur.accounts.filter(a => (a.month || "").toUpperCase().trim() === actMonthNorm && (a.year || "") === actYear);
 
+    // --- LÓGICA CORRIGIDA DE DATAS ---
     const nTx: Transaction[] = sourceTx.map((t, i) => {
-        let newDate = t.date;
-        
-        // Robust Date Calculation Logic
-        // We calculate the date based on the TARGET month (nIdx, nYr), preserving the original Day.
-        let day = 1;
+        let originalDate = new Date();
+
+        // 1. Tentar Parsear a data atual da transação para um objeto Date
         if (t.date.match(/^\d{4}-\d{2}-\d{2}/)) {
-             // Parse day from ISO string (2025-01-15 -> 15)
-             day = parseInt(t.date.split('-')[2], 10);
+             // Formato ISO (YYYY-MM-DD)
+             const parts = t.date.split(' ')[0].split('-');
+             // Mês em JS é 0-indexado
+             originalDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        } else if (t.date.toLowerCase().includes('hoje')) {
+             // Se for "Hoje", usa a data atual
+             originalDate = new Date();
         } else {
-             // Handle "01 Jan" format fallback or default to 1st
-             const extracted = parseInt(t.date.split(' ')[0], 10);
-             day = isNaN(extracted) ? 1 : extracted;
+             // Formato legado "DD Mmm" (ex: "10 Fev")
+             const parts = t.date.split(' ');
+             if (parts.length >= 2) {
+                 const day = parseInt(parts[0], 10);
+                 const code = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
+                 const fullMonth = SHORT_CODE_TO_FULL[code];
+                 const monthIdx = MONTH_NAMES.indexOf(fullMonth);
+                 
+                 // Se encontrarmos o mês, construímos a data.
+                 // Usamos o ano do mês ativo como base.
+                 if (monthIdx !== -1) {
+                    originalDate = new Date(parseInt(actYear), monthIdx, day);
+                 }
+             }
         }
 
-        // Create Date Object for the TARGET month/year
-        // Note: Javascript Month is 0-indexed (Jan=0, Feb=1, etc.)
-        const targetDate = new Date(nYr, nIdx, day);
+        // 2. Adicionar EXATAMENTE 1 Mês à data original
+        // Isso preserva a lógica: "10 Fev" + 1 mês = "10 Mar"
+        const targetDate = new Date(originalDate);
+        const originalDay = targetDate.getDate(); // Salva o dia original (ex: 31)
+        
+        targetDate.setMonth(targetDate.getMonth() + 1);
 
-        // Handle overflow (e.g., duplicating Jan 30 to Feb)
-        // If the resulting month index !== nIdx, it means it spilled over (e.g., Feb 30 -> Mar 2)
-        if (targetDate.getMonth() !== nIdx) {
-             // Set to day 0 of the current object's month (which effectively sets it to last day of previous month)
-             // E.g., March 2 -> Set Date(0) -> Feb 28/29
-             targetDate.setDate(0); 
+        // 3. Ajuste de Overflow (ex: 31 Jan + 1 mês -> 3 Março. Queremos 28 Fev)
+        // Se o dia mudou após adicionar o mês, significa que o mês seguinte é mais curto
+        if (targetDate.getDate() !== originalDay) {
+            targetDate.setDate(0); // Volta para o último dia do mês anterior (que é o mês correto de destino)
         }
 
-        // Format back to YYYY-MM-DD
+        // 4. Formatar para ISO YYYY-MM-DD
         const yyyy = targetDate.getFullYear();
-        const mm = String(targetDate.getMonth() + 1).padStart(2, '0'); // +1 for ISO
+        const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
         const dd = String(targetDate.getDate()).padStart(2, '0');
-        newDate = `${yyyy}-${mm}-${dd}`;
+        const newDate = `${yyyy}-${mm}-${dd}`;
 
         return { ...t, id: generateUUID(), month: nName, year: nYrS, date: newDate, paid: false, createdAt: new Date(Date.now() - i * 10).toISOString() };
     });
