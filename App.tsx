@@ -289,9 +289,11 @@ const App: React.FC = () => {
 
     const actMonthNorm = (act.month || "").trim().toUpperCase();
     const actYear = act.year || "";
+    const actYearNum = parseInt(actYear) || new Date().getFullYear();
+    const actMonthIdx = MONTH_NAMES.indexOf(actMonthNorm);
     
-    let nIdx = MONTH_NAMES.indexOf(actMonthNorm) + 1;
-    let nYr = parseInt(actYear);
+    let nIdx = actMonthIdx + 1;
+    let nYr = actYearNum;
     
     if (nIdx > 11) { nIdx = 0; nYr += 1; }
 
@@ -312,46 +314,61 @@ const App: React.FC = () => {
     );
     const sourceAcc = cur.accounts.filter(a => (a.month || "").toUpperCase().trim() === actMonthNorm && (a.year || "") === actYear);
 
-    const nTx: Transaction[] = sourceTx.map((t, i) => {
-        let d: Date;
-        const currentYear = parseInt(actYear);
-
-        // 1. ISO Check
-        if (t.date.match(/^\d{4}-\d{2}-\d{2}/)) {
-           // Parse explicitly as local time YYYY, MM-1, DD to avoid timezone shifts
-           const parts = t.date.split('-');
-           d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        } else {
-           // 2. Text Parsers
-           // Default to source dashboard month
-           let monthIndex = MONTH_NAMES.indexOf(actMonthNorm); 
-           let year = currentYear;
-           
-           // Try to find explicit day
-           const dayMatch = t.date.match(/(\d{1,2})/);
-           const day = dayMatch ? parseInt(dayMatch[0]) : 1;
-
-           // Try to find explicit month in text (e.g. "11 Fev")
-           const shortMonths = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-           const foundMonthShort = shortMonths.find(m => t.date.toLowerCase().includes(m));
-           
-           if (foundMonthShort) {
-               monthIndex = shortMonths.indexOf(foundMonthShort);
-               
-               // Year adjustment heuristics
-               // If dash is Dec and found is Jan -> Next Year
-               if (MONTH_NAMES.indexOf(actMonthNorm) === 11 && monthIndex === 0) year++;
-               // If dash is Jan and found is Dec -> Prev Year
-               if (MONTH_NAMES.indexOf(actMonthNorm) === 0 && monthIndex === 11) year--;
-           }
-
-           d = new Date(year, monthIndex, day);
+    // --- ROBUST DATE PARSER FOR DUPLICATION ---
+    const parseDateRobust = (dateStr: string, contextYear: number, contextMonthIdx: number): Date => {
+        const s = (dateStr || "").trim().toLowerCase();
+        
+        // 1. ISO YYYY-MM-DD
+        if (s.match(/^\d{4}-\d{2}-\d{2}/)) {
+            const p = s.split('-');
+            return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
         }
 
-        // --- THE FIX: ALWAYS ADD 1 MONTH ---
-        // This shifts Jan 15 -> Feb 15
-        // And Feb 11 -> Mar 11
+        // 2. Slash DD/MM/YYYY or DD/MM
+        const slash = s.match(/(\d{1,2})\/(\d{1,2})(\/(\d{4}))?/);
+        if (slash) {
+            const d = parseInt(slash[1]);
+            const m = parseInt(slash[2]) - 1;
+            const y = slash[4] ? parseInt(slash[4]) : contextYear;
+            // Validate month/day ranges to avoid invalid dates like 15/99
+            if (m >= 0 && m <= 11 && d >= 1 && d <= 31) {
+                 return new Date(y, m, d);
+            }
+        }
+
+        // 3. Text Match (e.g. "15 de Fev", "Vence 15 Fev")
+        const dayMatch = s.match(/(\d{1,2})/);
+        const day = dayMatch ? parseInt(dayMatch[0]) : 1;
+        
+        const shortMonths = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+        const found = shortMonths.find(m => s.includes(m));
+        
+        let mIdx = contextMonthIdx;
+        let y = contextYear;
+        
+        if (found) {
+            mIdx = shortMonths.indexOf(found);
+            // Year rollover logic relative to source dashboard
+            if (contextMonthIdx === 11 && mIdx === 0) y++;
+            if (contextMonthIdx === 0 && mIdx === 11) y--;
+        }
+        
+        return new Date(y, mIdx, day);
+    };
+
+    const nTx: Transaction[] = sourceTx.map((t, i) => {
+        // Parse date using the robust logic
+        const d = parseDateRobust(t.date, actYearNum, actMonthIdx);
+
+        // --- CORE LOGIC: ALWAYS INCREMENT 1 MONTH ---
+        // Save original day to check for month overflow (e.g. 31 Jan -> 28 Feb)
+        const originalDay = d.getDate();
         d.setMonth(d.getMonth() + 1);
+        
+        // Overflow Correction (e.g. if we land on March 2nd but wanted Feb 30th)
+        if (d.getDate() !== originalDay) {
+            d.setDate(0); // Set to last day of previous month (which is the target month)
+        }
         
         // Output ISO
         const y = d.getFullYear();
