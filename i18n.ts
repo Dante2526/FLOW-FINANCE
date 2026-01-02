@@ -115,6 +115,24 @@ export const TRANSLATIONS = {
         mercadolivre: "Meli+"
       }
     },
+    addAccount: {
+      newTitle: "Nova Fonte de Renda",
+      editTitle: "Editar Fonte de Renda",
+      balanceLabel: "Valor Atual (Opcional)",
+      nameLabel: "Nome da Fonte de Renda",
+      namePlaceholder: "Ex: Reserva, Salário...",
+      colorLabel: "Cor do Cartão",
+      submitAdd: "Criar Fonte de Renda",
+      submitEdit: "Salvar Alterações",
+      themes: {
+        default: "Padrão",
+        lime: "Verde Cana",
+        purple: "Roxo",
+        blue: "Azul",
+        orange: "Laranja",
+        red: "Vermelho"
+      }
+    },
     notifications: {
       title: "Central",
       inbox: "Recebidas",
@@ -388,6 +406,24 @@ export const TRANSLATIONS = {
         max: "Max",
         globo: "Globoplay",
         mercadolivre: "Meli+"
+      }
+    },
+    addAccount: {
+      newTitle: "New Income Source",
+      editTitle: "Edit Income Source",
+      balanceLabel: "Current Balance (Optional)",
+      nameLabel: "Income Source Name",
+      namePlaceholder: "Ex: Savings, Salary...",
+      colorLabel: "Card Color",
+      submitAdd: "Create Income Source",
+      submitEdit: "Save Changes",
+      themes: {
+        default: "Default",
+        lime: "Lime Green",
+        purple: "Purple",
+        blue: "Blue",
+        orange: "Orange",
+        red: "Red"
       }
     },
     notifications: {
@@ -665,6 +701,24 @@ export const TRANSLATIONS = {
         mercadolivre: "Meli+"
       }
     },
+    addAccount: {
+      newTitle: "Nueva Fuente de Ingresos",
+      editTitle: "Editar Fuente de Ingresos",
+      balanceLabel: "Saldo Actual (Opcional)",
+      nameLabel: "Nombre de Fuente",
+      namePlaceholder: "Ej: Ahorros, Salario...",
+      colorLabel: "Color de Tarjeta",
+      submitAdd: "Crear Fuente",
+      submitEdit: "Guardar Cambios",
+      themes: {
+        default: "Por Defecto",
+        lime: "Verde Lima",
+        purple: "Púrpura",
+        blue: "Azul",
+        orange: "Naranja",
+        red: "Rojo"
+      }
+    },
     notifications: {
       title: "Central",
       inbox: "Recibidos",
@@ -766,7 +820,7 @@ export const TRANSLATIONS = {
         start: "Inicio",
         end: "Fin",
         modals: {
-           newMonthlyTitle: "Nuevo Valor Mensual",
+           newMonthlyTitle: "Nuevo Valor Mensal",
            newMonthlySubtitle: "Esto actualizará cuotas futuras y recalculará el total.",
            editNameTitle: "Editar Nombre",
            editTotalTitle: "Editar Valor Total",

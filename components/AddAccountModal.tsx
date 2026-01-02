@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, Check, Lock, Crown } from 'lucide-react';
-import { CardTheme, Account } from '../types';
+import { CardTheme, Account, AppLanguage } from '../types';
+import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -9,21 +11,24 @@ interface Props {
   accountToEdit?: Account | null;
   isPro?: boolean;
   onOpenProModal?: () => void;
+  appLanguage: AppLanguage;
 }
 
-const THEMES: { id: CardTheme; color: string; label: string; isPro?: boolean }[] = [
-  { id: 'default', color: 'bg-[#1c1c1e]', label: 'Padrão' },
-  { id: 'lime', color: 'bg-[#65a30d]', label: 'Verde Cana' },
-  { id: 'purple', color: 'bg-purple-600', label: 'Roxo' },
-  { id: 'blue', color: 'bg-blue-600', label: 'Azul', isPro: true },
-  { id: 'orange', color: 'bg-orange-500', label: 'Laranja', isPro: true },
-  { id: 'red', color: 'bg-red-600', label: 'Vermelho', isPro: true },
+const THEMES_CONFIG: { id: CardTheme; color: string; isPro?: boolean }[] = [
+  { id: 'default', color: 'bg-[#1c1c1e]' },
+  { id: 'lime', color: 'bg-[#65a30d]' },
+  { id: 'purple', color: 'bg-purple-600' },
+  { id: 'blue', color: 'bg-blue-600', isPro: true },
+  { id: 'orange', color: 'bg-orange-500', isPro: true },
+  { id: 'red', color: 'bg-red-600', isPro: true },
 ];
 
-const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEdit, isPro = false, onOpenProModal }) => {
+const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEdit, isPro = false, onOpenProModal, appLanguage }) => {
   const [balance, setBalance] = useState('');
   const [name, setName] = useState('');
   const [selectedTheme, setSelectedTheme] = useState<CardTheme>('default');
+
+  const t = TRANSLATIONS[appLanguage].addAccount;
 
   // Load data when entering edit mode
   useEffect(() => {
@@ -72,7 +77,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
     onClose();
   };
 
-  const handleThemeSelect = (theme: typeof THEMES[0]) => {
+  const handleThemeSelect = (theme: typeof THEMES_CONFIG[0]) => {
     if (theme.isPro && !isPro) {
       if (onOpenProModal) onOpenProModal();
       return;
@@ -89,7 +94,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
         {/* Header */}
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold text-white">
-            {accountToEdit ? 'Editar Fonte de Renda' : 'Nova Fonte de Renda'}
+            {accountToEdit ? t.editTitle : t.newTitle}
           </h2>
           <button 
             onClick={onClose} 
@@ -103,7 +108,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
           
           {/* Balance Input */}
           <div className="flex flex-col gap-2">
-            <label className="text-gray-400 text-sm ml-2">Valor Atual (Opcional)</label>
+            <label className="text-gray-400 text-sm ml-2">{t.balanceLabel}</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-accent">R$</span>
               <input 
@@ -122,13 +127,13 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
 
           {/* Name Input */}
           <div className="flex flex-col gap-2">
-            <label className="text-gray-400 text-sm ml-2">Nome da Fonte de Renda</label>
+            <label className="text-gray-400 text-sm ml-2">{t.nameLabel}</label>
             <input 
               type="text" 
               name="account_name_hidden"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ex: Reserva, Salário..."
+              placeholder={t.namePlaceholder}
               className="w-full bg-[#2c2c2e] text-white text-lg py-4 px-6 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600"
               required
               autoComplete="off"
@@ -140,10 +145,11 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
 
           {/* Color Selection */}
           <div className="flex flex-col gap-2">
-            <label className="text-gray-400 text-sm ml-2">Cor do Cartão</label>
+            <label className="text-gray-400 text-sm ml-2">{t.colorLabel}</label>
             <div className="flex gap-3 overflow-x-auto py-1 px-1 no-scrollbar pb-2">
-              {THEMES.map((theme) => {
+              {THEMES_CONFIG.map((theme) => {
                 const isLocked = theme.isPro && !isPro;
+                const label = t.themes[theme.id as keyof typeof t.themes];
                 return (
                   <button
                     key={theme.id}
@@ -156,7 +162,8 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
                           ? 'border-transparent opacity-60' 
                           : 'border-transparent opacity-80 hover:opacity-100'
                     }`}
-                    aria-label={theme.label}
+                    aria-label={label}
+                    title={label}
                   >
                     {selectedTheme === theme.id && (
                       <Check className="w-5 h-5 text-white" />
@@ -183,7 +190,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
             disabled={!isFormValid}
             className="w-full bg-accent text-black disabled:bg-surfaceLight disabled:text-gray-500 h-16 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-2 hover:bg-accentDark disabled:hover:bg-surfaceLight transition-colors mt-2"
           >
-            {accountToEdit ? 'Salvar Alterações' : 'Criar Fonte de Renda'}
+            {accountToEdit ? t.submitEdit : t.submitAdd}
             <Check className="w-5 h-5" />
           </button>
 
