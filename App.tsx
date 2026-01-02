@@ -20,7 +20,7 @@ import LoginScreen, { FlowLogo } from './components/LoginScreen';
 import ProModal from './components/ProModal'; 
 import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification, AppLanguage } from './types';
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
-import { TRANSLATIONS } from '../i18n';
+import { TRANSLATIONS } from './i18n';
 import { IconBell } from './components/Icons';
 import { Crown, Languages } from 'lucide-react';
 
