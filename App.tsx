@@ -20,7 +20,7 @@ import LoginScreen, { FlowLogo } from './components/LoginScreen';
 import ProModal from './components/ProModal'; 
 import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification, AppLanguage } from './types';
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
-import { TRANSLATIONS } from './i18n';
+import { TRANSLATIONS } from '../i18n';
 import { IconBell } from './components/Icons';
 import { Crown, Languages } from 'lucide-react';
 
@@ -290,6 +290,7 @@ const App: React.FC = () => {
     const actMonthNorm = (act.month || "").trim().toUpperCase();
     const actYear = act.year || "";
     
+    // Determine Target Month Index (Next Month)
     let nIdx = MONTH_NAMES.indexOf(actMonthNorm) + 1;
     let nYr = parseInt(actYear);
     
@@ -314,21 +315,37 @@ const App: React.FC = () => {
 
     const nTx: Transaction[] = sourceTx.map((t, i) => {
         let newDate = t.date;
+        
+        // Robust Date Calculation Logic
+        // We calculate the date based on the TARGET month (nIdx, nYr), preserving the original Day.
+        let day = 1;
         if (t.date.match(/^\d{4}-\d{2}-\d{2}/)) {
-           const parts = t.date.split('-');
-           // Handle Date overflow logic (e.g. Jan 30 -> Feb 28/29) to prevent jumping to March
-           let day = parseInt(parts[2].split(' ')[0], 10);
-           const maxDays = new Date(nYr, nIdx + 1, 0).getDate();
-           if (day > maxDays) {
-               day = maxDays;
-           }
-           
-           const paddedDay = String(day).padStart(2, '0');
-           const paddedMonth = String(nIdx + 1).padStart(2, '0');
-           newDate = `${nYrS}-${paddedMonth}-${paddedDay}`;
+             // Parse day from ISO string (2025-01-15 -> 15)
+             day = parseInt(t.date.split('-')[2], 10);
         } else {
-           newDate = `01 ${nName.charAt(0).toUpperCase() + nName.slice(1, 3).toLowerCase()}`;
+             // Handle "01 Jan" format fallback or default to 1st
+             const extracted = parseInt(t.date.split(' ')[0], 10);
+             day = isNaN(extracted) ? 1 : extracted;
         }
+
+        // Create Date Object for the TARGET month/year
+        // Note: Javascript Month is 0-indexed (Jan=0, Feb=1, etc.)
+        const targetDate = new Date(nYr, nIdx, day);
+
+        // Handle overflow (e.g., duplicating Jan 30 to Feb)
+        // If the resulting month index !== nIdx, it means it spilled over (e.g., Feb 30 -> Mar 2)
+        if (targetDate.getMonth() !== nIdx) {
+             // Set to day 0 of the current object's month (which effectively sets it to last day of previous month)
+             // E.g., March 2 -> Set Date(0) -> Feb 28/29
+             targetDate.setDate(0); 
+        }
+
+        // Format back to YYYY-MM-DD
+        const yyyy = targetDate.getFullYear();
+        const mm = String(targetDate.getMonth() + 1).padStart(2, '0'); // +1 for ISO
+        const dd = String(targetDate.getDate()).padStart(2, '0');
+        newDate = `${yyyy}-${mm}-${dd}`;
+
         return { ...t, id: generateUUID(), month: nName, year: nYrS, date: newDate, paid: false, createdAt: new Date(Date.now() - i * 10).toISOString() };
     });
     
