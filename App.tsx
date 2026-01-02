@@ -287,21 +287,17 @@ const App: React.FC = () => {
     const act = cur.months.find(m => m.id === activeMonthId) || cur.months[0];
     if (!act) return;
 
-    // --- 1. Identify Source Context (Current Dashboard) ---
     const actMonthNorm = (act.month || "").trim().toUpperCase();
     const actYear = act.year || "";
-    const actYearNum = parseInt(actYear) || new Date().getFullYear();
-    const actMonthIdx = MONTH_NAMES.indexOf(actMonthNorm);
     
-    // --- 2. Identify Target Context (Next Month Dashboard) ---
-    let nIdx = actMonthIdx + 1;
-    let nYr = actYearNum;
+    let nIdx = MONTH_NAMES.indexOf(actMonthNorm) + 1;
+    let nYr = parseInt(actYear);
+    
     if (nIdx > 11) { nIdx = 0; nYr += 1; }
 
     const nName = MONTH_NAMES[nIdx];
     const nYrS = nYr.toString();
 
-    // Block duplication if month already exists
     if (cur.months.find(m => (m.month || "").toUpperCase().trim() === nName && m.year === nYrS)) {
         alert(`O mês de ${nName}/${nYrS} já existe.`);
         return;
@@ -310,98 +306,25 @@ const App: React.FC = () => {
     lastActionTimeRef.current = Date.now();
     const nId = generateUUID();
 
-    // Filter source transactions belonging to CURRENT Dashboard
     const sourceTx = cur.transactions.filter(t => 
         (t.month || getMonthFromDateStr(t.date) || "").toUpperCase().trim() === actMonthNorm && 
         (t.year || getYearFromDateStr(t.date, actYear)) === actYear
     );
     const sourceAcc = cur.accounts.filter(a => (a.month || "").toUpperCase().trim() === actMonthNorm && (a.year || "") === actYear);
 
-    // --- 3. LOGIC OF RELATIVE SHIFT ---
-    // Instead of simply adding +1 month to the date, we calculate the "Shift" (distance)
-    // of the transaction relative to its source dashboard, and apply the same shift to the target dashboard.
-    // Example: 
-    // Source Dash: Jan (0). Tx Date: Feb (1). Shift = +1.
-    // Target Dash: Feb (1). New Tx Date = Target (1) + Shift (1) = Mar (2).
-
-    const debugLogs: string[] = [];
-
     const nTx: Transaction[] = sourceTx.map((t, i) => {
-        let txMonthIndex = actMonthIdx; // Default to current dash month
-        let txYear = actYearNum;
-        let txDay = 1;
-
-        const lowerDate = t.date.toLowerCase();
-
-        // Strategy A: Parse from ISO
+        let newDate = t.date;
         if (t.date.match(/^\d{4}-\d{2}-\d{2}/)) {
-            const parts = t.date.split('-');
-            txYear = parseInt(parts[0]);
-            txMonthIndex = parseInt(parts[1]) - 1;
-            txDay = parseInt(parts[2]);
-        } 
-        // Strategy B: Parse from Text (e.g. "15 Fev")
-        else {
-            const dayMatch = t.date.match(/(\d{1,2})/);
-            if (dayMatch) txDay = parseInt(dayMatch[0]);
-
-            const shortMonths = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-            const foundShort = shortMonths.find(m => lowerDate.includes(m));
-            
-            if (foundShort) {
-                txMonthIndex = shortMonths.indexOf(foundShort);
-                // Year inference logic based on proximity to Source Dashboard
-                // If Dash is Dec and Tx is Jan -> Next Year
-                if (actMonthIdx === 11 && txMonthIndex === 0) txYear = actYearNum + 1;
-                // If Dash is Jan and Tx is Dec -> Prev Year
-                else if (actMonthIdx === 0 && txMonthIndex === 11) txYear = actYearNum - 1;
-            }
+           const parts = t.date.split('-');
+           const day = parts[2].split(' ')[0];
+           const paddedMonth = String(nIdx + 1).padStart(2, '0');
+           newDate = `${nYrS}-${paddedMonth}-${day}`;
+        } else {
+           newDate = `01 ${nName.charAt(0).toUpperCase() + nName.slice(1, 3).toLowerCase()}`;
         }
-
-        // Calculate "Total Months" integer to handle year math easily
-        // (Year * 12) + MonthIndex
-        const sourceTotalMonths = (actYearNum * 12) + actMonthIdx;
-        const txTotalMonths = (txYear * 12) + txMonthIndex;
-        
-        // Calculate Shift (Distance)
-        const shift = txTotalMonths - sourceTotalMonths;
-
-        // Apply Shift to Target Dashboard
-        const targetDashTotalMonths = (nYr * 12) + nIdx;
-        const finalTxTotalMonths = targetDashTotalMonths + shift;
-
-        // Convert back to Year/Month
-        const finalYear = Math.floor(finalTxTotalMonths / 12);
-        const finalMonthIndex = finalTxTotalMonths % 12;
-
-        // Construct Date Object
-        const d = new Date(finalYear, finalMonthIndex, txDay);
-        
-        // Overflow fix (e.g. Feb 30 -> Mar 2 -> reset to Feb 28)
-        if (d.getMonth() !== finalMonthIndex) {
-            d.setDate(0); 
-        }
-
-        // Format ISO Output
-        const yStr = d.getFullYear();
-        const mStr = String(d.getMonth() + 1).padStart(2, '0');
-        const dStr = String(d.getDate()).padStart(2, '0');
-        const newIsoDate = `${yStr}-${mStr}-${dStr}`;
-
-        if (i < 3) debugLogs.push(`${t.name}: ${t.date} -> ${newIsoDate}`);
-
-        return { 
-            ...t, 
-            id: generateUUID(), 
-            month: nName, // Assign to New Dashboard Name
-            year: nYrS,   // Assign to New Dashboard Year
-            date: newIsoDate, 
-            paid: false, 
-            createdAt: new Date(Date.now() - i * 10).toISOString() 
-        };
+        return { ...t, id: generateUUID(), month: nName, year: nYrS, date: newDate, paid: false, createdAt: new Date(Date.now() - i * 10).toISOString() };
     });
     
-    // Account Duplication Logic
     const oldToNewAccMap = new Map<string, string>();
     const nAcc: Account[] = sourceAcc.map(a => {
         const newId = generateUUID();
@@ -426,9 +349,6 @@ const App: React.FC = () => {
     setAccounts([...cur.accounts, ...nAcc]);
     setDashboardOrder(finalDashboardOrder);
     setActiveMonthId(nId);
-
-    // DIAGNOSTIC ALERT FOR USER
-    alert(`Diagnóstico de Duplicação:\nPainel Criado: ${nName}/${nYrS}\n\nExemplos de correção:\n${debugLogs.join('\n')}`);
 
     if (currentUserEmail) {
         await Promise.all([
