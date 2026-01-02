@@ -313,22 +313,43 @@ const App: React.FC = () => {
     const sourceAcc = cur.accounts.filter(a => (a.month || "").toUpperCase().trim() === actMonthNorm && (a.year || "") === actYear);
 
     const nTx: Transaction[] = sourceTx.map((t, i) => {
-        let newDate = t.date;
-        
-        // Smart Date Logic: Add 1 Month to the original date
+        let d: Date;
+        const currentYear = parseInt(actYear);
+
+        // 1. ISO Check (Standard)
         if (t.date.match(/^\d{4}-\d{2}-\d{2}/)) {
-           const d = new Date(t.date + 'T00:00:00'); // Force local time
-           d.setMonth(d.getMonth() + 1);
-           
-           const y = d.getFullYear();
-           const m = String(d.getMonth() + 1).padStart(2, '0');
-           const day = String(d.getDate()).padStart(2, '0');
-           
-           newDate = `${y}-${m}-${day}`;
+           d = new Date(t.date + 'T00:00:00'); 
         } else {
-           // Fallback for non-iso dates (like 'Hoje' or legacy text) - defaults to 1st of new dashboard month
-           newDate = `${nYrS}-${String(nIdx + 1).padStart(2, '0')}-01`;
+           // 2. Text Parser (Improved for "11 Fev" or "Vence: 11 Fev")
+           
+           // Extract Day: Find first 1-2 digits
+           const dayMatch = t.date.match(/(\d{1,2})/);
+           const day = dayMatch ? parseInt(dayMatch[0]) : 1;
+
+           // Extract Month: Default to current dashboard month
+           let monthIndex = MONTH_NAMES.indexOf(actMonthNorm); 
+           
+           // Check for specific month names in the string (Robust check)
+           const shortMonths = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+           const foundMonthShort = shortMonths.find(m => t.date.toLowerCase().includes(m));
+           
+           if (foundMonthShort) {
+               monthIndex = shortMonths.indexOf(foundMonthShort);
+           }
+
+           d = new Date(currentYear, monthIndex, day);
         }
+
+        // --- CORE FIX: Add 1 Month exactly ---
+        // Jan 15 -> Feb 15
+        // Feb 11 -> Mar 11
+        d.setMonth(d.getMonth() + 1);
+        
+        // Format back to ISO YYYY-MM-DD
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dayStr = String(d.getDate()).padStart(2, '0');
+        const newDate = `${y}-${m}-${dayStr}`;
 
         return { 
             ...t, 
