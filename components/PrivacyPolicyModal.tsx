@@ -1,14 +1,19 @@
 
 import React from 'react';
 import { X, ShieldCheck, Lock, Database, Eye } from 'lucide-react';
+import { AppLanguage } from '../types';
+import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  appLanguage: AppLanguage;
 }
 
-const PrivacyPolicyModal: React.FC<Props> = ({ isOpen, onClose }) => {
+const PrivacyPolicyModal: React.FC<Props> = ({ isOpen, onClose, appLanguage }) => {
   if (!isOpen) return null;
+
+  const t = TRANSLATIONS[appLanguage].settings.privacyContent;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
@@ -21,8 +26,8 @@ const PrivacyPolicyModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 <ShieldCheck className="w-5 h-5 text-emerald-500" />
              </div>
              <div>
-                <h2 className="text-lg font-bold text-white leading-none">Privacidade</h2>
-                <p className="text-[10px] text-gray-400 mt-1">Termos e Condições</p>
+                <h2 className="text-lg font-bold text-white leading-none">{t.modalTitle}</h2>
+                <p className="text-[10px] text-gray-400 mt-1">{t.modalSubtitle}</p>
              </div>
           </div>
           
@@ -37,50 +42,31 @@ const PrivacyPolicyModal: React.FC<Props> = ({ isOpen, onClose }) => {
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto no-scrollbar py-4 flex flex-col gap-6 text-sm text-gray-300 leading-relaxed">
            
-           <div className="flex flex-col gap-2">
-              <h3 className="text-white font-bold flex items-center gap-2">
-                 <Database className="w-4 h-4 text-accent" /> 1. Coleta de Dados
-              </h3>
-              <p className="text-xs text-gray-400 text-justify">
-                 O Flow Finance coleta apenas as informações estritamente necessárias para o funcionamento do aplicativo, como seu endereço de e-mail (para autenticação) e os dados financeiros inseridos manualmente por você (transações, contas e investimentos).
-              </p>
-           </div>
+           {/* Sections Rendered from Array */}
+           {t.sections.map((section, index) => {
+              // Icon mapping based on index (assuming fixed order)
+              // 0: Database, 1: Lock, 2: Eye, 3: Bell (Generic), 4: Trash (Generic)
+              let Icon = ShieldCheck; // Default
+              if (index === 0) Icon = Database;
+              if (index === 1) Icon = Lock;
+              if (index === 2) Icon = Eye;
 
-           <div className="flex flex-col gap-2">
-              <h3 className="text-white font-bold flex items-center gap-2">
-                 <Lock className="w-4 h-4 text-accent" /> 2. Armazenamento e Segurança
-              </h3>
-              <p className="text-xs text-gray-400 text-justify">
-                 Seus dados são armazenados de forma segura utilizando serviços de nuvem criptografados (Supabase/Firebase). O aplicativo também utiliza o armazenamento local do seu dispositivo para garantir o funcionamento offline e melhorar a performance. Não compartilhamos seus dados financeiros com terceiros.
-              </p>
-           </div>
-
-           <div className="flex flex-col gap-2">
-              <h3 className="text-white font-bold flex items-center gap-2">
-                 <Eye className="w-4 h-4 text-accent" /> 3. Uso das Informações
-              </h3>
-              <p className="text-xs text-gray-400 text-justify">
-                 As informações inseridas são utilizadas exclusivamente para gerar os gráficos, relatórios e cálculos exibidos no seu painel. O Flow Finance não analisa seus dados para fins de publicidade ou venda de informações.
-              </p>
-           </div>
-
-           <div className="flex flex-col gap-2">
-              <h3 className="text-white font-bold">4. Notificações</h3>
-              <p className="text-xs text-gray-400 text-justify">
-                 Ao ativar as notificações, você concorda em receber alertas sobre vencimentos de contas. Você pode desativar este recurso a qualquer momento nas configurações do seu navegador ou dispositivo.
-              </p>
-           </div>
-
-           <div className="flex flex-col gap-2">
-              <h3 className="text-white font-bold">5. Exclusão de Conta</h3>
-              <p className="text-xs text-gray-400 text-justify">
-                 Você tem o direito de solicitar a exclusão total dos seus dados a qualquer momento através da opção "Excluir Conta" presente no menu de perfil. Esta ação é irreversível e remove todas as informações dos nossos servidores.
-              </p>
-           </div>
+              return (
+                <div key={index} className="flex flex-col gap-2">
+                    <h3 className="text-white font-bold flex items-center gap-2">
+                        {index < 3 && <Icon className="w-4 h-4 text-accent" />}
+                        {section.title}
+                    </h3>
+                    <p className="text-xs text-gray-400 text-justify">
+                        {section.text}
+                    </p>
+                </div>
+              );
+           })}
            
            <div className="mt-4 pt-4 border-t border-white/5 text-center">
               <p className="text-[10px] text-gray-500">
-                 Flow Finance © 2025
+                 {t.footer}
               </p>
            </div>
 
@@ -92,7 +78,7 @@ const PrivacyPolicyModal: React.FC<Props> = ({ isOpen, onClose }) => {
              onClick={onClose}
              className="w-full h-12 bg-[#2c2c2e] hover:bg-[#3a3a3c] text-white rounded-xl font-bold text-sm transition-colors"
            >
-             Entendi
+             {t.closeBtn}
            </button>
         </div>
 
@@ -101,4 +87,4 @@ const PrivacyPolicyModal: React.FC<Props> = ({ isOpen, onClose }) => {
   );
 };
 
-export default PrivacyPolicyModal;
+export default React.memo(PrivacyPolicyModal);
