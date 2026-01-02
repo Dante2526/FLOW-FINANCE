@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare, CloudLightning, Loader2, Check } from 'lucide-react';
-import { AppNotification } from '../types';
+import { AppNotification, AppLanguage } from '../types';
 import { saveUserField, VAPID_PUBLIC_KEY } from '../services/supabase';
+import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface Props {
   onMarkAllRead: () => void;
   onDelete: (id: string) => void;
   currentUserEmail: string | null;
+  appLanguage: AppLanguage;
 }
 
 type TabType = 'inbox' | 'send';
@@ -37,7 +39,8 @@ const NotificationModal: React.FC<Props> = ({
   notifications, 
   onMarkAllRead, 
   onDelete,
-  currentUserEmail
+  currentUserEmail,
+  appLanguage
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('inbox');
   const [notificationPermission, setNotificationPermission] = useState(
@@ -47,6 +50,8 @@ const NotificationModal: React.FC<Props> = ({
   const [hasPushSubscription, setHasPushSubscription] = useState(false); 
   const [isSubscribing, setIsSubscribing] = useState(false);
   
+  const t = TRANSLATIONS[appLanguage].notifications;
+
   // Check permissions and subscription status when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -144,16 +149,16 @@ const NotificationModal: React.FC<Props> = ({
     const date = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
     if (messageType === 'cobranca') {
-      textToSend = `🚨 *FLOW FINANCE - NOTIFICAÇÃO DE COBRANÇA*\n\nOlá ${recipientName},\n\nConsta um pendência financeira que precisa da sua atenção.\n\n💰 *Valor:* R$ ${amount || '0,00'}\n📝 *Detalhe:* ${customMessage || 'Pagamento pendente'}\n\nPor favor, verifique assim que possível.\n_Gerado às ${date}_`;
+      textToSend = `${t.shareChargeTitle}\n\n${t.shareHello} ${recipientName},\n\n${t.shareChargeBody}\n\n💰 *${t.shareValue}:* R$ ${amount || '0,00'}\n📝 *${t.shareDetail}:* ${customMessage || t.shareDefaultCharge}\n\n${t.shareFooterCharge}\n_${t.generatedAt} ${date}_`;
     } else {
-      textToSend = `🔔 *FLOW FINANCE - NOVO AVISO*\n\nOlá ${recipientName},\n\n${customMessage || 'Você tem uma nova mensagem do sistema financeiro.'}\n\n_Gerado às ${date}_`;
+      textToSend = `${t.shareWarningTitle}\n\n${t.shareHello} ${recipientName},\n\n${customMessage || t.shareDefaultWarning}\n\n_${t.generatedAt} ${date}_`;
     }
 
     // Try Native Share API first (Mobile)
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Notificação Flow Finance',
+          title: t.shareTitle,
           text: textToSend,
         });
         onClose();
@@ -183,7 +188,7 @@ const NotificationModal: React.FC<Props> = ({
                     <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-[#1c1c1e]" />
                   )}
               </div>
-              <h2 className="text-xl font-bold text-white">Central</h2>
+              <h2 className="text-xl font-bold text-white">{t.title}</h2>
             </div>
             <button 
               onClick={onClose} 
@@ -201,7 +206,7 @@ const NotificationModal: React.FC<Props> = ({
                   activeTab === 'inbox' ? 'bg-[#3a3a3c] text-white shadow-md' : 'text-gray-500 hover:text-gray-300'
                 }`}
               >
-                Recebidas
+                {t.inbox}
                 {unreadCount > 0 && (
                   <span className="bg-red-500 text-white text-[10px] px-1.5 rounded-full">{unreadCount}</span>
                 )}
@@ -212,7 +217,7 @@ const NotificationModal: React.FC<Props> = ({
                   activeTab === 'send' ? 'bg-[#3a3a3c] text-white shadow-md' : 'text-gray-500 hover:text-gray-300'
                 }`}
               >
-                Enviar
+                {t.send}
                 <Send className="w-3 h-3" />
               </button>
           </div>
@@ -227,7 +232,7 @@ const NotificationModal: React.FC<Props> = ({
               {notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-gray-500 opacity-60 min-h-[200px]">
                   <Mail className="w-16 h-16 mb-4" />
-                  <p className="text-sm">Caixa de entrada vazia.</p>
+                  <p className="text-sm">{t.empty}</p>
                 </div>
               ) : (
                 notifications.map((notif) => (
@@ -270,21 +275,21 @@ const NotificationModal: React.FC<Props> = ({
             <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-right-4 duration-300 pb-2">
               
               <div className="bg-[#2c2c2e]/50 p-3 rounded-2xl border border-white/5 flex-shrink-0">
-                <p className="text-[10px] text-gray-400 mb-1 font-bold uppercase">Como funciona?</p>
+                <p className="text-[10px] text-gray-400 mb-1 font-bold uppercase">{t.howTo}</p>
                 <p className="text-xs text-gray-300 leading-relaxed">
-                  Crie uma notificação aqui e envie diretamente para o <strong>WhatsApp</strong> de quem divide as contas com você.
+                  {t.howToDesc}
                 </p>
               </div>
 
               {/* Recipient */}
               <div className="flex flex-col gap-1 flex-shrink-0">
-                <label className="text-[10px] text-gray-400 ml-2 font-bold uppercase">Para quem?</label>
+                <label className="text-[10px] text-gray-400 ml-2 font-bold uppercase">{t.recipientLabel}</label>
                 <input 
                   type="text"
                   name="notification_recipient_hidden"
                   value={recipientName}
                   onChange={(e) => setRecipientName(e.target.value)} 
-                  placeholder="Nome do contato..."
+                  placeholder={t.recipientPlaceholder}
                   className="w-full bg-[#2c2c2e] text-white p-3 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium text-sm"
                   autoComplete="off"
                   autoCorrect="off"
@@ -301,7 +306,7 @@ const NotificationModal: React.FC<Props> = ({
                      messageType === 'aviso' ? 'bg-blue-600 text-white border-blue-500' : 'bg-[#2c2c2e] text-gray-400'
                    }`}
                  >
-                   <MessageSquare className="w-3 h-3" /> AVISO
+                   <MessageSquare className="w-3 h-3" /> {t.typeWarning}
                  </button>
                  <button 
                    onClick={() => setMessageType('cobranca')}
@@ -309,14 +314,14 @@ const NotificationModal: React.FC<Props> = ({
                      messageType === 'cobranca' ? 'bg-orange-600 text-white border-orange-500' : 'bg-[#2c2c2e] text-gray-400'
                    }`}
                  >
-                   <DollarSign className="w-3 h-3" /> COBRANÇA
+                   <DollarSign className="w-3 h-3" /> {t.typeCharge}
                  </button>
               </div>
 
               {/* Amount (Only if Cobranca) */}
               {messageType === 'cobranca' && (
                 <div className="flex flex-col gap-1 animate-in fade-in duration-300 flex-shrink-0">
-                  <label className="text-[10px] text-gray-400 ml-2 font-bold uppercase">Valor</label>
+                  <label className="text-[10px] text-gray-400 ml-2 font-bold uppercase">{t.amountLabel}</label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-500 font-bold text-sm">R$</span>
                     <input 
@@ -336,12 +341,12 @@ const NotificationModal: React.FC<Props> = ({
 
               {/* Message */}
               <div className="flex flex-col gap-1 flex-shrink-0">
-                <label className="text-[10px] text-gray-400 ml-2 font-bold uppercase">Mensagem</label>
+                <label className="text-[10px] text-gray-400 ml-2 font-bold uppercase">{t.messageLabel}</label>
                 <textarea 
                   name="notification_message_hidden"
                   value={customMessage}
                   onChange={(e) => setCustomMessage(e.target.value)} 
-                  placeholder={messageType === 'cobranca' ? "Ex: Preciso que pague sua parte da internet..." : "Ex: Já paguei a conta de luz..."}
+                  placeholder={messageType === 'cobranca' ? t.messagePlaceholderCharge : t.messagePlaceholderWarning}
                   className="w-full h-32 bg-[#2c2c2e] text-white p-3 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium resize-none text-sm"
                   autoComplete="off"
                   autoCorrect="off"
@@ -366,7 +371,7 @@ const NotificationModal: React.FC<Props> = ({
                       <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
                          <Check className="w-3 h-3 text-black font-bold" />
                       </div>
-                      <span className="text-green-500 text-xs font-bold">Notificações Automáticas Ativas</span>
+                      <span className="text-green-500 text-xs font-bold">{t.activeStatus}</span>
                    </div>
                 ) : (
                   ('Notification' in window) && (notificationPermission !== 'granted' || !hasPushSubscription) && (
@@ -379,7 +384,7 @@ const NotificationModal: React.FC<Props> = ({
                          {isSubscribing ? (
                            <>
                              <Loader2 className="w-5 h-5 animate-spin shrink-0" />
-                             <span>Registrando...</span>
+                             <span>{t.registering}</span>
                            </>
                          ) : (
                            <>
@@ -389,13 +394,13 @@ const NotificationModal: React.FC<Props> = ({
                                 <Bell className="w-5 h-5 shrink-0" />
                              )}
                              <span className="truncate">
-                               {notificationPermission === 'granted' ? 'Ativar Alertas em Nuvem' : 'Permitir Notificações'}
+                               {notificationPermission === 'granted' ? t.enableBtn : t.permissionBtn}
                              </span>
                            </>
                          )}
                        </button>
                        <p className="text-[10px] text-gray-500 text-center leading-tight px-4">
-                         Isso permite que o app te avise sobre contas vencendo "Hoje", mesmo com o navegador fechado.
+                         {t.permissionHint}
                        </p>
                      </div>
                   )
@@ -407,7 +412,7 @@ const NotificationModal: React.FC<Props> = ({
                     className="w-full h-14 rounded-[1.5rem] bg-accent text-black font-bold flex items-center justify-center gap-2 hover:bg-accentDark transition-colors shadow-lg"
                   >
                     <CheckCircle2 className="w-5 h-5 text-black" />
-                    Marcar todas como lidas
+                    {t.markAllRead}
                   </button>
                 )}
              </div>
@@ -418,7 +423,7 @@ const NotificationModal: React.FC<Props> = ({
                className="w-full h-14 rounded-[1.5rem] bg-green-600 text-white font-bold flex items-center justify-center gap-2 hover:bg-green-500 disabled:bg-[#2c2c2e] disabled:text-gray-500 transition-colors shadow-lg"
              >
                <Share2 className="w-5 h-5" />
-               Enviar via WhatsApp
+               {t.sendWhatsApp}
              </button>
            )}
         </div>

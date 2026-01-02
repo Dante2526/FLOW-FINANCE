@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, Check, Calendar } from 'lucide-react';
-import { LogoType, Transaction } from '../types';
+import { LogoType, Transaction, AppLanguage } from '../types';
 import { TransactionIcon } from './Icons';
+import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -9,69 +11,74 @@ interface Props {
   onSave: (transaction: Omit<Transaction, 'id'>) => void;
   transactionToEdit?: Transaction | null;
   activeMonthContext?: { monthIndex: number; year: number };
+  appLanguage: AppLanguage;
 }
 
-const PURCHASE_ICONS: { type: LogoType; label: string }[] = [
-  { type: 'shopping', label: 'Compras' },
-  { type: 'food', label: 'Comida' },
-  { type: 'transport', label: 'Carro' },
-  { type: 'motorcycle', label: 'Moto' },
-  { type: 'insurance', label: 'Seguro' },
-  { type: 'wifi', label: 'Wifi' },
-  { type: 'mobile', label: 'Celular' },
-  { type: 'rent', label: 'Aluguel' },
-  { type: 'home', label: 'Casa' },
-  { type: 'utility', label: 'Contas' },
-  // New Items
-  { type: 'education', label: 'Estudos' },
-  { type: 'project', label: 'Projetos' },
-  { type: 'funeral', label: 'Funeral' },
-  { type: 'health', label: 'Saúde' },
-  { type: 'medicine', label: 'Remédio' },
-  { type: 'pet', label: 'Pets' },
-  { type: 'travel', label: 'Viagem' },
-  
-  // Specific & Extras
-  { type: 'leisure', label: 'Lazer' },
-  { type: 'bar', label: 'Bar' },
-  { type: 'game', label: 'Jogos' },
-  { type: 'gift', label: 'Presentes' },
-  
-  // Beauty & Wellness
-  { type: 'beauty', label: 'Salão' },
-  { type: 'makeup', label: 'Beleza Fem.' },
-  { type: 'aesthetic', label: 'Estética' },
-  
-  // Events
-  { type: 'wedding', label: 'Casamento' },
-  
-  { type: 'generic', label: 'Outros' },
-];
-
-const SUBSCRIPTION_ICONS: { type: LogoType; label: string }[] = [
-  { type: 'netflix', label: 'Netflix' },
-  { type: 'spotify', label: 'Spotify' },
-  { type: 'amazon', label: 'Prime' },
-  { type: 'youtube', label: 'YouTube' },
-  { type: 'apple', label: 'Apple' },
-  { type: 'disney', label: 'Disney+' },
-  { type: 'max', label: 'Max' },
-  { type: 'globo', label: 'Globoplay' },
-  { type: 'mercadolivre', label: 'Meli+' },
-];
-
+// Map short codes for date parsing (Internal Logic Only - mostly legacy Portuguese support)
 const MONTH_MAP: Record<string, string> = {
   'jan': '01', 'fev': '02', 'mar': '03', 'abr': '04', 'mai': '05', 'jun': '06',
   'jul': '07', 'ago': '08', 'set': '09', 'out': '10', 'nov': '11', 'dez': '12'
 };
 
-const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transactionToEdit, activeMonthContext }) => {
+const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transactionToEdit, activeMonthContext, appLanguage }) => {
   const [amount, setAmount] = useState('');
   const [name, setName] = useState('');
   const [type, setType] = useState<'purchase' | 'subscription'>('purchase');
   const [date, setDate] = useState('');
   // Default icons based on initial type
   const [selectedIcon, setSelectedIcon] = useState<LogoType>('shopping');
+
+  const t = TRANSLATIONS[appLanguage].addTransaction;
+
+  // Define icons arrays dynamically to use translations
+  const PURCHASE_ICONS: { type: LogoType; label: string }[] = [
+    { type: 'shopping', label: t.categories.shopping },
+    { type: 'food', label: t.categories.food },
+    { type: 'transport', label: t.categories.transport },
+    { type: 'motorcycle', label: t.categories.motorcycle },
+    { type: 'insurance', label: t.categories.insurance },
+    { type: 'wifi', label: t.categories.wifi },
+    { type: 'mobile', label: t.categories.mobile },
+    { type: 'rent', label: t.categories.rent },
+    { type: 'home', label: t.categories.home },
+    { type: 'utility', label: t.categories.utility },
+    // New Items
+    { type: 'education', label: t.categories.education },
+    { type: 'project', label: t.categories.project },
+    { type: 'funeral', label: t.categories.funeral },
+    { type: 'health', label: t.categories.health },
+    { type: 'medicine', label: t.categories.medicine },
+    { type: 'pet', label: t.categories.pet },
+    { type: 'travel', label: t.categories.travel },
+    
+    // Specific & Extras
+    { type: 'leisure', label: t.categories.leisure },
+    { type: 'bar', label: t.categories.bar },
+    { type: 'game', label: t.categories.game },
+    { type: 'gift', label: t.categories.gift },
+    
+    // Beauty & Wellness
+    { type: 'beauty', label: t.categories.beauty },
+    { type: 'makeup', label: t.categories.makeup },
+    { type: 'aesthetic', label: t.categories.aesthetic },
+    
+    // Events
+    { type: 'wedding', label: t.categories.wedding },
+    
+    { type: 'generic', label: t.categories.generic },
+  ];
+
+  const SUBSCRIPTION_ICONS: { type: LogoType; label: string }[] = [
+    { type: 'netflix', label: t.categories.netflix },
+    { type: 'spotify', label: t.categories.spotify },
+    { type: 'amazon', label: t.categories.amazon },
+    { type: 'youtube', label: t.categories.youtube },
+    { type: 'apple', label: t.categories.apple },
+    { type: 'disney', label: t.categories.disney },
+    { type: 'max', label: t.categories.max },
+    { type: 'globo', label: t.categories.globo },
+    { type: 'mercadolivre', label: t.categories.mercadolivre },
+  ];
 
   // Determine which icon set to show
   const visibleIcons = type === 'subscription' ? SUBSCRIPTION_ICONS : PURCHASE_ICONS;
@@ -87,7 +94,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
           return displayDate.split(' ')[0];
       }
 
-      // Handle "DD Mmm" format (e.g. "24 Jan")
+      // Handle "DD Mmm" format (e.g. "24 Jan") - Legacy Portuguese Support
       const parts = displayDate.split(' ');
       if (parts.length >= 2) {
         const day = parts[0].padStart(2, '0');
@@ -209,7 +216,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
         {/* Header */}
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold text-white">
-            {transactionToEdit ? 'Editar Conta' : 'Nova Conta'}
+            {transactionToEdit ? t.editTitle : t.newTitle}
           </h2>
           <button 
             onClick={onClose} 
@@ -223,7 +230,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
           
           {/* Amount Input */}
           <div className="flex flex-col gap-2">
-            <label className="text-gray-400 text-sm ml-2">Valor</label>
+            <label className="text-gray-400 text-sm ml-2">{t.amountLabel}</label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-accent">R$</span>
               <input 
@@ -243,13 +250,13 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
 
           {/* Name Input */}
           <div className="flex flex-col gap-2">
-            <label className="text-gray-400 text-sm ml-2">Descrição</label>
+            <label className="text-gray-400 text-sm ml-2">{t.descLabel}</label>
             <input 
               type="text" 
               name="transaction_desc_hidden"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="DO QUE SE TRATA?"
+              placeholder={t.descPlaceholder}
               className="w-full bg-[#2c2c2e] text-white text-lg py-4 px-6 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600 uppercase"
               required
               autoComplete="off"
@@ -261,7 +268,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
 
           {/* Date Input */}
           <div className="flex flex-col gap-2">
-             <label className="text-gray-400 text-sm ml-2">Data de Vencimento</label>
+             <label className="text-gray-400 text-sm ml-2">{t.dateLabel}</label>
              <div className="relative">
                <input 
                   type="date"
@@ -285,7 +292,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
                 type === 'purchase' ? 'bg-[#3a3a3c] text-white shadow-md' : 'text-gray-500 hover:text-gray-300'
               }`}
             >
-              Compra
+              {t.types.purchase}
             </button>
             <button
               type="button"
@@ -294,13 +301,13 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
                 type === 'subscription' ? 'bg-[#3a3a3c] text-white shadow-md' : 'text-gray-500 hover:text-gray-300'
               }`}
             >
-              Assinatura
+              {t.types.subscription}
             </button>
           </div>
 
           {/* Icon Selection */}
           <div className="flex flex-col gap-2">
-            <label className="text-gray-400 text-sm ml-2">Ícone</label>
+            <label className="text-gray-400 text-sm ml-2">{t.iconLabel}</label>
             <div className="grid grid-cols-5 gap-3 p-1">
               {visibleIcons.map((icon) => (
                 <button
@@ -328,7 +335,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
             disabled={!isFormValid}
             className="w-full bg-accent text-black disabled:bg-surfaceLight disabled:text-gray-500 h-16 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-2 hover:bg-accentDark disabled:hover:bg-surfaceLight transition-colors mt-2"
           >
-            {transactionToEdit ? 'Salvar Alterações' : 'Adicionar Conta'}
+            {transactionToEdit ? t.submitEdit : t.submitAdd}
             <Check className="w-5 h-5" />
           </button>
 

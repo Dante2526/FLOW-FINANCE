@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { X, Eraser, NotebookPen, PenTool, Trash2, Keyboard } from 'lucide-react';
+import { AppLanguage } from '../types';
+import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -8,6 +10,7 @@ interface Props {
   initialContent: string;
   initialDrawing: string | null;
   onSave: (content: string, drawing: string | null) => void;
+  appLanguage: AppLanguage;
 }
 
 const COLORS = [
@@ -20,7 +23,7 @@ const COLORS = [
 
 type Tool = 'cursor' | 'pen' | 'eraser';
 
-const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initialDrawing, onSave }) => {
+const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initialDrawing, onSave, appLanguage }) => {
   const [content, setContent] = useState('');
   const [dynamicMaxHeight, setDynamicMaxHeight] = useState<string | number>('85vh');
   
@@ -49,6 +52,8 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
 
   // Buffer to preserve drawing during height expansion
   const savedImageDataRef = useRef<ImageData | null>(null);
+
+  const t = TRANSLATIONS[appLanguage].notepad;
 
   // --- INITIALIZATION ---
   useEffect(() => {
@@ -295,8 +300,8 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
                   <NotebookPen className="w-5 h-5 text-yellow-500" />
                </div>
                <div>
-                  <h2 className="text-lg font-bold text-white leading-none">Bloco de Notas</h2>
-                  <p className="text-[10px] text-gray-400 mt-1">Texto e Desenho livres</p>
+                  <h2 className="text-lg font-bold text-white leading-none">{t.title}</h2>
+                  <p className="text-[10px] text-gray-400 mt-1">{t.subtitle}</p>
                </div>
             </div>
             
@@ -311,10 +316,10 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
                      ? 'bg-red-500 w-auto px-3' 
                      : 'bg-[#2c2c2e] w-10 hover:bg-white/10'
                 }`}
-                title="Limpar Tudo"
+                title={t.clearTitle}
               >
                 {showClearConfirm ? (
-                   <span className="text-white text-xs font-bold whitespace-nowrap">Confirmar?</span>
+                   <span className="text-white text-xs font-bold whitespace-nowrap">{t.clearConfirm}</span>
                 ) : (
                    <Trash2 className="w-5 h-5 text-gray-400" />
                 )}
@@ -352,7 +357,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
                   ref={textareaRef}
                   value={content}
                   onChange={handleTextChange}
-                  placeholder="Digite suas anotações aqui..."
+                  placeholder={t.placeholder}
                   className="absolute inset-0 w-full h-full bg-transparent text-white text-lg leading-relaxed outline-none resize-none placeholder-gray-600 font-medium p-5 overflow-hidden z-0"
                   style={{ fontFamily: 'Inter, sans-serif' }}
                   disabled={activeTool !== 'cursor'} 
@@ -389,7 +394,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
                   }`}
                 >
                    <Keyboard className="w-5 h-5" />
-                   <span className="text-xs">Digitar</span>
+                   <span className="text-xs">{t.tools.type}</span>
                 </button>
                 
                 <button 
@@ -401,7 +406,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
                   }`}
                 >
                    <PenTool className="w-5 h-5" />
-                   <span className="text-xs">Desenhar</span>
+                   <span className="text-xs">{t.tools.draw}</span>
                 </button>
 
                 <button 
@@ -447,7 +452,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
              {activeTool === 'cursor' && (
                 <div className="flex justify-center items-center gap-2 pb-1">
                    <p className="text-[10px] text-gray-500">
-                      Modo Digitação: O desenho acompanha o texto.
+                      {t.helper}
                    </p>
                 </div>
              )}
