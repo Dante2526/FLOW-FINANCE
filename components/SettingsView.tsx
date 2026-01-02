@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
 import { Palette, Check, Lock, Crown, Shield, ChevronRight } from 'lucide-react';
-import { AppTheme } from '../types';
+import { AppTheme, AppLanguage } from '../types';
+import { TRANSLATIONS } from '../i18n';
 import PrivacyPolicyModal from './PrivacyPolicyModal';
 
 interface Props {
@@ -8,6 +10,7 @@ interface Props {
   onSaveTheme: (theme: AppTheme) => void;
   isPro: boolean;
   onOpenProModal: () => void;
+  appLanguage: AppLanguage;
 }
 
 // Extended interface internally to handle UI logic
@@ -32,9 +35,11 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
   { id: 'aqua', name: 'Aqua', primary: '#22d3ee', secondary: '#0891b2', isPro: true },
 ];
 
-const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onOpenProModal }) => {
+const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onOpenProModal, appLanguage }) => {
   const [selectedThemeId, setSelectedThemeId] = useState(currentThemeId);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  
+  const t = TRANSLATIONS[appLanguage].settings;
 
   const handleConfirm = () => {
     const theme = AVAILABLE_THEMES.find(t => t.id === selectedThemeId);
@@ -60,12 +65,12 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
           <Palette className="w-6 h-6 text-accent" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-white">Configuração</h2>
+          <h2 className="text-2xl font-bold text-white">{t.title}</h2>
           <div className="flex items-center gap-2">
-             <p className="text-gray-400 text-sm">Personalize sua experiência</p>
+             <p className="text-gray-400 text-sm">{t.subtitle}</p>
              {isPro && (
                 <span className="bg-yellow-500/20 text-yellow-500 text-[10px] font-bold px-2 py-0.5 rounded-full border border-yellow-500/50 flex items-center gap-1">
-                  <Crown className="w-3 h-3 fill-yellow-500" /> PRO ATIVO
+                  <Crown className="w-3 h-3 fill-yellow-500" /> {t.proActive}
                 </span>
              )}
           </div>
@@ -74,12 +79,13 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
 
       {/* Theme Selection - Native Scroll */}
       <div className="pb-40">
-        <h3 className="text-gray-400 text-sm font-bold ml-2 mb-4 uppercase tracking-wider">Cores do Sistema</h3>
+        <h3 className="text-gray-400 text-sm font-bold ml-2 mb-4 uppercase tracking-wider">{t.systemColors}</h3>
         
         <div className="grid grid-cols-2 gap-4 mb-8">
           {AVAILABLE_THEMES.map((theme) => {
             const isActive = selectedThemeId === theme.id;
             const isLocked = theme.isPro && !isPro;
+            const localizedName = t.themes[theme.id as keyof typeof t.themes] || theme.name;
             
             return (
               <button
@@ -101,7 +107,7 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
                 
                 <div className="flex flex-col items-start">
                   <span className={`font-bold text-lg ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
-                    {theme.name}
+                    {localizedName}
                   </span>
                   {theme.isPro && (
                      <span className="text-[9px] font-bold text-yellow-500 flex items-center gap-1">
@@ -134,8 +140,8 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
                     <Shield className="w-4 h-4 text-gray-400" />
                  </div>
                  <div className="text-left">
-                    <span className="text-white font-bold text-sm block">Política de Privacidade</span>
-                    <span className="text-gray-500 text-xs">Termos de uso e dados</span>
+                    <span className="text-white font-bold text-sm block">{t.privacyTitle}</span>
+                    <span className="text-gray-500 text-xs">{t.privacySubtitle}</span>
                  </div>
               </div>
               <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
@@ -158,7 +164,7 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
               : 'bg-accent text-black hover:scale-105 opacity-100 translate-y-0'
           }`}
         >
-          Confirmar Cor
+          {t.confirmColor}
           <Check className="w-5 h-5" />
         </button>
       </div>

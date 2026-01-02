@@ -1,16 +1,18 @@
 
 import React, { useState, useEffect } from 'react';
 import { Wallet, Plus, ChevronLeft, Calendar, Trash2, Check, Edit2, Info } from 'lucide-react';
-import { LongTermTransaction } from '../types';
+import { LongTermTransaction, AppLanguage } from '../types';
+import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   items: LongTermTransaction[];
   onAdd: (item: Omit<LongTermTransaction, 'id' | 'installmentsPaid'>) => void;
   onEdit: (item: LongTermTransaction) => void;
   onDelete: (id: string) => void;
+  appLanguage: AppLanguage;
 }
 
-const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
+const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLanguage }) => {
   const [selectedItem, setSelectedItem] = useState<LongTermTransaction | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   
@@ -37,6 +39,8 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
 
   const [editTitleValue, setEditTitleValue] = useState('');
   const [editTotalValue, setEditTotalValue] = useState('');
+
+  const t = TRANSLATIONS[appLanguage].wallet;
 
   // --- SCROLL LOCK EFFECT FOR LOCAL MODALS ---
   useEffect(() => {
@@ -100,7 +104,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
 
     // Check if at least one value is provided
     if (totalInput === 0 && monthlyInput === 0) {
-        alert("Preencha o Valor da Parcela OU o Valor Total.");
+        alert(t.form.hint);
         return;
     }
 
@@ -351,7 +355,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                   {selectedItem.title}
                </h2>
              </div>
-             <p className="text-xs text-gray-400">Clique nos blocos para editar valores</p>
+             <p className="text-xs text-gray-400">{t.details.editValuesHint}</p>
           </div>
 
           <button 
@@ -375,7 +379,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
             <div className="absolute top-1.5 right-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
                  <Edit2 className="w-3 h-3 text-white" />
             </div>
-            <span className="text-[10px] font-bold uppercase text-white/80">Valor Mensal</span>
+            <span className="text-[10px] font-bold uppercase text-white/80">{t.details.monthlyValue}</span>
             <span className="text-sm font-bold text-white">
               R$ {currentMonthlyValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
@@ -389,7 +393,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
             <div className="absolute top-1.5 right-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
                  <Edit2 className="w-3 h-3 text-white" />
             </div>
-            <span className="text-[10px] font-bold uppercase text-white/80">Pagamento</span>
+            <span className="text-[10px] font-bold uppercase text-white/80">{t.details.paymentStatus}</span>
             <span className="text-xs font-bold text-white leading-tight mt-1 line-clamp-2">{selectedItem.title}</span>
           </button>
 
@@ -401,7 +405,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
              <div className="absolute top-1.5 right-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
                  <Edit2 className="w-3 h-3 text-white" />
              </div>
-             <span className="text-[10px] font-bold uppercase text-white/80">Valor Total</span>
+             <span className="text-[10px] font-bold uppercase text-white/80">{t.details.totalValue}</span>
              <span className="text-sm font-bold text-white">
                R$ {selectedItem.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
              </span>
@@ -413,9 +417,9 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
             
             {/* Sub Header - REMOVED STICKY */}
             <div className="grid grid-cols-4 bg-orange-600 h-10 items-center px-2 rounded-2xl mb-2 shadow-lg shadow-orange-900/20 select-none">
-                <span className="text-[10px] font-bold text-black text-center border-r border-black/10 h-full flex items-center justify-center">PARCELA</span>
-                <span className="text-[10px] font-bold text-black text-center col-span-2 border-r border-black/10 h-full flex items-center justify-center">DATA PAGAMENTO</span>
-                <span className="text-[10px] font-bold text-black text-center h-full flex items-center justify-center">VALOR</span>
+                <span className="text-[10px] font-bold text-black text-center border-r border-black/10 h-full flex items-center justify-center">{t.details.installmentHeader}</span>
+                <span className="text-[10px] font-bold text-black text-center col-span-2 border-r border-black/10 h-full flex items-center justify-center">{t.details.dateHeader}</span>
+                <span className="text-[10px] font-bold text-black text-center h-full flex items-center justify-center">{t.details.valueHeader}</span>
             </div>
 
             {/* The Spreadsheet Grid - Reverted to Compact List */}
@@ -477,7 +481,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
             {/* Footer Summary - Barra "JÁ FOI PAGO" */}
             <div className="mt-2 flex rounded-2xl overflow-hidden h-14 bg-[#1c1c1e] border border-white/5 shadow-lg shrink-0">
             <div className="flex-1 bg-green-600 flex items-center justify-center">
-                <span className="font-bold text-black text-sm uppercase">JÁ FOI PAGO</span>
+                <span className="font-bold text-black text-sm uppercase">{t.alreadyPaid}</span>
             </div>
             <div className="w-32 flex items-center justify-center">
                 <span className="font-bold text-white text-lg">
@@ -496,8 +500,8 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
          {isEditMonthlyOpen && (
             <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4 max-h-[90dvh] overflow-y-auto no-scrollbar">
-                    <h3 className="text-lg font-bold text-white text-center">Novo Valor Mensal</h3>
-                    <p className="text-xs text-gray-400 text-center -mt-2">Isso atualizará parcelas futuras e recalculará o total.</p>
+                    <h3 className="text-lg font-bold text-white text-center">{t.details.modals.newMonthlyTitle}</h3>
+                    <p className="text-xs text-gray-400 text-center -mt-2">{t.details.modals.newMonthlySubtitle}</p>
                     
                     <form onSubmit={handleSaveNewMonthlyValue} className="flex flex-col gap-4 mt-2">
                         <div className="relative">
@@ -518,13 +522,13 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                                 onClick={() => setIsEditMonthlyOpen(false)}
                                 className="flex-1 bg-[#2c2c2e] text-white h-12 rounded-xl font-bold text-sm"
                             >
-                                Cancelar
+                                {t.details.modals.cancel}
                             </button>
                             <button 
                                 type="submit" 
                                 className="flex-1 bg-accent text-black h-12 rounded-xl font-bold text-sm"
                             >
-                                Salvar
+                                {t.details.modals.save}
                             </button>
                         </div>
                     </form>
@@ -536,7 +540,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
          {isEditTitleOpen && (
             <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4 max-h-[90dvh] overflow-y-auto no-scrollbar">
-                    <h3 className="text-lg font-bold text-white text-center">Editar Nome</h3>
+                    <h3 className="text-lg font-bold text-white text-center">{t.details.modals.editNameTitle}</h3>
                     
                     <form onSubmit={handleSaveTitle} className="flex flex-col gap-4 mt-2">
                         <input 
@@ -556,13 +560,13 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                                 onClick={() => setIsEditTitleOpen(false)}
                                 className="flex-1 bg-[#2c2c2e] text-white h-12 rounded-xl font-bold text-sm"
                             >
-                                Cancelar
+                                {t.details.modals.cancel}
                             </button>
                             <button 
                                 type="submit" 
                                 className="flex-1 bg-accent text-black h-12 rounded-xl font-bold text-sm"
                             >
-                                Salvar
+                                {t.details.modals.save}
                             </button>
                         </div>
                     </form>
@@ -574,8 +578,8 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
          {isEditTotalOpen && (
             <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4 max-h-[90dvh] overflow-y-auto no-scrollbar">
-                    <h3 className="text-lg font-bold text-white text-center">Editar Valor Total</h3>
-                    <p className="text-xs text-gray-400 text-center -mt-2">Isso ajustará o valor base das parcelas (Total / Qtd).</p>
+                    <h3 className="text-lg font-bold text-white text-center">{t.details.modals.editTotalTitle}</h3>
+                    <p className="text-xs text-gray-400 text-center -mt-2">{t.details.modals.editTotalSubtitle}</p>
                     
                     <form onSubmit={handleSaveTotal} className="flex flex-col gap-4 mt-2">
                          <div className="relative">
@@ -596,13 +600,13 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                                 onClick={() => setIsEditTotalOpen(false)}
                                 className="flex-1 bg-[#2c2c2e] text-white h-12 rounded-xl font-bold text-sm"
                             >
-                                Cancelar
+                                {t.details.modals.cancel}
                             </button>
                             <button 
                                 type="submit" 
                                 className="flex-1 bg-accent text-black h-12 rounded-xl font-bold text-sm"
                             >
-                                Salvar
+                                {t.details.modals.save}
                             </button>
                         </div>
                     </form>
@@ -615,13 +619,13 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
             <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-[#1c1c1e] w-full max-w-xs rounded-[2rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-4 max-h-[90dvh] overflow-y-auto no-scrollbar">
                     <h3 className="text-lg font-bold text-white text-center">
-                        Editar Parcela {editingInstallmentIndex !== null ? editingInstallmentIndex + 1 : ''}
+                        {t.details.modals.editInstallmentTitle} {editingInstallmentIndex !== null ? editingInstallmentIndex + 1 : ''}
                     </h3>
                     
                     <form onSubmit={handleSaveInstallment} className="flex flex-col gap-4 mt-2">
                         {/* Amount Input */}
                         <div className="flex flex-col gap-1">
-                            <label className="text-xs text-gray-400 ml-2">Valor</label>
+                            <label className="text-xs text-gray-400 ml-2">{t.details.valueHeader}</label>
                             <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-accent">R$</span>
                                 <input 
@@ -638,7 +642,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
 
                         {/* Date Input */}
                         <div className="flex flex-col gap-1">
-                            <label className="text-xs text-gray-400 ml-2">Data Pagamento</label>
+                            <label className="text-xs text-gray-400 ml-2">{t.details.dateHeader}</label>
                             <div className="relative">
                                 <input 
                                     type="date" 
@@ -661,13 +665,13 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                                 }}
                                 className="flex-1 bg-[#2c2c2e] text-white h-12 rounded-xl font-bold text-sm"
                             >
-                                Cancelar
+                                {t.details.modals.cancel}
                             </button>
                             <button 
                                 type="submit" 
                                 className="flex-1 bg-accent text-black h-12 rounded-xl font-bold text-sm"
                             >
-                                Salvar
+                                {t.details.modals.save}
                             </button>
                         </div>
                     </form>
@@ -687,8 +691,8 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
           <Wallet className="w-6 h-6 text-accent" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-white">Longo Prazo</h2>
-          <p className="text-gray-400 text-sm">GERENCIE SUAS PARCELAS</p>
+          <h2 className="text-2xl font-bold text-white">{t.title}</h2>
+          <p className="text-gray-400 text-sm">{t.subtitle}</p>
         </div>
       </div>
 
@@ -696,7 +700,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-gray-500">
             <Wallet className="w-12 h-12 mb-4 opacity-20" />
-            <p>Nenhuma transação parcelada.</p>
+            <p>{t.empty}</p>
           </div>
         ) : (
           <div className="grid gap-4">
@@ -719,9 +723,9 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                      <div className="min-w-0 flex-1 mr-4">
                        <h3 className="text-lg font-bold text-white uppercase truncate">{item.title}</h3>
                        <div className="flex gap-2 text-[10px] text-gray-400 mt-1 whitespace-nowrap">
-                          <span>Início: {startDate.toLocaleDateString('pt-BR')}</span>
+                          <span>{t.details.start}: {startDate.toLocaleDateString('pt-BR')}</span>
                           <span>•</span>
-                          <span>Fim: {endDate.toLocaleDateString('pt-BR')}</span>
+                          <span>{t.details.end}: {endDate.toLocaleDateString('pt-BR')}</span>
                        </div>
                      </div>
                      <span className="text-lg font-bold text-accent whitespace-nowrap">
@@ -738,8 +742,8 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                    </div>
                    
                    <div className="flex justify-between text-xs font-bold">
-                     <span className="text-green-400">{item.installmentsPaid} Pagas</span>
-                     <span className="text-gray-500">{item.installmentsCount} Total</span>
+                     <span className="text-green-400">{item.installmentsPaid} {t.paid}</span>
+                     <span className="text-gray-500">{item.installmentsCount} {t.total}</span>
                    </div>
                 </div>
               );
@@ -760,14 +764,14 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
       {isAddModalOpen && (
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-5 max-h-[90dvh] overflow-y-auto no-scrollbar">
-            <h2 className="text-xl font-bold text-white">Nova Parcela</h2>
+            <h2 className="text-xl font-bold text-white">{t.newTitle}</h2>
             <form onSubmit={handleCreate} className="flex flex-col gap-4" autoComplete="off">
                
                <div className="flex flex-col gap-1">
-                 <label className="text-xs text-gray-400 ml-2">Título</label>
+                 <label className="text-xs text-gray-400 ml-2">{t.form.titleLabel}</label>
                  <input 
                     className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent uppercase font-bold"
-                    placeholder="EX: CARRO"
+                    placeholder={t.form.titlePlaceholder}
                     name="lt_title_hidden"
                     value={newTitle}
                     onChange={e => setNewTitle(e.target.value.toUpperCase())}
@@ -781,7 +785,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                <div className="flex gap-3">
                   {/* Monthly Value Input */}
                  <div className="flex-1 flex flex-col gap-1">
-                   <label className="text-xs text-gray-400 ml-2">Valor Parcela</label>
+                   <label className="text-xs text-gray-400 ml-2">{t.form.monthlyLabel}</label>
                    <input 
                       type="text"
                       inputMode="numeric"
@@ -796,7 +800,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                  
                  {/* Count Input */}
                  <div className="w-24 flex flex-col gap-1">
-                   <label className="text-xs text-gray-400 ml-2">Vezes</label>
+                   <label className="text-xs text-gray-400 ml-2">{t.form.countLabel}</label>
                    <input 
                       type="number"
                       name="lt_count_hidden"
@@ -811,7 +815,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                </div>
 
                <div className="flex flex-col gap-1">
-                 <label className="text-xs text-gray-400 ml-2">Valor Total</label>
+                 <label className="text-xs text-gray-400 ml-2">{t.form.totalLabel}</label>
                  <input 
                     type="text"
                     inputMode="numeric"
@@ -828,12 +832,12 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                <div className="flex items-center gap-2 bg-[#2c2c2e]/50 p-2 rounded-xl border border-white/5">
                   <Info className="w-4 h-4 text-gray-400 shrink-0" />
                   <p className="text-[10px] text-gray-400 leading-tight">
-                     Preencha apenas o <strong>Valor da Parcela</strong> OU o <strong>Valor Total</strong>. O sistema calculará o outro automaticamente ao criar.
+                     {t.form.hint}
                   </p>
                </div>
 
                <div className="flex flex-col gap-1">
-                 <label className="text-xs text-gray-400 ml-2">Data Início</label>
+                 <label className="text-xs text-gray-400 ml-2">{t.form.startDateLabel}</label>
                  <div className="relative">
                    <input 
                       type="date"
@@ -854,13 +858,13 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete }) => {
                    onClick={() => setIsAddModalOpen(false)}
                    className="flex-1 bg-[#2c2c2e] text-white h-14 rounded-xl font-bold"
                  >
-                   Cancelar
+                   {t.form.cancel}
                  </button>
                  <button 
                    type="submit" 
                    className="flex-1 bg-accent text-black h-14 rounded-xl font-bold"
                  >
-                   Criar
+                   {t.form.create}
                  </button>
                </div>
             </form>

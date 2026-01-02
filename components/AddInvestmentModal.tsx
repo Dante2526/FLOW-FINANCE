@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, Check, TrendingUp, Building, Layers, Search, Lock } from 'lucide-react';
-import { Investment, InvestmentType } from '../types';
+import { Investment, InvestmentType, AppLanguage } from '../types';
+import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -9,15 +11,18 @@ interface Props {
   investmentToEdit?: Investment | null;
   isPro?: boolean;
   onOpenProModal?: () => void;
+  appLanguage: AppLanguage;
 }
 
-const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investmentToEdit, isPro = false, onOpenProModal }) => {
+const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investmentToEdit, isPro = false, onOpenProModal, appLanguage }) => {
   const [name, setName] = useState('');
   const [institution, setInstitution] = useState('');
   const [type, setType] = useState<InvestmentType>('cdi');
   const [amount, setAmount] = useState('');
   const [quantity, setQuantity] = useState('');
   const [yieldRate, setYieldRate] = useState('');
+  
+  const t = TRANSLATIONS[appLanguage].investments.form;
 
   useEffect(() => {
     if (isOpen && investmentToEdit) {
@@ -99,7 +104,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
         {/* Header */}
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold text-white">
-            {investmentToEdit ? 'Editar Investimento' : 'Novo Investimento'}
+            {investmentToEdit ? t.editTitle : t.newTitle}
           </h2>
           <button 
             onClick={onClose} 
@@ -123,7 +128,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
                 }`}
               >
                 <TrendingUp className="w-5 h-5 mb-1" />
-                <span className="text-[10px] font-bold uppercase">Renda Fixa / CDI</span>
+                <span className="text-[10px] font-bold uppercase">{t.typeFixed}</span>
               </button>
               
               <button 
@@ -141,13 +146,13 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
                    </div>
                 )}
                 <Building className="w-5 h-5 mb-1" />
-                <span className="text-[10px] font-bold uppercase">Fundo Imob (FII)</span>
+                <span className="text-[10px] font-bold uppercase">{t.typeFii}</span>
               </button>
            </div>
 
            {/* Institution */}
            <div className="flex flex-col gap-2">
-              <label className="text-gray-400 text-xs ml-2 font-bold uppercase">Instituição</label>
+              <label className="text-gray-400 text-xs ml-2 font-bold uppercase">{t.institution}</label>
               <input 
                 type="text" 
                 value={institution}
@@ -161,7 +166,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
 
            {/* Asset Name */}
            <div className="flex flex-col gap-2">
-              <label className="text-gray-400 text-xs ml-2 font-bold uppercase">Nome do Ativo</label>
+              <label className="text-gray-400 text-xs ml-2 font-bold uppercase">{t.assetName}</label>
               <input 
                  type="text" 
                  value={name}
@@ -178,7 +183,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
               {/* Quantity Input - ONLY for FII */}
               {type === 'fii' && (
                  <div className="w-[35%] flex flex-col gap-2">
-                   <label className="text-gray-400 text-xs ml-2 font-bold uppercase">Qtd</label>
+                   <label className="text-gray-400 text-xs ml-2 font-bold uppercase">{t.qty}</label>
                    <div className="relative">
                        <input 
                           type="number"
@@ -195,7 +200,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
               )}
 
               <div className="flex-1 flex flex-col gap-2">
-                 <label className="text-gray-400 text-xs ml-2 font-bold uppercase">Valor Total</label>
+                 <label className="text-gray-400 text-xs ml-2 font-bold uppercase">{t.totalValue}</label>
                  <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-accent font-bold text-sm">R$</span>
                     <input 
@@ -214,7 +219,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
            {/* Yield */}
            <div className="flex flex-col gap-2">
               <label className="text-gray-400 text-xs ml-2 font-bold uppercase">
-                 {type === 'cdi' ? '% do CDI (Rentabilidade)' : 'Dividend Yield (Anual Estimado)'}
+                 {type === 'cdi' ? t.yieldLabel : t.yieldLabelFii}
               </label>
               <div className="relative flex items-center">
                  <input 
@@ -252,7 +257,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
              }`}
            >
              <Check className="w-5 h-5" />
-             {investmentToEdit ? 'Salvar Alterações' : 'Adicionar'}
+             {investmentToEdit ? t.btnSave : t.btnAdd}
            </button>
         </form>
 

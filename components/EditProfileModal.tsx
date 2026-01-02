@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Check, LogOut, Lock, Crown, Trash2 } from 'lucide-react';
-import { UserProfile } from '../types';
+import { UserProfile, AppLanguage } from '../types';
+import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface Props {
   onLogout: () => void;
   onDeleteAccount: () => void;
   currentProfile: UserProfile;
+  appLanguage: AppLanguage;
 }
 
 // "Bonecos" / Character style avatars
@@ -35,9 +37,11 @@ const PRESET_AVATARS = [
   "https://api.dicebear.com/9.x/adventurer/svg?seed=Annie",
 ];
 
-const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, onDeleteAccount, currentProfile }) => {
+const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, onDeleteAccount, currentProfile, appLanguage }) => {
   const [name, setName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  
+  const t = TRANSLATIONS[appLanguage].profile;
 
   useEffect(() => {
     if (isOpen) {
@@ -79,14 +83,14 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
         {/* Header */}
         <div className="flex justify-between items-center flex-shrink-0">
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-white">Editar Perfil</h2>
+            <h2 className="text-xl font-bold text-white">{t.title}</h2>
             {currentProfile.isPro && (
                <div className="bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full text-[10px] font-bold border border-yellow-500/50 flex items-center gap-1">
                  <Crown className="w-3 h-3" fill="currentColor" /> 
                  <span>PRO</span>
                  {currentProfile.subscriptionExpiry && (
                     <span className="font-medium opacity-80 border-l border-yellow-500/30 pl-1 ml-1">
-                       até {new Date(currentProfile.subscriptionExpiry).toLocaleDateString('pt-BR')}
+                       {t.proExpiry} {new Date(currentProfile.subscriptionExpiry).toLocaleDateString('pt-BR')}
                     </span>
                  )}
                </div>
@@ -115,12 +119,12 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
 
           {/* Name Input */}
           <div className="flex flex-col gap-2 flex-shrink-0">
-            <label className="text-gray-400 text-sm ml-2">Seu Nome</label>
+            <label className="text-gray-400 text-sm ml-2">{t.nameLabel}</label>
             <input 
               type="text" 
               value={name}
               onChange={(e) => setName(e.target.value.toUpperCase())}
-              placeholder="SEU NOME"
+              placeholder={t.namePlaceholder}
               className="w-full bg-[#2c2c2e] text-white text-lg py-3 px-6 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600 uppercase font-bold"
               required
             />
@@ -129,8 +133,8 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
           {/* Avatar Selection - Horizontal Scroll */}
           <div className="flex flex-col gap-2 flex-shrink-0">
             <div className="flex justify-between items-end ml-2 mr-2">
-               <label className="text-gray-400 text-sm">Escolher Avatar</label>
-               {!currentProfile.isPro && <span className="text-[10px] text-yellow-500 font-bold flex items-center gap-1"><Lock className="w-3 h-3" /> 8 Bloqueados</span>}
+               <label className="text-gray-400 text-sm">{t.avatarLabel}</label>
+               {!currentProfile.isPro && <span className="text-[10px] text-yellow-500 font-bold flex items-center gap-1"><Lock className="w-3 h-3" /> 8 {t.lockedLabel}</span>}
             </div>
             
             <div className="flex gap-3 p-1 pb-4 overflow-x-auto no-scrollbar">
@@ -177,7 +181,7 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
               type="submit"
               className="w-full bg-accent text-black h-14 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-2 hover:bg-accentDark transition-colors shadow-lg"
             >
-              Salvar Perfil
+              {t.btnSave}
               <Check className="w-5 h-5" />
             </button>
             
@@ -186,7 +190,7 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
               onClick={onLogout}
               className="w-full bg-[#2c2c2e] text-white h-14 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#3a3a3c] transition-colors"
             >
-              Sair da Conta
+              {t.btnLogout}
               <LogOut className="w-5 h-5" />
             </button>
 
@@ -195,7 +199,7 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
               onClick={onDeleteAccount}
               className="w-full bg-transparent border border-red-900/30 text-red-600 h-14 rounded-[1.5rem] font-bold text-sm flex items-center justify-center gap-2 hover:bg-red-950/10 transition-colors mt-2"
             >
-              Excluir Conta Permanentemente
+              {t.btnDelete}
               <Trash2 className="w-4 h-4" />
             </button>
           </div>
