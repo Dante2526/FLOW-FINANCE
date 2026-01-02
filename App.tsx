@@ -316,9 +316,16 @@ const App: React.FC = () => {
         let newDate = t.date;
         if (t.date.match(/^\d{4}-\d{2}-\d{2}/)) {
            const parts = t.date.split('-');
-           const day = parts[2].split(' ')[0];
+           // Handle Date overflow logic (e.g. Jan 30 -> Feb 28/29) to prevent jumping to March
+           let day = parseInt(parts[2].split(' ')[0], 10);
+           const maxDays = new Date(nYr, nIdx + 1, 0).getDate();
+           if (day > maxDays) {
+               day = maxDays;
+           }
+           
+           const paddedDay = String(day).padStart(2, '0');
            const paddedMonth = String(nIdx + 1).padStart(2, '0');
-           newDate = `${nYrS}-${paddedMonth}-${day}`;
+           newDate = `${nYrS}-${paddedMonth}-${paddedDay}`;
         } else {
            newDate = `01 ${nName.charAt(0).toUpperCase() + nName.slice(1, 3).toLowerCase()}`;
         }
