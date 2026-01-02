@@ -313,43 +313,53 @@ const App: React.FC = () => {
     const sourceAcc = cur.accounts.filter(a => (a.month || "").toUpperCase().trim() === actMonthNorm && (a.year || "") === actYear);
 
     const nTx: Transaction[] = sourceTx.map((t, i) => {
-        // --- STRICT DAY REPLICATION LOGIC ---
-        // We do NOT add 1 month to the date object.
-        // Instead, we extract the DAY from the source string and FORCE it into the NEW MONTH/YEAR.
-        // This ensures that "15 Jan" becomes "15 Feb" (in the Feb Dashboard), effectively skipping "15 Jan".
-        
-        let day = 1; // Default fallback
+        let d: Date;
+        const currentYear = parseInt(actYear);
 
-        // 1. Extract the Day Number
+        // 1. ISO Check (Standard)
         if (t.date.match(/^\d{4}-\d{2}-\d{2}/)) {
-           // ISO Format: YYYY-MM-DD
-           const parts = t.date.split('-');
-           day = parseInt(parts[2]);
+           d = new Date(t.date + 'T00:00:00'); 
         } else {
-           // Text Format: "15", "Dia 15", "15 Fev", "Vence: 10"
-           const match = t.date.match(/(\d{1,2})/);
-           if (match) {
-               day = parseInt(match[0]);
+           // 2. Text Parser (e.g. "15 Jan", "11 Fev")
+           const dayMatch = t.date.match(/(\d{1,2})/);
+           const day = dayMatch ? parseInt(dayMatch[0]) : 1;
+
+           // Find month in text
+           const shortMonths = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+           const foundMonthShort = shortMonths.find(m => t.date.toLowerCase().includes(m));
+           
+           let monthIndex = MONTH_NAMES.indexOf(actMonthNorm); // Default: Source Dashboard Month
+           let year = currentYear;
+
+           if (foundMonthShort) {
+               monthIndex = shortMonths.indexOf(foundMonthShort);
+               
+               // Handle Year Rollover for text dates (e.g. Dec Dash -> Jan Bill)
+               const dashMonthIndex = MONTH_NAMES.indexOf(actMonthNorm);
+               if (dashMonthIndex === 11 && monthIndex === 0) {
+                   year++;
+               }
+               // Handle reverse (Jan Dash -> Dec Bill)
+               if (dashMonthIndex === 0 && monthIndex === 11) {
+                   year--;
+               }
            }
+
+           d = new Date(year, monthIndex, day);
         }
 
-        // Validity Check
-        if (isNaN(day) || day < 1) day = 1;
-        if (day > 31) day = 31;
-
-        // 2. Construct the NEW Date using Target Dashboard Month/Year
-        // nIdx is the index of the TARGET month (e.g., 1 for Feb)
-        // nYr is the TARGET year (e.g., 2025)
-        const d = new Date(nYr, nIdx, day);
-
-        // Auto-correct month overflow (e.g., Feb 30 -> Mar 2)
-        // If the resulting month is different from nIdx, it means the day didn't exist in that month.
-        // We set it to the last day of the intended month (Day 0 of next month).
-        if (d.getMonth() !== nIdx) {
-            d.setDate(0); 
+        // --- CORE LOGIC: INCREMENT 1 MONTH ---
+        // 15 Jan -> 15 Feb
+        // 11 Feb -> 11 Mar
+        const originalDay = d.getDate();
+        d.setMonth(d.getMonth() + 1);
+        
+        // Auto-correct month overflow (e.g., 31 Jan -> 3 Mar, force to 28/29 Feb)
+        if (d.getDate() !== originalDay) {
+            d.setDate(0); // Set to last day of previous month (which is the target month)
         }
         
-        // 3. Format back to ISO YYYY-MM-DD
+        // Format back to ISO YYYY-MM-DD
         const y = d.getFullYear();
         const m = String(d.getMonth() + 1).padStart(2, '0');
         const dayStr = String(d.getDate()).padStart(2, '0');
