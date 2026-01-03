@@ -78,14 +78,39 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
        
        if (yearDiff !== 0) return yearDiff;
        
-       const monthA = monthsMap[a.month] !== undefined ? monthsMap[a.month] : -1;
-       const monthB = monthsMap[b.month] !== undefined ? monthsMap[b.month] : -1;
+       const monthA = monthsMap[a.month.toUpperCase().trim()] !== undefined ? monthsMap[a.month.toUpperCase().trim()] : -1;
+       const monthB = monthsMap[b.month.toUpperCase().trim()] !== undefined ? monthsMap[b.month.toUpperCase().trim()] : -1;
        
        return monthA - monthB;
     });
 
+    // Helper to translate chart axis labels
+    const getTranslatedShortMonth = (dbName: string, year: string) => {
+        const monthsMap: Record<string, number> = {
+            'JANEIRO': 0, 'FEVEREIRO': 1, 'MARÇO': 2, 'ABRIL': 3, 'MAIO': 4, 'JUNHO': 5,
+            'JULHO': 6, 'AGOSTO': 7, 'SETEMBRO': 8, 'OUTUBRO': 9, 'NOVEMBRO': 10, 'DEZEMBRO': 11
+        };
+        const monthKeys = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+        
+        const idx = monthsMap[dbName.toUpperCase().trim()];
+        
+        if (idx !== undefined) {
+            const key = monthKeys[idx];
+            // Access translation dynamically
+            // @ts-ignore
+            const translated = TRANSLATIONS[appLanguage]?.months?.[key];
+            if (translated) {
+                const short = translated.substring(0, 3).toUpperCase();
+                return showYear ? `${short}/${year.slice(2)}` : short;
+            }
+        }
+        
+        // Fallback to DB value slicing if translation fails
+        return showYear ? `${dbName.substring(0, 3)}/${year.slice(2)}` : dbName.substring(0, 3);
+    };
+
     const chartData = sortedMonths.map(m => ({
-      name: showYear ? `${m.month.substring(0, 3)}/${m.year.slice(2)}` : m.month.substring(0, 3),
+      name: getTranslatedShortMonth(m.month, m.year),
       fullMonth: m.month,
       total: m.total,
       year: m.year
@@ -140,7 +165,7 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
       split: { subscription: subscriptionTotal, purchase: purchaseTotal },
       safeTotalSpend
     };
-  }, [safeMonths, safeTransactions]);
+  }, [safeMonths, safeTransactions, appLanguage]); // Added appLanguage dependency
 
   if (!isOpen) return null;
 
@@ -292,7 +317,8 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
                 </div>
                 <div className="flex flex-col">
                    <span className="text-lg font-bold text-white leading-none mb-1">
-                     {stats.highestMonth.month ? stats.highestMonth.month.slice(0, 3) : '-'}
+                     {/* Use the translated name for the highest month KPI as well */}
+                     {stats.chartData.find(d => d.fullMonth === stats.highestMonth.month)?.name?.split('/')[0] || (stats.highestMonth.month ? stats.highestMonth.month.slice(0, 3) : '-')}
                    </span>
                    <span className="text-[10px] text-gray-500">
                      {currencySymbol} {(stats.highestMonth.total || 0).toLocaleString(locale, { minimumFractionDigits: 0 })}

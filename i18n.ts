@@ -26,7 +26,8 @@ export const TRANSLATIONS = {
       hideBalance: "Esconder saldo",
       showBalance: "Mostrar saldo",
       duplicateMonth: "Duplicar contas para o próximo mês",
-      addSource: "Adicionar Nova Fonte de Renda"
+      addSource: "Adicionar Nova Fonte de Renda",
+      monthExists: "O mês de {month}/{year} já existe."
     },
     nav: {
       home: 'INÍCIO',
@@ -407,7 +408,8 @@ export const TRANSLATIONS = {
       hideBalance: "Hide balance",
       showBalance: "Show balance",
       duplicateMonth: "Duplicate bills to next month",
-      addSource: "Add New Income Source"
+      addSource: "Add New Income Source",
+      monthExists: "The month of {month}/{year} already exists."
     },
     nav: {
       home: 'HOME',
@@ -788,7 +790,8 @@ export const TRANSLATIONS = {
       hideBalance: "Ocultar saldo",
       showBalance: "Mostrar saldo",
       duplicateMonth: "Duplicar cuentas al próximo mes",
-      addSource: "Añadir Nueva Fuente de Ingresos"
+      addSource: "Añadir Nueva Fuente de Ingresos",
+      monthExists: "El mes de {month}/{year} ya existe."
     },
     nav: {
       home: 'INICIO',
@@ -1085,7 +1088,7 @@ export const TRANSLATIONS = {
            { title: "2. Almacenamiento y Seguridad", text: "Sus datos se almacenan de forma segura utilizando servicios en la nube encriptados (Supabase/Firebase). La aplicación también utiliza el almacenamiento local de su dispositivo para garantizar el funcionamiento sin conexión y mejorar el rendimiento. No compartimos sus datos financieros com terceros." },
            { title: "3. Uso de la Información", text: "La información ingresada se utiliza exclusivamente para generar gráficos, informes y cálculos que se muestran en su panel. Flow Finance no analiza sus datos con fines publicitarios o de venta de información." },
            { title: "4. Notificaciones", text: "Al activar las notificaciones, acepta recibir alertas sobre vencimientos de cuentas. Puede desactivar esta función en cualquier momento en la configuración de su navegador o dispositivo." },
-           { title: "5. Eliminación de Cuenta", text: "Tiene derecho a solicitar la eliminación total de sus datos en cualquier momento a través de la opción \"Eliminar Cuenta\" en el menú de perfil. Esta acción es irreversible y elimina toda la información de nuestros servidores." }
+           { title: "5. Eliminación de Cuenta", text: "Tiene derecho a solicitar la eliminación total de sus datos en cualquier momento a través da opción \"Eliminar Cuenta\" en el menú de perfil. Esta acción es irreversible y elimina toda la información de nuestros servidores." }
         ],
         footer: "Flow Finance © 2025",
         closeBtn: "Entendido"
@@ -1124,7 +1127,7 @@ export const TRANSLATIONS = {
       features: {
         analytics: { title: "Análisis Avanzado", desc: "Gráficos detallados." },
         invest: { title: "Inversiones", desc: "Rastrea FIIs y Renta Fija." },
-        themes: { title: "Temas Exclusivos", desc: "Personaliza la app." },
+        themes: { title: "Temas Exclusivos", desc: "Personalize la app." },
         backup: { title: "Respaldo en Nube", desc: "Datos seguros siempre." }
       },
       priceLabel: "Pago Único",

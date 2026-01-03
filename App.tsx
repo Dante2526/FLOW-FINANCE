@@ -311,7 +311,10 @@ const App: React.FC = () => {
     const nYrS = nYr.toString();
 
     if (cur.months.find(m => (m.month || "").toUpperCase().trim() === nName && m.year === nYrS)) {
-        alert(`O mês de ${nName}/${nYrS} já existe.`);
+        const currentLang = cur.appLanguage;
+        const tCommon = TRANSLATIONS[currentLang].common;
+        // Use dynamic translation for duplicate month alert
+        alert(tCommon.monthExists.replace('{month}', nName).replace('{year}', nYrS));
         return;
     }
 
