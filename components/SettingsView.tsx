@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Palette, Check, Lock, Crown, Shield, ChevronRight } from 'lucide-react';
+import { Palette, Check, Lock, Crown, Shield, ChevronRight, MessageSquareWarning } from 'lucide-react';
 import { AppTheme, AppLanguage } from '../types';
 import { TRANSLATIONS } from '../i18n';
 import PrivacyPolicyModal from './PrivacyPolicyModal';
@@ -54,6 +54,12 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
       return;
     }
     setSelectedThemeId(theme.id);
+  };
+
+  const handleFeedback = () => {
+    const subject = encodeURIComponent(t.feedbackSubject || "Flow Finance - Relatório de Bug / Feedback");
+    const body = encodeURIComponent(t.feedbackBody || "Olá,\n\nEncontrei um problema/tenho uma sugestão:\n\n[Descreva aqui]\n\nImportante: Anexei prints ou vídeo para ajudar.");
+    window.location.href = `mailto:naylanmoreira350@gmail.com?subject=${subject}&body=${body}`;
   };
 
   return (
@@ -129,8 +135,26 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
           })}
         </div>
 
-        {/* Privacy Policy Link */}
-        <div className="px-1">
+        {/* Links Section (Feedback & Privacy) */}
+        <div className="px-1 flex flex-col gap-2">
+           {/* Feedback Button */}
+           <button 
+             onClick={handleFeedback}
+             className="w-full bg-[#1c1c1e] hover:bg-[#2c2c2e] border border-white/5 rounded-2xl p-4 flex items-center justify-between group transition-colors"
+           >
+              <div className="flex items-center gap-3">
+                 <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
+                    <MessageSquareWarning className="w-4 h-4 text-blue-500" />
+                 </div>
+                 <div className="text-left">
+                    <span className="text-white font-bold text-sm block">{t.feedbackTitle}</span>
+                    <span className="text-gray-500 text-xs">{t.feedbackSubtitle}</span>
+                 </div>
+              </div>
+              <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
+           </button>
+
+           {/* Privacy Policy Link */}
            <button 
              onClick={() => setIsPrivacyOpen(true)}
              className="w-full bg-[#1c1c1e] hover:bg-[#2c2c2e] border border-white/5 rounded-2xl p-4 flex items-center justify-between group transition-colors"
@@ -148,7 +172,7 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
            </button>
            
            <p className="text-center text-[10px] text-gray-600 mt-6 pb-4">
-              Flow Finance v1.4.0 • Performance 100%
+              Flow Finance v1.5.0 • Performance 100%
            </p>
         </div>
       </div>
