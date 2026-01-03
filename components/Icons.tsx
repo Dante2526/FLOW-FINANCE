@@ -70,10 +70,9 @@ export const IconInvestment = ({ onClick }: { onClick?: () => void }) => (
 // --- Official Partner Logos ---
 
 export const JeittoLogo = () => (
-  <div className="w-12 h-12 rounded-[1rem] bg-[#f82f58] flex items-center justify-center shrink-0 shadow-md shadow-[#f82f58]/20">
-     <svg viewBox="0 0 24 24" fill="white" className="w-7 h-7">
-        <path d="M14.5 16.5C14.5 18.43 12.93 20 11 20C9.07 20 7.5 18.43 7.5 16.5H10C10 17.05 10.45 17.5 11 17.5C11.55 17.5 12 17.05 12 16.5V9.5H14.5V16.5Z" />
-        <circle cx="13.25" cy="6.5" r="1.5" />
+  <div className="w-12 h-12 rounded-[1.2rem] bg-[#ff4d00] flex items-center justify-center shrink-0 shadow-md shadow-[#ff4d00]/20">
+     <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+        <path d="M17.5 7.5L12 10V16C12 18.5 10 20.5 7.5 20.5C5.5 20.5 4 19 4 16.5" />
      </svg>
   </div>
 );
