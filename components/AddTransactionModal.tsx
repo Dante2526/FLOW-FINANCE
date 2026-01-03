@@ -14,10 +14,17 @@ interface Props {
   appLanguage: AppLanguage;
 }
 
-// Map short codes for date parsing (Internal Logic Only - mostly legacy Portuguese support)
+// Map short codes for date parsing (Supports PT, EN, ES formats to fix date resets on edit)
 const MONTH_MAP: Record<string, string> = {
+  // PT & Universal
   'jan': '01', 'fev': '02', 'mar': '03', 'abr': '04', 'mai': '05', 'jun': '06',
-  'jul': '07', 'ago': '08', 'set': '09', 'out': '10', 'nov': '11', 'dez': '12'
+  'jul': '07', 'ago': '08', 'set': '09', 'out': '10', 'nov': '11', 'dez': '12',
+  
+  // EN Specifics
+  'feb': '02', 'apr': '04', 'may': '05', 'aug': '08', 'sep': '09', 'oct': '10', 'dec': '12',
+  
+  // ES Specifics
+  'ene': '01', 'dic': '12'
 };
 
 const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transactionToEdit, activeMonthContext, appLanguage }) => {
@@ -96,7 +103,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
           return displayDate.split(' ')[0];
       }
 
-      // Handle "DD Mmm" format (e.g. "24 Jan") - Legacy Portuguese Support
+      // Handle "DD Mmm" format (e.g. "24 Jan", "24 May") - Locale Support
       const parts = displayDate.split(' ');
       if (parts.length >= 2) {
         const day = parts[0].padStart(2, '0');

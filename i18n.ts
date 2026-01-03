@@ -203,6 +203,11 @@ export const TRANSLATIONS = {
       alerts: {
         errorPush: "Erro ao conectar com servidor de notificações. Tente novamente.",
         errorPermission: "Não foi possível ativar as notificações. Verifique as configurações do navegador."
+      },
+      system: {
+        billDueTitle: "Conta Vencendo Hoje",
+        billDueMessage: "A conta \"{name}\" no valor de {value} vence hoje.",
+        todayAt: "Hoje, {time}"
       }
     },
     profile: {
@@ -356,7 +361,9 @@ export const TRANSLATIONS = {
       errors: {
         invalidEmail: 'Por favor, insira um e-mail válido.',
         missingName: 'Por favor, informe seu nome.',
-        invalidCode: 'O código deve ter exatamente 6 dígitos.'
+        invalidCode: 'O código deve ter exatamente 6 dígitos.',
+        genericSend: "Erro ao enviar código.",
+        genericVerify: "Erro de verificação. Tente novamente."
       }
     },
     proModal: {
@@ -394,7 +401,8 @@ export const TRANSLATIONS = {
       securedBy: "Pagamento Seguro via Asaas",
       errors: {
         cpf: "Por favor, informe um CPF válido.",
-        name: "Por favor, informe o nome completo."
+        name: "Por favor, informe o nome completo.",
+        generic: "Erro ao criar cobrança. Tente novamente."
       }
     }
   },
@@ -587,6 +595,11 @@ export const TRANSLATIONS = {
       alerts: {
         errorPush: "Error connecting to notification server. Please try again.",
         errorPermission: "Could not enable notifications. Please check browser settings."
+      },
+      system: {
+        billDueTitle: "Bill Due Today",
+        billDueMessage: "The bill \"{name}\" of {value} is due today.",
+        todayAt: "Today, {time}"
       }
     },
     profile: {
@@ -740,7 +753,9 @@ export const TRANSLATIONS = {
       errors: {
         invalidEmail: 'Please enter a valid email.',
         missingName: 'Please enter your name.',
-        invalidCode: 'The code must be exactly 6 digits.'
+        invalidCode: 'The code must be exactly 6 digits.',
+        genericSend: "Error sending code.",
+        genericVerify: "Verification error. Please try again."
       }
     },
     proModal: {
@@ -778,7 +793,8 @@ export const TRANSLATIONS = {
       securedBy: "Secured by Asaas",
       errors: {
         cpf: "Please enter a valid Tax ID.",
-        name: "Please enter full name."
+        name: "Please enter full name.",
+        generic: "Error creating charge. Please try again."
       }
     }
   },
@@ -817,7 +833,7 @@ export const TRANSLATIONS = {
       }
     },
     months: {
-        jan: 'ENERO', fev: 'FEBRERO', mar: 'MARZO', abr: 'ABRIL', mai: 'MAYO', jun: 'JUNIO',
+        jan: 'ENERO', fev: 'FEBRERO', mar: 'MARZO', abr: 'ABRIL', mai: 'MAIO', jun: 'JUNIO',
         jul: 'JULIO', ago: 'AGOSTO', set: 'SEPTIEMBRE', out: 'OCTUBRE', nov: 'NOVIEMBRE', dez: 'DICIEMBRE'
     },
     calculator: {
@@ -971,6 +987,11 @@ export const TRANSLATIONS = {
       alerts: {
         errorPush: "Error al conectar con servidor de notificaciones. Intente nuevamente.",
         errorPermission: "No se pudieron activar las notificaciones. Verifique la configuración del navegador."
+      },
+      system: {
+        billDueTitle: "Cuenta Vence Hoy",
+        billDueMessage: "La cuenta \"{name}\" por valor de {value} vence hoy.",
+        todayAt: "Hoy, {time}"
       }
     },
     profile: {
@@ -1124,7 +1145,9 @@ export const TRANSLATIONS = {
       errors: {
         invalidEmail: 'Por favor, ingresa un correo válido.',
         missingName: 'Por favor, ingresa tu nombre.',
-        invalidCode: 'El código deve ter exatamente 6 dígitos.'
+        invalidCode: 'El código deve ter exatamente 6 dígitos.',
+        genericSend: "Error al enviar código.",
+        genericVerify: "Error de verificación. Inténtalo de nuevo."
       }
     },
     proModal: {
@@ -1162,7 +1185,8 @@ export const TRANSLATIONS = {
       securedBy: "Pago Seguro vía Asaas",
       errors: {
         cpf: "Por favor, ingresa un Tax ID válido.",
-        name: "Por favor, ingresa nombre completo."
+        name: "Por favor, ingresa nombre completo.",
+        generic: "Error creando cobro. Inténtalo de nuevo."
       }
     }
   }

@@ -20,7 +20,7 @@ import LoginScreen, { FlowLogo } from './components/LoginScreen';
 import ProModal from './components/ProModal'; 
 import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification, AppLanguage } from './types';
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
-import { TRANSLATIONS, getBrowserLanguage } from './i18n';
+import { TRANSLATIONS, getBrowserLanguage, getLocale } from './i18n';
 import { IconBell } from './components/Icons';
 import { Crown, Languages } from 'lucide-react';
 
@@ -229,6 +229,10 @@ const App: React.FC = () => {
     const nowTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     const missingNotifs: AppNotification[] = [];
 
+    // Localize numbers based on current app language
+    const locale = getLocale(appLanguage);
+    const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
+
     transactions.forEach(t => {
        if (t.paid) return;
 
@@ -242,11 +246,20 @@ const App: React.FC = () => {
            const notifId = `bill-alert-${t.id}`;
            const exists = notifications.some(n => n.id === notifId);
            if (!exists) {
+               const formattedValue = t.amount.toLocaleString(locale, { minimumFractionDigits: 2 });
+               
+               // Use dynamic translation keys
+               const title = TRANSLATIONS[appLanguage].notifications.system.billDueTitle;
+               const message = TRANSLATIONS[appLanguage].notifications.system.billDueMessage
+                  .replace('{name}', t.name)
+                  .replace('{value}', `${currencySymbol} ${formattedValue}`);
+               const dateStr = TRANSLATIONS[appLanguage].notifications.system.todayAt.replace('{time}', nowTime);
+
                missingNotifs.push({
                    id: notifId,
-                   title: 'Conta Vencendo Hoje',
-                   message: `A conta "${t.name}" no valor de R$ ${t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} vence hoje.`,
-                   date: `Hoje, ${nowTime}`,
+                   title: title,
+                   message: message,
+                   date: dateStr,
                    read: false,
                    type: 'alert'
                });
@@ -263,7 +276,7 @@ const App: React.FC = () => {
             lastActionTimeRef.current = Date.now();
         }
     }
-  }, [transactions, notifications, isLoadingData, currentUserEmail]);
+  }, [transactions, notifications, isLoadingData, currentUserEmail, appLanguage]); // Added appLanguage dep
 
   const applyData = (data: any) => {
       if (data.profile) setUserProfile(data.profile);

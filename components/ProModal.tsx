@@ -146,7 +146,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
        const data = await res.json();
 
        if (!res.ok) {
-         throw new Error(data.error || 'Erro ao criar cobrança');
+         throw new Error(data.error || t.errors.generic); // Use localized generic error
        }
 
        setPaymentId(data.paymentId);

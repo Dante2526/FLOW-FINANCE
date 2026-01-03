@@ -114,7 +114,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
       setResendTimer(60);
     } catch (err: any) {
       console.error(`[FlowAuth] Erro crítico ao solicitar OTP:`, err);
-      const msg = err.message || 'Erro ao enviar código.';
+      const msg = err.message || t.errors.genericSend;
       setError(msg);
 
       // Se o erro for de Rate Limit (contém "Aguarde Xs"), ativa o timer com o tempo retornado
@@ -158,7 +158,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
       }
     } catch (err: any) {
       console.error(`[FlowAuth] Erro ao verificar código OTP:`, err);
-      setError(err.message || 'Erro de verificação. Tente novamente.');
+      setError(err.message || t.errors.genericVerify);
       setIsLoading(false);
     }
   };
