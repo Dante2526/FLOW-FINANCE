@@ -20,7 +20,7 @@ import LoginScreen, { FlowLogo } from './components/LoginScreen';
 import ProModal from './components/ProModal'; 
 import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification, AppLanguage } from './types';
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
-import { TRANSLATIONS } from './i18n';
+import { TRANSLATIONS, getBrowserLanguage } from './i18n';
 import { IconBell } from './components/Icons';
 import { Crown, Languages } from 'lucide-react';
 
@@ -92,7 +92,8 @@ const App: React.FC = () => {
   const [isLoadingData, setIsLoadingData] = useState<boolean>(() => !!loadData(STORAGE_KEYS.USER_SESSION, null));
   const [isSessionReady, setIsSessionReady] = useState(false);
   const [currentView, setCurrentView] = useState<AppView>('home');
-  const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => loadData(STORAGE_KEYS.APP_LANGUAGE, 'pt'));
+  // Use browser detection as fallback for initial language
+  const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => loadData(STORAGE_KEYS.APP_LANGUAGE, getBrowserLanguage()));
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);

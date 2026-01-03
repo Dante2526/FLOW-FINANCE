@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Mail, ArrowRight, ShieldCheck, User, KeyRound, ChevronLeft, AlertCircle, Languages } from 'lucide-react';
 import { loadData, saveData, STORAGE_KEYS } from '../services/storage';
 import { sendAuthOtp, verifyAuthOtp, supabase } from '../services/supabase';
-import { TRANSLATIONS } from '../i18n';
+import { TRANSLATIONS, getBrowserLanguage } from '../i18n';
 import { AppLanguage } from '../types';
 
 interface Props {
@@ -45,8 +45,8 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
   // Timer para evitar spam no botão de reenvio
   const [resendTimer, setResendTimer] = useState(0);
 
-  // Language State
-  const [language, setLanguage] = useState<AppLanguage>(() => loadData(STORAGE_KEYS.APP_LANGUAGE, 'pt'));
+  // Language State with Browser Detection Fallback
+  const [language, setLanguage] = useState<AppLanguage>(() => loadData(STORAGE_KEYS.APP_LANGUAGE, getBrowserLanguage()));
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
   // Translations shortcut
