@@ -14,6 +14,19 @@ export const TRANSLATIONS = {
       wallet: 'CARTEIRA',
       config: 'CONFIG'
     },
+    transactionList: {
+      types: {
+        purchase: 'Compra',
+        subscription: 'Assinatura',
+        transfer: 'Transferência'
+      },
+      due: 'Vence:',
+      today: 'Hoje',
+      methods: {
+        pix: 'PIX',
+        card: 'CARTAO'
+      }
+    },
     months: {
         jan: 'JANEIRO', fev: 'FEVEREIRO', mar: 'MARÇO', abr: 'ABRIL', mai: 'MAIO', jun: 'JUNHO',
         jul: 'JULHO', ago: 'AGOSTO', set: 'SETEMBRO', out: 'OUTUBRO', nov: 'NOVEMBRO', dez: 'DEZEMBRO'
@@ -324,9 +337,22 @@ export const TRANSLATIONS = {
       wallet: 'WALLET',
       config: 'SETTINGS'
     },
+    transactionList: {
+      types: {
+        purchase: 'Purchase',
+        subscription: 'Subscription',
+        transfer: 'Transfer'
+      },
+      due: 'Due:',
+      today: 'Today',
+      methods: {
+        pix: 'PIX',
+        card: 'CARD'
+      }
+    },
     months: {
-        jan: 'JANUARY', fev: 'FEBRUARY', mar: 'MARCH', abr: 'APRIL', mai: 'MAY', jun: 'JUNE',
-        jul: 'JULY', ago: 'AUGUST', set: 'SEPTEMBER', out: 'OCTOBER', nov: 'NOVEMBER', dez: 'DECEMBER'
+        jan: 'JANUARY', fev: 'FEBRUARY', mar: 'MARCH', abr: 'APRIL', mai: 'MAYO', jun: 'JUNE',
+        jul: 'JULY', ago: 'AGOSTO', set: 'SEPTEMBER', out: 'OCTOBER', nov: 'NOVEMBER', dez: 'DECEMBER'
     },
     calculator: {
       title: "Calculator",
@@ -633,6 +659,19 @@ export const TRANSLATIONS = {
       invest: 'INVERTIR',
       wallet: 'CARTERA',
       config: 'AJUSTES'
+    },
+    transactionList: {
+      types: {
+        purchase: 'Compra',
+        subscription: 'Suscripción',
+        transfer: 'Transferencia'
+      },
+      due: 'Vence:',
+      today: 'Hoy',
+      methods: {
+        pix: 'PIX',
+        card: 'TARJETA'
+      }
     },
     months: {
         jan: 'ENERO', fev: 'FEBRERO', mar: 'MARZO', abr: 'ABRIL', mai: 'MAYO', jun: 'JUNIO',

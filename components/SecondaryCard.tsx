@@ -1,7 +1,7 @@
-
 import React, { useState, useRef } from 'react';
-import { Account, CardTheme } from '../types';
+import { Account, CardTheme, AppLanguage } from '../types';
 import { Trash2, Edit2, GripVertical } from 'lucide-react';
+import { getLocale } from '../i18n';
 
 interface Props {
   account: Account;
@@ -12,6 +12,7 @@ interface Props {
   onDragStart?: (id: string) => void;
   onDragEnter?: (id: string) => void;
   onDragEnd?: () => void;
+  appLanguage?: AppLanguage;
 }
 
 const getThemeStyles = (theme: CardTheme) => {
@@ -52,7 +53,8 @@ const SecondaryCard: React.FC<Props> = ({
   draggable,
   onDragStart,
   onDragEnter,
-  onDragEnd
+  onDragEnd,
+  appLanguage = 'pt'
 }) => {
   const [offsetX, setOffsetX] = useState(0);
   
@@ -65,6 +67,7 @@ const SecondaryCard: React.FC<Props> = ({
 
   const themeClass = getThemeStyles(account.colorTheme);
   const labelClass = getLabelStyles(account.colorTheme);
+  const locale = getLocale(appLanguage as AppLanguage);
 
   // Unified Handler Logic
   const handleStart = (clientX: number, clientY: number, target: EventTarget | null) => {
@@ -175,6 +178,8 @@ const SecondaryCard: React.FC<Props> = ({
      }
   };
 
+  const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
+
   return (
     <div 
       data-card-id={account.id}
@@ -224,7 +229,7 @@ const SecondaryCard: React.FC<Props> = ({
                 {account.name}
                 </span>
                 <h2 className="text-4xl font-bold tracking-tight drop-shadow-sm">
-                R$ {account.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {currencySymbol} {account.balance.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </h2>
             </div>
 

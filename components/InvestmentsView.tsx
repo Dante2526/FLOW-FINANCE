@@ -4,7 +4,7 @@ import { TrendingUp, Plus, PieChart, Building, Trash2, Edit2, Settings2, X, Refr
 import { Investment, AppLanguage } from '../types';
 import { InvestmentIcon } from './Icons';
 import AddInvestmentModal from './AddInvestmentModal';
-import { TRANSLATIONS } from '../i18n';
+import { TRANSLATIONS, getLocale } from '../i18n';
 
 interface Props {
   investments: Investment[];
@@ -24,9 +24,11 @@ interface SwipeableItemProps {
   onEdit: (inv: Investment) => void;
   onDelete: (id: string) => void;
   getYieldLabel: (inv: Investment) => string;
+  locale: string;
+  currencySymbol: string;
 }
 
-const SwipeableInvestmentItem: React.FC<SwipeableItemProps> = React.memo(({ inv, onEdit, onDelete, getYieldLabel }) => {
+const SwipeableInvestmentItem: React.FC<SwipeableItemProps> = React.memo(({ inv, onEdit, onDelete, getYieldLabel, locale, currencySymbol }) => {
   const [offsetX, setOffsetX] = useState(0);
   
   const startX = useRef<number | null>(null);
@@ -100,7 +102,7 @@ const SwipeableInvestmentItem: React.FC<SwipeableItemProps> = React.memo(({ inv,
           <div className="flex-1 min-w-0 pointer-events-none">
             <div className="flex justify-between items-start">
               <h4 className="font-bold text-white text-sm truncate">{inv.name}</h4>
-              <span className={`${getValueColorClass()} font-bold text-sm whitespace-nowrap`}>R$ {(inv.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+              <span className={`${getValueColorClass()} font-bold text-sm whitespace-nowrap`}>{currencySymbol} {(inv.amount || 0).toLocaleString(locale, { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between items-center mt-1">
               <div className="flex items-center gap-2">
@@ -123,6 +125,8 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
   const [isFetchingCdi, setIsFetchingCdi] = useState(false);
   
   const t = TRANSLATIONS[appLanguage].investments;
+  const locale = getLocale(appLanguage);
+  const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
   useEffect(() => {
     const fetchCdi = async () => {
@@ -178,16 +182,16 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
       </div>
       <div className="bg-accent rounded-[2.5rem] p-6 flex flex-col gap-4 relative overflow-hidden flex-shrink-0 shadow-xl shadow-black/40 mb-8">
           <div className="absolute -top-8 -right-8 opacity-20 pointer-events-none rotate-12"><PieChart className="w-48 h-48 text-black" /></div>
-          <div className="relative z-10"><span className="text-white/80 text-xs font-bold uppercase tracking-wider block mb-1">{t.totalEquity}</span><h3 className="text-4xl font-bold text-white tracking-tight">R$ {totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3></div>
+          <div className="relative z-10"><span className="text-white/80 text-xs font-bold uppercase tracking-wider block mb-1">{t.totalEquity}</span><h3 className="text-4xl font-bold text-white tracking-tight">{currencySymbol} {totalInvested.toLocaleString(locale, { minimumFractionDigits: 2 })}</h3></div>
           <div className="h-px bg-white/20 w-full relative z-10" />
           <div className="grid grid-cols-2 gap-3 relative z-10">
-            <div className="bg-black/20 p-4 rounded-2xl backdrop-blur-sm"><span className="text-white/70 text-[10px] font-bold uppercase block mb-1">{t.yieldMonth}</span><p className="text-white font-bold text-lg">+ R$ {(estimatedYearlyReturn / 12).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
-            <div className="bg-black/20 p-4 rounded-2xl backdrop-blur-sm"><span className="text-white/70 text-[10px] font-bold uppercase block mb-1">{t.yieldYear}</span><p className="text-white font-bold text-lg">+ R$ {estimatedYearlyReturn.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+            <div className="bg-black/20 p-4 rounded-2xl backdrop-blur-sm"><span className="text-white/70 text-[10px] font-bold uppercase block mb-1">{t.yieldMonth}</span><p className="text-white font-bold text-lg">+ {currencySymbol} {(estimatedYearlyReturn / 12).toLocaleString(locale, { minimumFractionDigits: 2 })}</p></div>
+            <div className="bg-black/20 p-4 rounded-2xl backdrop-blur-sm"><span className="text-white/70 text-[10px] font-bold uppercase block mb-1">{t.yieldYear}</span><p className="text-white font-bold text-lg">+ {currencySymbol} {estimatedYearlyReturn.toLocaleString(locale, { minimumFractionDigits: 2 })}</p></div>
           </div>
       </div>
       <div className="flex-1 flex flex-col gap-2">
           <div className="flex justify-between items-center px-1 mb-2"><h3 className="text-sm font-bold text-gray-400 uppercase">{t.yourAssets}</h3></div>
-          {(investments || []).length === 0 ? <div className="flex flex-col items-center justify-center py-10 opacity-50"><Building className="w-12 h-12 text-gray-500 mb-2" /><p className="text-xs text-gray-400">{t.emptyList}</p></div> : (investments || []).map(inv => <SwipeableInvestmentItem key={inv.id} inv={inv} onEdit={(i) => { setEditingInvestment(i); setIsAddModalOpen(true); }} onDelete={onDelete} getYieldLabel={getYieldLabel} />)}
+          {(investments || []).length === 0 ? <div className="flex flex-col items-center justify-center py-10 opacity-50"><Building className="w-12 h-12 text-gray-500 mb-2" /><p className="text-xs text-gray-400">{t.emptyList}</p></div> : (investments || []).map(inv => <SwipeableInvestmentItem key={inv.id} inv={inv} onEdit={(i) => { setEditingInvestment(i); setIsAddModalOpen(true); }} onDelete={onDelete} getYieldLabel={getYieldLabel} locale={locale} currencySymbol={currencySymbol} />)}
       </div>
       <button onClick={() => { setEditingInvestment(null); setIsAddModalOpen(true); }} className="fixed bottom-28 right-6 w-14 h-14 bg-accent rounded-full flex items-center justify-center shadow-2xl hover:bg-accentDark transition-colors z-40 active:scale-90"><Plus className="w-6 h-6 text-black" /></button>
       <AddInvestmentModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={(data) => editingInvestment ? onEdit({ ...data, id: editingInvestment.id }) : onAdd(data)} investmentToEdit={editingInvestment} isPro={isPro} onOpenProModal={onOpenProModal} appLanguage={appLanguage} />

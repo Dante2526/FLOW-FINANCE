@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Bell, Trash2, Mail, CheckCircle2, Send, Share2, DollarSign, MessageSquare, CloudLightning, Loader2, Check } from 'lucide-react';
 import { AppNotification, AppLanguage } from '../types';
 import { saveUserField, VAPID_PUBLIC_KEY } from '../services/supabase';
-import { TRANSLATIONS } from '../i18n';
+import { TRANSLATIONS, getLocale } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -51,6 +51,8 @@ const NotificationModal: React.FC<Props> = ({
   const [isSubscribing, setIsSubscribing] = useState(false);
   
   const t = TRANSLATIONS[appLanguage].notifications;
+  const locale = getLocale(appLanguage);
+  const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
   // Check permissions and subscription status when modal opens
   useEffect(() => {
@@ -139,7 +141,7 @@ const NotificationModal: React.FC<Props> = ({
       return;
     }
     const amountValue = parseFloat(rawValue) / 100;
-    setAmount(amountValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setAmount(amountValue.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   };
 
   const handleShare = async () => {
@@ -149,7 +151,7 @@ const NotificationModal: React.FC<Props> = ({
     const date = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
     if (messageType === 'cobranca') {
-      textToSend = `${t.shareChargeTitle}\n\n${t.shareHello} ${recipientName},\n\n${t.shareChargeBody}\n\n💰 *${t.shareValue}:* R$ ${amount || '0,00'}\n📝 *${t.shareDetail}:* ${customMessage || t.shareDefaultCharge}\n\n${t.shareFooterCharge}\n_${t.generatedAt} ${date}_`;
+      textToSend = `${t.shareChargeTitle}\n\n${t.shareHello} ${recipientName},\n\n${t.shareChargeBody}\n\n💰 *${t.shareValue}:* ${currencySymbol} ${amount || '0,00'}\n📝 *${t.shareDetail}:* ${customMessage || t.shareDefaultCharge}\n\n${t.shareFooterCharge}\n_${t.generatedAt} ${date}_`;
     } else {
       textToSend = `${t.shareWarningTitle}\n\n${t.shareHello} ${recipientName},\n\n${customMessage || t.shareDefaultWarning}\n\n_${t.generatedAt} ${date}_`;
     }
@@ -323,7 +325,7 @@ const NotificationModal: React.FC<Props> = ({
                 <div className="flex flex-col gap-1 animate-in fade-in duration-300 flex-shrink-0">
                   <label className="text-[10px] text-gray-400 ml-2 font-bold uppercase">{t.amountLabel}</label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-500 font-bold text-sm">R$</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-500 font-bold text-sm">{currencySymbol}</span>
                     <input 
                       type="text"
                       inputMode="numeric"

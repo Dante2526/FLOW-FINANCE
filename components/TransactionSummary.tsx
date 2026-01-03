@@ -2,7 +2,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { ArrowUpRight, Trash2, X, Check } from 'lucide-react';
 import { MonthSummary, AppLanguage } from '../types';
-import { TRANSLATIONS } from '../i18n';
+import { TRANSLATIONS, getLocale } from '../i18n';
 
 interface Props {
   months: MonthSummary[];
@@ -63,6 +63,8 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
   };
 
   const displayName = getMonthDisplayName(item.month, appLanguage);
+  const locale = getLocale(appLanguage);
+  const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
   return (
     <div 
@@ -118,7 +120,7 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
                   </h3>
                   <div className="flex items-center gap-1.5">
                     <span className="text-white font-bold text-sm opacity-90 leading-none">
-                        R$ {item.total.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        {currencySymbol} {item.total.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </span>
                     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${isActive ? 'bg-white/20 text-white' : 'bg-black/20 text-white/60'}`}>
                         {item.count || 0}

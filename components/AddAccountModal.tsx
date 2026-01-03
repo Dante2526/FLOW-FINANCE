@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, Lock, Crown } from 'lucide-react';
 import { CardTheme, Account, AppLanguage } from '../types';
-import { TRANSLATIONS } from '../i18n';
+import { TRANSLATIONS, getLocale } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -29,12 +29,14 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
   const [selectedTheme, setSelectedTheme] = useState<CardTheme>('default');
 
   const t = TRANSLATIONS[appLanguage].addAccount;
+  const locale = getLocale(appLanguage);
+  const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
   // Load data when entering edit mode
   useEffect(() => {
     if (isOpen && accountToEdit) {
       setName(accountToEdit.name);
-      setBalance(accountToEdit.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      setBalance(accountToEdit.balance.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       setSelectedTheme(accountToEdit.colorTheme);
     } else if (isOpen && !accountToEdit) {
       // Reset if opening in create mode
@@ -42,7 +44,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
       setBalance('');
       setSelectedTheme('default');
     }
-  }, [isOpen, accountToEdit]);
+  }, [isOpen, accountToEdit, locale]);
 
   if (!isOpen) return null;
 
@@ -53,7 +55,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
       return;
     }
     const amountValue = parseFloat(rawValue) / 100;
-    setBalance(amountValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setBalance(amountValue.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -63,7 +65,11 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
     // Parse back to float
     let finalBalance = 0;
     if (balance) {
-       finalBalance = parseFloat(balance.replace(/\./g, '').replace(',', '.'));
+       if (locale === 'en-US') {
+           finalBalance = parseFloat(balance.replace(/,/g, ''));
+       } else {
+           finalBalance = parseFloat(balance.replace(/\./g, '').replace(',', '.'));
+       }
     }
 
     onSave(name, finalBalance, selectedTheme);
@@ -110,7 +116,7 @@ const AddAccountModal: React.FC<Props> = ({ isOpen, onClose, onSave, accountToEd
           <div className="flex flex-col gap-2">
             <label className="text-gray-400 text-sm ml-2">{t.balanceLabel}</label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-accent">R$</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-accent">{currencySymbol}</span>
               <input 
                 type="text" 
                 inputMode="numeric"

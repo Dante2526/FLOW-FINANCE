@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Check, Calendar } from 'lucide-react';
 import { LogoType, Transaction, AppLanguage } from '../types';
 import { TransactionIcon } from './Icons';
-import { TRANSLATIONS } from '../i18n';
+import { TRANSLATIONS, getLocale } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -29,6 +29,8 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
   const [selectedIcon, setSelectedIcon] = useState<LogoType>('shopping');
 
   const t = TRANSLATIONS[appLanguage].addTransaction;
+  const locale = getLocale(appLanguage);
+  const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
   // Define icons arrays dynamically to use translations
   const PURCHASE_ICONS: { type: LogoType; label: string }[] = [
@@ -115,7 +117,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
 
   useEffect(() => {
     if (isOpen && transactionToEdit) {
-      setAmount(transactionToEdit.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      setAmount(transactionToEdit.amount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       setName(transactionToEdit.name); // Removed explicit toUpperCase here to respect stored data style until edit
       setSelectedIcon(transactionToEdit.logoType);
       setType(transactionToEdit.type as 'purchase' | 'subscription');
@@ -144,7 +146,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
           setDate(new Date().toISOString().split('T')[0]);
       }
     }
-  }, [isOpen, transactionToEdit, activeMonthContext]);
+  }, [isOpen, transactionToEdit, activeMonthContext, locale]);
 
   // When type changes, reset icon to first of that list if not editing or if mismatched
   useEffect(() => {
@@ -166,7 +168,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
       return;
     }
     const amountValue = parseFloat(rawValue) / 100;
-    setAmount(amountValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setAmount(amountValue.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   };
 
   if (!isOpen) return null;
@@ -186,8 +188,14 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
        finalDateString = date;
     }
 
-    // Parse amount from string "1.000,00" to float
-    const parsedAmount = parseFloat(amount.replace(/\./g, '').replace(',', '.'));
+    // Parse amount from string (handle locale differences)
+    let parsedAmount = 0;
+    if (locale === 'en-US') {
+        parsedAmount = parseFloat(amount.replace(/,/g, ''));
+    } else {
+        // Default PT/ES
+        parsedAmount = parseFloat(amount.replace(/\./g, '').replace(',', '.'));
+    }
 
     onSave({
       name: name.toUpperCase(), // Convert to Uppercase ONLY on submit
@@ -232,7 +240,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
           <div className="flex flex-col gap-2">
             <label className="text-gray-400 text-sm ml-2">{t.amountLabel}</label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-accent">R$</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-bold text-accent">{currencySymbol}</span>
               <input 
                 type="text" 
                 inputMode="numeric"

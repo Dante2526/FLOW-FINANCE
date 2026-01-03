@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, TrendingUp, Building, Layers, Search, Lock } from 'lucide-react';
 import { Investment, InvestmentType, AppLanguage } from '../types';
-import { TRANSLATIONS } from '../i18n';
+import { TRANSLATIONS, getLocale } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -23,13 +23,15 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
   const [yieldRate, setYieldRate] = useState('');
   
   const t = TRANSLATIONS[appLanguage].investments.form;
+  const locale = getLocale(appLanguage);
+  const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
   useEffect(() => {
     if (isOpen && investmentToEdit) {
       setName(investmentToEdit.name);
       setInstitution(investmentToEdit.institution);
       setType(investmentToEdit.type);
-      setAmount(investmentToEdit.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      setAmount(investmentToEdit.amount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       setQuantity(investmentToEdit.quantity ? investmentToEdit.quantity.toString() : '');
       setYieldRate(investmentToEdit.yieldRate ? investmentToEdit.yieldRate.toString() : '');
     } else if (isOpen && !investmentToEdit) {
@@ -41,7 +43,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
       setQuantity('');
       setYieldRate('');
     }
-  }, [isOpen, investmentToEdit]);
+  }, [isOpen, investmentToEdit, locale]);
 
   if (!isOpen) return null;
 
@@ -52,7 +54,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
       return;
     }
     const amountVal = parseFloat(rawValue) / 100;
-    setAmount(amountVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setAmount(amountVal.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   };
 
   const handleSearchYield = () => {
@@ -79,7 +81,13 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
     e.preventDefault();
     if (!name || !amount) return;
 
-    const parsedAmount = parseFloat(amount.replace(/\./g, '').replace(',', '.'));
+    let parsedAmount = 0;
+    if (locale === 'en-US') {
+        parsedAmount = parseFloat(amount.replace(/,/g, ''));
+    } else {
+        parsedAmount = parseFloat(amount.replace(/\./g, '').replace(',', '.'));
+    }
+
     const parsedYield = yieldRate ? parseFloat(yieldRate.replace(',', '.')) : 0;
     const parsedQuantity = quantity ? parseInt(quantity) : undefined;
 
@@ -202,7 +210,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
               <div className="flex-1 flex flex-col gap-2">
                  <label className="text-gray-400 text-xs ml-2 font-bold uppercase">{t.totalValue}</label>
                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-accent font-bold text-sm">R$</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-accent font-bold text-sm">{currencySymbol}</span>
                     <input 
                       type="text"
                       inputMode="numeric" 

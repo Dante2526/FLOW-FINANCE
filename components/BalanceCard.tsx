@@ -1,6 +1,7 @@
-
 import React, { useState } from 'react';
 import { Plus, Copy, Calculator, GripVertical, Eye, EyeOff } from 'lucide-react';
+import { AppLanguage } from '../types';
+import { getLocale } from '../i18n';
 
 interface Props {
   balance: number;
@@ -15,6 +16,7 @@ interface Props {
   onDragStart?: (id: string) => void;
   onDragEnter?: (id: string) => void;
   onDragEnd?: () => void;
+  appLanguage?: AppLanguage;
 }
 
 const BalanceCard: React.FC<Props> = ({ 
@@ -28,7 +30,8 @@ const BalanceCard: React.FC<Props> = ({
   draggable,
   onDragStart,
   onDragEnter,
-  onDragEnd
+  onDragEnd,
+  appLanguage = 'pt'
 }) => {
   // State for balance visibility
   const [isVisible, setIsVisible] = useState(() => {
@@ -47,8 +50,14 @@ const BalanceCard: React.FC<Props> = ({
   };
 
   // Format the balance to maintain the visual style (large integer, smaller decimals)
-  const formattedBalance = balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  const [integerPart, decimalPart] = formattedBalance.split(',');
+  const locale = getLocale(appLanguage as AppLanguage);
+  const formattedBalance = balance.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  
+  // Determine separator based on locale
+  const separator = locale === 'en-US' ? '.' : ',';
+  const parts = formattedBalance.split(separator);
+  const integerPart = parts[0];
+  const decimalPart = parts[1] || '00';
 
   // Native DnD Handlers
   const handleDragStart = (e: React.DragEvent) => {
@@ -126,11 +135,11 @@ const BalanceCard: React.FC<Props> = ({
       <div className="mt-2 mb-6">
         {isVisible ? (
           <h1 className="text-4xl font-bold tracking-tight drop-shadow-md">
-            R$ {integerPart}<span className="text-3xl text-white">,{decimalPart}</span>
+            {appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€'} {integerPart}<span className="text-3xl text-white">{separator}{decimalPart}</span>
           </h1>
         ) : (
           <h1 className="text-4xl font-bold tracking-tight drop-shadow-md opacity-80">
-            R$ ••••
+            {appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€'} ••••
           </h1>
         )}
       </div>

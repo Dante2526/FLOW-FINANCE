@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Wallet, Plus, ChevronLeft, Calendar, Trash2, Check, Edit2, Info } from 'lucide-react';
 import { LongTermTransaction, AppLanguage } from '../types';
-import { TRANSLATIONS } from '../i18n';
+import { TRANSLATIONS, getLocale } from '../i18n';
 
 interface Props {
   items: LongTermTransaction[];
@@ -41,6 +41,8 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
   const [editTotalValue, setEditTotalValue] = useState('');
 
   const t = TRANSLATIONS[appLanguage].wallet;
+  const locale = getLocale(appLanguage);
+  const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
   // --- SCROLL LOCK EFFECT FOR LOCAL MODALS ---
   useEffect(() => {
@@ -69,13 +71,16 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
       return;
     }
     const amount = parseFloat(rawValue) / 100;
-    setter(amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setter(amount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   };
 
   // --- SYNC LOGIC FOR NEW TRANSACTION ---
   
   const parseCurrency = (val: string) => {
       if (!val) return 0;
+      if (locale === 'en-US') {
+          return parseFloat(val.replace(/,/g, ''));
+      }
       return parseFloat(val.replace(/\./g, '').replace(',', '.'));
   };
 
@@ -160,13 +165,13 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
     if (item.installmentsDates && item.installmentsDates[index]) {
        // Append T00:00:00 to ensure local date interpretation
        const dateOverride = new Date(item.installmentsDates[index] + 'T00:00:00');
-       return dateOverride.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+       return dateOverride.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
 
     // Default Calculation
     const date = new Date(item.startDate + 'T00:00:00');
     date.setMonth(date.getMonth() + index);
-    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return date.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
   
   const getRawInstallmentDate = (item: LongTermTransaction, index: number): string => {
@@ -204,8 +209,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
       e.preventDefault();
       if (!selectedItem || !editMonthlyValue) return;
 
-      const cleanVal = editMonthlyValue.replace(/\./g, '').replace(',', '.');
-      const newMonthlyAmount = parseFloat(cleanVal);
+      const newMonthlyAmount = parseCurrency(editMonthlyValue);
       const oldMonthlyAmount = getCurrentMonthlyAmount(selectedItem);
       
       // Create new item copy
@@ -246,8 +250,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
     if (!selectedItem || editingInstallmentIndex === null || !editInstallmentValue || !editInstallmentDate) return;
 
     // 1. Handle Amount
-    const cleanVal = editInstallmentValue.replace(/\./g, '').replace(',', '.');
-    const newAmount = parseFloat(cleanVal);
+    const newAmount = parseCurrency(editInstallmentValue);
     
     const newItem = { ...selectedItem };
     
@@ -283,8 +286,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
     e.preventDefault();
     if (!selectedItem || !editTotalValue) return;
 
-    const cleanVal = editTotalValue.replace(/\./g, '').replace(',', '.');
-    const newTotalAmount = parseFloat(cleanVal);
+    const newTotalAmount = parseCurrency(editTotalValue);
 
     // If total changes, we adjust the monthly amount base
     const newMonthlyBase = newTotalAmount / selectedItem.installmentsCount;
@@ -305,13 +307,13 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
   const openEditMonthlyModal = () => {
       if (!selectedItem) return;
       const current = getCurrentMonthlyAmount(selectedItem);
-      setEditMonthlyValue(current.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      setEditMonthlyValue(current.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       setIsEditMonthlyOpen(true);
   };
 
   const openEditInstallmentModal = (index: number, currentAmount: number, currentDateIso: string) => {
       setEditingInstallmentIndex(index);
-      setEditInstallmentValue(currentAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+      setEditInstallmentValue(currentAmount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
       setEditInstallmentDate(currentDateIso);
       setIsEditInstallmentOpen(true);
   };
@@ -324,7 +326,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
 
   const openEditTotalModal = () => {
     if (!selectedItem) return;
-    setEditTotalValue(selectedItem.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    setEditTotalValue(selectedItem.totalAmount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
     setIsEditTotalOpen(true);
   };
   
@@ -381,7 +383,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
             </div>
             <span className="text-[10px] font-bold uppercase text-white/80">{t.details.monthlyValue}</span>
             <span className="text-sm font-bold text-white">
-              R$ {currentMonthlyValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {currencySymbol} {currentMonthlyValue.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </span>
           </button>
 
@@ -407,7 +409,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
              </div>
              <span className="text-[10px] font-bold uppercase text-white/80">{t.details.totalValue}</span>
              <span className="text-sm font-bold text-white">
-               R$ {selectedItem.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+               {currencySymbol} {selectedItem.totalAmount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
              </span>
           </button>
         </div>
@@ -456,7 +458,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
                     <div className={`flex flex-col justify-center items-center h-full relative px-1 border-l ${isPaid ? 'border-white/10' : 'border-white/5'}`}>
                     <div className="flex items-center gap-1">
                         <span className={`text-xs font-bold ${isPaid ? 'text-white' : 'text-gray-300'}`}>
-                            R$ {amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            {currencySymbol} {amount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                         {isPaid && <Check className="w-3 h-3 text-white" />}
                     </div>
@@ -485,7 +487,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
             </div>
             <div className="w-32 flex items-center justify-center">
                 <span className="font-bold text-white text-lg">
-                R$ {totalPaidSoFar.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {currencySymbol} {totalPaidSoFar.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
             </div>
             </div>
@@ -505,7 +507,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
                     
                     <form onSubmit={handleSaveNewMonthlyValue} className="flex flex-col gap-4 mt-2">
                         <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-accent">R$</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-accent">{currencySymbol}</span>
                             <input 
                                 type="text" 
                                 name="lt_monthly_hidden"
@@ -583,7 +585,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
                     
                     <form onSubmit={handleSaveTotal} className="flex flex-col gap-4 mt-2">
                          <div className="relative">
-                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-accent">R$</span>
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-accent">{currencySymbol}</span>
                             <input 
                                 type="text" 
                                 name="lt_total_edit_hidden"
@@ -627,7 +629,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
                         <div className="flex flex-col gap-1">
                             <label className="text-xs text-gray-400 ml-2">{t.details.valueHeader}</label>
                             <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-accent">R$</span>
+                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-accent">{currencySymbol}</span>
                                 <input 
                                     type="text" 
                                     name="lt_installment_edit_hidden"
@@ -723,13 +725,13 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
                      <div className="min-w-0 flex-1 mr-4">
                        <h3 className="text-lg font-bold text-white uppercase truncate">{item.title}</h3>
                        <div className="flex gap-2 text-[10px] text-gray-400 mt-1 whitespace-nowrap">
-                          <span>{t.details.start}: {startDate.toLocaleDateString('pt-BR')}</span>
+                          <span>{t.details.start}: {startDate.toLocaleDateString(locale)}</span>
                           <span>•</span>
-                          <span>{t.details.end}: {endDate.toLocaleDateString('pt-BR')}</span>
+                          <span>{t.details.end}: {endDate.toLocaleDateString(locale)}</span>
                        </div>
                      </div>
                      <span className="text-lg font-bold text-accent whitespace-nowrap">
-                       R$ {item.totalAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                       {currencySymbol} {item.totalAmount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                      </span>
                    </div>
 

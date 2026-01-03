@@ -3,7 +3,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { X, BarChart3, TrendingUp, Calendar, Award, Repeat } from 'lucide-react';
 import { BarChart, Bar, XAxis, Tooltip, Cell } from 'recharts';
 import { Transaction, MonthSummary, AppLanguage } from '../types';
-import { TRANSLATIONS } from '../i18n';
+import { TRANSLATIONS, getLocale } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -13,13 +13,13 @@ interface Props {
   appLanguage: AppLanguage;
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label, locale, currencySymbol }: any) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-[#1c1c1e] p-3 rounded-xl shadow-xl pointer-events-none" style={{ zIndex: 1000 }}>
         <p className="text-gray-400 text-xs font-bold mb-1">{label}</p>
         <p className="text-white font-bold text-sm">
-          R$ {payload[0].value.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+          {currencySymbol} {payload[0].value.toLocaleString(locale, { minimumFractionDigits: 0 })}
         </p>
       </div>
     );
@@ -33,6 +33,8 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const t = TRANSLATIONS[appLanguage].analytics;
+  const locale = getLocale(appLanguage);
+  const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
   // Safety checks
   const safeTransactions = Array.isArray(transactions) ? transactions : [];
@@ -214,7 +216,7 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
                           interval={0} 
                         />
                         <Tooltip 
-                          content={<CustomTooltip />} 
+                          content={<CustomTooltip locale={locale} currencySymbol={currencySymbol} />} 
                           cursor={false}
                           isAnimationActive={false}
                         />
@@ -276,7 +278,7 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
                   <span className="text-[10px] text-gray-400 font-bold uppercase">{t.kpiAverage}</span>
                 </div>
                 <span className="text-lg font-bold text-white">
-                  R$ {stats.averageSpend.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  {currencySymbol} {stats.averageSpend.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                 </span>
              </div>
 
@@ -293,7 +295,7 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
                      {stats.highestMonth.month ? stats.highestMonth.month.slice(0, 3) : '-'}
                    </span>
                    <span className="text-[10px] text-gray-500">
-                     R$ {(stats.highestMonth.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+                     {currencySymbol} {(stats.highestMonth.total || 0).toLocaleString(locale, { minimumFractionDigits: 0 })}
                    </span>
                 </div>
              </div>
