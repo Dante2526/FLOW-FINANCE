@@ -63,9 +63,9 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
       setActiveTool('cursor');
       setShowClearConfirm(false);
       
-      // Measure width immediately
-      if (scrollContainerRef.current) {
-        setContainerWidth(scrollContainerRef.current.clientWidth);
+      // Measure width immediately based on the constrained wrapper, not the scroll container
+      if (contentWrapperRef.current) {
+        setContainerWidth(contentWrapperRef.current.clientWidth);
       }
       
       // Reset height calculation on open with a slight delay for layout
@@ -124,7 +124,9 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
 
   // --- WINDOW RESIZE OBSERVER ---
   useEffect(() => {
-    if (!isOpen || !scrollContainerRef.current) return;
+    // IMPORTANT: Observe contentWrapperRef (the note "paper") instead of the scroll container
+    // This ensures that on PC, we get the 370px width, matching the mobile behavior
+    if (!isOpen || !contentWrapperRef.current) return;
 
     const resizeObserver = new ResizeObserver((entries) => {
         for (const entry of entries) {
@@ -136,7 +138,7 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
         }
     });
 
-    resizeObserver.observe(scrollContainerRef.current);
+    resizeObserver.observe(contentWrapperRef.current);
     return () => resizeObserver.disconnect();
   }, [isOpen]);
 
@@ -346,10 +348,13 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
                 GROWING WRAPPER
                 This div grows to fit the text content. 
                 Both Textarea and Canvas are absolutely positioned to fill this wrapper.
+                
+                FIX: Constrain Width to Mobile size (approx 370px) to prevent text reflow issues between PC and Mobile.
+                This ensures drawings (coordinates) stay aligned with text (line breaks).
              */}
              <div 
                 ref={contentWrapperRef}
-                className="relative w-full"
+                className="relative w-full max-w-[370px] mx-auto"
                 style={{ height: totalHeight }}
              >
                 {/* Layer 1: Text Area */}
@@ -466,3 +471,4 @@ const NotepadModal: React.FC<Props> = ({ isOpen, onClose, initialContent, initia
 };
 
 export default NotepadModal;
+    
