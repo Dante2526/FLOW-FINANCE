@@ -71,8 +71,8 @@ export const IconInvestment = ({ onClick }: { onClick?: () => void }) => (
 
 export const JeittoLogo = () => (
   <div className="w-12 h-12 rounded-[1.2rem] bg-[#ff4d00] flex items-center justify-center shrink-0 shadow-md shadow-[#ff4d00]/20">
-     <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
-        <path d="M17.5 7.5L12 10V16C12 18.5 10 20.5 7.5 20.5C5.5 20.5 4 19 4 16.5" />
+     <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+        <path d="M9.5 12.5L16.5 9V16C16.5 18.5 14.5 20.5 11.5 20.5C9.5 20.5 7.5 19 7.5 17" />
      </svg>
   </div>
 );
