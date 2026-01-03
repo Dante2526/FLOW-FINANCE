@@ -402,9 +402,9 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose, appLanguage }) => {
       onClick={(e) => e.target === e.currentTarget && onClose()}
       className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 touch-manipulation"
     >
-      {/* UPDATED CONTAINER: Added max-h constraint for PC to avoid cut-off on small screens */}
+      {/* UPDATED CONTAINER: Changed justify-end to justify-between to fix clipped top on PC */}
       {/* Reduced padding p-6 -> p-5 on mobile to save space */}
-      <div className="bg-[#1c1c1e] w-full max-w-sm h-auto max-h-[95dvh] sm:max-h-[80vh] rounded-t-[2.5rem] sm:rounded-[2.5rem] p-5 sm:p-6 shadow-2xl border-t sm:border border-white/5 relative flex flex-col justify-end overflow-hidden ring-1 ring-white/10 pb-8 sm:pb-6 overflow-y-auto no-scrollbar">
+      <div className="bg-[#1c1c1e] w-full max-w-sm h-auto max-h-[95dvh] sm:max-h-[85vh] rounded-t-[2.5rem] sm:rounded-[2.5rem] p-5 sm:p-6 shadow-2xl border-t sm:border border-white/5 relative flex flex-col justify-between overflow-hidden ring-1 ring-white/10 pb-8 sm:pb-6 overflow-y-auto no-scrollbar">
         
         {/* Header/Close - Reduced margin mb-6 -> mb-4 */}
         <div className="flex justify-between items-center mb-4 pl-2 shrink-0">
@@ -484,4 +484,3 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose, appLanguage }) => {
 };
 
 export default React.memo(CalculatorModal);
-    
