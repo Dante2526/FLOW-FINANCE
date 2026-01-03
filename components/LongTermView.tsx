@@ -471,7 +471,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
                             openEditInstallmentModal(index, amount, rawDateStr);
                         }}
                         className="absolute top-1.5 right-1.5 z-20 opacity-50 hover:opacity-100 transition-opacity"
-                        title="Editar valor e data"
+                        title={t.details.editTooltip}
                     >
                         <Edit2 className="w-3 h-3 text-white" />
                     </button>

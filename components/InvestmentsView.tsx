@@ -26,9 +26,10 @@ interface SwipeableItemProps {
   getYieldLabel: (inv: Investment) => string;
   locale: string;
   currencySymbol: string;
+  sharesLabel: string;
 }
 
-const SwipeableInvestmentItem: React.FC<SwipeableItemProps> = React.memo(({ inv, onEdit, onDelete, getYieldLabel, locale, currencySymbol }) => {
+const SwipeableInvestmentItem: React.FC<SwipeableItemProps> = React.memo(({ inv, onEdit, onDelete, getYieldLabel, locale, currencySymbol, sharesLabel }) => {
   const [offsetX, setOffsetX] = useState(0);
   
   const startX = useRef<number | null>(null);
@@ -107,7 +108,7 @@ const SwipeableInvestmentItem: React.FC<SwipeableItemProps> = React.memo(({ inv,
             <div className="flex justify-between items-center mt-1">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-gray-400 font-medium uppercase bg-[#2c2c2e] px-2 py-0.5 rounded-md border border-white/5">{inv.institution}</span>
-                {inv.quantity && inv.quantity > 0 && <span className="text-[10px] text-blue-300 font-bold uppercase flex items-center gap-1">{inv.quantity} <span className="text-[8px] opacity-70">COTAS</span></span>}
+                {inv.quantity && inv.quantity > 0 && <span className="text-[10px] text-blue-300 font-bold uppercase flex items-center gap-1">{inv.quantity} <span className="text-[8px] opacity-70">{sharesLabel}</span></span>}
               </div>
               <span className="text-[10px] text-gray-500 font-medium">{getYieldLabel(inv)}</span>
             </div>
@@ -191,7 +192,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
       </div>
       <div className="flex-1 flex flex-col gap-2">
           <div className="flex justify-between items-center px-1 mb-2"><h3 className="text-sm font-bold text-gray-400 uppercase">{t.yourAssets}</h3></div>
-          {(investments || []).length === 0 ? <div className="flex flex-col items-center justify-center py-10 opacity-50"><Building className="w-12 h-12 text-gray-500 mb-2" /><p className="text-xs text-gray-400">{t.emptyList}</p></div> : (investments || []).map(inv => <SwipeableInvestmentItem key={inv.id} inv={inv} onEdit={(i) => { setEditingInvestment(i); setIsAddModalOpen(true); }} onDelete={onDelete} getYieldLabel={getYieldLabel} locale={locale} currencySymbol={currencySymbol} />)}
+          {(investments || []).length === 0 ? <div className="flex flex-col items-center justify-center py-10 opacity-50"><Building className="w-12 h-12 text-gray-500 mb-2" /><p className="text-xs text-gray-400">{t.emptyList}</p></div> : (investments || []).map(inv => <SwipeableInvestmentItem key={inv.id} inv={inv} onEdit={(i) => { setEditingInvestment(i); setIsAddModalOpen(true); }} onDelete={onDelete} getYieldLabel={getYieldLabel} locale={locale} currencySymbol={currencySymbol} sharesLabel={t.shares} />)}
       </div>
       <button onClick={() => { setEditingInvestment(null); setIsAddModalOpen(true); }} className="fixed bottom-28 right-6 w-14 h-14 bg-accent rounded-full flex items-center justify-center shadow-2xl hover:bg-accentDark transition-colors z-40 active:scale-90"><Plus className="w-6 h-6 text-black" /></button>
       <AddInvestmentModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} onSave={(data) => editingInvestment ? onEdit({ ...data, id: editingInvestment.id }) : onAdd(data)} investmentToEdit={editingInvestment} isPro={isPro} onOpenProModal={onOpenProModal} appLanguage={appLanguage} />

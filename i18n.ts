@@ -227,6 +227,7 @@ export const TRANSLATIONS = {
       cdiLabel: "% do CDI a.a.",
       modalCDITitle: "Taxa CDI / Selic",
       btnUpdateRate: "Atualizar Taxa",
+      shares: "Cotas",
       form: {
           newTitle: "Novo Investimento",
           editTitle: "Editar Investimento",
@@ -271,6 +272,7 @@ export const TRANSLATIONS = {
       },
       details: {
         editValuesHint: "Clique nos blocos para editar valores",
+        editTooltip: "Editar valor e data",
         monthlyValue: "Valor Mensal",
         paymentStatus: "Pagamento",
         totalValue: "Valor Total",
@@ -609,6 +611,7 @@ export const TRANSLATIONS = {
       cdiLabel: "% of CDI p.a.",
       modalCDITitle: "CDI / Selic Rate",
       btnUpdateRate: "Update Rate",
+      shares: "Shares",
       form: {
           newTitle: "New Investment",
           editTitle: "Edit Investment",
@@ -653,6 +656,7 @@ export const TRANSLATIONS = {
       },
       details: {
         editValuesHint: "Click blocks to edit values",
+        editTooltip: "Edit value and date",
         monthlyValue: "Monthly Value",
         paymentStatus: "Payment",
         totalValue: "Total Value",
@@ -991,6 +995,7 @@ export const TRANSLATIONS = {
       cdiLabel: "% del CDI a.a.",
       modalCDITitle: "Tasa CDI / Selic",
       btnUpdateRate: "Actualizar Tasa",
+      shares: "Cuotas",
       form: {
           newTitle: "Nueva Inversión",
           editTitle: "Editar Inversión",
@@ -1035,6 +1040,7 @@ export const TRANSLATIONS = {
       },
       details: {
         editValuesHint: "Haz clic en bloques para editar",
+        editTooltip: "Editar valor y fecha",
         monthlyValue: "Valor Mensual",
         paymentStatus: "Pago",
         totalValue: "Valor Total",
