@@ -22,7 +22,7 @@ import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, Ap
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { TRANSLATIONS, getBrowserLanguage, getLocale } from './i18n';
 import { IconBell } from './components/Icons';
-import { Crown, Languages } from 'lucide-react';
+import { Crown, Languages, ExternalLink, Zap } from 'lucide-react';
 
 // Supabase Services
 import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, upsertItem, deleteItem, hardDeleteMonth } from './services/supabase';
@@ -733,6 +733,32 @@ const App: React.FC = () => {
               title={t.billsTitle}
               appLanguage={appLanguage}
             />
+
+            {!userProfile.isPro && (
+              <div className="mt-6 mb-4 px-1">
+                <a 
+                  href="https://jeitto.onelink.me/QMGg/mcgv9w9n" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block w-full bg-gradient-to-r from-[#1c1c1e] to-[#2c2c2e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all"
+                >
+                  <div className="absolute top-0 right-0 bg-[#f82f58]/20 px-3 py-1 rounded-bl-xl border-l border-b border-[#f82f58]/10">
+                     <span className="text-[10px] font-bold text-[#f82f58] uppercase tracking-wider">Indicação</span>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-[#f82f58]/10 flex items-center justify-center shrink-0 border border-[#f82f58]/20">
+                       <Zap className="w-6 h-6 text-[#f82f58]" fill="currentColor" />
+                    </div>
+                    <div className="flex-1">
+                       <h3 className="text-white font-bold text-sm">Limite Extra Disponível?</h3>
+                       <p className="text-gray-400 text-xs mt-0.5">Baixe o Jeitto e confira sua aprovação.</p>
+                    </div>
+                    <ExternalLink className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
+                  </div>
+                </a>
+              </div>
+            )}
           </>
       ) : currentView === 'settings' ? (
           <SettingsView currentThemeId={appTheme.id} onSaveTheme={t => { setAppTheme(t); saveData(STORAGE_KEYS.APP_THEME, t); if(currentUserEmail) { saveUserField(currentUserEmail, 'theme', t); lastActionTimeRef.current = Date.now(); } setCurrentView('home'); }} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
