@@ -253,8 +253,8 @@ const CalculatorButton = React.memo(({
 }: ButtonProps) => {
   
   // UX Tweaks: scale-95 for solid feel, duration-100 for snappiness
-  // FIX FOR PC: Reduced sm:h-20 to sm:h-16 to prevent cutting off on smaller desktop screens
-  const baseStyles = "w-full h-14 sm:h-16 rounded-[2rem] sm:rounded-[1.5rem] text-2xl sm:text-2xl font-medium sm:font-bold flex items-center justify-center transition-all duration-100 active:scale-95 select-none shadow-sm touch-manipulation focus:outline-none";
+  // FIX FOR PC: Reduced sm:h-16 to sm:h-14 to prevent scrolling (Compact Mode)
+  const baseStyles = "w-full h-14 sm:h-14 rounded-[2rem] sm:rounded-[1.5rem] text-2xl sm:text-2xl font-medium sm:font-bold flex items-center justify-center transition-all duration-100 active:scale-95 select-none shadow-sm touch-manipulation focus:outline-none";
   
   let colorStyles = "bg-[#2c2c2e] text-white active:bg-[#3a3a3c]"; 
 
@@ -402,9 +402,9 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose, appLanguage }) => {
       onClick={(e) => e.target === e.currentTarget && onClose()}
       className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200 touch-manipulation"
     >
-      {/* UPDATED CONTAINER: Changed justify-end to justify-between to fix clipped top on PC */}
-      {/* Reduced padding p-6 -> p-5 on mobile to save space */}
-      <div className="bg-[#1c1c1e] w-full max-w-sm h-auto max-h-[95dvh] sm:max-h-[85vh] rounded-t-[2.5rem] sm:rounded-[2.5rem] p-5 sm:p-6 shadow-2xl border-t sm:border border-white/5 relative flex flex-col justify-between overflow-hidden ring-1 ring-white/10 pb-8 sm:pb-6 overflow-y-auto no-scrollbar">
+      {/* UPDATED CONTAINER: Compact layout to prevent scroll. Increased max-h slightly, but reduced padding/gaps/heights. */}
+      {/* Reduced padding p-6 -> p-5 on mobile/desktop to save space */}
+      <div className="bg-[#1c1c1e] w-full max-w-sm h-auto max-h-[95dvh] sm:max-h-[90vh] rounded-t-[2.5rem] sm:rounded-[2.5rem] p-5 sm:p-5 shadow-2xl border-t sm:border border-white/5 relative flex flex-col justify-between overflow-hidden ring-1 ring-white/10 pb-8 sm:pb-6 overflow-y-auto no-scrollbar">
         
         {/* Header/Close - Reduced margin mb-6 -> mb-4 */}
         <div className="flex justify-between items-center mb-4 pl-2 shrink-0">
@@ -437,8 +437,8 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose, appLanguage }) => {
               <span className="text-[10px] text-gray-400 font-bold">{t.copy}</span>
            </div>
 
-           {/* Reduced display height h-32 -> h-24 on mobile */}
-           <div className="relative z-10 flex flex-col items-end justify-end h-24 sm:h-28">
+           {/* Reduced display height h-32 -> h-24 on mobile/desktop */}
+           <div className="relative z-10 flex flex-col items-end justify-end h-24 sm:h-24">
               <span className="text-gray-500 text-lg font-medium mb-1 tracking-wide h-6 block w-full text-right truncate opacity-80">
                 {state.history}
               </span>
@@ -448,8 +448,8 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose, appLanguage }) => {
            </div>
         </div>
 
-        {/* Keypad Grid - Reduced gap gap-3 -> gap-2 on mobile */}
-        <div className="grid grid-cols-4 gap-2 sm:gap-3 shrink-0">
+        {/* Keypad Grid - Reduced gap gap-3 -> gap-2 on mobile/desktop */}
+        <div className="grid grid-cols-4 gap-2 sm:gap-2 shrink-0">
           
           <CalculatorButton label={clearButtonLabel} action="CLEAR" dispatch={dispatch} variant="red-text" locale={locale} />
           <CalculatorButton label={deleteIconNode} action="DEL" dispatch={dispatch} variant="secondary" locale={locale} />
