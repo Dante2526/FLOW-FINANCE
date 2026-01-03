@@ -46,6 +46,10 @@ export const TRANSLATIONS = {
       methods: {
         pix: 'PIX',
         card: 'CARTAO'
+      },
+      actions: {
+        edit: "Editar",
+        delete: "Excluir"
       }
     },
     months: {
@@ -438,6 +442,10 @@ export const TRANSLATIONS = {
       methods: {
         pix: 'PIX',
         card: 'CARD'
+      },
+      actions: {
+        edit: "Edit",
+        delete: "Delete"
       }
     },
     months: {
@@ -830,6 +838,10 @@ export const TRANSLATIONS = {
       methods: {
         pix: 'PIX',
         card: 'TARJETA'
+      },
+      actions: {
+        edit: "Editar",
+        delete: "Eliminar"
       }
     },
     months: {

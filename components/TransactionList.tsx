@@ -168,6 +168,7 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
              setOffsetX(0);
           }}
           className="w-20 h-full flex items-center justify-center bg-yellow-600 text-white hover:bg-yellow-700 transition-colors pl-2"
+          title={t.actions.edit}
         >
           <Edit2 className="w-6 h-6" />
         </button>
@@ -176,6 +177,7 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
         <button
           onClick={() => onDelete(tx.id)}
           className="w-20 h-full flex items-center justify-center bg-red-600 text-white hover:bg-red-700 transition-colors pr-2"
+          title={t.actions.delete}
         >
           <Trash2 className="w-6 h-6" />
         </button>

@@ -39,6 +39,7 @@ const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, is
                 key={contact.id} 
                 onClick={() => onContactClick(contact)}
                 className="w-full relative group cursor-pointer active:scale-95 transition-transform"
+                title={contact.name}
               >
                 <div className="w-full aspect-[5/4] rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-lg shadow-black/20 group-hover:brightness-110 transition-all border-2 border-transparent group-hover:border-yellow-500/50">
                    <NotebookPen className="w-7 h-7 text-yellow-500" strokeWidth={2} />
@@ -54,6 +55,7 @@ const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, is
                 key={contact.id} 
                 onClick={() => onContactClick(contact)}
                 className="w-full relative group cursor-pointer active:scale-95 transition-transform"
+                title={contact.name}
               >
                 <div className="w-full aspect-[5/4] rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-lg shadow-black/20 group-hover:brightness-110 transition-all border-2 border-transparent group-hover:border-red-500/50">
                    <Calendar className="w-7 h-7 text-red-500" strokeWidth={2} />
@@ -69,6 +71,7 @@ const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, is
                 key={contact.id} 
                 onClick={() => onContactClick(contact)}
                 className="w-full relative group cursor-pointer active:scale-95 transition-transform"
+                title={contact.name}
               >
                 <div className={`w-full aspect-[5/4] rounded-2xl flex items-center justify-center shadow-lg shadow-black/20 transition-all border-2 relative overflow-hidden ${
                   isPro 
@@ -97,6 +100,7 @@ const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, is
               key={contact.id} 
               onClick={() => onContactClick(contact)}
               className="w-full relative group cursor-pointer active:scale-95 transition-transform"
+              title={contact.name}
             >
               <img 
                 src={contact.imageUrl} 

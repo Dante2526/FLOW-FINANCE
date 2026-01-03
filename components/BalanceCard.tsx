@@ -45,6 +45,7 @@ const BalanceCard: React.FC<Props> = ({
   });
 
   const tCommon = TRANSLATIONS[appLanguage].common;
+  const tCalc = TRANSLATIONS[appLanguage].calculator;
 
   const toggleVisibility = () => {
     const newState = !isVisible;
@@ -170,6 +171,7 @@ const BalanceCard: React.FC<Props> = ({
         <button 
           onClick={(e) => { e.stopPropagation(); onCalculatorClick(); }}
           className="w-16 h-16 bg-[#121214] text-white rounded-[1.5rem] flex items-center justify-center hover:bg-black transition-colors shadow-lg"
+          title={tCalc.title}
         >
           <Calculator className="w-6 h-6" />
         </button>
