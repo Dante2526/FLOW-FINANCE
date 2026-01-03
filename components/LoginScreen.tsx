@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { Mail, ArrowRight, ShieldCheck, User, KeyRound, ChevronLeft, AlertCircle, Languages } from 'lucide-react';
-import { loadData, saveData, STORAGE_KEYS } from '../services/storage';
 import { sendAuthOtp, verifyAuthOtp, supabase } from '../services/supabase';
-import { TRANSLATIONS, getBrowserLanguage } from '../i18n';
+import { TRANSLATIONS } from '../i18n';
 import { AppLanguage } from '../types';
 
 interface Props {
   onLogin: (email: string, name?: string) => Promise<void>;
+  currentLang: AppLanguage;
+  onLanguageChange: (lang: AppLanguage) => void;
 }
 
 // Custom SVG Logo matching the brand (F with dots)
@@ -31,7 +32,7 @@ export const FlowLogo = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const LoginScreen: React.FC<Props> = ({ onLogin }) => {
+const LoginScreen: React.FC<Props> = ({ onLogin, currentLang, onLanguageChange }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [step, setStep] = useState<'email' | 'otp'>('email');
   
@@ -45,12 +46,10 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
   // Timer para evitar spam no botão de reenvio
   const [resendTimer, setResendTimer] = useState(0);
 
-  // Language State with Browser Detection Fallback
-  const [language, setLanguage] = useState<AppLanguage>(() => loadData(STORAGE_KEYS.APP_LANGUAGE, getBrowserLanguage()));
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
   // Translations shortcut
-  const t = TRANSLATIONS[language].auth;
+  const t = TRANSLATIONS[currentLang].auth;
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
@@ -61,12 +60,6 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
     }
     return () => clearInterval(interval);
   }, [resendTimer]);
-
-  const handleLanguageChange = (lang: AppLanguage) => {
-    setLanguage(lang);
-    saveData(STORAGE_KEYS.APP_LANGUAGE, lang);
-    setIsLangMenuOpen(false);
-  };
 
   const handleSendCode = async (e?: React.FormEvent | React.MouseEvent) => {
     if (e) e.preventDefault();
@@ -196,13 +189,13 @@ const LoginScreen: React.FC<Props> = ({ onLogin }) => {
             </button>
             {isLangMenuOpen && (
               <div className="absolute top-full right-0 mt-2 bg-[#1c1c1e] border border-white/5 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 w-32 animate-in fade-in zoom-in duration-200">
-                  <button onClick={() => handleLanguageChange('pt')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${language === 'pt' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
+                  <button onClick={() => { onLanguageChange('pt'); setIsLangMenuOpen(false); }} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${currentLang === 'pt' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
                     Português
                   </button>
-                  <button onClick={() => handleLanguageChange('en')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${language === 'en' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
+                  <button onClick={() => { onLanguageChange('en'); setIsLangMenuOpen(false); }} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${currentLang === 'en' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
                     English
                   </button>
-                  <button onClick={() => handleLanguageChange('es')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${language === 'es' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
+                  <button onClick={() => { onLanguageChange('es'); setIsLangMenuOpen(false); }} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${currentLang === 'es' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
                     Español
                   </button>
               </div>

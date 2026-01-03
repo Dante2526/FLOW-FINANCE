@@ -650,7 +650,10 @@ const App: React.FC = () => {
     return Array.from(new Set(items));
   }, [dashboardOrder, filteredAcc]);
 
-  if (!currentUserEmail) return <LoginScreen onLogin={handleLoginSuccess} />;
+  // LOGIN SCREEN
+  if (!currentUserEmail) {
+     return <LoginScreen onLogin={handleLoginSuccess} currentLang={appLanguage} onLanguageChange={handleChangeLanguage} />;
+  }
 
   if (isLoadingData && !userProfile.name) return <SplashScreen />;
 
