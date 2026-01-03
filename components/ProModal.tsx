@@ -1,6 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { X, Crown, CheckCircle2, Copy, Loader2, ArrowRight, ChevronLeft, CreditCard, QrCode, Lock, Building, Palette, CloudLightning, BarChart3, User, ShieldCheck, Clock, AlertCircle, AlertTriangle } from 'lucide-react';
+import { AppLanguage } from '../types';
+import { TRANSLATIONS, getLocale } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -8,12 +10,13 @@ interface Props {
   onUpgrade: () => void;
   userEmail?: string;
   userName?: string;
+  appLanguage?: AppLanguage;
 }
 
 type Step = 'benefits' | 'payment';
 type PaymentType = 'pix' | 'credit_card';
 
-const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, userName }) => {
+const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, userName, appLanguage = 'pt' }) => {
   const [step, setStep] = useState<Step>('benefits');
   const [paymentType, setPaymentType] = useState<PaymentType>('pix');
   const [loading, setLoading] = useState(false);
@@ -36,6 +39,9 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
     ccv: '',
     cpf: ''
   });
+
+  const t = TRANSLATIONS[appLanguage].proModal;
+  const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
   // Reset when opening
   useEffect(() => {
@@ -106,11 +112,11 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
   const handleCreatePayment = async () => {
     // Basic Validation
     if (!billingData.cpf || billingData.cpf.length < 11) {
-        setError('Por favor, informe um CPF válido.');
+        setError(t.errors.cpf);
         return;
     }
     if (!billingData.holderName) {
-        setError('Por favor, informe o nome completo.');
+        setError(t.errors.name);
         return;
     }
 
@@ -204,36 +210,36 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                <div className="w-full flex flex-col items-center animate-in slide-in-from-right-4 duration-300 gap-4 h-full">
                   
                   <div className="flex flex-col items-center mb-2">
-                      <span className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">Assinatura Premium</span>
-                      <h2 className="text-2xl font-bold text-white">Desbloqueie Tudo</h2>
+                      <span className="text-gray-400 text-xs font-bold uppercase tracking-wider mb-1">{t.header}</span>
+                      <h2 className="text-2xl font-bold text-white">{t.title}</h2>
                   </div>
 
                   <div className="w-full bg-[#2c2c2e] rounded-2xl p-5 border border-white/5 shadow-lg relative overflow-hidden group flex-1 text-left">
                       <ul className="flex flex-col gap-4">
                         <li className="flex items-center gap-3">
                           <div className="p-2 bg-blue-500/10 rounded-xl shrink-0"><BarChart3 className="w-5 h-5 text-blue-400" /></div>
-                          <div><span className="text-sm text-white font-bold block">Análise Avançada</span><span className="text-xs text-gray-400">Gráficos detalhados.</span></div>
+                          <div><span className="text-sm text-white font-bold block">{t.features.analytics.title}</span><span className="text-xs text-gray-400">{t.features.analytics.desc}</span></div>
                         </li>
                         <li className="flex items-center gap-3">
                           <div className="p-2 bg-purple-500/10 rounded-xl shrink-0"><Building className="w-5 h-5 text-purple-400" /></div>
-                          <div><span className="text-sm text-white font-bold block">Investimentos</span><span className="text-xs text-gray-400">Controle FIIs e Renda Fixa.</span></div>
+                          <div><span className="text-sm text-white font-bold block">{t.features.invest.title}</span><span className="text-xs text-gray-400">{t.features.invest.desc}</span></div>
                         </li>
                         <li className="flex items-center gap-3">
                           <div className="p-2 bg-pink-500/10 rounded-xl shrink-0"><Palette className="w-5 h-5 text-pink-400" /></div>
-                          <div><span className="text-sm text-white font-bold block">Temas Exclusivos</span><span className="text-xs text-gray-400">Personalize o app.</span></div>
+                          <div><span className="text-sm text-white font-bold block">{t.features.themes.title}</span><span className="text-xs text-gray-400">{t.features.themes.desc}</span></div>
                         </li>
                          <li className="flex items-center gap-3">
                             <div className="p-2 bg-green-500/10 rounded-xl shrink-0"><CloudLightning className="w-5 h-5 text-green-400" /></div>
-                            <div><span className="text-sm text-white font-bold block">Backup Nuvem</span><span className="text-xs text-gray-400">Dados seguros sempre.</span></div>
+                            <div><span className="text-sm text-white font-bold block">{t.features.backup.title}</span><span className="text-xs text-gray-400">{t.features.backup.desc}</span></div>
                         </li>
                       </ul>
                   </div>
 
                   <div className="w-full mt-auto">
                       <div className="flex justify-between items-center px-4 mb-4">
-                          <span className="text-gray-400 text-sm">Valor Único</span>
+                          <span className="text-gray-400 text-sm">{t.priceLabel}</span>
                           <div className="flex items-baseline gap-1">
-                             <span className="text-yellow-500 font-bold text-sm">R$</span>
+                             <span className="text-yellow-500 font-bold text-sm">{currencySymbol}</span>
                              <span className="text-white font-black text-2xl">3,00</span>
                           </div>
                       </div>
@@ -242,7 +248,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                         onClick={() => setStep('payment')}
                         className="w-full h-14 bg-gradient-to-r from-yellow-500 to-amber-600 rounded-[1.5rem] font-bold text-black text-lg flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-lg shadow-yellow-500/20"
                       >
-                        Quero ser PRO
+                        {t.btnSubscribe}
                         <ArrowRight className="w-5 h-5" />
                       </button>
                   </div>
@@ -259,13 +265,13 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                        onClick={() => { setPaymentType('pix'); setPaymentId(null); setPixData(null); }}
                        className={`flex-1 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${paymentType === 'pix' ? 'bg-[#3a3a3c] text-white shadow-md' : 'text-gray-500'}`}
                      >
-                        <QrCode className="w-4 h-4" /> Pix
+                        <QrCode className="w-4 h-4" /> {t.btnPix}
                      </button>
                      <button 
                        onClick={() => { setPaymentType('credit_card'); setPaymentId(null); }}
                        className={`flex-1 py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${paymentType === 'credit_card' ? 'bg-[#3a3a3c] text-white shadow-md' : 'text-gray-500'}`}
                      >
-                        <CreditCard className="w-4 h-4" /> Cartão
+                        <CreditCard className="w-4 h-4" /> {t.btnCard}
                      </button>
                   </div>
 
@@ -275,13 +281,13 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                         {loading ? (
                            <div className="flex flex-col items-center py-10">
                               <Loader2 className="w-10 h-10 text-yellow-500 animate-spin mb-2" />
-                              <span className="text-gray-400 text-sm">Gerando Cobrança...</span>
+                              <span className="text-gray-400 text-sm">{t.generating}</span>
                            </div>
                         ) : !pixData ? (
                             <div className="w-full flex flex-col gap-3">
                                 <div className="bg-yellow-500/10 p-3 rounded-xl border border-yellow-500/20 mb-2">
                                    <p className="text-[10px] text-yellow-500 text-center leading-tight">
-                                      O Asaas exige <strong>CPF</strong> para gerar o Pix.
+                                      {t.pixInstructions}
                                    </p>
                                 </div>
 
@@ -289,7 +295,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"><User className="w-4 h-4" /></div>
                                    <input 
                                       name="holderName"
-                                      placeholder="Nome Completo"
+                                      placeholder={t.placeholderName}
                                       value={billingData.holderName}
                                       onChange={handleInputChange}
                                       className="w-full bg-[#2c2c2e] p-3 pl-10 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm uppercase"
@@ -300,7 +306,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"><ShieldCheck className="w-4 h-4" /></div>
                                    <input 
                                       name="cpf"
-                                      placeholder="CPF (Somente números)"
+                                      placeholder={t.placeholderCpf}
                                       value={billingData.cpf}
                                       onChange={handleInputChange}
                                       maxLength={14}
@@ -312,7 +318,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                                   onClick={handleCreatePayment}
                                   className="w-full h-12 bg-yellow-500 text-black rounded-xl font-bold hover:bg-yellow-400 transition-colors mt-2"
                                 >
-                                   Gerar Pix de R$ 3,00
+                                   {t.btnGeneratePix} {currencySymbol} 3,00
                                 </button>
                             </div>
                         ) : (
@@ -320,7 +326,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                               {/* TIMER VISUAL */}
                               <div className="bg-red-500/10 text-red-500 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 mb-1 animate-pulse border border-red-500/20">
                                  <Clock className="w-3 h-3" />
-                                 <span>Expira em {formatTime(timeLeft)}</span>
+                                 <span>{t.expiresIn} {formatTime(timeLeft)}</span>
                               </div>
 
                               <div className="bg-white p-2 rounded-xl">
@@ -328,7 +334,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                               </div>
                               
                               <div className="w-full">
-                                 <p className="text-gray-400 text-xs mb-2 font-bold uppercase text-left">Copia e Cola:</p>
+                                 <p className="text-gray-400 text-xs mb-2 font-bold uppercase text-left">{t.copyPaste}</p>
                                  
                                  {/* Explicit Text Area for Copy Paste */}
                                  <textarea
@@ -339,7 +345,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                                  />
 
                                  <button onClick={handleCopyPix} className={`w-full h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all border border-white/10 ${isCopied ? 'bg-green-500/20 text-green-500' : 'bg-[#2c2c2e] text-white'}`}>
-                                    {isCopied ? <><CheckCircle2 className="w-4 h-4" /> Copiado!</> : <><Copy className="w-4 h-4" /> Copiar Código</>}
+                                    {isCopied ? <><CheckCircle2 className="w-4 h-4" /> {t.btnCopied}</> : <><Copy className="w-4 h-4" /> {t.btnCopy}</>}
                                  </button>
 
                                  {/* Warning Box - ENHANCED based on user feedback */}
@@ -347,10 +353,10 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                                     <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
                                     <div className="flex flex-col gap-1">
                                        <p className="text-[11px] text-white font-bold leading-tight">
-                                          Não use a Carteira do Google / Google Pay
+                                          {t.warningTitle}
                                        </p>
                                        <p className="text-[10px] text-gray-400 leading-tight">
-                                          Este código Pix <strong>não funciona</strong> na Carteira do Google (Erro: QR code inválido). Use o aplicativo do seu banco (Nubank, Inter, Itaú, etc) e escolha "Pix Copia e Cola".
+                                          {t.warningBody}
                                        </p>
                                     </div>
                                  </div>
@@ -358,7 +364,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                               
                               <div className="flex items-center gap-2 mt-2">
                                  <Loader2 className="w-3 h-3 text-yellow-500 animate-spin" />
-                                 <span className="text-[10px] text-yellow-500 font-bold uppercase">Aguardando Pagamento...</span>
+                                 <span className="text-[10px] text-yellow-500 font-bold uppercase">{t.waitingPayment}</span>
                               </div>
                            </>
                         )}
@@ -371,39 +377,39 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                         {loading ? (
                            <div className="flex flex-col items-center py-12">
                               <Loader2 className="w-10 h-10 text-yellow-500 animate-spin mb-2" />
-                              <span className="text-gray-400 text-sm">Processando Pagamento...</span>
+                              <span className="text-gray-400 text-sm">{t.processing}</span>
                            </div>
                         ) : paymentId ? (
                            <div className="flex flex-col items-center py-10 gap-4">
                               <Lock className="w-12 h-12 text-yellow-500" />
-                              <h3 className="text-white font-bold text-lg">Processando...</h3>
+                              <h3 className="text-white font-bold text-lg">{t.processing}</h3>
                               <p className="text-gray-400 text-xs px-4">
-                                 Seu pagamento está sendo analisado pela operadora. Assim que aprovado, o PRO será liberado automaticamente.
+                                 {t.processingBody}
                               </p>
                               <div className="flex items-center gap-2 mt-2 animate-pulse">
                                  <Loader2 className="w-4 h-4 text-yellow-500 animate-spin" />
-                                 <span className="text-xs text-yellow-500 font-bold uppercase">Verificando...</span>
+                                 <span className="text-xs text-yellow-500 font-bold uppercase">{t.verifying}</span>
                               </div>
                            </div>
                         ) : (
                            <>
                               <input 
                                 name="holderName"
-                                placeholder="Nome no Cartão"
+                                placeholder={t.cardName}
                                 value={billingData.holderName}
                                 onChange={handleInputChange}
                                 className="w-full bg-[#2c2c2e] p-3 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm uppercase"
                               />
                               <input 
                                 name="cpf"
-                                placeholder="CPF do Titular"
+                                placeholder={t.cardCpf}
                                 value={billingData.cpf}
                                 onChange={handleInputChange}
                                 className="w-full bg-[#2c2c2e] p-3 rounded-xl text-white outline-none focus:ring-2 focus:ring-yellow-500 text-sm"
                               />
                               <input 
                                 name="number"
-                                placeholder="Número do Cartão"
+                                placeholder={t.cardNumber}
                                 value={billingData.number}
                                 onChange={handleInputChange}
                                 maxLength={16}
@@ -440,7 +446,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                                  onClick={handleCreatePayment}
                                  className="w-full h-12 bg-yellow-500 text-black rounded-xl font-bold hover:bg-yellow-400 transition-colors mt-2"
                               >
-                                 Pagar R$ 3,00
+                                 {t.btnPay} {currencySymbol} 3,00
                               </button>
                            </>
                         )}
@@ -455,7 +461,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                   
                   <div className="mt-auto pt-4 flex items-center justify-center gap-1 opacity-50">
                      <Lock className="w-3 h-3 text-gray-500" />
-                     <span className="text-[10px] text-gray-500 uppercase font-bold">Pagamento Seguro via Asaas</span>
+                     <span className="text-[10px] text-gray-500 uppercase font-bold">{t.securedBy}</span>
                   </div>
 
                </div>

@@ -1,7 +1,8 @@
 
 import React from 'react';
 import { NotebookPen, Landmark, Calendar, BarChart3, Lock } from 'lucide-react';
-import { Contact } from '../types';
+import { Contact, AppLanguage } from '../types';
+import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   contacts: Contact[];
@@ -9,9 +10,12 @@ interface Props {
   onContactClick: (contact: Contact) => void;
   isPro?: boolean;
   title?: string;
+  appLanguage?: AppLanguage;
 }
 
-const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, isPro = false, title = 'ACESSO RÁPIDO' }) => {
+const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, isPro = false, title = 'ACESSO RÁPIDO', appLanguage = 'pt' }) => {
+  const tCommon = TRANSLATIONS[appLanguage].common;
+
   return (
     <div className="mt-8">
       <h2 className="text-xl font-medium text-gray-400 mb-4 pl-1">{title}</h2>
@@ -21,7 +25,7 @@ const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, is
         <button 
           onClick={onAddClick}
           className="w-full aspect-[5/4] rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-lg shadow-black/20 hover:brightness-110 transition-all group border-2 border-transparent hover:border-purple-500/50"
-          title="Adicionar Nova Fonte de Renda"
+          title={tCommon.addSource}
         >
           <Landmark className="w-7 h-7 text-purple-500 group-hover:text-purple-400 transition-colors" />
         </button>

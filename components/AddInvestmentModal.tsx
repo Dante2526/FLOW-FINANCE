@@ -165,7 +165,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
                 type="text" 
                 value={institution}
                 onChange={(e) => setInstitution(e.target.value)}
-                placeholder={type === 'cdi' ? "Ex: PICPAY, NUBANK..." : "Ex: RICO, XP..."}
+                placeholder={type === 'cdi' ? t.placeholders.institutionCdi : t.placeholders.institutionFii}
                 className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium uppercase text-sm"
                 autoComplete="off"
                 spellCheck="false"
@@ -179,7 +179,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
                  type="text" 
                  value={name}
                  onChange={(e) => setName(e.target.value)}
-                 placeholder={type === 'cdi' ? "Ex: CAIXINHA RESERVA" : "Ex: MXRF11"}
+                 placeholder={type === 'cdi' ? t.placeholders.nameCdi : t.placeholders.nameFii}
                  className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium uppercase text-sm"
                  autoComplete="off"
                  spellCheck="false"
@@ -234,7 +234,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
                    type="number" 
                    value={yieldRate}
                    onChange={(e) => setYieldRate(e.target.value)}
-                   placeholder={type === 'cdi' ? "Ex: 100 (para 100%)" : "Ex: 12.5"}
+                   placeholder={type === 'cdi' ? t.placeholders.yieldCdi : t.placeholders.yieldFii}
                    className="w-full bg-[#2c2c2e] text-white p-4 pr-24 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold text-sm"
                    autoComplete="off"
                  />

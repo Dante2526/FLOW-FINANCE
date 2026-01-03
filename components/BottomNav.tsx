@@ -30,6 +30,7 @@ const BottomNav: React.FC<Props> = ({ currentView, onChangeView, labels }) => {
           <button 
             onClick={() => onChangeView('home')}
             className="p-3 text-gray-500 hover:text-white transition-colors"
+            title={labels.home}
           >
              <LayoutGrid className="w-7 h-7" />
           </button>
@@ -45,7 +46,7 @@ const BottomNav: React.FC<Props> = ({ currentView, onChangeView, labels }) => {
           <button 
             onClick={() => onChangeView('investments')}
             className="p-3 text-gray-500 hover:text-white transition-colors"
-            title="Investimentos"
+            title={labels.invest}
           >
              <TrendingUp className="w-7 h-7" />
           </button>
@@ -61,6 +62,7 @@ const BottomNav: React.FC<Props> = ({ currentView, onChangeView, labels }) => {
           <button 
             onClick={() => onChangeView('long-term')}
             className="p-3 text-gray-500 hover:text-white transition-colors"
+            title={labels.wallet}
           >
              <Wallet className="w-7 h-7" />
           </button>
@@ -76,6 +78,7 @@ const BottomNav: React.FC<Props> = ({ currentView, onChangeView, labels }) => {
           <button 
             onClick={() => onChangeView('settings')}
             className="p-3 text-gray-500 hover:text-white transition-colors"
+            title={labels.config}
           >
              <Settings className="w-7 h-7" />
           </button>

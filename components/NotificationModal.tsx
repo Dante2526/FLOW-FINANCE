@@ -110,7 +110,7 @@ const NotificationModal: React.FC<Props> = ({
 
           } catch (pushError) {
              console.warn("Falha ao registrar Push Notification:", pushError);
-             alert("Erro ao conectar com servidor de notificações. Tente novamente.");
+             alert(t.alerts.errorPush);
           }
         }
 
@@ -118,7 +118,7 @@ const NotificationModal: React.FC<Props> = ({
       }
     } catch (e) {
       console.error(e);
-      alert("Não foi possível ativar as notificações. Verifique as configurações do navegador.");
+      alert(t.alerts.errorPermission);
     } finally {
       setIsSubscribing(false);
     }

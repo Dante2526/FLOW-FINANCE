@@ -41,7 +41,7 @@ const roundMoney = (amount: number) => Math.round((amount + Number.EPSILON) * 10
 const currentDate = new Date();
 const SYSTEM_INITIAL_MONTH: MonthSummary = { id: '00000000-0000-0000-0000-000000000001', month: MONTH_NAMES[currentDate.getMonth()], year: currentDate.getFullYear().toString(), total: 0, count: 0 };
 
-const MOCK_CONTACTS: Contact[] = [{ id: '1', name: 'Notas', imageUrl: '' }, { id: '2', name: 'Calendário', imageUrl: '' }, { id: '3', name: 'Análise', imageUrl: '' }];
+// Moved MOCK_CONTACTS logic inside component for translation
 const INITIAL_PROFILE: UserProfile = { name: '', subtitle: '', avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix', isPro: false };
 const BALANCE_CARD_ID = 'balance-card';
 
@@ -82,7 +82,7 @@ const SplashScreen = () => (
     </div>
     <div className="flex flex-col items-center gap-2">
        <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-       <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">v1.5.0 • Performance 100%</p>
+       <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">Flow Finance v1.5</p>
     </div>
   </div>
 );
@@ -129,6 +129,13 @@ const App: React.FC = () => {
   const lastActionTimeRef = useRef<number>(0); 
   
   const t = TRANSLATIONS[appLanguage];
+
+  // Dynamic Contacts with Translations
+  const mockContacts = useMemo(() => [
+    { id: '1', name: t.notepad.title, imageUrl: '' },
+    { id: '2', name: t.calendar.title, imageUrl: '' },
+    { id: '3', name: t.analytics.title, imageUrl: '' }
+  ], [t]);
 
   const currentStateRef = useRef({ transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder, appLanguage });
   useEffect(() => { currentStateRef.current = { transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder, appLanguage }; });
@@ -682,7 +689,7 @@ const App: React.FC = () => {
                   return null;
                })}
             </div>
-            <ContactsRow contacts={MOCK_CONTACTS} onAddClick={handleOpenAddAccount} onContactClick={handleContactClick} isPro={!!userProfile.isPro} title={t.quickAccessTitle} />
+            <ContactsRow contacts={mockContacts} onAddClick={handleOpenAddAccount} onContactClick={handleContactClick} isPro={!!userProfile.isPro} title={t.quickAccessTitle} appLanguage={appLanguage} />
             <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} appLanguage={appLanguage} />
             <TransactionList 
               transactions={filteredTx} 
@@ -720,6 +727,7 @@ const App: React.FC = () => {
         }}
         userEmail={currentUserEmail || undefined}
         userName={userProfile.name}
+        appLanguage={appLanguage}
       />
     </div>
   );

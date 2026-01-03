@@ -20,6 +20,14 @@ export const TRANSLATIONS = {
     quickAccessTitle: 'ACESSO RÁPIDO',
     billsTitle: 'CONTAS',
     addBtn: 'Adicionar',
+    common: {
+      confirmDeleteMonth: "Apagar Mês?",
+      deleteMonthTitle: "Deletar Mês",
+      hideBalance: "Esconder saldo",
+      showBalance: "Mostrar saldo",
+      duplicateMonth: "Duplicar contas para o próximo mês",
+      addSource: "Adicionar Nova Fonte de Renda"
+    },
     nav: {
       home: 'INÍCIO',
       invest: 'INVEST',
@@ -190,7 +198,11 @@ export const TRANSLATIONS = {
       shareFooterCharge: "Por favor, verifique assim que possível.",
       shareDefaultCharge: "Pagamento pendente",
       shareDefaultWarning: "Você tem uma nova mensagem do sistema financeiro.",
-      generatedAt: "Gerado às"
+      generatedAt: "Gerado às",
+      alerts: {
+        errorPush: "Erro ao conectar com servidor de notificações. Tente novamente.",
+        errorPermission: "Não foi possível ativar as notificações. Verifique as configurações do navegador."
+      }
     },
     profile: {
       title: "Editar Perfil",
@@ -226,7 +238,15 @@ export const TRANSLATIONS = {
           yieldLabel: "% do CDI (Rentabilidade)",
           yieldLabelFii: "Dividend Yield (Anual Estimado)",
           btnSave: "Salvar Alterações",
-          btnAdd: "Adicionar"
+          btnAdd: "Adicionar",
+          placeholders: {
+            institutionCdi: "Ex: PICPAY, NUBANK...",
+            institutionFii: "Ex: RICO, XP...",
+            nameCdi: "Ex: CAIXINHA RESERVA",
+            nameFii: "Ex: MXRF11",
+            yieldCdi: "Ex: 100 (para 100%)",
+            yieldFii: "Ex: 12.5"
+          }
       }
     },
     wallet: {
@@ -335,6 +355,44 @@ export const TRANSLATIONS = {
         missingName: 'Por favor, informe seu nome.',
         invalidCode: 'O código deve ter exatamente 6 dígitos.'
       }
+    },
+    proModal: {
+      header: "Assinatura Premium",
+      title: "Desbloqueie Tudo",
+      features: {
+        analytics: { title: "Análise Avançada", desc: "Gráficos detalhados." },
+        invest: { title: "Investimentos", desc: "Controle FIIs e Renda Fixa." },
+        themes: { title: "Temas Exclusivos", desc: "Personalize o app." },
+        backup: { title: "Backup Nuvem", desc: "Dados seguros sempre." }
+      },
+      priceLabel: "Valor Único",
+      btnSubscribe: "Quero ser PRO",
+      btnPix: "Pix",
+      btnCard: "Cartão",
+      generating: "Gerando Cobrança...",
+      pixInstructions: "O Asaas exige CPF para gerar o Pix.",
+      placeholderName: "Nome Completo",
+      placeholderCpf: "CPF (Somente números)",
+      btnGeneratePix: "Gerar Pix de",
+      expiresIn: "Expira em",
+      copyPaste: "Copia e Cola:",
+      btnCopy: "Copiar Código",
+      btnCopied: "Copiado!",
+      warningTitle: "Não use a Carteira do Google / Google Pay",
+      warningBody: "Este código Pix não funciona na Carteira do Google. Use o app do seu banco.",
+      waitingPayment: "Aguardando Pagamento...",
+      processing: "Processando...",
+      processingBody: "Seu pagamento está sendo analisado. O PRO será liberado automaticamente.",
+      verifying: "Verificando...",
+      cardName: "Nome no Cartão",
+      cardCpf: "CPF do Titular",
+      cardNumber: "Número do Cartão",
+      btnPay: "Pagar",
+      securedBy: "Pagamento Seguro via Asaas",
+      errors: {
+        cpf: "Por favor, informe um CPF válido.",
+        name: "Por favor, informe o nome completo."
+      }
     }
   },
   en: {
@@ -343,6 +401,14 @@ export const TRANSLATIONS = {
     quickAccessTitle: 'QUICK ACCESS',
     billsTitle: 'BILLS',
     addBtn: 'Add',
+    common: {
+      confirmDeleteMonth: "Delete Month?",
+      deleteMonthTitle: "Delete Month",
+      hideBalance: "Hide balance",
+      showBalance: "Show balance",
+      duplicateMonth: "Duplicate bills to next month",
+      addSource: "Add New Income Source"
+    },
     nav: {
       home: 'HOME',
       invest: 'INVEST',
@@ -513,7 +579,11 @@ export const TRANSLATIONS = {
       shareFooterCharge: "Please check as soon as possible.",
       shareDefaultCharge: "Payment pending",
       shareDefaultWarning: "You have a new message from the financial system.",
-      generatedAt: "Generated at"
+      generatedAt: "Generated at",
+      alerts: {
+        errorPush: "Error connecting to notification server. Please try again.",
+        errorPermission: "Could not enable notifications. Please check browser settings."
+      }
     },
     profile: {
       title: "Edit Profile",
@@ -549,7 +619,15 @@ export const TRANSLATIONS = {
           yieldLabel: "% of CDI (Profitability)",
           yieldLabelFii: "Dividend Yield (Est. Yearly)",
           btnSave: "Save Changes",
-          btnAdd: "Add"
+          btnAdd: "Add",
+          placeholders: {
+            institutionCdi: "Ex: CHASE, REVOLUT...",
+            institutionFii: "Ex: VANGUARD, ROBINHOOD...",
+            nameCdi: "Ex: EMERGENCY FUND",
+            nameFii: "Ex: O",
+            yieldCdi: "Ex: 100 (for 100%)",
+            yieldFii: "Ex: 12.5"
+          }
       }
     },
     wallet: {
@@ -658,6 +736,44 @@ export const TRANSLATIONS = {
         missingName: 'Please enter your name.',
         invalidCode: 'The code must be exactly 6 digits.'
       }
+    },
+    proModal: {
+      header: "Premium Subscription",
+      title: "Unlock Everything",
+      features: {
+        analytics: { title: "Advanced Analytics", desc: "Detailed charts." },
+        invest: { title: "Investments", desc: "Track FIIs and Fixed Income." },
+        themes: { title: "Exclusive Themes", desc: "Customize the app." },
+        backup: { title: "Cloud Backup", desc: "Always secure data." }
+      },
+      priceLabel: "One-time Fee",
+      btnSubscribe: "Go PRO",
+      btnPix: "Pix",
+      btnCard: "Card",
+      generating: "Generating Charge...",
+      pixInstructions: "Asaas requires Tax ID (CPF) to generate Pix.",
+      placeholderName: "Full Name",
+      placeholderCpf: "Tax ID / CPF (Numbers only)",
+      btnGeneratePix: "Generate Pix of",
+      expiresIn: "Expires in",
+      copyPaste: "Copy and Paste:",
+      btnCopy: "Copy Code",
+      btnCopied: "Copied!",
+      warningTitle: "Do not use Google Wallet / Google Pay",
+      warningBody: "This Pix code does not work in Google Wallet. Use your bank app.",
+      waitingPayment: "Waiting Payment...",
+      processing: "Processing...",
+      processingBody: "Your payment is being analyzed. PRO will be unlocked automatically.",
+      verifying: "Verifying...",
+      cardName: "Name on Card",
+      cardCpf: "Holder Tax ID",
+      cardNumber: "Card Number",
+      btnPay: "Pay",
+      securedBy: "Secured by Asaas",
+      errors: {
+        cpf: "Please enter a valid Tax ID.",
+        name: "Please enter full name."
+      }
     }
   },
   es: {
@@ -666,6 +782,14 @@ export const TRANSLATIONS = {
     quickAccessTitle: 'ACCESO RÁPIDO',
     billsTitle: 'CUENTAS',
     addBtn: 'Añadir',
+    common: {
+      confirmDeleteMonth: "¿Borrar Mes?",
+      deleteMonthTitle: "Borrar Mes",
+      hideBalance: "Ocultar saldo",
+      showBalance: "Mostrar saldo",
+      duplicateMonth: "Duplicar cuentas al próximo mes",
+      addSource: "Añadir Nueva Fuente de Ingresos"
+    },
     nav: {
       home: 'INICIO',
       invest: 'INVERTIR',
@@ -836,7 +960,11 @@ export const TRANSLATIONS = {
       shareFooterCharge: "Por favor, verifica lo antes posible.",
       shareDefaultCharge: "Pago pendiente",
       shareDefaultWarning: "Tienes un nuevo mensaje del sistema financiero.",
-      generatedAt: "Generado a las"
+      generatedAt: "Generado a las",
+      alerts: {
+        errorPush: "Error al conectar con servidor de notificaciones. Intente nuevamente.",
+        errorPermission: "No se pudieron activar las notificaciones. Verifique la configuración del navegador."
+      }
     },
     profile: {
       title: "Editar Perfil",
@@ -872,7 +1000,15 @@ export const TRANSLATIONS = {
           yieldLabel: "% del CDI (Rentabilidad)",
           yieldLabelFii: "Dividend Yield (Est. Anual)",
           btnSave: "Guardar Cambios",
-          btnAdd: "Añadir"
+          btnAdd: "Añadir",
+          placeholders: {
+            institutionCdi: "Ej: MERCADO PAGO...",
+            institutionFii: "Ej: RENTA 4...",
+            nameCdi: "Ej: FONDO EMERGENCIA",
+            nameFii: "Ej: TEF",
+            yieldCdi: "Ej: 100 (para 100%)",
+            yieldFii: "Ej: 12.5"
+          }
       }
     },
     wallet: {
@@ -979,7 +1115,45 @@ export const TRANSLATIONS = {
       errors: {
         invalidEmail: 'Por favor, ingresa un correo válido.',
         missingName: 'Por favor, ingresa tu nombre.',
-        invalidCode: 'El código debe tener exactamente 6 dígitos.'
+        invalidCode: 'El código deve ter exatamente 6 dígitos.'
+      }
+    },
+    proModal: {
+      header: "Suscripción Premium",
+      title: "Desbloquear Todo",
+      features: {
+        analytics: { title: "Análisis Avanzado", desc: "Gráficos detallados." },
+        invest: { title: "Inversiones", desc: "Rastrea FIIs y Renta Fija." },
+        themes: { title: "Temas Exclusivos", desc: "Personaliza la app." },
+        backup: { title: "Respaldo en Nube", desc: "Datos seguros siempre." }
+      },
+      priceLabel: "Pago Único",
+      btnSubscribe: "Ser PRO",
+      btnPix: "Pix",
+      btnCard: "Tarjeta",
+      generating: "Generando Cobro...",
+      pixInstructions: "Asaas requiere Tax ID (CPF) para generar Pix.",
+      placeholderName: "Nombre Completo",
+      placeholderCpf: "Tax ID / CPF (Solo números)",
+      btnGeneratePix: "Generar Pix de",
+      expiresIn: "Expira en",
+      copyPaste: "Copia y Pega:",
+      btnCopy: "Copiar Código",
+      btnCopied: "¡Copiado!",
+      warningTitle: "No uses Google Wallet / Google Pay",
+      warningBody: "Este código Pix no funciona en Google Wallet. Usa la app de tu banco.",
+      waitingPayment: "Esperando Pago...",
+      processing: "Procesando...",
+      processingBody: "Tu pago está siendo analizado. PRO se desbloqueará automáticamente.",
+      verifying: "Verificando...",
+      cardName: "Nombre en Tarjeta",
+      cardCpf: "Tax ID Titular",
+      cardNumber: "Número de Tarjeta",
+      btnPay: "Pagar",
+      securedBy: "Pago Seguro vía Asaas",
+      errors: {
+        cpf: "Por favor, ingresa un Tax ID válido.",
+        name: "Por favor, ingresa nombre completo."
       }
     }
   }

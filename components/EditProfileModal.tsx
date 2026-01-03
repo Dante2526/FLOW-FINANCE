@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, LogOut, Lock, Crown, Trash2 } from 'lucide-react';
 import { UserProfile, AppLanguage } from '../types';
-import { TRANSLATIONS } from '../i18n';
+import { TRANSLATIONS, getLocale } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -42,6 +42,7 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
   const [avatarUrl, setAvatarUrl] = useState('');
   
   const t = TRANSLATIONS[appLanguage].profile;
+  const locale = getLocale(appLanguage);
 
   useEffect(() => {
     if (isOpen) {
@@ -90,7 +91,7 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
                  <span>PRO</span>
                  {currentProfile.subscriptionExpiry && (
                     <span className="font-medium opacity-80 border-l border-yellow-500/30 pl-1 ml-1">
-                       {t.proExpiry} {new Date(currentProfile.subscriptionExpiry).toLocaleDateString('pt-BR')}
+                       {t.proExpiry} {new Date(currentProfile.subscriptionExpiry).toLocaleDateString(locale)}
                     </span>
                  )}
                </div>

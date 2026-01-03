@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Plus, Copy, Calculator, GripVertical, Eye, EyeOff } from 'lucide-react';
 import { AppLanguage } from '../types';
-import { getLocale } from '../i18n';
+import { TRANSLATIONS, getLocale } from '../i18n';
 
 interface Props {
   balance: number;
@@ -42,6 +43,8 @@ const BalanceCard: React.FC<Props> = ({
       return true;
     }
   });
+
+  const tCommon = TRANSLATIONS[appLanguage].common;
 
   const toggleVisibility = () => {
     const newState = !isVisible;
@@ -101,7 +104,7 @@ const BalanceCard: React.FC<Props> = ({
           <button 
             onClick={toggleVisibility}
             className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors active:scale-95 flex items-center justify-center backdrop-blur-sm"
-            title={isVisible ? "Esconder saldo" : "Mostrar saldo"}
+            title={isVisible ? tCommon.hideBalance : tCommon.showBalance}
           >
             {isVisible ? <Eye className="w-4 h-4 text-white" /> : <EyeOff className="w-4 h-4 text-white" />}
           </button>
@@ -159,7 +162,7 @@ const BalanceCard: React.FC<Props> = ({
         <button 
           onClick={(e) => { e.stopPropagation(); onDuplicateClick(); }}
           className="w-16 h-16 bg-[#121214] text-white rounded-[1.5rem] flex items-center justify-center hover:bg-black transition-colors shadow-lg"
-          title="Duplicar contas para o próximo mês"
+          title={tCommon.duplicateMonth}
         >
           <Copy className="w-6 h-6" />
         </button>

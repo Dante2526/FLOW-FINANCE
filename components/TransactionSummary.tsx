@@ -42,6 +42,8 @@ const getMonthDisplayName = (dbName: string, lang: AppLanguage): string => {
 const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSelect, onDelete, appLanguage }) => {
   const [isConfirming, setIsConfirming] = useState(false);
 
+  const tCommon = TRANSLATIONS[appLanguage].common;
+
   // Reset confirmation state if active month changes
   useEffect(() => {
     if (!isActive) setIsConfirming(false);
@@ -82,7 +84,7 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
           {isConfirming ? (
              // --- CONFIRMATION STATE ---
              <div className="absolute inset-0 flex flex-col items-center justify-center animate-in fade-in zoom-in duration-200">
-                <span className="text-white font-bold text-xs uppercase mb-2">Apagar Mês?</span>
+                <span className="text-white font-bold text-xs uppercase mb-2">{tCommon.confirmDeleteMonth}</span>
                 <div className="flex gap-3">
                    <button 
                      onClick={handleCancelDelete}
@@ -137,7 +139,7 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
             type="button"
             onClick={handleDeleteClick}
             className="absolute top-2 right-2 w-10 h-10 flex items-center justify-center z-50 hover:scale-105 active:scale-95 transition-transform"
-            title="Deletar Mês"
+            title={tCommon.deleteMonthTitle}
           >
             <div className="w-8 h-8 rounded-full bg-red-600 shadow-sm flex items-center justify-center border-2 border-transparent hover:border-white/20">
               <Trash2 className="w-4 h-4 text-white" />
