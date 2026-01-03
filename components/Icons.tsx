@@ -67,6 +67,17 @@ export const IconInvestment = ({ onClick }: { onClick?: () => void }) => (
   </button>
 );
 
+// --- Official Partner Logos ---
+
+export const JeittoLogo = () => (
+  <div className="w-12 h-12 rounded-[1rem] bg-[#f82f58] flex items-center justify-center shrink-0 shadow-md shadow-[#f82f58]/20">
+     <svg viewBox="0 0 24 24" fill="white" className="w-7 h-7">
+        <path d="M14.5 16.5C14.5 18.43 12.93 20 11 20C9.07 20 7.5 18.43 7.5 16.5H10C10 17.05 10.45 17.5 11 17.5C11.55 17.5 12 17.05 12 16.5V9.5H14.5V16.5Z" />
+        <circle cx="13.25" cy="6.5" r="1.5" />
+     </svg>
+  </div>
+);
+
 export const IconPlus = () => <Plus className="w-6 h-6 text-white" />;
 export const IconSend = () => <Send className="w-4 h-4 text-white ml-2" />;
 export const IconGrid = () => <Grid2X2 className="w-6 h-6 text-white" />;

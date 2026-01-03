@@ -21,7 +21,7 @@ import ProModal from './components/ProModal';
 import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification, AppLanguage } from './types';
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { TRANSLATIONS, getBrowserLanguage, getLocale } from './i18n';
-import { IconBell } from './components/Icons';
+import { IconBell, JeittoLogo } from './components/Icons';
 import { Crown, Languages, ExternalLink, Zap } from 'lucide-react';
 
 // Supabase Services
@@ -747,9 +747,7 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[#f82f58]/10 flex items-center justify-center shrink-0 border border-[#f82f58]/20">
-                       <Zap className="w-6 h-6 text-[#f82f58]" fill="currentColor" />
-                    </div>
+                    <JeittoLogo />
                     <div className="flex-1">
                        <h3 className="text-white font-bold text-sm">Limite Extra Disponível?</h3>
                        <p className="text-gray-400 text-xs mt-0.5">Baixe o Jeitto e confira sua aprovação.</p>
