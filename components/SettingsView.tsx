@@ -172,7 +172,7 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
            </button>
            
            <p className="text-center text-[10px] text-gray-600 mt-6 pb-4">
-              Flow Finance v1.5.0 • Performance 100%
+              Flow Finance v1.5.0 • {t.performanceLabel}
            </p>
         </div>
       </div>

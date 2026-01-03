@@ -20,6 +20,10 @@ export const TRANSLATIONS = {
     quickAccessTitle: 'ACESSO RÁPIDO',
     billsTitle: 'CONTAS',
     addBtn: 'Adicionar',
+    meta: {
+      title: "Flow Finance",
+      description: "Controle financeiro inteligente e moderno."
+    },
     common: {
       confirmDeleteMonth: "Apagar Mês?",
       deleteMonthTitle: "Deletar Mês",
@@ -314,6 +318,7 @@ export const TRANSLATIONS = {
       feedbackSubject: "Flow Finance - Relatório de Bug / Feedback",
       feedbackBody: "Olá Naylan,\n\nEncontrei um problema/tenho uma sugestão:\n\n[Descreva aqui o que aconteceu]\n\nImportante: Anexei prints ou um vídeo da tela para ajudar na correção.",
       confirmColor: "Confirmar Cor",
+      performanceLabel: "Performance 100%",
       themes: {
         'sunset-orange': 'Sunset',
         'cyber-yellow': 'Cyber',
@@ -416,6 +421,10 @@ export const TRANSLATIONS = {
     quickAccessTitle: 'QUICK ACCESS',
     billsTitle: 'BILLS',
     addBtn: 'Add',
+    meta: {
+      title: "Flow Finance",
+      description: "Smart and modern financial control."
+    },
     common: {
       confirmDeleteMonth: "Delete Month?",
       deleteMonthTitle: "Delete Month",
@@ -683,7 +692,7 @@ export const TRANSLATIONS = {
         totalValue: "Total Value",
         installmentHeader: "INSTALLMENT",
         dateHeader: "PAYMENT DATE",
-        valueHeader: "VALUE",
+        valueHeader: "VALOR",
         start: "Start",
         end: "End",
         modals: {
@@ -710,6 +719,7 @@ export const TRANSLATIONS = {
       feedbackSubject: "Flow Finance - Bug Report / Feedback",
       feedbackBody: "Hello Naylan,\n\nI found an issue/have a suggestion:\n\n[Describe what happened here]\n\nImportant: I've attached screenshots or a screen recording to help with the fix.",
       confirmColor: "Confirm Color",
+      performanceLabel: "Performance 100%",
       themes: {
         'sunset-orange': 'Sunset',
         'cyber-yellow': 'Cyber',
@@ -812,6 +822,10 @@ export const TRANSLATIONS = {
     quickAccessTitle: 'ACCESO RÁPIDO',
     billsTitle: 'CUENTAS',
     addBtn: 'Añadir',
+    meta: {
+      title: "Flow Finance",
+      description: "Control financiero inteligente y moderno."
+    },
     common: {
       confirmDeleteMonth: "¿Borrar Mes?",
       deleteMonthTitle: "Borrar Mes",
@@ -1106,6 +1120,7 @@ export const TRANSLATIONS = {
       feedbackSubject: "Flow Finance - Reporte de Error / Comentarios",
       feedbackBody: "Hola Naylan,\n\nEncontré un problema/tengo una sugerencia:\n\n[Describe qué pasó aquí]\n\nImportante: He adjuntado capturas de pantalla o un video para ayudar con la corrección.",
       confirmColor: "Confirmar Color",
+      performanceLabel: "Rendimiento 100%",
       themes: {
         'sunset-orange': 'Sunset',
         'cyber-yellow': 'Cyber',

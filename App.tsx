@@ -153,6 +153,20 @@ const App: React.FC = () => {
     root.style.setProperty('--color-accent-dark', appTheme.secondary);
   }, [appTheme]);
 
+  // Sync HTML Lang and Meta Data
+  useEffect(() => {
+    document.documentElement.lang = appLanguage === 'pt' ? 'pt-BR' : appLanguage === 'es' ? 'es-ES' : 'en-US';
+    
+    // Update Title and Description
+    if (t.meta) {
+        document.title = t.meta.title;
+        const metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) {
+            metaDesc.setAttribute('content', t.meta.description);
+        }
+    }
+  }, [appLanguage, t]);
+
   useEffect(() => {
     setMonths(prev => {
       let changed = false;
