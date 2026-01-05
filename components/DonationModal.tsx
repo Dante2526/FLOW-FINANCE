@@ -190,7 +190,6 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
                                   inputMode="numeric"
                                   value={amount}
                                   onChange={handleAmountChange}
-                                  onFocus={handleInputFocus}
                                   placeholder="0,00"
                                   className="w-full bg-[#2c2c2e] text-white text-4xl font-bold py-6 pl-16 pr-4 rounded-[2rem] outline-none focus:ring-2 focus:ring-emerald-500 border border-transparent focus:border-emerald-500/50 transition-all text-center"
                                 />
