@@ -23,7 +23,7 @@ import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, Ap
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { TRANSLATIONS, getBrowserLanguage, getLocale } from './i18n';
 import { IconBell, JeittoLogo } from './components/Icons';
-import { Crown, Languages, ExternalLink, Zap, Heart, Copy, Check } from 'lucide-react';
+import { Crown, Languages, ExternalLink, Zap, Heart, Copy, Check, ChevronRight } from 'lucide-react';
 
 // Supabase Services
 import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, upsertItem, deleteItem, hardDeleteMonth } from './services/supabase';
@@ -760,7 +760,7 @@ const App: React.FC = () => {
                        <h3 className="text-white font-bold text-sm">Apoie o Projeto</h3>
                        <p className="text-gray-400 text-xs mt-0.5">Doe qualquer valor via Pix.</p>
                     </div>
-                    <Copy className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
+                    <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
                   </div>
                 </div>
 
