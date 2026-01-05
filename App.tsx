@@ -742,7 +742,7 @@ const App: React.FC = () => {
                   rel="noopener noreferrer"
                   className="block w-full bg-gradient-to-r from-[#1c1c1e] to-[#2c2c2e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all"
                 >
-                  <div className="absolute top-0 right-0 bg-[#f82f58]/20 px-3 py-1 rounded-bl-xl border-l border-b border-[#f82f58]/10">
+                  <div className="absolute -top-[1px] -right-[1px] bg-[#f82f58]/20 px-3 py-1 rounded-bl-xl border-l border-b border-[#f82f58]/10">
                      <span className="text-[10px] font-bold text-[#f82f58] uppercase tracking-wider">Indicação</span>
                   </div>
 
