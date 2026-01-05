@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Heart, QrCode, Copy, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
 import { AppLanguage } from '../types';
 import { TRANSLATIONS, getLocale } from '../i18n';
@@ -19,7 +19,9 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
   const [pixData, setPixData] = useState<{ encodedImage: string; payload: string } | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [error, setError] = useState('');
-  const [dynamicMaxHeight, setDynamicMaxHeight] = useState<string | number>('85vh');
+  
+  // Refs for auto-scroll
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const t = TRANSLATIONS[appLanguage];
   const tModal = t.donationModal || { // Fallback basic translations if not yet loaded
@@ -46,26 +48,19 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
       setPixData(null);
       setError('');
       setLoading(false);
+      // Focus on amount after opening
+      setTimeout(() => {
+        if(inputRef.current) inputRef.current.focus();
+      }, 300);
     }
   }, [isOpen]);
 
-  // Visual Viewport Fix for Mobile Keyboards (Same as NotepadModal)
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleVisualResize = () => {
-      const vv = window.visualViewport;
-      if (vv) {
-        setDynamicMaxHeight(vv.height - 20); 
-      }
-    };
-    window.visualViewport?.addEventListener('resize', handleVisualResize);
-    window.visualViewport?.addEventListener('scroll', handleVisualResize);
-    handleVisualResize();
-    return () => {
-      window.visualViewport?.removeEventListener('resize', handleVisualResize);
-      window.visualViewport?.removeEventListener('scroll', handleVisualResize);
-    };
-  }, [isOpen]);
+  // Helper to ensure input is visible when keyboard opens
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    setTimeout(() => {
+      e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  };
 
   if (!isOpen) return null;
 
@@ -145,18 +140,16 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
     <div className="fixed inset-0 z-[90] overflow-y-auto animate-in fade-in duration-200">
       <div className="fixed inset-0 bg-black/90 backdrop-blur-md" onClick={onClose} />
 
+      {/* Main Container: Flex centered but allows scrolling if content/keyboard is tall */}
       <div 
-        className="flex min-h-full p-4 text-center pointer-events-none"
+        className="flex min-h-full items-center justify-center p-4 pb-24 text-center pointer-events-none"
         style={{ 
           paddingTop: 'max(1rem, env(safe-area-inset-top))',
-          paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' 
+          paddingBottom: 'max(6rem, env(safe-area-inset-bottom))' // Extra padding for keyboard
         }}
       >
         <div 
-          className="pointer-events-auto relative m-auto bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] flex flex-col overflow-hidden border border-emerald-500/20 shadow-2xl shadow-emerald-500/10 transition-all"
-          style={{ 
-            maxHeight: typeof dynamicMaxHeight === 'number' ? `${dynamicMaxHeight}px` : dynamicMaxHeight 
-          }}
+          className="pointer-events-auto relative w-full max-w-sm bg-[#1c1c1e] rounded-[2.5rem] flex flex-col overflow-hidden border border-emerald-500/20 shadow-2xl shadow-emerald-500/10 transition-all"
         >
         
           {/* Header */}
@@ -176,8 +169,8 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
               </button>
           </div>
 
-          {/* Scrollable Content */}
-          <div className="p-6 pt-4 flex flex-col items-center text-center overflow-y-auto no-scrollbar flex-1 gap-4">
+          {/* Content */}
+          <div className="p-6 pt-4 flex flex-col items-center text-center gap-4">
               
               {!pixData ? (
                   <>
@@ -195,13 +188,14 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
                             <div className="relative">
                                 <span className="absolute left-6 top-1/2 -translate-y-1/2 text-emerald-500 font-bold text-2xl">{currencySymbol}</span>
                                 <input 
+                                  ref={inputRef}
                                   type="text" 
                                   inputMode="numeric"
                                   value={amount}
                                   onChange={handleAmountChange}
+                                  onFocus={handleFocus}
                                   placeholder="0,00"
                                   className="w-full bg-[#2c2c2e] text-white text-4xl font-bold py-6 pl-16 pr-4 rounded-[2rem] outline-none focus:ring-2 focus:ring-emerald-500 border border-transparent focus:border-emerald-500/50 transition-all text-center"
-                                  autoFocus
                                 />
                             </div>
                           </div>
@@ -215,6 +209,7 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
                                   inputMode="numeric"
                                   value={cpf}
                                   onChange={(e) => setCpf(e.target.value)}
+                                  onFocus={handleFocus}
                                   placeholder="000.000.000-00"
                                   maxLength={14}
                                   className="w-full bg-[#2c2c2e] text-white py-4 pl-12 pr-4 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-lg"
