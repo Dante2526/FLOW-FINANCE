@@ -198,7 +198,7 @@ export const TRANSLATIONS = {
       markAllRead: "Marcar todas como lidas",
       sendWhatsApp: "Enviar via WhatsApp",
       shareTitle: "Notificação Flow Finance",
-      shareChargeTitle: "🚨 *FLOW FINANCE - NOTIFICAÇÃO DE COBRANÇA*",
+      shareChargeTitle: "🚨 *FLOW FINANCE - NOTIFICACIÓN DE COBRANÇA*",
       shareWarningTitle: "🔔 *FLOW FINANCE - NOVO AVISO*",
       shareHello: "Olá",
       shareChargeBody: "Consta um pendência financeira que precisa da sua atenção.",
@@ -374,6 +374,19 @@ export const TRANSLATIONS = {
         genericSend: "Erro ao enviar código.",
         genericVerify: "Erro de verificação. Tente novamente."
       }
+    },
+    donationModal: {
+      title: "Apoiar",
+      subtitle: "Contribuição Voluntária",
+      desc: "Sua doação ajuda a manter o sistema online e a desenvolver novas funções.",
+      valueLabel: "Valor da Doação",
+      cpfLabel: "CPF (Para o Pix)",
+      btnGenerate: "Gerar Pix",
+      copyTitle: "Copia e Cola",
+      btnCopy: "Copiar Código",
+      btnCopied: "Copiado!",
+      errorMin: "Valor mínimo de R$ 1,00",
+      errorCpf: "CPF Obrigatório"
     },
     proModal: {
       header: "Assinatura Premium",
@@ -776,6 +789,19 @@ export const TRANSLATIONS = {
         genericVerify: "Verification error. Please try again."
       }
     },
+    donationModal: {
+      title: "Support",
+      subtitle: "Voluntary Contribution",
+      desc: "Your donation helps keep the system online and develop new features.",
+      valueLabel: "Donation Amount",
+      cpfLabel: "Tax ID (For Pix)",
+      btnGenerate: "Generate Pix",
+      copyTitle: "Copy and Paste",
+      btnCopy: "Copy Code",
+      btnCopied: "Copied!",
+      errorMin: "Minimum value of $ 1.00",
+      errorCpf: "Tax ID Required"
+    },
     proModal: {
       header: "Premium Subscription",
       title: "Unlock Everything",
@@ -831,7 +857,7 @@ export const TRANSLATIONS = {
       deleteMonthTitle: "Borrar Mes",
       hideBalance: "Ocultar saldo",
       showBalance: "Mostrar saldo",
-      duplicateMonth: "Duplicar cuentas al próximo mes",
+      duplicateMonth: "Duplicar contas al próximo mes",
       addSource: "Añadir Nueva Fuente de Ingresos",
       monthExists: "El mes de {month}/{year} ya existe."
     },
@@ -1176,6 +1202,19 @@ export const TRANSLATIONS = {
         genericSend: "Error al enviar código.",
         genericVerify: "Error de verificación. Inténtalo de nuevo."
       }
+    },
+    donationModal: {
+      title: "Apoyar",
+      subtitle: "Contribución Voluntaria",
+      desc: "Tu donación ayuda a mantener el sistema en línea y desarrollar nuevas funciones.",
+      valueLabel: "Monto de Donación",
+      cpfLabel: "CPF (Para Pix)",
+      btnGenerate: "Generar Pix",
+      copyTitle: "Copia y Pega",
+      btnCopy: "Copiar Código",
+      btnCopied: "¡Copiado!",
+      errorMin: "Monto mínimo de $ 1.00",
+      errorCpf: "Tax ID Obligatorio"
     },
     proModal: {
       header: "Suscripción Premium",

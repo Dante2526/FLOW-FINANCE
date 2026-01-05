@@ -4,7 +4,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { paymentType, user, billingInfo } = req.body;
+  const { paymentType, user, billingInfo, value, description } = req.body;
   const apiKey = process.env.ASAAS_API_KEY;
   const apiUrl = process.env.ASAAS_API_URL || 'https://www.asaas.com/api/v3';
 
@@ -69,14 +69,17 @@ export default async function handler(req, res) {
 
     // 2. Criar Cobrança
     const billingType = paymentType === 'pix' ? 'PIX' : 'CREDIT_CARD';
-    const value = 3.00; // Valor fixo do PRO
+    
+    // Use dynamic value if provided (Donation), otherwise default to PRO Price (3.00)
+    const finalValue = value || 3.00;
+    const finalDescription = description || 'Assinatura Flow Finance PRO';
 
     const paymentPayload = {
       customer: customerId,
       billingType: billingType,
-      value: value,
+      value: finalValue,
       dueDate: new Date().toISOString().split('T')[0], // Vence hoje
-      description: 'Assinatura Flow Finance PRO',
+      description: finalDescription,
       externalReference: user.email // VINCULO ESSENCIAL PARA O WEBHOOK
     };
 

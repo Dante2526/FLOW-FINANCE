@@ -18,6 +18,7 @@ import LongTermView from './components/LongTermView';
 import InvestmentsView from './components/InvestmentsView';
 import LoginScreen, { FlowLogo } from './components/LoginScreen';
 import ProModal from './components/ProModal'; 
+import DonationModal from './components/DonationModal';
 import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification, AppLanguage } from './types';
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { TRANSLATIONS, getBrowserLanguage, getLocale } from './i18n';
@@ -104,9 +105,10 @@ const App: React.FC = () => {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
-  const [isProModalOpen, setIsProModalOpen] = useState(false); 
+  const [isProModalOpen, setIsProModalOpen] = useState(false);
+  const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
   
-  const isAnyModalOpen = isAddTransactionOpen || isAddAccountOpen || isCalculatorOpen || isProfileModalOpen || isNotepadOpen || isCalendarOpen || isNotificationOpen || isAnalyticsOpen || isProModalOpen;
+  const isAnyModalOpen = isAddTransactionOpen || isAddAccountOpen || isCalculatorOpen || isProfileModalOpen || isNotepadOpen || isCalendarOpen || isNotificationOpen || isAnalyticsOpen || isProModalOpen || isDonationModalOpen;
 
   const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_PROFILE);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -124,8 +126,6 @@ const App: React.FC = () => {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   
-  const [donationCopied, setDonationCopied] = useState(false);
-
   const dragItem = useRef<string | null>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const lastActionTimeRef = useRef<number>(0); 
@@ -222,6 +222,7 @@ const App: React.FC = () => {
         setIsNotificationOpen(false);
         setIsAnalyticsOpen(false);
         setIsProModalOpen(false);
+        setIsDonationModalOpen(false);
         setCurrentView('home');
      }
   }, [currentUserEmail]);
@@ -603,6 +604,7 @@ const App: React.FC = () => {
     setIsNotificationOpen(false);
     setIsAnalyticsOpen(false);
     setIsProModalOpen(false);
+    setIsDonationModalOpen(false);
     setCurrentView('home');
     localStorage.removeItem(STORAGE_KEYS.USER_SESSION);
     await supabase.auth.signOut();
@@ -637,12 +639,6 @@ const App: React.FC = () => {
           }
       }
   }, [currentUserEmail]);
-
-  const handleDonate = () => {
-    navigator.clipboard.writeText("naylanmoreira350@gmail.com");
-    setDonationCopied(true);
-    setTimeout(() => setDonationCopied(false), 2000);
-  };
 
   const activeMonth = useMemo(() => months.find(m => m.id === activeMonthId) || months[0], [months, activeMonthId]);
 
@@ -745,9 +741,9 @@ const App: React.FC = () => {
             {!userProfile.isPro && (
               <div className="px-1 mt-6">
                 
-                {/* Donation Card */}
+                {/* Donation Card - REPLACED WITH MODAL TRIGGER */}
                 <div
-                  onClick={handleDonate}
+                  onClick={() => setIsDonationModalOpen(true)}
                   className="mb-4 block w-full bg-gradient-to-r from-[#1c1c1e] to-[#2c2c2e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all cursor-pointer"
                 >
                   <div className="absolute -top-[1px] -right-[1px] bg-emerald-500/20 px-3 py-1 rounded-bl-xl border-l border-b border-emerald-500/10 z-10">
@@ -764,7 +760,7 @@ const App: React.FC = () => {
                        <h3 className="text-white font-bold text-sm">Apoie o Projeto</h3>
                        <p className="text-gray-400 text-xs mt-0.5">Doe qualquer valor via Pix.</p>
                     </div>
-                    {donationCopied ? <Check className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />}
+                    <Copy className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
                   </div>
                 </div>
 
@@ -815,6 +811,13 @@ const App: React.FC = () => {
            setIsProModalOpen(false); 
            if(currentUserEmail) { saveUserField(currentUserEmail, 'profile', { ...userProfile, isPro: true }); lastActionTimeRef.current = Date.now(); } 
         }}
+        userEmail={currentUserEmail || undefined}
+        userName={userProfile.name}
+        appLanguage={appLanguage}
+      />
+      <DonationModal
+        isOpen={isDonationModalOpen}
+        onClose={() => setIsDonationModalOpen(false)}
         userEmail={currentUserEmail || undefined}
         userName={userProfile.name}
         appLanguage={appLanguage}
