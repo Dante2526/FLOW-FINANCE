@@ -769,7 +769,7 @@ const App: React.FC = () => {
                   href="https://jeitto.onelink.me/QMGg/mcgv9w9n" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="block w-full bg-gradient-to-r from-[#1c1c1e] to-[#2c2c2e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all mb-4"
+                  className="block w-full bg-[#1c1c1e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all mb-4"
                 >
                   <div className="absolute -top-[1px] -right-[1px] bg-[#552d36] px-3 py-1 rounded-bl-xl border-l border-b border-[#f82f58]/20 z-10">
                      <span className="text-[10px] font-bold text-[#f82f58] uppercase tracking-wider">Indicação</span>
