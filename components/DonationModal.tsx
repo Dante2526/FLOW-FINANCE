@@ -19,6 +19,9 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
   const [pixData, setPixData] = useState<{ encodedImage: string; payload: string } | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [error, setError] = useState('');
+  
+  // Dynamic height state for mobile keyboard handling
+  const [dynamicHeight, setDynamicHeight] = useState<string | number>('85dvh');
 
   const t = TRANSLATIONS[appLanguage];
   const tModal = t.donationModal || { // Fallback basic translations if not yet loaded
@@ -46,6 +49,26 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
       setError('');
       setLoading(false);
     }
+  }, [isOpen]);
+
+  // Handle Visual Viewport resizing (Keyboard open/close)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleResize = () => {
+      if (window.visualViewport) {
+        // On mobile, this returns the height of the visible area (screen minus keyboard)
+        // We set the modal max-height to this value to ensure it fits perfectly.
+        // We subtract a small buffer (e.g., 0 or 10px) if needed, but 100% usually works best for bottom sheets.
+        setDynamicHeight(window.visualViewport.height);
+      }
+    };
+
+    window.visualViewport?.addEventListener('resize', handleResize);
+    // Initial calculation
+    handleResize();
+
+    return () => window.visualViewport?.removeEventListener('resize', handleResize);
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -124,7 +147,10 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
 
   return (
     <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center sm:p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] relative flex flex-col overflow-hidden border-t sm:border border-emerald-500/20 shadow-2xl shadow-emerald-500/10 max-h-[85dvh] sm:max-h-[90vh]">
+      <div 
+        className="bg-[#1c1c1e] w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] relative flex flex-col overflow-hidden border-t sm:border border-emerald-500/20 shadow-2xl shadow-emerald-500/10 transition-[max-height] duration-100 ease-out"
+        style={{ maxHeight: dynamicHeight }}
+      >
         
         {/* Header */}
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 h-24 w-full relative flex items-center justify-center shrink-0">
@@ -143,7 +169,8 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
             </button>
         </div>
 
-        <div className="p-6 pt-4 flex flex-col items-center text-center overflow-y-auto no-scrollbar flex-1 gap-4 pb-32">
+        {/* Scrollable Content with extra padding for keyboard */}
+        <div className="p-6 pt-4 flex flex-col items-center text-center overflow-y-auto no-scrollbar flex-1 gap-4 pb-48">
             
             {!pixData ? (
                 <>
