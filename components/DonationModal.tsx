@@ -19,9 +19,6 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
   const [pixData, setPixData] = useState<{ encodedImage: string; payload: string } | null>(null);
   const [isCopied, setIsCopied] = useState(false);
   const [error, setError] = useState('');
-  
-  // Dynamic height state for mobile keyboard handling
-  const [dynamicHeight, setDynamicHeight] = useState<string | number>('85dvh');
 
   const t = TRANSLATIONS[appLanguage];
   const tModal = t.donationModal || { // Fallback basic translations if not yet loaded
@@ -51,25 +48,12 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
     }
   }, [isOpen]);
 
-  // Handle Visual Viewport resizing (Keyboard open/close)
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleResize = () => {
-      if (window.visualViewport) {
-        // On mobile, this returns the height of the visible area (screen minus keyboard)
-        // We set the modal max-height to this value to ensure it fits perfectly.
-        // We subtract a small buffer (e.g., 0 or 10px) if needed, but 100% usually works best for bottom sheets.
-        setDynamicHeight(window.visualViewport.height);
-      }
-    };
-
-    window.visualViewport?.addEventListener('resize', handleResize);
-    // Initial calculation
-    handleResize();
-
-    return () => window.visualViewport?.removeEventListener('resize', handleResize);
-  }, [isOpen]);
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Smooth scroll the focused element into view
+    setTimeout(() => {
+      e.target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 300);
+  };
 
   if (!isOpen) return null;
 
@@ -146,10 +130,9 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center sm:p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in zoom-in-95 duration-300">
       <div 
-        className="bg-[#1c1c1e] w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] relative flex flex-col overflow-hidden border-t sm:border border-emerald-500/20 shadow-2xl shadow-emerald-500/10 transition-[max-height] duration-100 ease-out"
-        style={{ maxHeight: dynamicHeight }}
+        className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] relative flex flex-col overflow-hidden border border-emerald-500/20 shadow-2xl shadow-emerald-500/10 max-h-[85dvh]"
       >
         
         {/* Header */}
@@ -169,8 +152,8 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
             </button>
         </div>
 
-        {/* Scrollable Content with extra padding for keyboard */}
-        <div className="p-6 pt-4 flex flex-col items-center text-center overflow-y-auto no-scrollbar flex-1 gap-4 pb-48">
+        {/* Scrollable Content */}
+        <div className="p-6 pt-4 flex flex-col items-center text-center overflow-y-auto no-scrollbar flex-1 gap-4">
             
             {!pixData ? (
                 <>
@@ -181,7 +164,7 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
                         </p>
                     </div>
 
-                    <form onSubmit={handleGeneratePix} className="w-full flex flex-col gap-4 mt-2">
+                    <form onSubmit={handleGeneratePix} className="w-full flex flex-col gap-4 mt-2 mb-2">
                         
                         <div className="flex flex-col gap-2">
                            <label className="text-[10px] font-bold text-emerald-500 uppercase self-start ml-4">{tModal.valueLabel}</label>
@@ -192,6 +175,7 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
                                  inputMode="numeric"
                                  value={amount}
                                  onChange={handleAmountChange}
+                                 onFocus={handleInputFocus}
                                  placeholder="0,00"
                                  className="w-full bg-[#2c2c2e] text-white text-4xl font-bold py-6 pl-16 pr-4 rounded-[2rem] outline-none focus:ring-2 focus:ring-emerald-500 border border-transparent focus:border-emerald-500/50 transition-all text-center"
                                  autoFocus
@@ -208,6 +192,7 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
                                  inputMode="numeric"
                                  value={cpf}
                                  onChange={(e) => setCpf(e.target.value)}
+                                 onFocus={handleInputFocus}
                                  placeholder="000.000.000-00"
                                  maxLength={14}
                                  className="w-full bg-[#2c2c2e] text-white py-4 pl-12 pr-4 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-lg"
@@ -227,7 +212,7 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
                     </form>
                 </>
             ) : (
-                <div className="w-full flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <div className="w-full flex flex-col items-center gap-4 animate-in fade-in slide-in-from-bottom-4 duration-300 mb-2">
                     <div className="bg-white p-3 rounded-2xl shadow-xl">
                        <img src={`data:image/jpeg;base64,${pixData.encodedImage}`} alt="QR Code Pix" className="w-52 h-52 mix-blend-multiply" />
                     </div>
