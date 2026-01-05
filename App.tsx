@@ -746,7 +746,7 @@ const App: React.FC = () => {
                   onClick={() => setIsDonationModalOpen(true)}
                   className="mb-4 block w-full bg-gradient-to-r from-[#1c1c1e] to-[#2c2c2e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all cursor-pointer"
                 >
-                  <div className="absolute -top-[1px] -right-[1px] bg-emerald-500/20 px-3 py-1 rounded-bl-xl border-l border-b border-emerald-500/10 z-10">
+                  <div className="absolute -top-[1px] -right-[1px] bg-emerald-500/20 px-3 py-1.5 rounded-bl-xl border-l border-b border-emerald-500/10 z-10">
                      <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Apoie</span>
                   </div>
 
