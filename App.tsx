@@ -22,7 +22,7 @@ import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, Ap
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { TRANSLATIONS, getBrowserLanguage, getLocale } from './i18n';
 import { IconBell, JeittoLogo } from './components/Icons';
-import { Crown, Languages, ExternalLink, Zap } from 'lucide-react';
+import { Crown, Languages, ExternalLink, Zap, Heart, Copy, Check } from 'lucide-react';
 
 // Supabase Services
 import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, upsertItem, deleteItem, hardDeleteMonth } from './services/supabase';
@@ -123,6 +123,8 @@ const App: React.FC = () => {
   const [activeMonthId, setActiveMonthId] = useState<string>(SYSTEM_INITIAL_MONTH.id);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  
+  const [donationCopied, setDonationCopied] = useState(false);
 
   const dragItem = useRef<string | null>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
@@ -636,6 +638,12 @@ const App: React.FC = () => {
       }
   }, [currentUserEmail]);
 
+  const handleDonate = () => {
+    navigator.clipboard.writeText("naylanmoreira350@gmail.com");
+    setDonationCopied(true);
+    setTimeout(() => setDonationCopied(false), 2000);
+  };
+
   const activeMonth = useMemo(() => months.find(m => m.id === activeMonthId) || months[0], [months, activeMonthId]);
 
   const filteredTx = useMemo(() => {
@@ -735,12 +743,37 @@ const App: React.FC = () => {
             />
 
             {!userProfile.isPro && (
-              <div className="mt-6 mb-4 px-1">
+              <div className="px-1 mt-6">
+                
+                {/* Donation Card */}
+                <div
+                  onClick={handleDonate}
+                  className="mb-4 block w-full bg-gradient-to-r from-[#1c1c1e] to-[#2c2c2e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all cursor-pointer"
+                >
+                  <div className="absolute -top-[1px] -right-[1px] bg-emerald-500/20 px-3 py-1 rounded-bl-xl border-l border-b border-emerald-500/10 z-10">
+                     <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Apoie</span>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    {/* Icon */}
+                    <div className="w-12 h-12 rounded-[1.2rem] bg-emerald-500/10 flex items-center justify-center shrink-0">
+                       <Heart className="w-6 h-6 text-emerald-500 fill-emerald-500/20" />
+                    </div>
+
+                    <div className="flex-1">
+                       <h3 className="text-white font-bold text-sm">Apoie o Projeto</h3>
+                       <p className="text-gray-400 text-xs mt-0.5">Doe qualquer valor via Pix.</p>
+                    </div>
+                    {donationCopied ? <Check className="w-5 h-5 text-emerald-500" /> : <Copy className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />}
+                  </div>
+                </div>
+
+                {/* Jeitto Card */}
                 <a 
                   href="https://jeitto.onelink.me/QMGg/mcgv9w9n" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="block w-full bg-gradient-to-r from-[#1c1c1e] to-[#2c2c2e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all"
+                  className="block w-full bg-gradient-to-r from-[#1c1c1e] to-[#2c2c2e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all mb-4"
                 >
                   <div className="absolute -top-[1px] -right-[1px] bg-[#552d36] px-3 py-1 rounded-bl-xl border-l border-b border-[#f82f58]/20 z-10">
                      <span className="text-[10px] font-bold text-[#f82f58] uppercase tracking-wider">Indicação</span>
