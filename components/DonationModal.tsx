@@ -123,8 +123,8 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] relative flex flex-col overflow-hidden border border-emerald-500/20 shadow-2xl shadow-emerald-500/10 max-h-[90dvh]">
+    <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center sm:p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+      <div className="bg-[#1c1c1e] w-full max-w-sm rounded-t-[2.5rem] sm:rounded-[2.5rem] relative flex flex-col overflow-hidden border-t sm:border border-emerald-500/20 shadow-2xl shadow-emerald-500/10 max-h-[85vh] sm:max-h-[90dvh]">
         
         {/* Header */}
         <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 h-24 w-full relative flex items-center justify-center shrink-0">
@@ -143,7 +143,7 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
             </button>
         </div>
 
-        <div className="p-6 pt-4 flex flex-col items-center text-center overflow-y-auto no-scrollbar flex-1 gap-4">
+        <div className="p-6 pt-4 flex flex-col items-center text-center overflow-y-auto no-scrollbar flex-1 gap-4 pb-8">
             
             {!pixData ? (
                 <>
