@@ -60,6 +60,15 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
     setAmount(amountVal.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   };
 
+  // Function to ensure input visibility when keyboard opens
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    const target = e.target;
+    // Delay to allow keyboard to animate up
+    setTimeout(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 400);
+  };
+
   const handleGeneratePix = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cpf || cpf.length < 11) {
@@ -127,16 +136,14 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
       <div className="fixed inset-0 bg-black/90 backdrop-blur-md" onClick={onClose} />
 
       {/* 
-          LAYOUT ALTERADO:
-          - 'items-end': Fixa o modal na base (estilo gaveta) no celular. Isso evita que ele tente se centralizar e pule para o topo.
-          - 'sm:items-center': Mantém centralizado no Desktop.
-          - 'pb-32': Espaço extra no final para o teclado não cobrir o botão.
+          Items-end handles the "Bottom Sheet" style on mobile to avoid jumping issues.
+          Padding bottom ensures space for keyboard.
       */}
       <div 
         className="flex min-h-full items-end sm:items-center justify-center p-4 pb-32 text-center pointer-events-none"
         style={{ 
           paddingTop: 'max(1rem, env(safe-area-inset-top))',
-          paddingBottom: 'max(8rem, env(safe-area-inset-bottom))' // Mais espaço para o teclado
+          paddingBottom: 'max(8rem, env(safe-area-inset-bottom))'
         }}
       >
         <div 
@@ -183,6 +190,7 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
                                   inputMode="numeric"
                                   value={amount}
                                   onChange={handleAmountChange}
+                                  onFocus={handleInputFocus}
                                   placeholder="0,00"
                                   className="w-full bg-[#2c2c2e] text-white text-4xl font-bold py-6 pl-16 pr-4 rounded-[2rem] outline-none focus:ring-2 focus:ring-emerald-500 border border-transparent focus:border-emerald-500/50 transition-all text-center"
                                 />
@@ -198,6 +206,7 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
                                   inputMode="numeric"
                                   value={cpf}
                                   onChange={(e) => setCpf(e.target.value)}
+                                  onFocus={handleInputFocus}
                                   placeholder="000.000.000-00"
                                   maxLength={14}
                                   className="w-full bg-[#2c2c2e] text-white py-4 pl-12 pr-4 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-lg"
