@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Plus, Copy, Calculator, GripVertical, Eye, EyeOff } from 'lucide-react';
 import { AppLanguage } from '../types';
@@ -55,13 +54,19 @@ const BalanceCard: React.FC<Props> = ({
 
   // Format the balance to maintain the visual style (large integer, smaller decimals)
   const locale = getLocale(appLanguage as AppLanguage);
-  const formattedBalance = balance.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  
+  // Handling for very large numbers to prevent UI breakage
+  const safeBalance = Math.abs(balance) > 999999999 ? 999999999 : balance;
+  
+  const formattedBalance = safeBalance.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   
   // Determine separator based on locale
   const separator = locale === 'en-US' ? '.' : ',';
   const parts = formattedBalance.split(separator);
   const integerPart = parts[0];
   const decimalPart = parts[1] || '00';
+  
+  const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
   // Native DnD Handlers
   const handleDragStart = (e: React.DragEvent) => {
@@ -138,12 +143,12 @@ const BalanceCard: React.FC<Props> = ({
       {/* Main Balance */}
       <div className="mt-2 mb-6">
         {isVisible ? (
-          <h1 className="text-4xl font-bold tracking-tight drop-shadow-md">
-            {appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€'} {integerPart}<span className="text-3xl text-white">{separator}{decimalPart}</span>
+          <h1 className="text-4xl font-bold tracking-tight drop-shadow-md truncate">
+            {currencySymbol} {integerPart}<span className="text-3xl text-white">{separator}{decimalPart}</span>
           </h1>
         ) : (
           <h1 className="text-4xl font-bold tracking-tight drop-shadow-md opacity-80">
-            {appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€'} ••••
+            {currencySymbol} ••••
           </h1>
         )}
       </div>
