@@ -30,9 +30,9 @@ const calculate = (first: number, second: number, op: string) => {
   return parseFloat(result.toFixed(10));
 };
 
-const formatDisplay = (val: string, locale: string = 'pt-BR') => {
+const formatDisplay = (val: string, locale: string = 'pt-BR', errorLabel: string = 'Erro') => {
     if (!val) return '0';
-    if (val === 'Erro' || val === 'Infinity' || val === 'NaN') return 'Erro';
+    if (val === 'Erro' || val === 'Infinity' || val === 'NaN') return errorLabel;
     
     // Check if number is too large for standard formatting or very small
     const num = parseFloat(val);
@@ -70,6 +70,7 @@ type CalculatorAction = {
   type: 'DIGIT' | 'OP' | 'EXEC' | 'CLEAR' | 'DEL' | 'SIGN' | 'PERCENT' | 'DOT' | 'PASTE';
   payload?: string;
   locale?: string; // Optional locale for formatting history
+  errorLabel?: string; // Passed for i18n
 };
 
 const INITIAL_STATE: CalculatorState = {
@@ -82,6 +83,7 @@ const INITIAL_STATE: CalculatorState = {
 
 const calculatorReducer = (state: CalculatorState, action: CalculatorAction): CalculatorState => {
   const locale = action.locale || 'pt-BR'; // Default fallback
+  const errorLabel = action.errorLabel || 'Erro';
 
   switch (action.type) {
     case 'DIGIT':
@@ -174,7 +176,7 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
           return {
             ...state,
             previousValue: inputValue,
-            history: `${formatDisplay(String(inputValue), locale)} ${opSym}`,
+            history: `${formatDisplay(String(inputValue), locale, errorLabel)} ${opSym}`,
             waitingForOperand: true,
             operator: nextOp
           };
@@ -183,7 +185,7 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
             return {
               ...state,
               operator: nextOp,
-              history: `${formatDisplay(String(state.previousValue), locale)} ${opSym}`
+              history: `${formatDisplay(String(state.previousValue), locale, errorLabel)} ${opSym}`
             };
           }
           const result = calculate(state.previousValue, inputValue, state.operator);
@@ -191,7 +193,7 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
             ...state,
             previousValue: result,
             display: String(result),
-            history: `${formatDisplay(String(result), locale)} ${opSym}`,
+            history: `${formatDisplay(String(result), locale, errorLabel)} ${opSym}`,
             waitingForOperand: true,
             operator: nextOp
           };
@@ -200,7 +202,7 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
            return {
              ...state,
              previousValue: inputValue,
-             history: `${formatDisplay(String(inputValue), locale)} ${opSym}`,
+             history: `${formatDisplay(String(inputValue), locale, errorLabel)} ${opSym}`,
              waitingForOperand: true,
              operator: nextOp
            };
@@ -217,7 +219,7 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
       return {
         ...state,
         display: String(finalResult),
-        history: `${formatDisplay(String(state.previousValue), locale)} ${finalSym} ${formatDisplay(String(finalInput), locale)} =`,
+        history: `${formatDisplay(String(state.previousValue), locale, errorLabel)} ${finalSym} ${formatDisplay(String(finalInput), locale, errorLabel)} =`,
         previousValue: null,
         operator: null,
         waitingForOperand: true
@@ -239,6 +241,7 @@ interface ButtonProps {
   isActive?: boolean;
   className?: string;
   locale?: string;
+  errorLabel?: string;
 }
 
 const CalculatorButton = React.memo(({ 
@@ -249,7 +252,8 @@ const CalculatorButton = React.memo(({
   variant = 'default',
   isActive = false,
   className = '',
-  locale
+  locale,
+  errorLabel
 }: ButtonProps) => {
   
   // UX Tweaks: scale-95 for solid feel, duration-100 for snappiness
@@ -274,7 +278,7 @@ const CalculatorButton = React.memo(({
      if (typeof navigator !== 'undefined' && navigator.vibrate) {
          try { navigator.vibrate(15); } catch(e) {}
      }
-     dispatch({ type: action, payload, locale });
+     dispatch({ type: action, payload, locale, errorLabel });
   };
 
   return (
@@ -316,18 +320,19 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose, appLanguage }) => {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key;
+      const errorLabel = t.error;
       
-      if (/^[0-9]$/.test(key)) { e.preventDefault(); dispatch({ type: 'DIGIT', payload: key, locale }); }
-      if (['+', '-', '*', '/'].includes(key)) { e.preventDefault(); dispatch({ type: 'OP', payload: key, locale }); }
-      if (key === 'x' || key === 'X') { e.preventDefault(); dispatch({ type: 'OP', payload: '*', locale }); }
-      if (key === 'Enter' || key === '=') { e.preventDefault(); dispatch({ type: 'EXEC', locale }); }
-      if (key === '.' || key === ',') { e.preventDefault(); dispatch({ type: 'DOT', locale }); }
-      if (key === 'Backspace' || key === 'Delete') { e.preventDefault(); dispatch({ type: 'DEL', locale }); }
+      if (/^[0-9]$/.test(key)) { e.preventDefault(); dispatch({ type: 'DIGIT', payload: key, locale, errorLabel }); }
+      if (['+', '-', '*', '/'].includes(key)) { e.preventDefault(); dispatch({ type: 'OP', payload: key, locale, errorLabel }); }
+      if (key === 'x' || key === 'X') { e.preventDefault(); dispatch({ type: 'OP', payload: '*', locale, errorLabel }); }
+      if (key === 'Enter' || key === '=') { e.preventDefault(); dispatch({ type: 'EXEC', locale, errorLabel }); }
+      if (key === '.' || key === ',') { e.preventDefault(); dispatch({ type: 'DOT', locale, errorLabel }); }
+      if (key === 'Backspace' || key === 'Delete') { e.preventDefault(); dispatch({ type: 'DEL', locale, errorLabel }); }
       if (key === 'Escape' || key.toLowerCase() === 'c') { 
           e.preventDefault(); 
-          dispatch({ type: 'CLEAR', locale });
+          dispatch({ type: 'CLEAR', locale, errorLabel });
       }
-      if (key === '%') { e.preventDefault(); dispatch({ type: 'PERCENT', locale }); }
+      if (key === '%') { e.preventDefault(); dispatch({ type: 'PERCENT', locale, errorLabel }); }
     };
 
     const handlePaste = (e: ClipboardEvent) => {
@@ -360,7 +365,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose, appLanguage }) => {
             }
             
             if (clean && !isNaN(parseFloat(clean))) {
-                dispatch({ type: 'PASTE', payload: clean, locale });
+                dispatch({ type: 'PASTE', payload: clean, locale, errorLabel: t.error });
             }
         }
     };
@@ -371,7 +376,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose, appLanguage }) => {
         window.removeEventListener('keydown', handleKeyDown);
         window.removeEventListener('paste', handlePaste);
     };
-  }, [isOpen, locale]);
+  }, [isOpen, locale, t.error]);
 
   // Copy Functionality
   const handleCopy = () => {
@@ -390,11 +395,13 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose, appLanguage }) => {
   if (!isOpen) return null;
 
   // Dynamic Font Size
-  const formattedValue = formatDisplay(state.display, locale);
+  const formattedValue = formatDisplay(state.display, locale, t.error);
   const displayLength = formattedValue.length;
   let fontSizeClass = "text-6xl sm:text-5xl"; // Larger on mobile
   if (displayLength > 13) fontSizeClass = "text-3xl";
   else if (displayLength > 9) fontSizeClass = "text-4xl sm:text-4xl";
+
+  const btnProps = { locale, errorLabel: t.error };
 
   return (
     <div 
@@ -451,30 +458,30 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose, appLanguage }) => {
         {/* Keypad Grid - Reduced gap gap-3 -> gap-2 on mobile/desktop */}
         <div className="grid grid-cols-4 gap-2 sm:gap-2 shrink-0">
           
-          <CalculatorButton label={clearButtonLabel} action="CLEAR" dispatch={dispatch} variant="red-text" locale={locale} />
-          <CalculatorButton label={deleteIconNode} action="DEL" dispatch={dispatch} variant="secondary" locale={locale} />
-          <CalculatorButton label="%" action="PERCENT" dispatch={dispatch} variant="secondary" locale={locale} />
-          <CalculatorButton label="÷" action="OP" payload="/" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '/' && state.waitingForOperand} locale={locale} />
+          <CalculatorButton label={clearButtonLabel} action="CLEAR" dispatch={dispatch} variant="red-text" {...btnProps} />
+          <CalculatorButton label={deleteIconNode} action="DEL" dispatch={dispatch} variant="secondary" {...btnProps} />
+          <CalculatorButton label="%" action="PERCENT" dispatch={dispatch} variant="secondary" {...btnProps} />
+          <CalculatorButton label="÷" action="OP" payload="/" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '/' && state.waitingForOperand} {...btnProps} />
 
-          <CalculatorButton label="7" action="DIGIT" payload="7" dispatch={dispatch} locale={locale} />
-          <CalculatorButton label="8" action="DIGIT" payload="8" dispatch={dispatch} locale={locale} />
-          <CalculatorButton label="9" action="DIGIT" payload="9" dispatch={dispatch} locale={locale} />
-          <CalculatorButton label="×" action="OP" payload="*" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '*' && state.waitingForOperand} locale={locale} />
+          <CalculatorButton label="7" action="DIGIT" payload="7" dispatch={dispatch} {...btnProps} />
+          <CalculatorButton label="8" action="DIGIT" payload="8" dispatch={dispatch} {...btnProps} />
+          <CalculatorButton label="9" action="DIGIT" payload="9" dispatch={dispatch} {...btnProps} />
+          <CalculatorButton label="×" action="OP" payload="*" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '*' && state.waitingForOperand} {...btnProps} />
 
-          <CalculatorButton label="4" action="DIGIT" payload="4" dispatch={dispatch} locale={locale} />
-          <CalculatorButton label="5" action="DIGIT" payload="5" dispatch={dispatch} locale={locale} />
-          <CalculatorButton label="6" action="DIGIT" payload="6" dispatch={dispatch} locale={locale} />
-          <CalculatorButton label="-" action="OP" payload="-" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '-' && state.waitingForOperand} locale={locale} />
+          <CalculatorButton label="4" action="DIGIT" payload="4" dispatch={dispatch} {...btnProps} />
+          <CalculatorButton label="5" action="DIGIT" payload="5" dispatch={dispatch} {...btnProps} />
+          <CalculatorButton label="6" action="DIGIT" payload="6" dispatch={dispatch} {...btnProps} />
+          <CalculatorButton label="-" action="OP" payload="-" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '-' && state.waitingForOperand} {...btnProps} />
 
-          <CalculatorButton label="1" action="DIGIT" payload="1" dispatch={dispatch} locale={locale} />
-          <CalculatorButton label="2" action="DIGIT" payload="2" dispatch={dispatch} locale={locale} />
-          <CalculatorButton label="3" action="DIGIT" payload="3" dispatch={dispatch} locale={locale} />
-          <CalculatorButton label="+" action="OP" payload="+" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '+' && state.waitingForOperand} locale={locale} />
+          <CalculatorButton label="1" action="DIGIT" payload="1" dispatch={dispatch} {...btnProps} />
+          <CalculatorButton label="2" action="DIGIT" payload="2" dispatch={dispatch} {...btnProps} />
+          <CalculatorButton label="3" action="DIGIT" payload="3" dispatch={dispatch} {...btnProps} />
+          <CalculatorButton label="+" action="OP" payload="+" dispatch={dispatch} variant="accent-filled" isActive={state.operator === '+' && state.waitingForOperand} {...btnProps} />
 
-          <CalculatorButton label="+/-" action="SIGN" dispatch={dispatch} className="text-xl" locale={locale} />
-          <CalculatorButton label="0" action="DIGIT" payload="0" dispatch={dispatch} locale={locale} />
-          <CalculatorButton label={locale === 'en-US' ? '.' : ','} action="DOT" dispatch={dispatch} locale={locale} />
-          <CalculatorButton label="=" action="EXEC" dispatch={dispatch} variant="accent-filled" locale={locale} />
+          <CalculatorButton label="+/-" action="SIGN" dispatch={dispatch} className="text-xl" {...btnProps} />
+          <CalculatorButton label="0" action="DIGIT" payload="0" dispatch={dispatch} {...btnProps} />
+          <CalculatorButton label={locale === 'en-US' ? '.' : ','} action="DOT" dispatch={dispatch} {...btnProps} />
+          <CalculatorButton label="=" action="EXEC" dispatch={dispatch} variant="accent-filled" {...btnProps} />
 
         </div>
 

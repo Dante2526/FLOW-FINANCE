@@ -706,7 +706,7 @@ const App: React.FC = () => {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">{t.welcome},</span>
-                  <div className="flex items-center gap-1"><h1 className="text-white text-xl font-bold leading-none">{userProfile.name || 'Usuário'}</h1>{userProfile.isPro && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />}</div>
+                  <div className="flex items-center gap-1"><h1 className="text-white text-xl font-bold leading-none">{userProfile.name || t.common.defaultUser}</h1>{userProfile.isPro && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />}</div>
                 </div>
               </div>
               <div className="flex items-center gap-2">

@@ -52,7 +52,7 @@ export const sendAuthOtp = async (email: string) => {
 
 export const verifyAuthOtp = async (email: string, token: string) => {
   const { data, error } = await supabase.auth.verifyOtp({ email: email.toLowerCase().trim(), token, type: 'email' });
-  if (error) throw new Error("Código inválido ou expirado.");
+  if (error) throw new Error("INVALID_CODE");
   return data;
 };
 
@@ -63,19 +63,19 @@ const getAuthUserId = async (): Promise<string> => {
     if (user) return user.id;
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) return session.user.id;
-    throw new Error("Usuário não autenticado.");
+    throw new Error("AUTH_REQUIRED");
 };
 
 export const loginUser = async (email: string) => {
   const { data } = await supabase.from('users').select('email').eq('email', email.toLowerCase().trim()).maybeSingle();
-  if (!data) throw new Error("Usuário não encontrado.");
+  if (!data) throw new Error("USER_NOT_FOUND");
   return await getAuthUserId();
 };
 
 export const registerUser = async (email: string, name: string, initialData: any) => {
   const emailNorm = email.toLowerCase().trim();
   const { data: exists } = await supabase.from('users').select('email').eq('email', emailNorm).maybeSingle();
-  if (exists) throw new Error("Este e-mail já possui cadastro.");
+  if (exists) throw new Error("EMAIL_ALREADY_REGISTERED");
   
   const { error } = await supabase.from('users').insert({
     email: emailNorm,

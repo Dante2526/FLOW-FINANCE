@@ -51,6 +51,16 @@ const LoginScreen: React.FC<Props> = ({ onLogin, currentLang, onLanguageChange }
   // Translations shortcut
   const t = TRANSLATIONS[currentLang].auth;
 
+  // Helper to map error codes to translations
+  const getErrorMessage = (errMessage: string) => {
+      const map: Record<string, string> = {
+          'USER_NOT_FOUND': t.errors.userNotFound,
+          'EMAIL_ALREADY_REGISTERED': t.errors.emailExists,
+          'INVALID_CODE': t.errors.invalidCodeServer
+      };
+      return map[errMessage] || errMessage || t.errors.genericVerify;
+  };
+
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
     if (resendTimer > 0) {
@@ -151,7 +161,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin, currentLang, onLanguageChange }
       }
     } catch (err: any) {
       console.error(`[FlowAuth] Erro ao verificar código OTP:`, err);
-      setError(err.message || t.errors.genericVerify);
+      setError(getErrorMessage(err.message));
       setIsLoading(false);
     }
   };

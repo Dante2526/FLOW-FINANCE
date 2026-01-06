@@ -25,6 +25,7 @@ export const TRANSLATIONS = {
       description: "Controle financeiro inteligente e moderno."
     },
     common: {
+      defaultUser: "Usuário",
       confirmDeleteMonth: "Apagar Mês?",
       deleteMonthTitle: "Deletar Mês",
       hideBalance: "Esconder saldo",
@@ -384,7 +385,10 @@ export const TRANSLATIONS = {
         missingName: 'Por favor, informe seu nome.',
         invalidCode: 'O código deve ter exatamente 6 dígitos.',
         genericSend: "Erro ao enviar código.",
-        genericVerify: "Erro de verificação. Tente novamente."
+        genericVerify: "Erro de verificação. Tente novamente.",
+        userNotFound: "Usuário não encontrado.",
+        emailExists: "Este e-mail já possui cadastro.",
+        invalidCodeServer: "Código inválido ou expirado."
       }
     },
     donationModal: {
@@ -397,7 +401,7 @@ export const TRANSLATIONS = {
       copyTitle: "Copia e Cola",
       btnCopy: "Copiar Código",
       btnCopied: "Copiado!",
-      errorMin: "Valor mínimo de R$ 1,00",
+      errorMin: "Valor mínimo de 1,00",
       errorCpf: "CPF Obrigatório"
     },
     proModal: {
@@ -452,6 +456,7 @@ export const TRANSLATIONS = {
       description: "Smart and modern financial control."
     },
     common: {
+      defaultUser: "User",
       confirmDeleteMonth: "Delete Month?",
       deleteMonthTitle: "Delete Month",
       hideBalance: "Hide balance",
@@ -811,7 +816,10 @@ export const TRANSLATIONS = {
         missingName: 'Please enter your name.',
         invalidCode: 'The code must be exactly 6 digits.',
         genericSend: "Error sending code.",
-        genericVerify: "Verification error. Please try again."
+        genericVerify: "Verification error. Please try again.",
+        userNotFound: "User not found.",
+        emailExists: "This email is already registered.",
+        invalidCodeServer: "Invalid or expired code."
       }
     },
     donationModal: {
@@ -879,6 +887,7 @@ export const TRANSLATIONS = {
       description: "Control financiero inteligente y moderno."
     },
     common: {
+      defaultUser: "Usuario",
       confirmDeleteMonth: "¿Borrar Mes?",
       deleteMonthTitle: "Borrar Mes",
       hideBalance: "Ocultar saldo",
@@ -1152,7 +1161,7 @@ export const TRANSLATIONS = {
       details: {
         editValuesHint: "Haz clic en bloques para editar",
         editTooltip: "Editar valor y fecha",
-        monthlyValue: "Valor Mensual",
+        monthlyValue: "Valor Mensal",
         paymentStatus: "Pago",
         totalValue: "Valor Total",
         installmentHeader: "CUOTA",
@@ -1238,7 +1247,10 @@ export const TRANSLATIONS = {
         missingName: 'Por favor, ingresa tu nombre.',
         invalidCode: 'El código deve ter exatamente 6 dígitos.',
         genericSend: "Error al enviar código.",
-        genericVerify: "Error de verificación. Inténtalo de nuevo."
+        genericVerify: "Error de verificación. Inténtalo de nuevo.",
+        userNotFound: "Usuario no encontrado.",
+        emailExists: "Este correo ya está registrado.",
+        invalidCodeServer: "Código inválido o expirado."
       }
     },
     donationModal: {
