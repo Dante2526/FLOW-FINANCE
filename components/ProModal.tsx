@@ -241,6 +241,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
                           <div className="flex items-baseline gap-1">
                              <span className="text-yellow-500 font-bold text-sm">{currencySymbol}</span>
                              <span className="text-white font-black text-2xl">3,00</span>
+                             <span className="text-gray-400 text-xs font-bold ml-1">{t.period}</span>
                           </div>
                       </div>
 

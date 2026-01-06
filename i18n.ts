@@ -409,7 +409,8 @@ export const TRANSLATIONS = {
         themes: { title: "Temas Exclusivos", desc: "Personalize o app." },
         backup: { title: "Backup Nuvem", desc: "Dados seguros sempre." }
       },
-      priceLabel: "Valor Único",
+      priceLabel: "Valor Mensal",
+      period: "/mês",
       btnSubscribe: "Quero ser PRO",
       btnPix: "Pix",
       btnCard: "Cartão",
@@ -835,7 +836,8 @@ export const TRANSLATIONS = {
         themes: { title: "Exclusive Themes", desc: "Customize the app." },
         backup: { title: "Cloud Backup", desc: "Always secure data." }
       },
-      priceLabel: "One-time Fee",
+      priceLabel: "Monthly Price",
+      period: "/mo",
       btnSubscribe: "Go PRO",
       btnPix: "Pix",
       btnCard: "Card",
@@ -958,7 +960,7 @@ export const TRANSLATIONS = {
     },
     notepad: {
       title: "Bloc de Notas",
-      subtitle: "Texto y dibujo libre",
+      subtitle: "Texto e dibujo libre",
       placeholder: "Escribe tus notas aquí...",
       clearTitle: "Borrar Todo",
       clearConfirm: "¿Confirmar?",
@@ -1261,7 +1263,8 @@ export const TRANSLATIONS = {
         themes: { title: "Temas Exclusivos", desc: "Personalize la app." },
         backup: { title: "Respaldo en Nube", desc: "Datos seguros siempre." }
       },
-      priceLabel: "Pago Único",
+      priceLabel: "Precio Mensual",
+      period: "/mes",
       btnSubscribe: "Ser PRO",
       btnPix: "Pix",
       btnCard: "Tarjeta",
