@@ -148,7 +148,7 @@ const NotificationModal: React.FC<Props> = ({
     if (!recipientName) return;
 
     let textToSend = '';
-    const date = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const date = new Date().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
     if (messageType === 'cobranca') {
       textToSend = `${t.shareChargeTitle}\n\n${t.shareHello} ${recipientName},\n\n${t.shareChargeBody}\n\n💰 *${t.shareValue}:* ${currencySymbol} ${amount || '0,00'}\n📝 *${t.shareDetail}:* ${customMessage || t.shareDefaultCharge}\n\n${t.shareFooterCharge}\n_${t.generatedAt} ${date}_`;

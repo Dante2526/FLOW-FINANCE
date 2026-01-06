@@ -18,6 +18,7 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
 
   const t = TRANSLATIONS[appLanguage].calendar;
   const locale = getLocale(appLanguage);
+  const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
   // Sync view with active month context when opening
   useEffect(() => {
@@ -276,7 +277,7 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
                             </div>
                             <div className="text-right">
                                 <span className={`text-sm font-bold block whitespace-nowrap ${tx.paid ? 'text-gray-500' : 'text-white'}`}>
-                                    R$ {tx.amount.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+                                    {currencySymbol} {tx.amount.toLocaleString(locale, { minimumFractionDigits: 0 })}
                                 </span>
                                 {tx.paid && <span className="text-[10px] text-green-500 font-bold flex items-center justify-end gap-1"><Check className="w-3 h-3" /> {t.paidTag}</span>}
                             </div>
