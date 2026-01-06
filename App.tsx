@@ -838,7 +838,27 @@ const App: React.FC = () => {
       <EditProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} onSave={p => { setUserProfile(p); if(currentUserEmail) { saveUserField(currentUserEmail, 'profile', p); lastActionTimeRef.current = Date.now(); } }} onLogout={handleLogout} onDeleteAccount={() => {}} currentProfile={userProfile} appLanguage={appLanguage} onOpenProModal={handleOpenPro} />
       <NotepadModal isOpen={isNotepadOpen} onClose={() => setIsNotepadOpen(false)} initialContent={notepadContent} initialDrawing={notepadDrawing} onSave={(c, d) => { setNotepadContent(c); setNotepadDrawing(d); if(currentUserEmail) { saveUserField(currentUserEmail, 'notepadContent', c); saveUserField(currentUserEmail, 'notepadDrawing', d); lastActionTimeRef.current = Date.now(); } }} appLanguage={appLanguage} />
       <CalendarModal isOpen={isCalendarOpen} onClose={() => setIsCalendarOpen(false)} transactions={transactions} activeMonthContext={{ monthIndex: MONTH_NAMES.indexOf((activeMonth.month || "").toUpperCase()), year: parseInt(activeMonth.year) }} appLanguage={appLanguage} />
-      <NotificationModal isOpen={isNotificationOpen} onClose={() => setIsNotificationOpen(false)} notifications={notifications} onMarkAllRead={() => { setNotifications([]); if(currentUserEmail) { saveCollection(currentUserEmail, 'notifications', []); lastActionTimeRef.current = Date.now(); } }} onDelete={id => { setNotifications(p => p.filter(n => n.id !== id)); if(currentUserEmail) { deleteItem(currentUserEmail, 'notifications', id); lastActionTimeRef.current = Date.now(); } }} currentUserEmail={currentUserEmail} appLanguage={appLanguage} />
+      <NotificationModal 
+        isOpen={isNotificationOpen} 
+        onClose={() => setIsNotificationOpen(false)} 
+        notifications={notifications} 
+        onMarkAllRead={() => { 
+            setNotifications([]); 
+            if(currentUserEmail) { 
+                saveCollection(currentUserEmail, 'notifications', []); 
+                lastActionTimeRef.current = Date.now(); 
+            } 
+        }} 
+        onDelete={id => { 
+            setNotifications(p => p.filter(n => n.id !== id)); 
+            if(currentUserEmail) { 
+                deleteItem(currentUserEmail, 'notifications', id); 
+                lastActionTimeRef.current = Date.now(); 
+            } 
+        }} 
+        currentUserEmail={currentUserEmail} 
+        appLanguage={appLanguage} 
+      />
       <Suspense fallback={null}>{isAnalyticsOpen && <AnalyticsModal isOpen={isAnalyticsOpen} onClose={() => setIsAnalyticsOpen(false)} transactions={transactions} months={months} appLanguage={appLanguage} />}</Suspense>
       <ProModal 
         isOpen={isProModalOpen} 

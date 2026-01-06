@@ -411,9 +411,9 @@ const NotificationModal: React.FC<Props> = ({
                 {notifications.length > 0 && (
                   <button 
                     onClick={onMarkAllRead}
-                    className="w-full h-14 rounded-[1.5rem] bg-accent text-black font-bold flex items-center justify-center gap-2 hover:bg-accentDark transition-colors shadow-lg"
+                    className="w-full h-14 rounded-[1.5rem] bg-red-600 text-white font-bold flex items-center justify-center gap-2 hover:bg-red-500 transition-colors shadow-lg"
                   >
-                    <CheckCircle2 className="w-5 h-5 text-black" />
+                    <Trash2 className="w-5 h-5 text-white" />
                     {t.markAllRead}
                   </button>
                 )}
