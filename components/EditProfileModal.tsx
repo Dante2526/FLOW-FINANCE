@@ -12,6 +12,7 @@ interface Props {
   onDeleteAccount: () => void;
   currentProfile: UserProfile;
   appLanguage: AppLanguage;
+  onOpenProModal?: () => void;
 }
 
 // "Bonecos" / Character style avatars
@@ -37,7 +38,7 @@ const PRESET_AVATARS = [
   "https://api.dicebear.com/9.x/adventurer/svg?seed=Annie",
 ];
 
-const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, onDeleteAccount, currentProfile, appLanguage }) => {
+const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, onDeleteAccount, currentProfile, appLanguage, onOpenProModal }) => {
   const [name, setName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
   
@@ -71,7 +72,7 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
     // Updated logic: First 6 are free (2 new + 4 original), rest are PRO
     const isPremium = index >= 6;
     if (isPremium && !currentProfile.isPro) {
-      // Shake animation or visual feedback could go here
+      if (onOpenProModal) onOpenProModal();
       return;
     }
     setAvatarUrl(url);
@@ -150,12 +151,11 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
                     key={url}
                     type="button"
                     onClick={() => handleAvatarSelect(url, index)}
-                    disabled={isLocked}
                     className={`relative w-20 h-20 shrink-0 rounded-xl overflow-hidden border-2 transition-all ${
                       isSelected
                         ? 'border-accent opacity-100 scale-105 z-10 shadow-lg shadow-accent/20' 
                         : 'border-transparent opacity-100 hover:opacity-80'
-                    } ${isLocked ? 'opacity-50 cursor-not-allowed bg-black/40' : 'bg-white/5'}`}
+                    } ${isLocked ? 'opacity-50 bg-black/40' : 'bg-white/5'}`}
                   >
                     <img src={url} alt="Avatar" className={`w-full h-full object-cover ${isLocked ? 'blur-[2px] grayscale' : ''}`} />
                     
