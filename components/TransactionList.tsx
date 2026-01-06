@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Transaction, AppLanguage } from '../types';
 import { TransactionIcon } from './Icons';
@@ -15,9 +14,14 @@ interface Props {
   appLanguage: AppLanguage;
 }
 
+const TODAY_KEYWORDS = ['hoje', 'today', 'hoy'];
+
 const formatDateDisplay = (dateStr: string, todayLabel: string, locale: string) => {
   if (!dateStr) return '';
-  if (dateStr.toLowerCase().includes('hoje')) return todayLabel;
+  const lower = dateStr.toLowerCase();
+  
+  // Check multilingual 'today' keywords from the database
+  if (TODAY_KEYWORDS.some(k => lower.includes(k))) return todayLabel;
   
   // Handle ISO YYYY-MM-DD
   if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {

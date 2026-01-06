@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef, Suspense, useCallback } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -30,11 +29,21 @@ import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, s
 
 const AnalyticsModal = React.lazy(() => import('./components/AnalyticsModal'));
 
+// INTERNAL DB KEYS (ALWAYS PT-BR for consistency)
 const MONTH_NAMES = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
 
+// Expanded Mapping to map ANY language short code to the Internal DB Key
 const SHORT_CODE_TO_FULL: Record<string, string> = {
-  'Jan': 'JANEIRO', 'Fev': 'FEVEREIRO', 'Mar': 'MARÇO', 'Abr': 'ABRIL', 'Mai': 'MAIO', 'Jun': 'JUNHO', 'Jul': 'JULHO', 'Ago': 'AGOSTO', 'Set': 'SETEMBRO', 'Out': 'OUTUBRO', 'Nov': 'NOVEMBRO', 'Dez': 'DEZEMBRO'
+  // PT
+  'Jan': 'JANEIRO', 'Fev': 'FEVEREIRO', 'Mar': 'MARÇO', 'Abr': 'ABRIL', 'Mai': 'MAIO', 'Jun': 'JUNHO', 
+  'Jul': 'JULHO', 'Ago': 'AGOSTO', 'Set': 'SETEMBRO', 'Out': 'OUTUBRO', 'Nov': 'NOVEMBRO', 'Dez': 'DEZEMBRO',
+  // EN
+  'Feb': 'FEVEREIRO', 'Apr': 'ABRIL', 'May': 'MAIO', 'Aug': 'AGOSTO', 'Sep': 'SETEMBRO', 'Oct': 'OUTUBRO', 'Dec': 'DEZEMBRO',
+  // ES
+  'Ene': 'JANEIRO', 'Dic': 'DEZEMBRO'
 };
+
+const TODAY_KEYWORDS = ['hoje', 'today', 'hoy'];
 
 const generateUUID = () => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => (Math.random() * 16 | 0).toString(16));
 const roundMoney = (amount: number) => Math.round((amount + Number.EPSILON) * 100) / 100;
@@ -42,17 +51,22 @@ const roundMoney = (amount: number) => Math.round((amount + Number.EPSILON) * 10
 const currentDate = new Date();
 const SYSTEM_INITIAL_MONTH: MonthSummary = { id: '00000000-0000-0000-0000-000000000001', month: MONTH_NAMES[currentDate.getMonth()], year: currentDate.getFullYear().toString(), total: 0, count: 0 };
 
-// Moved MOCK_CONTACTS logic inside component for translation
 const INITIAL_PROFILE: UserProfile = { name: '', subtitle: '', avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix', isPro: false };
 const BALANCE_CARD_ID = 'balance-card';
 
 const getMonthFromDateStr = (dateStr: string): string => {
   if (!dateStr) return '';
   const lower = dateStr.toLowerCase();
-  if (lower.includes('hoje')) return MONTH_NAMES[new Date().getMonth()];
+  
+  // Check against all supported languages for "Today"
+  if (TODAY_KEYWORDS.some(k => lower.includes(k))) {
+     return MONTH_NAMES[new Date().getMonth()];
+  }
+
   const parts = dateStr.split(' ');
   if (parts.length >= 2 && !dateStr.includes('-')) {
     const code = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
+    // Use expanded map to find the correct PT-BR key regardless of input lang
     return SHORT_CODE_TO_FULL[code] || '';
   }
   if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
@@ -63,7 +77,8 @@ const getMonthFromDateStr = (dateStr: string): string => {
 };
 
 const getYearFromDateStr = (dateStr: string, activeYearContext?: string): string => {
-  if (dateStr.toLowerCase().includes('hoje')) return new Date().getFullYear().toString();
+  const lower = dateStr.toLowerCase();
+  if (TODAY_KEYWORDS.some(k => lower.includes(k))) return new Date().getFullYear().toString();
   if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) return dateStr.split('-')[0];
   return activeYearContext || new Date().getFullYear().toString();
 };
@@ -254,8 +269,10 @@ const App: React.FC = () => {
        if (t.paid) return;
 
        let isToday = false;
-       // Check explicit "Hoje"
-       if (t.date.toLowerCase().includes('hoje')) isToday = true;
+       
+       // Check explicit "Hoje" / "Today" / "Hoy" using the multilingual keywords list
+       const lowerDate = t.date.toLowerCase();
+       if (TODAY_KEYWORDS.some(k => lowerDate.includes(k))) isToday = true;
        // Check ISO date
        else if (t.date.startsWith(todayStr)) isToday = true;
 
@@ -367,16 +384,17 @@ const App: React.FC = () => {
              const parts = t.date.split(' ')[0].split('-');
              // Mês em JS é 0-indexado
              originalDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        } else if (t.date.toLowerCase().includes('hoje')) {
-             // Se for "Hoje", usa a data atual
+        } else if (TODAY_KEYWORDS.some(k => t.date.toLowerCase().includes(k))) {
+             // Se for "Hoje"/"Today", usa a data atual
              originalDate = new Date();
         } else {
-             // Formato legado "DD Mmm" (ex: "10 Fev")
+             // Formato legado "DD Mmm" (ex: "10 Fev" ou "10 Feb")
              const parts = t.date.split(' ');
              if (parts.length >= 2) {
                  const day = parseInt(parts[0], 10);
                  const code = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
-                 const fullMonth = SHORT_CODE_TO_FULL[code];
+                 // Use expanded map to find month name
+                 const fullMonth = SHORT_CODE_TO_FULL[code]; 
                  const monthIdx = MONTH_NAMES.indexOf(fullMonth);
                  
                  // Se encontrarmos o mês, construímos a data.

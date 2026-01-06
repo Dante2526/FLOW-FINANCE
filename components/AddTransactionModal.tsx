@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Check, Calendar } from 'lucide-react';
 import { LogoType, Transaction, AppLanguage } from '../types';
@@ -27,6 +26,8 @@ const MONTH_MAP: Record<string, string> = {
   'ene': '01', 'dic': '12'
 };
 
+const TODAY_KEYWORDS = ['hoje', 'today', 'hoy'];
+
 const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transactionToEdit, activeMonthContext, appLanguage }) => {
   const [amount, setAmount] = useState('');
   const [name, setName] = useState('');
@@ -36,6 +37,7 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
   const [selectedIcon, setSelectedIcon] = useState<LogoType>('shopping');
 
   const t = TRANSLATIONS[appLanguage].addTransaction;
+  const tCommon = TRANSLATIONS[appLanguage].transactionList; // To access "Today" translation
   const locale = getLocale(appLanguage);
   const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
@@ -96,7 +98,9 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
   const parseDateFromDisplay = (displayDate: string): string => {
     try {
       if (!displayDate) return new Date().toISOString().split('T')[0];
-      if (displayDate.toLowerCase().includes('hoje')) return new Date().toISOString().split('T')[0];
+      
+      const lower = displayDate.toLowerCase();
+      if (TODAY_KEYWORDS.some(k => lower.includes(k))) return new Date().toISOString().split('T')[0];
       
       // Handle "YYYY-MM-DD" format (already ISO)
       if (displayDate.match(/^\d{4}-\d{2}-\d{2}/)) {
@@ -184,12 +188,13 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
     e.preventDefault();
     if (!amount || !name || !date) return;
 
-    // Check if selected date is today to use "Hoje"
+    // Check if selected date is today to use localized "Today"
     const today = new Date().toISOString().split('T')[0];
     let finalDateString = '';
     
     if (date === today) {
-       finalDateString = `Hoje ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+       // Use the current language word for "Today" (Hoje/Today/Hoy)
+       finalDateString = `${tCommon.today} ${new Date().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`;
     } else {
        // IMPORTANT: Save as ISO YYYY-MM-DD to preserve year information for future dates
        finalDateString = date;
