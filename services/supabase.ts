@@ -169,7 +169,6 @@ export const upsertItem = async (email: string, collection: string, item: any) =
     const userId = await getAuthUserId();
     const table = collection === 'longTerm' ? 'long_term' : collection;
     const snake = toSnakeCase(item);
-    if (!snake.created_at) snake.created_at = new Date().toISOString();
     const { error } = await supabase.from(table).upsert({ ...snake, user_id: userId }, { onConflict: 'id' });
     return !error;
   } catch (e) { return false; }
@@ -208,7 +207,6 @@ export const saveCollection = async (email: string, collection: string, data: an
 
     const rows = data.map(item => {
         const snake = toSnakeCase(item);
-        if (!snake.created_at) snake.created_at = new Date().toISOString();
         return { ...snake, user_id: userId };
     });
 
