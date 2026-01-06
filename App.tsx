@@ -109,8 +109,11 @@ const App: React.FC = () => {
   const [isLoadingData, setIsLoadingData] = useState<boolean>(() => !!loadData(STORAGE_KEYS.USER_SESSION, null));
   const [isSessionReady, setIsSessionReady] = useState(false);
   const [currentView, setCurrentView] = useState<AppView>('home');
-  // Use browser detection as fallback for initial language
-  const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => loadData(STORAGE_KEYS.APP_LANGUAGE, getBrowserLanguage()));
+  // Use browser detection as fallback for initial language, validating against known keys
+  const [appLanguage, setAppLanguage] = useState<AppLanguage>(() => {
+    const saved = loadData(STORAGE_KEYS.APP_LANGUAGE, getBrowserLanguage());
+    return (['pt', 'en', 'es'].includes(saved)) ? saved : 'pt';
+  });
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
   const [isAddTransactionOpen, setIsAddTransactionOpen] = useState(false);
@@ -146,13 +149,14 @@ const App: React.FC = () => {
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const lastActionTimeRef = useRef<number>(0); 
   
-  const t = TRANSLATIONS[appLanguage];
+  // Robust translation retrieval with fallback
+  const t = TRANSLATIONS[appLanguage] || TRANSLATIONS['pt'];
 
   // Dynamic Contacts with Translations
   const mockContacts = useMemo(() => [
-    { id: '1', name: t.notepad.title, imageUrl: '' },
-    { id: '2', name: t.calendar.title, imageUrl: '' },
-    { id: '3', name: t.analytics.title, imageUrl: '' }
+    { id: '1', name: t.notepad?.title || 'Notepad', imageUrl: '' },
+    { id: '2', name: t.calendar?.title || 'Calendar', imageUrl: '' },
+    { id: '3', name: t.analytics?.title || 'Analytics', imageUrl: '' }
   ], [t]);
 
   const currentStateRef = useRef({ transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder, appLanguage });
@@ -283,12 +287,14 @@ const App: React.FC = () => {
            if (!exists) {
                const formattedValue = t.amount.toLocaleString(locale, { minimumFractionDigits: 2 });
                
-               // Use dynamic translation keys
-               const title = TRANSLATIONS[appLanguage].notifications.system.billDueTitle;
-               const message = TRANSLATIONS[appLanguage].notifications.system.billDueMessage
+               // Use dynamic translation keys with checks
+               const systemT = TRANSLATIONS[appLanguage]?.notifications?.system || TRANSLATIONS['pt'].notifications.system;
+               
+               const title = systemT.billDueTitle;
+               const message = systemT.billDueMessage
                   .replace('{name}', t.name)
                   .replace('{value}', `${currencySymbol} ${formattedValue}`);
-               const dateStr = TRANSLATIONS[appLanguage].notifications.system.todayAt.replace('{time}', nowTime);
+               const dateStr = systemT.todayAt.replace('{time}', nowTime);
 
                missingNotifs.push({
                    id: notifId,
@@ -311,7 +317,7 @@ const App: React.FC = () => {
             lastActionTimeRef.current = Date.now();
         }
     }
-  }, [transactions, notifications, isLoadingData, currentUserEmail, appLanguage]); // Added appLanguage dep
+  }, [transactions, notifications, isLoadingData, currentUserEmail, appLanguage]); 
 
   const applyData = (data: any) => {
       if (data.profile) setUserProfile(data.profile);
@@ -331,8 +337,8 @@ const App: React.FC = () => {
       if (data.cdiRate !== undefined) setCdiRate(data.cdiRate);
       if (data.dashboardOrder) setDashboardOrder(data.dashboardOrder);
       
-      // Apply Language from DB if available
-      if (data.appLanguage) {
+      // Apply Language from DB if available and valid
+      if (data.appLanguage && ['pt', 'en', 'es'].includes(data.appLanguage)) {
           setAppLanguage(data.appLanguage);
           saveData(STORAGE_KEYS.APP_LANGUAGE, data.appLanguage);
       }
@@ -371,7 +377,7 @@ const App: React.FC = () => {
 
     if (cur.months.find(m => (m.month || "").toUpperCase().trim() === nName && m.year === nYrS)) {
         const currentLang = cur.appLanguage;
-        const tCommon = TRANSLATIONS[currentLang].common;
+        const tCommon = (TRANSLATIONS[currentLang] || TRANSLATIONS['pt']).common;
         // Use dynamic translation for duplicate month alert
         alert(tCommon.monthExists.replace('{month}', nName).replace('{year}', nYrS));
         return;
@@ -718,7 +724,7 @@ const App: React.FC = () => {
                 </div>
                 <div className="flex flex-col">
                   <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">{t.welcome},</span>
-                  <div className="flex items-center gap-1"><h1 className="text-white text-xl font-bold leading-none">{userProfile.name || t.common.defaultUser}</h1>{userProfile.isPro && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />}</div>
+                  <div className="flex items-center gap-1"><h1 className="text-white text-xl font-bold leading-none">{userProfile.name || t.common?.defaultUser || 'User'}</h1>{userProfile.isPro && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />}</div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -825,7 +831,7 @@ const App: React.FC = () => {
       ) : (
           <InvestmentsView investments={investments} onAdd={handleInvestmentAdd} onEdit={handleInvestmentEdit} onDelete={handleInvestmentDelete} onBack={handleGoHome} cdiRate={cdiRate} onUpdateCdiRate={handleInvestmentUpdateRate} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
       )}
-      <BottomNav currentView={currentView} onChangeView={setCurrentView} labels={t.nav} />
+      <BottomNav currentView={currentView} onChangeView={setCurrentView} labels={t.nav || { home: 'INÍCIO', invest: 'INVEST', wallet: 'CARTEIRA', config: 'CONFIG' }} />
       <AddTransactionModal isOpen={isAddTransactionOpen} onClose={() => { setIsAddTransactionOpen(false); setEditingTransaction(null); }} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} activeMonthContext={{ monthIndex: MONTH_NAMES.indexOf((activeMonth.month || "").toUpperCase()), year: parseInt(activeMonth.year) }} appLanguage={appLanguage} />
       <AddAccountModal isOpen={isAddAccountOpen} onClose={() => { setIsAddAccountOpen(false); setEditingAccount(null); }} onSave={handleSaveAccount} accountToEdit={editingAccount} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
       <CalculatorModal isOpen={isCalculatorOpen} onClose={() => setIsCalculatorOpen(false)} appLanguage={appLanguage} />
