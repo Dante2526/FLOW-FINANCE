@@ -39,6 +39,18 @@ export const TRANSLATIONS = {
       wallet: 'CARTEIRA',
       config: 'CONFIG'
     },
+    home: {
+      support: {
+        tag: "Apoie",
+        title: "Apoie o Projeto",
+        subtitle: "Doe qualquer valor via Pix."
+      },
+      jeitto: {
+        tag: "Indicação",
+        title: "Limite Extra Disponível?",
+        subtitle: "Baixe o Jeitto e confira sua aprovação."
+      }
+    },
     transactionList: {
       types: {
         purchase: 'Compra',
@@ -453,6 +465,18 @@ export const TRANSLATIONS = {
       wallet: 'WALLET',
       config: 'SETTINGS'
     },
+    home: {
+      support: {
+        tag: "Support",
+        title: "Support the Project",
+        subtitle: "Donate any amount via Pix."
+      },
+      jeitto: {
+        tag: "Referral",
+        title: "Extra Limit Available?",
+        subtitle: "Download Jeitto and check your approval."
+      }
+    },
     transactionList: {
       types: {
         purchase: 'Purchase',
@@ -866,6 +890,18 @@ export const TRANSLATIONS = {
       invest: 'INVERTIR',
       wallet: 'CARTERA',
       config: 'AJUSTES'
+    },
+    home: {
+      support: {
+        tag: "Apoyar",
+        title: "Apoya el Proyecto",
+        subtitle: "Dona cualquier monto vía Pix."
+      },
+      jeitto: {
+        tag: "Indicación",
+        title: "¿Límite Extra Disponible?",
+        subtitle: "Descarga Jeitto y verifica tu aprobación."
+      }
     },
     transactionList: {
       types: {

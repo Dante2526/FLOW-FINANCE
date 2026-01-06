@@ -741,13 +741,13 @@ const App: React.FC = () => {
             {!userProfile.isPro && (
               <div className="px-1 mt-6">
                 
-                {/* Donation Card - REPLACED WITH MODAL TRIGGER */}
+                {/* Donation Card */}
                 <div
                   onClick={() => setIsDonationModalOpen(true)}
                   className="mb-4 block w-full bg-[#1c1c1e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all cursor-pointer"
                 >
                   <div className="absolute -top-[1px] -right-[1px] bg-emerald-500/20 px-3 py-1 rounded-bl-xl border-l border-b border-emerald-500/10 z-10">
-                     <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">Apoie</span>
+                     <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">{t.home?.support?.tag || "Apoie"}</span>
                   </div>
 
                   <div className="flex items-center gap-4">
@@ -757,8 +757,8 @@ const App: React.FC = () => {
                     </div>
 
                     <div className="flex-1">
-                       <h3 className="text-white font-bold text-sm">Apoie o Projeto</h3>
-                       <p className="text-gray-400 text-xs mt-0.5">Doe qualquer valor via Pix.</p>
+                       <h3 className="text-white font-bold text-sm">{t.home?.support?.title || "Apoie o Projeto"}</h3>
+                       <p className="text-gray-400 text-xs mt-0.5">{t.home?.support?.subtitle || "Doe qualquer valor via Pix."}</p>
                     </div>
                     <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
                   </div>
@@ -772,14 +772,14 @@ const App: React.FC = () => {
                   className="block w-full bg-[#1c1c1e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all mb-4"
                 >
                   <div className="absolute -top-[1px] -right-[1px] bg-[#552d36] px-3 py-1 rounded-bl-xl border-l border-b border-[#f82f58]/20 z-10">
-                     <span className="text-[10px] font-bold text-[#f82f58] uppercase tracking-wider">Indicação</span>
+                     <span className="text-[10px] font-bold text-[#f82f58] uppercase tracking-wider">{t.home?.jeitto?.tag || "Indicação"}</span>
                   </div>
 
                   <div className="flex items-center gap-4">
                     <JeittoLogo />
                     <div className="flex-1">
-                       <h3 className="text-white font-bold text-sm">Limite Extra Disponível?</h3>
-                       <p className="text-gray-400 text-xs mt-0.5">Baixe o Jeitto e confira sua aprovação.</p>
+                       <h3 className="text-white font-bold text-sm">{t.home?.jeitto?.title || "Limite Extra Disponível?"}</h3>
+                       <p className="text-gray-400 text-xs mt-0.5">{t.home?.jeitto?.subtitle || "Baixe o Jeitto e confira sua aprovação."}</p>
                     </div>
                     <ExternalLink className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
                   </div>
