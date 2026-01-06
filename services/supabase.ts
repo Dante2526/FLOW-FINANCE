@@ -82,6 +82,7 @@ export const registerUser = async (email: string, name: string, initialData: any
     name: name.toUpperCase(),
     profile: { name: name.toUpperCase(), avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix', isPro: false },
     cdi_rate: initialData.cdiRate || 11.25,
+    app_language: initialData.language || 'pt'
   });
   if (error) throw error;
   return { email: emailNorm, name };
@@ -143,6 +144,7 @@ export const loadUserData = async (email: string) => {
     return {
         profile: profile,
         cdiRate: user.cdi_rate ?? 11.25,
+        appLanguage: user.app_language, // Carrega o idioma do banco
         notepadContent: user.notepad_content || '',
         notepadDrawing: user.profile?.notepadDrawing || null,
         theme: user.theme || null,
@@ -242,7 +244,12 @@ export const saveUserField = async (email: string, field: string, data: any): Pr
              payload = { profile: { ...currentProfile, [field]: data } };
         }
     } else {
-        const map: any = { notepadContent: 'notepad_content', cdiRate: 'cdi_rate', theme: 'theme' };
+        const map: any = { 
+            notepadContent: 'notepad_content', 
+            cdiRate: 'cdi_rate', 
+            theme: 'theme',
+            appLanguage: 'app_language' // Mapeia o campo de idioma
+        };
         payload = { [map[field] || toSnakeCase(field)]: data };
     }
     const { error } = await supabase.from('users').update(payload).eq('email', email.toLowerCase().trim());

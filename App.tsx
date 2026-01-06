@@ -330,12 +330,23 @@ const App: React.FC = () => {
       }
       if (data.cdiRate !== undefined) setCdiRate(data.cdiRate);
       if (data.dashboardOrder) setDashboardOrder(data.dashboardOrder);
+      
+      // Apply Language from DB if available
+      if (data.appLanguage) {
+          setAppLanguage(data.appLanguage);
+          saveData(STORAGE_KEYS.APP_LANGUAGE, data.appLanguage);
+      }
   };
 
   const handleChangeLanguage = (lang: AppLanguage) => {
       setAppLanguage(lang);
       saveData(STORAGE_KEYS.APP_LANGUAGE, lang);
       setIsLangMenuOpen(false);
+      
+      if (currentUserEmail) {
+          saveUserField(currentUserEmail, 'appLanguage', lang);
+          lastActionTimeRef.current = Date.now();
+      }
   };
 
   const handleDuplicateMonth = useCallback(async () => {
@@ -631,13 +642,14 @@ const App: React.FC = () => {
   }, []);
 
   const handleLoginSuccess = useCallback(async (email: string, name?: string) => {
-    if (name) await registerUser(email, name, { months: [SYSTEM_INITIAL_MONTH] }); 
+    // Pass current app language to registration so it persists
+    if (name) await registerUser(email, name, { months: [SYSTEM_INITIAL_MONTH], language: appLanguage }); 
     else await loginUser(email);
     setIsProfileModalOpen(false);
     setCurrentView('home');
     setCurrentUserEmail(email); 
     saveData(STORAGE_KEYS.USER_SESSION, email); 
-  }, []);
+  }, [appLanguage]);
 
   const handleDragStart = useCallback((id: string) => { dragItem.current = id; }, []);
   const handleDragEnd = useCallback(() => { dragItem.current = null; }, []);
