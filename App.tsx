@@ -650,12 +650,25 @@ const App: React.FC = () => {
   }, []);
 
   const handleLoginSuccess = useCallback(async (email: string, name?: string) => {
-    if (name) await registerUser(email, name, { months: [SYSTEM_INITIAL_MONTH], language: appLanguage }); 
-    else await loginUser(email);
+    if (name) {
+      await registerUser(email, name, { months: [SYSTEM_INITIAL_MONTH], language: appLanguage });
+    } else {
+      await loginUser(email);
+    }
+    
+    setCurrentUserEmail(email);
+    saveData(STORAGE_KEYS.USER_SESSION, email);
+    
     setIsProfileModalOpen(false);
     setCurrentView('home');
-    setCurrentUserEmail(email); 
-    saveData(STORAGE_KEYS.USER_SESSION, email); 
+
+    // UX: Request permission after UI settles on home screen
+    setTimeout(() => {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }, 1000);
+    
   }, [appLanguage]);
 
   const handleDragStart = useCallback((id: string) => { dragItem.current = id; }, []);
