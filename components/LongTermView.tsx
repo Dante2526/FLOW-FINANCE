@@ -27,7 +27,12 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
   const [newTotal, setNewTotal] = useState('');
   const [newMonthly, setNewMonthly] = useState(''); // NEW: State for Monthly input
   const [newInstallments, setNewInstallments] = useState('');
-  const [newStartDate, setNewStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newStartDate, setNewStartDate] = useState(() => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset();
+    const localDate = new Date(now.getTime() - (offset * 60 * 1000));
+    return localDate.toISOString().split('T')[0];
+  });
 
   // Edit Value States
   const [editMonthlyValue, setEditMonthlyValue] = useState('');

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, Check, Calendar } from 'lucide-react';
 import { LogoType, Transaction, AppLanguage } from '../types';
@@ -28,6 +29,14 @@ const MONTH_MAP: Record<string, string> = {
 
 const TODAY_KEYWORDS = ['hoje', 'today', 'hoy'];
 
+// TIMEZONE FIX HELPER: Gets YYYY-MM-DD string for the local date
+const getLocalISODate = () => {
+    const now = new Date();
+    const offset = now.getTimezoneOffset();
+    const localDate = new Date(now.getTime() - (offset*60*1000));
+    return localDate.toISOString().split('T')[0];
+};
+
 const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transactionToEdit, activeMonthContext, appLanguage }) => {
   const [amount, setAmount] = useState('');
   const [name, setName] = useState('');
@@ -41,7 +50,6 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
   const locale = getLocale(appLanguage);
   const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
-  // Define icons arrays dynamically to use translations
   const PURCHASE_ICONS: { type: LogoType; label: string }[] = [
     { type: 'shopping', label: t.categories.shopping },
     { type: 'food', label: t.categories.food },
@@ -91,23 +99,19 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
     { type: 'mercadolivre', label: t.categories.mercadolivre },
   ];
 
-  // Determine which icon set to show
   const visibleIcons = type === 'subscription' ? SUBSCRIPTION_ICONS : PURCHASE_ICONS;
 
-  // Helper to parse "24 Dez" back to "YYYY-MM-DD"
   const parseDateFromDisplay = (displayDate: string): string => {
     try {
-      if (!displayDate) return new Date().toISOString().split('T')[0];
+      if (!displayDate) return getLocalISODate();
       
       const lower = displayDate.toLowerCase();
-      if (TODAY_KEYWORDS.some(k => lower.includes(k))) return new Date().toISOString().split('T')[0];
+      if (TODAY_KEYWORDS.some(k => lower.includes(k))) return getLocalISODate();
       
-      // Handle "YYYY-MM-DD" format (already ISO)
       if (displayDate.match(/^\d{4}-\d{2}-\d{2}/)) {
           return displayDate.split(' ')[0];
       }
 
-      // Handle "DD Mmm" format (e.g. "24 Jan", "24 May") - Locale Support
       const parts = displayDate.split(' ');
       if (parts.length >= 2) {
         const day = parts[0].padStart(2, '0');
@@ -115,25 +119,22 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
         const month = MONTH_MAP[monthCode];
         
         if (month) {
-          // Use the Year from context if available, otherwise default to current year
           const year = activeMonthContext ? activeMonthContext.year : new Date().getFullYear();
           return `${year}-${month}-${day}`;
         }
       }
-      return new Date().toISOString().split('T')[0];
+      return getLocalISODate();
     } catch (e) {
-      return new Date().toISOString().split('T')[0];
+      return getLocalISODate();
     }
   };
 
   useEffect(() => {
     if (isOpen && transactionToEdit) {
       setAmount(transactionToEdit.amount.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-      setName(transactionToEdit.name); // Removed explicit toUpperCase here to respect stored data style until edit
+      setName(transactionToEdit.name); 
       setSelectedIcon(transactionToEdit.logoType);
       setType(transactionToEdit.type as 'purchase' | 'subscription');
-      
-      // Use the helper to correctly set the date input value
       setDate(parseDateFromDisplay(transactionToEdit.date));
       
     } else if (isOpen && !transactionToEdit) {
@@ -142,36 +143,29 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
       setSelectedIcon('shopping');
       setType('purchase');
       
-      // Default to the 1st day of the ACTIVE month, not today (if contexts differ)
       if (activeMonthContext) {
           const y = activeMonthContext.year;
           const m = String(activeMonthContext.monthIndex + 1).padStart(2, '0');
-          // If the active month is current month, use today. Else use 1st.
           const now = new Date();
           if (now.getMonth() === activeMonthContext.monthIndex && now.getFullYear() === activeMonthContext.year) {
-             setDate(now.toISOString().split('T')[0]);
+             setDate(getLocalISODate());
           } else {
              setDate(`${y}-${m}-01`);
           }
       } else {
-          setDate(new Date().toISOString().split('T')[0]);
+          setDate(getLocalISODate());
       }
     }
   }, [isOpen, transactionToEdit, activeMonthContext, locale]);
 
-  // When type changes, reset icon to first of that list if not editing or if mismatched
   useEffect(() => {
     if (!isOpen) return;
-    
-    // Check if current icon exists in the new list
     const currentIconExists = visibleIcons.some(i => i.type === selectedIcon);
-    
     if (!currentIconExists) {
       setSelectedIcon(visibleIcons[0].type);
     }
   }, [type, visibleIcons, isOpen, selectedIcon]);
 
-  // Currency Handler
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawValue = e.target.value.replace(/\D/g, '');
     if (!rawValue) {
@@ -188,29 +182,25 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
     e.preventDefault();
     if (!amount || !name || !date) return;
 
-    // Check if selected date is today to use localized "Today"
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = getLocalISODate();
     let finalDateString = '';
     
     if (date === today) {
-       // Use the current language word for "Today" (Hoje/Today/Hoy)
-       finalDateString = `${tCommon.today} ${new Date().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`;
+       finalDateString = `${tCommon.today} ${now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`;
     } else {
-       // IMPORTANT: Save as ISO YYYY-MM-DD to preserve year information for future dates
        finalDateString = date;
     }
 
-    // Parse amount from string (handle locale differences)
     let parsedAmount = 0;
     if (locale === 'en-US') {
         parsedAmount = parseFloat(amount.replace(/,/g, ''));
     } else {
-        // Default PT/ES
         parsedAmount = parseFloat(amount.replace(/\./g, '').replace(',', '.'));
     }
 
     onSave({
-      name: name.toUpperCase(), // Convert to Uppercase ONLY on submit
+      name: name.toUpperCase(), 
       amount: parsedAmount,
       type,
       paymentMethod: transactionToEdit?.paymentMethod || 'card', 

@@ -261,9 +261,12 @@ const App: React.FC = () => {
   // SYSTEM: Check for bills due today and generate notifications
   useEffect(() => {
     if (isLoadingData) return;
-
-    const todayStr = new Date().toISOString().split('T')[0];
-    const nowTime = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    
+    // TIMEZONE FIX: Use local date components instead of toISOString()
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const nowTime = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    
     const missingNotifs: AppNotification[] = [];
 
     // Localize numbers based on current app language
