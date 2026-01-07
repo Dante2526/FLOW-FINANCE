@@ -163,13 +163,16 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
   const getInstallmentDate = (item: LongTermTransaction, index: number) => {
     // Check for specific date override first
     if (item.installmentsDates && item.installmentsDates[index]) {
-       // Append T00:00:00 to ensure local date interpretation
-       const dateOverride = new Date(item.installmentsDates[index] + 'T00:00:00');
+       // TIMEZONE FIX: Construct date from parts
+       const parts = item.installmentsDates[index].split('-');
+       const dateOverride = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
        return dateOverride.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
 
     // Default Calculation
-    const date = new Date(item.startDate + 'T00:00:00');
+    // TIMEZONE FIX: Construct date from parts
+    const parts = item.startDate.split('-');
+    const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     date.setMonth(date.getMonth() + index);
     return date.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
@@ -178,7 +181,9 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
      if (item.installmentsDates && item.installmentsDates[index]) {
         return item.installmentsDates[index];
      }
-     const date = new Date(item.startDate + 'T00:00:00');
+     // TIMEZONE FIX: Construct date from parts
+     const parts = item.startDate.split('-');
+     const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
      date.setMonth(date.getMonth() + index);
      return date.toISOString().split('T')[0];
   };

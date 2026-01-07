@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Transaction, AppLanguage } from '../types';
 import { TransactionIcon } from './Icons';
@@ -26,7 +27,13 @@ const formatDateDisplay = (dateStr: string, todayLabel: string, locale: string) 
   // Handle ISO YYYY-MM-DD
   if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
     try {
-      const d = new Date(dateStr.split(' ')[0] + 'T00:00:00');
+      // TIMEZONE FIX: Construct date from parts to avoid UTC interpretation
+      const parts = dateStr.split(' ')[0].split('-');
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1; // month is 0-indexed
+      const day = parseInt(parts[2], 10);
+      const d = new Date(year, month, day);
+
       // Verificação de data válida
       if (isNaN(d.getTime())) return dateStr; 
       // Force short month format
