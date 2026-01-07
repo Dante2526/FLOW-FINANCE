@@ -85,6 +85,7 @@ export interface UserProfile {
   avatarUrl: string;
   isPro?: boolean; // New PRO status flag
   subscriptionExpiry?: string; // ISO Date string for subscription expiration
+  pushSubscription?: any; // For cloud notifications status
 }
 
 export interface AppTheme {

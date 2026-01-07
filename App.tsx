@@ -857,7 +857,8 @@ const App: React.FC = () => {
             } 
         }} 
         currentUserEmail={currentUserEmail} 
-        appLanguage={appLanguage} 
+        appLanguage={appLanguage}
+        isSubscribedOnBackend={!!userProfile.pushSubscription}
       />
       <Suspense fallback={null}>{isAnalyticsOpen && <AnalyticsModal isOpen={isAnalyticsOpen} onClose={() => setIsAnalyticsOpen(false)} transactions={transactions} months={months} appLanguage={appLanguage} />}</Suspense>
       <ProModal 

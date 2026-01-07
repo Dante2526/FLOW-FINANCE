@@ -13,6 +13,7 @@ interface Props {
   onDelete: (id: string) => void;
   currentUserEmail: string | null;
   appLanguage: AppLanguage;
+  isSubscribedOnBackend: boolean;
 }
 
 type TabType = 'inbox' | 'send';
@@ -40,14 +41,15 @@ const NotificationModal: React.FC<Props> = ({
   onMarkAllRead, 
   onDelete,
   currentUserEmail,
-  appLanguage
+  appLanguage,
+  isSubscribedOnBackend
 }) => {
   const [activeTab, setActiveTab] = useState<TabType>('inbox');
   const [notificationPermission, setNotificationPermission] = useState(
     'Notification' in window ? Notification.permission : 'default'
   );
-  // State to track if we have a valid cloud subscription
-  const [hasPushSubscription, setHasPushSubscription] = useState(false); 
+  // State to track if we have a valid browser subscription
+  const [hasBrowserSubscription, setHasBrowserSubscription] = useState(false); 
   const [isSubscribing, setIsSubscribing] = useState(false);
   
   const t = TRANSLATIONS[appLanguage].notifications;
@@ -61,11 +63,11 @@ const NotificationModal: React.FC<Props> = ({
         setNotificationPermission(Notification.permission);
       }
       
-      // Check for existing Push Subscription
+      // Check for existing Push Subscription in the browser
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then(registration => {
           registration.pushManager.getSubscription().then(subscription => {
-            setHasPushSubscription(!!subscription);
+            setHasBrowserSubscription(!!subscription);
           });
         });
       }
@@ -82,14 +84,11 @@ const NotificationModal: React.FC<Props> = ({
       setNotificationPermission(permission);
       
       if (permission === 'granted') {
-        let subscribed = false;
-
-        // 2. Try to Subscribe to Push Service (GitHub Actions Backend)
+        // 2. Try to Subscribe to Push Service
         if ('serviceWorker' in navigator && currentUserEmail) {
           try {
              const registration = await navigator.serviceWorker.ready;
              
-             // Check if already subscribed to avoid duplicate work, but ensure we save it
              let subscription = await registration.pushManager.getSubscription();
              
              if (!subscription) {
@@ -99,13 +98,14 @@ const NotificationModal: React.FC<Props> = ({
                 });
              }
 
-             // Save to Firebase (Updated logic)
+             // Save to Supabase (backend)
              if (subscription) {
                 const subscriptionJson = JSON.parse(JSON.stringify(subscription));
                 await saveUserField(currentUserEmail, 'pushSubscription', subscriptionJson);
                 
-                subscribed = true;
-                setHasPushSubscription(true);
+                // Although this updates the backend, the prop won't refresh until next open.
+                // The button will disappear on next open, which is acceptable UX.
+                onClose(); // Close modal on success for a cleaner flow.
              }
 
           } catch (pushError) {
@@ -113,8 +113,6 @@ const NotificationModal: React.FC<Props> = ({
              alert(t.alerts.errorPush);
           }
         }
-
-        // Silent activation - no fallback notification here anymore
       }
     } catch (e) {
       console.error(e);
@@ -367,8 +365,7 @@ const NotificationModal: React.FC<Props> = ({
            {activeTab === 'inbox' ? (
              <div className="flex flex-col gap-3">
                 
-                {/* Status Indicator or Subscribe Button */}
-                {hasPushSubscription ? (
+                {isSubscribedOnBackend ? (
                    <div className="flex items-center justify-center gap-2 p-3 bg-green-500/10 rounded-2xl border border-green-500/20">
                       <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
                          <Check className="w-3 h-3 text-black font-bold" />
@@ -376,7 +373,7 @@ const NotificationModal: React.FC<Props> = ({
                       <span className="text-green-500 text-xs font-bold">{t.activeStatus}</span>
                    </div>
                 ) : (
-                  ('Notification' in window) && (notificationPermission !== 'granted' || !hasPushSubscription) && (
+                  notificationPermission !== 'denied' && (
                      <div className="flex flex-col gap-2">
                        <button 
                          onClick={handleRequestPermission}
