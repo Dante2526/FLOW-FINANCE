@@ -18,6 +18,7 @@ export const STORAGE_KEYS = {
   KNOWN_USER_EMAIL: 'flow_known_user_email',
   DASHBOARD_ORDER: 'flow_dashboard_order',
   APP_LANGUAGE: 'flow_app_language', // New Key
+  DISMISSED_NOTIFICATIONS: 'flow_dismissed_notifications', // New Key for persistence
 };
 
 // Generic load function

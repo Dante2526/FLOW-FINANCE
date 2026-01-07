@@ -55,6 +55,14 @@ const SYSTEM_INITIAL_MONTH: MonthSummary = { id: '00000000-0000-0000-0000-000000
 const INITIAL_PROFILE: UserProfile = { name: '', subtitle: '', avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix', isPro: false };
 const BALANCE_CARD_ID = 'balance-card';
 
+const getLocalISODateString = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const getMonthFromDateStr = (dateStr: string): string => {
   if (!dateStr) return '';
   const lower = dateStr.toLowerCase();
@@ -145,6 +153,16 @@ const App: React.FC = () => {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   
+  // Persistent dismissed notifications
+  const [dismissedNotifIds, setDismissedNotifIds] = useState<string[]>(() => {
+    const todayStr = getLocalISODateString();
+    const stored = loadData<{ date: string; ids: string[] }>(STORAGE_KEYS.DISMISSED_NOTIFICATIONS, { date: '', ids: [] });
+    if (stored.date === todayStr) {
+      return stored.ids;
+    }
+    return []; // It's a new day, start fresh.
+  });
+
   const dragItem = useRef<string | null>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const lastActionTimeRef = useRef<number>(0); 
@@ -188,6 +206,12 @@ const App: React.FC = () => {
         }
     }
   }, [appLanguage, t]);
+  
+  // Persist dismissed notifications
+  useEffect(() => {
+    const todayStr = getLocalISODateString();
+    saveData(STORAGE_KEYS.DISMISSED_NOTIFICATIONS, { date: todayStr, ids: dismissedNotifIds });
+  }, [dismissedNotifIds]);
 
   useEffect(() => {
     setMonths(prev => {
@@ -262,14 +286,12 @@ const App: React.FC = () => {
   useEffect(() => {
     if (isLoadingData) return;
     
-    // TIMEZONE FIX: Use local date components instead of toISOString()
+    const todayStr = getLocalISODateString();
     const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const nowTime = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
     
     const missingNotifs: AppNotification[] = [];
 
-    // Localize numbers based on current app language
     const locale = getLocale(appLanguage);
     const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
@@ -278,19 +300,18 @@ const App: React.FC = () => {
 
        let isToday = false;
        
-       // Check explicit "Hoje" / "Today" / "Hoy" using the multilingual keywords list
        const lowerDate = t.date.toLowerCase();
        if (TODAY_KEYWORDS.some(k => lowerDate.includes(k))) isToday = true;
-       // Check ISO date
        else if (t.date.startsWith(todayStr)) isToday = true;
 
        if (isToday) {
-           const notifId = t.id; // FIX: Use the transaction's UUID as the notification's ID.
+           const notifId = t.id;
            const exists = notifications.some(n => n.id === notifId);
-           if (!exists) {
+           const isDismissed = dismissedNotifIds.includes(notifId);
+
+           if (!exists && !isDismissed) {
                const formattedValue = t.amount.toLocaleString(locale, { minimumFractionDigits: 2 });
                
-               // Use dynamic translation keys with checks
                const systemT = TRANSLATIONS[appLanguage]?.notifications?.system || TRANSLATIONS['pt'].notifications.system;
                
                const title = systemT.billDueTitle;
@@ -316,11 +337,11 @@ const App: React.FC = () => {
         setNotifications(updatedNotifications);
         
         if (currentUserEmail) {
-            saveCollection(currentUserEmail, 'notifications', updatedNotifications);
-            lastActionTimeRef.current = Date.now();
+            Promise.all(missingNotifs.map(n => upsertItem(currentUserEmail!, 'notifications', n)))
+               .then(() => lastActionTimeRef.current = Date.now());
         }
     }
-  }, [transactions, notifications, isLoadingData, currentUserEmail, appLanguage]); 
+  }, [transactions, notifications, isLoadingData, currentUserEmail, appLanguage, dismissedNotifIds]); 
 
   const applyData = (data: any) => {
       if (data.profile) setUserProfile(data.profile);
@@ -340,7 +361,6 @@ const App: React.FC = () => {
       if (data.cdiRate !== undefined) setCdiRate(data.cdiRate);
       if (data.dashboardOrder) setDashboardOrder(data.dashboardOrder);
       
-      // Apply Language from DB if available and valid
       if (data.appLanguage && ['pt', 'en', 'es'].includes(data.appLanguage)) {
           setAppLanguage(data.appLanguage);
           saveData(STORAGE_KEYS.APP_LANGUAGE, data.appLanguage);
@@ -366,7 +386,6 @@ const App: React.FC = () => {
     const actMonthNorm = (act.month || "").trim().toUpperCase();
     const actYear = act.year || "";
     
-    // Determine Target Month Index (Next Month)
     let currentIdx = MONTH_NAMES.indexOf(actMonthNorm);
     if (currentIdx === -1) currentIdx = 0;
 
@@ -381,7 +400,6 @@ const App: React.FC = () => {
     if (cur.months.find(m => (m.month || "").toUpperCase().trim() === nName && m.year === nYrS)) {
         const currentLang = cur.appLanguage;
         const tCommon = (TRANSLATIONS[currentLang] || TRANSLATIONS['pt']).common;
-        // Use dynamic translation for duplicate month alert
         alert(tCommon.monthExists.replace('{month}', nName).replace('{year}', nYrS));
         return;
     }
@@ -395,51 +413,33 @@ const App: React.FC = () => {
     );
     const sourceAcc = cur.accounts.filter(a => (a.month || "").toUpperCase().trim() === actMonthNorm && (a.year || "") === actYear);
 
-    // --- LÓGICA CORRIGIDA DE DATAS ---
     const nTx: Transaction[] = sourceTx.map((t, i) => {
         let originalDate = new Date();
-
-        // 1. Tentar Parsear a data atual da transação para um objeto Date
         if (t.date.match(/^\d{4}-\d{2}-\d{2}/)) {
-             // Formato ISO (YYYY-MM-DD)
              const parts = t.date.split(' ')[0].split('-');
-             // Mês em JS é 0-indexado
              originalDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
         } else if (TODAY_KEYWORDS.some(k => t.date.toLowerCase().includes(k))) {
-             // Se for "Hoje"/"Today", usa a data atual
              originalDate = new Date();
         } else {
-             // Formato legado "DD Mmm" (ex: "10 Fev" ou "10 Feb")
              const parts = t.date.split(' ');
              if (parts.length >= 2) {
                  const day = parseInt(parts[0], 10);
                  const code = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
-                 // Use expanded map to find month name
                  const fullMonth = SHORT_CODE_TO_FULL[code]; 
                  const monthIdx = MONTH_NAMES.indexOf(fullMonth);
-                 
-                 // Se encontrarmos o mês, construímos a data.
-                 // Usamos o ano do mês ativo como base.
                  if (monthIdx !== -1) {
                     originalDate = new Date(parseInt(actYear), monthIdx, day);
                  }
              }
         }
 
-        // 2. Adicionar EXATAMENTE 1 Mês à data original
-        // Isso preserva a lógica: "10 Fev" + 1 mês = "10 Mar"
         const targetDate = new Date(originalDate);
-        const originalDay = targetDate.getDate(); // Salva o dia original (ex: 31)
-        
+        const originalDay = targetDate.getDate();
         targetDate.setMonth(targetDate.getMonth() + 1);
-
-        // 3. Ajuste de Overflow (ex: 31 Jan + 1 mês -> 3 Março. Queremos 28 Fev)
-        // Se o dia mudou após adicionar o mês, significa que o mês seguinte é mais curto
         if (targetDate.getDate() !== originalDay) {
-            targetDate.setDate(0); // Volta para o último dia do mês anterior (que é o mês correto de destino)
+            targetDate.setDate(0);
         }
 
-        // 4. Formatar para ISO YYYY-MM-DD
         const yyyy = targetDate.getFullYear();
         const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
         const dd = String(targetDate.getDate()).padStart(2, '0');
@@ -586,7 +586,6 @@ const App: React.FC = () => {
     if (c.id === '1') setIsNotepadOpen(true);
     else if (c.id === '2') setIsCalendarOpen(true);
     else if (c.id === '3') {
-       // Check prop inside component, but here we can check state ref or pass logic
        if (!currentStateRef.current.userProfile.isPro) setIsProModalOpen(true);
        else setIsAnalyticsOpen(true);
     }
@@ -651,7 +650,6 @@ const App: React.FC = () => {
   }, []);
 
   const handleLoginSuccess = useCallback(async (email: string, name?: string) => {
-    // Pass current app language to registration so it persists
     if (name) await registerUser(email, name, { months: [SYSTEM_INITIAL_MONTH], language: appLanguage }); 
     else await loginUser(email);
     setIsProfileModalOpen(false);
@@ -732,7 +730,6 @@ const App: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 
-                {/* Language Selector */}
                 <div className="relative">
                    <button 
                      onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
@@ -781,7 +778,6 @@ const App: React.FC = () => {
             {!userProfile.isPro && (
               <div className="px-1 mt-6">
                 
-                {/* Donation Card */}
                 <div
                   onClick={() => setIsDonationModalOpen(true)}
                   className="mb-4 block w-full bg-[#1c1c1e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all cursor-pointer"
@@ -791,7 +787,6 @@ const App: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-4">
-                    {/* Icon */}
                     <div className="w-12 h-12 rounded-[1.2rem] bg-[#2c2c2e] flex items-center justify-center shrink-0">
                        <Heart className="w-6 h-6 text-emerald-500 fill-emerald-500/20" />
                     </div>
@@ -804,7 +799,6 @@ const App: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Jeitto Card */}
                 <a 
                   href="https://jeitto.onelink.me/QMGg/mcgv9w9n" 
                   target="_blank" 
@@ -846,6 +840,8 @@ const App: React.FC = () => {
         onClose={() => setIsNotificationOpen(false)} 
         notifications={notifications} 
         onMarkAllRead={() => { 
+            const idsToDismiss = notifications.map(n => n.id);
+            setDismissedNotifIds(prev => [...new Set([...prev, ...idsToDismiss])]);
             setNotifications([]); 
             if(currentUserEmail) { 
                 saveCollection(currentUserEmail, 'notifications', []); 
@@ -853,6 +849,7 @@ const App: React.FC = () => {
             } 
         }} 
         onDelete={id => { 
+            setDismissedNotifIds(prev => [...new Set([...prev, id])]);
             setNotifications(p => p.filter(n => n.id !== id)); 
             if(currentUserEmail) { 
                 deleteItem(currentUserEmail, 'notifications', id); 
