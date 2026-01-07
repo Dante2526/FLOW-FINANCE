@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 // --- CONFIGURAÇÃO DE SEGURANÇA ---
@@ -119,32 +118,28 @@ export const loadUserData = async (email: string) => {
 
     const user = userRes.data || {};
     
-    // --- CORREÇÃO DE PERFIL ANINHADO ---
-    // Verifica se existe um objeto 'profile' DENTRO do objeto 'profile' (bug visual)
     let profile = user.profile || {};
     if (profile.profile && typeof profile.profile === 'object') {
-        // Se encontrar, traz os dados internos para a raiz, corrigindo o objeto
-        // Mantém as chaves da raiz (como isPro, subscriptionExpiry) se existirem
         profile = { ...profile, ...profile.profile };
     }
 
-    // --- VERIFICAÇÃO DE ASSINATURA ---
-    // Se for PRO e tiver data de expiração, verifica se já venceu
+    // *** FIX: Manually read from top-level `push_subscription` column
+    // and map it to the `pushSubscription` field inside the app's profile state object.
+    profile.pushSubscription = user.push_subscription || null;
+
     if (profile.isPro && profile.subscriptionExpiry) {
         const expiry = new Date(profile.subscriptionExpiry);
         const now = new Date();
         if (now > expiry) {
-            // Assinatura venceu
             console.log("Assinatura PRO expirada. Revertendo para básico.");
             profile.isPro = false;
-            // Opcional: Atualização silenciosa pode ser feita aqui se necessário
         }
     }
 
     return {
         profile: profile,
         cdiRate: user.cdi_rate ?? 11.25,
-        appLanguage: user.app_language, // Carrega o idioma do banco
+        appLanguage: user.app_language,
         notepadContent: user.notepad_content || '',
         notepadDrawing: user.profile?.notepadDrawing || null,
         theme: user.theme || null,
@@ -226,19 +221,16 @@ export const saveCollection = async (email: string, collection: string, data: an
 export const saveUserField = async (email: string, field: string, data: any): Promise<boolean> => {
   try {
     let payload: any = {};
-    const profileFields = ['notepadDrawing', 'dashboardOrder', 'pushSubscription', 'profile'];
+    
+    const profileFields = ['notepadDrawing', 'dashboardOrder', 'profile'];
     
     if (profileFields.includes(field)) {
-        // Busca o perfil atual para não perder dados
         const { data: user } = await supabase.from('users').select('profile').eq('email', email.toLowerCase().trim()).maybeSingle();
         const currentProfile = user?.profile || {};
 
         if (field === 'profile') {
-             // CORREÇÃO: Mescla os dados na raiz ao invés de aninhar
-             // Isso evita criar { profile: { profile: ... } }
              payload = { profile: { ...currentProfile, ...data } };
         } else {
-             // Para outros campos (ex: ordem dos cards), adiciona como chave normal
              payload = { profile: { ...currentProfile, [field]: data } };
         }
     } else {
@@ -246,13 +238,23 @@ export const saveUserField = async (email: string, field: string, data: any): Pr
             notepadContent: 'notepad_content', 
             cdiRate: 'cdi_rate', 
             theme: 'theme',
-            appLanguage: 'app_language' // Mapeia o campo de idioma
+            appLanguage: 'app_language',
+            pushSubscription: 'push_subscription' // *** CORRECTED COLUMN NAME ***
         };
-        payload = { [map[field] || toSnakeCase(field)]: data };
+        payload = { [map[field] || field.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)]: data };
     }
     const { error } = await supabase.from('users').update(payload).eq('email', email.toLowerCase().trim());
-    return !error;
-  } catch (error) { return false; }
+
+    if (error) {
+        console.error(`[Supabase Error] Update failed for field '${field}' on user '${email}':`, error);
+        return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error(`[JS Error] Exception in saveUserField for field '${field}':`, error);
+    return false;
+  }
 };
 
 export const subscribeToUserChanges = (email: string, onUpdate: () => void) => {
