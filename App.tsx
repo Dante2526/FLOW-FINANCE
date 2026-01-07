@@ -282,7 +282,7 @@ const App: React.FC = () => {
        else if (t.date.startsWith(todayStr)) isToday = true;
 
        if (isToday) {
-           const notifId = `bill-alert-${t.id}`;
+           const notifId = t.id; // FIX: Use the transaction's UUID as the notification's ID.
            const exists = notifications.some(n => n.id === notifId);
            if (!exists) {
                const formattedValue = t.amount.toLocaleString(locale, { minimumFractionDigits: 2 });
