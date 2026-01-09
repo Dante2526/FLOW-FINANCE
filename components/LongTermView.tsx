@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Wallet, Plus, ChevronLeft, Calendar, Trash2, Check, Edit2, Info } from 'lucide-react';
 import { LongTermTransaction, AppLanguage } from '../types';
@@ -10,9 +9,10 @@ interface Props {
   onEdit: (item: LongTermTransaction) => void;
   onDelete: (id: string) => void;
   appLanguage: AppLanguage;
+  isPro?: boolean;
 }
 
-const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLanguage }) => {
+const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLanguage, isPro = false }) => {
   const [selectedItem, setSelectedItem] = useState<LongTermTransaction | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   
@@ -760,6 +760,23 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {!isPro && (
+          <div className="mt-12 flex flex-col items-center gap-3">
+            <p className="text-[10px] font-bold text-gray-600 uppercase tracking-wider">Divulgação</p>
+            <iframe
+              data-testid="embed-iframe"
+              style={{ borderRadius: '12px' }}
+              src="https://open.spotify.com/embed/track/1rSzYfLUYza9grZLi0bYSb?utm_source=generator&theme=0"
+              width="80%"
+              height="152"
+              frameBorder="0"
+              allowFullScreen
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy">
+            </iframe>
           </div>
         )}
       </div>
