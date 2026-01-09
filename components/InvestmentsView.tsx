@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { TrendingUp, Plus, PieChart, Building, Trash2, Edit2, Settings2, X, RefreshCw } from 'lucide-react';
 import { Investment, AppLanguage } from '../types';
@@ -168,7 +167,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
     return { totalInvested: total, estimatedYearlyReturn: totalYearlyProfit, portfolioYield: total > 0 ? (totalYearlyProfit / total) * 100 : 0 };
   }, [investments, cdiRate]);
 
-  const getYieldLabel = (i: Investment) => i.type === 'cdi' || i.type === 'fixed' ? `${i.yieldRate}% CDI` : `DY ${i.yieldRate}%`;
+  const getYieldLabel = (i: Investment) => i.type === 'cdi' || i.type === 'fixed' ? `${i.yieldRate}% ${t.yieldLabelCDI}` : `${t.yieldLabelDY} ${i.yieldRate}%`;
 
   return (
     <div className="flex flex-col h-full animate-in fade-in duration-300">

@@ -34,7 +34,8 @@ export const TRANSLATIONS = {
       showBalance: "Mostrar saldo",
       duplicateMonth: "Duplicar contas para o próximo mês",
       addSource: "Adicionar Nova Fonte de Renda",
-      monthExists: "O mês de {month}/{year} já existe."
+      monthExists: "O mês de {month}/{year} já existe.",
+      splashVersion: "Flow Finance v1.5"
     },
     nav: {
       home: 'INÍCIO',
@@ -258,6 +259,8 @@ export const TRANSLATIONS = {
       modalCDITitle: "Taxa CDI / Selic",
       btnUpdateRate: "Atualizar Taxa",
       shares: "Cotas",
+      yieldLabelCDI: "CDI",
+      yieldLabelDY: "DY",
       form: {
           newTitle: "Novo Investimento",
           editTitle: "Editar Investimento",
@@ -336,6 +339,7 @@ export const TRANSLATIONS = {
       feedbackBody: "Olá Naylan,\n\nEncontrei um problema/tenho uma sugestão:\n\n[Descreva aqui o que aconteceu]\n\nImportante: Anexei prints ou um vídeo da tela para ajudar na correção.",
       confirmColor: "Confirmar Cor",
       performanceLabel: "Performance 100%",
+      appVersion: "Flow Finance v1.5.0",
       themes: {
         'sunset-orange': 'Sunset',
         'cyber-yellow': 'Cyber',
@@ -384,6 +388,7 @@ export const TRANSLATIONS = {
       resendBtn: 'Não recebeu? Reenviar código',
       security: 'SEM SENHA · ACESSO SEGURO',
       back: 'Voltar',
+      copyright: "© 2025 Flow Finance",
       errors: {
         invalidEmail: 'Por favor, insira um e-mail válido.',
         missingName: 'Por favor, informe seu nome.',
@@ -473,7 +478,8 @@ export const TRANSLATIONS = {
       showBalance: "Show balance",
       duplicateMonth: "Duplicate bills to next month",
       addSource: "Add New Income Source",
-      monthExists: "The month of {month}/{year} already exists."
+      monthExists: "The month of {month}/{year} already exists.",
+      splashVersion: "Flow Finance v1.5"
     },
     nav: {
       home: 'HOME',
@@ -697,6 +703,8 @@ export const TRANSLATIONS = {
       modalCDITitle: "CDI / Selic Rate",
       btnUpdateRate: "Update Rate",
       shares: "Shares",
+      yieldLabelCDI: "CDI",
+      yieldLabelDY: "DY",
       form: {
           newTitle: "New Investment",
           editTitle: "Edit Investment",
@@ -775,6 +783,7 @@ export const TRANSLATIONS = {
       feedbackBody: "Hello Naylan,\n\nI found an issue/have a suggestion:\n\n[Describe what happened here]\n\nImportant: I've attached screenshots or a screen recording to help with the fix.",
       confirmColor: "Confirm Color",
       performanceLabel: "Performance 100%",
+      appVersion: "Flow Finance v1.5.0",
       themes: {
         'sunset-orange': 'Sunset',
         'cyber-yellow': 'Cyber',
@@ -823,6 +832,7 @@ export const TRANSLATIONS = {
       resendBtn: "Didn't receive it? Resend code",
       security: 'NO PASSWORD · SECURE ACCESS',
       back: 'Back',
+      copyright: "© 2025 Flow Finance",
       errors: {
         invalidEmail: 'Please enter a valid email.',
         missingName: 'Please enter your name.',
@@ -912,7 +922,8 @@ export const TRANSLATIONS = {
       showBalance: "Mostrar saldo",
       duplicateMonth: "Duplicar contas al próximo mes",
       addSource: "Añadir Nueva Fuente de Ingresos",
-      monthExists: "El mes de {month}/{year} ya existe."
+      monthExists: "El mes de {month}/{year} ya existe.",
+      splashVersion: "Flow Finance v1.5"
     },
     nav: {
       home: 'INICIO',
@@ -1136,6 +1147,8 @@ export const TRANSLATIONS = {
       modalCDITitle: "Tasa CDI / Selic",
       btnUpdateRate: "Actualizar Tasa",
       shares: "Cuotas",
+      yieldLabelCDI: "CDI",
+      yieldLabelDY: "DY",
       form: {
           newTitle: "Nueva Inversión",
           editTitle: "Editar Inversión",
@@ -1214,6 +1227,7 @@ export const TRANSLATIONS = {
       feedbackBody: "Hola Naylan,\n\nEncontré un problema/tengo una sugerencia:\n\n[Describe qué pasó aquí]\n\nImportante: He adjuntado capturas de pantalla o un video para ayudar con la corrección.",
       confirmColor: "Confirmar Color",
       performanceLabel: "Rendimiento 100%",
+      appVersion: "Flow Finance v1.5.0",
       themes: {
         'sunset-orange': 'Sunset',
         'cyber-yellow': 'Cyber',
@@ -1262,6 +1276,7 @@ export const TRANSLATIONS = {
       resendBtn: '¿No lo recibiste? Reenviar código',
       security: 'SIN CONTRASEÑA · ACCESO SEGURO',
       back: 'Volver',
+      copyright: "© 2025 Flow Finance",
       errors: {
         invalidEmail: 'Por favor, ingresa un correo válido.',
         missingName: 'Por favor, ingresa tu nombre.',

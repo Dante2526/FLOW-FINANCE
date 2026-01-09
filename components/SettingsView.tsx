@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Palette, Check, Lock, Crown, Shield, ChevronRight, MessageSquareWarning } from 'lucide-react';
 import { AppTheme, AppLanguage } from '../types';
@@ -172,7 +171,7 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
            </button>
            
            <p className="text-center text-[10px] text-gray-600 mt-6 pb-4">
-              Flow Finance v1.5.0 • {t.performanceLabel}
+              {t.appVersion} • {t.performanceLabel}
            </p>
         </div>
       </div>

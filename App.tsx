@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef, Suspense, useCallback } from 'react';
 import BalanceCard from './components/BalanceCard';
 import SecondaryCard from './components/SecondaryCard';
@@ -100,17 +99,22 @@ const sortMonths = (list: MonthSummary[]) => [...list].sort((a, b) => {
     return idxA - idxB;
 });
 
-const SplashScreen = () => (
-  <div className="fixed inset-0 bg-[#0a0a0b] flex flex-col items-center justify-center z-[100] animate-out fade-out duration-700">
-    <div className="w-32 h-32 bg-[#1c1c1e] rounded-[2rem] flex items-center justify-center animate-pulse shadow-2xl shadow-black/20 mb-6">
-       <FlowLogo className="w-24 h-24 text-accent" />
+const SplashScreen = () => {
+  const lang = loadData(STORAGE_KEYS.APP_LANGUAGE, getBrowserLanguage());
+  const tCommon = (TRANSLATIONS[lang] || TRANSLATIONS['pt']).common;
+
+  return (
+    <div className="fixed inset-0 bg-[#0a0a0b] flex flex-col items-center justify-center z-[100] animate-out fade-out duration-700">
+      <div className="w-32 h-32 bg-[#1c1c1e] rounded-[2rem] flex items-center justify-center animate-pulse shadow-2xl shadow-black/20 mb-6">
+         <FlowLogo className="w-24 h-24 text-accent" />
+      </div>
+      <div className="flex flex-col items-center gap-2">
+         <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">{tCommon.splashVersion}</p>
+      </div>
     </div>
-    <div className="flex flex-col items-center gap-2">
-       <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-       <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">Flow Finance v1.5</p>
-    </div>
-  </div>
-);
+  );
+};
 
 const App: React.FC = () => {
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(() => loadData(STORAGE_KEYS.USER_SESSION, null));

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Mail, ArrowRight, ShieldCheck, User, KeyRound, ChevronLeft, AlertCircle, Languages } from 'lucide-react';
 import { sendAuthOtp, verifyAuthOtp, supabase } from '../services/supabase';
@@ -381,7 +380,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin, currentLang, onLanguageChange }
       </div>
       
       <div className="w-full flex flex-col items-center gap-3 relative z-10 flex-shrink-0 pb-6 pt-2">
-         <p className="text-[10px] text-gray-600">© 2025 Flow Finance</p>
+         <p className="text-[10px] text-gray-600">{t.copyright}</p>
       </div>
 
     </div>
