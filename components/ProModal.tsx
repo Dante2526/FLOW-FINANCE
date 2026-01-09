@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Crown, CheckCircle2, Copy, Loader2, ArrowRight, ChevronLeft, CreditCard, QrCode, Lock, Building, Palette, CloudLightning, BarChart3, User, ShieldCheck, Clock, AlertCircle, AlertTriangle } from 'lucide-react';
 import { AppLanguage } from '../types';
@@ -109,6 +108,18 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
     }
   };
 
+  const getApiErrorMessage = (errorCode: string) => {
+    switch (errorCode) {
+        case 'CPF_REQUIRED':
+            return t.errors.cpf;
+        case 'ASAAS_CUSTOMER_ERROR':
+        case 'ASAAS_CHARGE_ERROR':
+        case 'INTERNAL_SERVER_ERROR':
+        default:
+            return t.errors.generic;
+    }
+  };
+
   const handleCreatePayment = async () => {
     // Basic Validation
     if (!billingData.cpf || billingData.cpf.length < 11) {
@@ -146,7 +157,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
        const data = await res.json();
 
        if (!res.ok) {
-         throw new Error(data.error || t.errors.generic); // Use localized generic error
+         throw new Error(getApiErrorMessage(data.error));
        }
 
        setPaymentId(data.paymentId);

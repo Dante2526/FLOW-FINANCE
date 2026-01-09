@@ -1,7 +1,7 @@
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
   }
 
   const { paymentType, user, billingInfo, value, description } = req.body;
@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   const apiUrl = process.env.ASAAS_API_URL || 'https://www.asaas.com/api/v3';
 
   if (!apiKey) {
-    return res.status(500).json({ error: 'API Key not configured' });
+    return res.status(500).json({ error: 'SERVER_CONFIG_ERROR' });
   }
 
   // Dados do pagador (Preferência para o preenchido no modal, depois o cadastro do user)
@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   const payerCpf = billingInfo?.cpf || user.cpf;
 
   if (!payerCpf) {
-      return res.status(400).json({ error: 'CPF é obrigatório para gerar cobrança.' });
+      return res.status(400).json({ error: 'CPF_REQUIRED' });
   }
 
   try {
@@ -62,7 +62,7 @@ export default async function handler(req, res) {
       const createData = await createRes.json();
       
       if (createData.errors) {
-         return res.status(400).json({ error: createData.errors[0].description });
+         return res.status(400).json({ error: 'ASAAS_CUSTOMER_ERROR' });
       }
       customerId = createData.id;
     }
@@ -113,7 +113,7 @@ export default async function handler(req, res) {
     const chargeData = await chargeRes.json();
 
     if (chargeData.errors) {
-      return res.status(400).json({ error: chargeData.errors[0].description });
+      return res.status(400).json({ error: 'ASAAS_CHARGE_ERROR' });
     }
 
     // 3. Se for PIX, buscar o QR Code
@@ -134,6 +134,6 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    return res.status(500).json({ error: 'INTERNAL_SERVER_ERROR' });
   }
 }

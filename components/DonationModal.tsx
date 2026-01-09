@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Heart, QrCode, Copy, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
 import { AppLanguage } from '../types';
@@ -21,20 +20,7 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
   const [error, setError] = useState('');
 
   const t = TRANSLATIONS[appLanguage];
-  const tModal = t.donationModal || { // Fallback basic translations if not yet loaded
-      title: "Apoiar",
-      subtitle: "Contribuição Voluntária",
-      desc: "Sua doação ajuda a manter o sistema online e a desenvolver novas funções.",
-      valueLabel: "Valor da Doação",
-      cpfLabel: "CPF (Para o Pix)",
-      btnGenerate: "Gerar Pix",
-      copyTitle: "Copia e Cola",
-      btnCopy: "Copiar Código",
-      btnCopied: "Copiado!",
-      errorMin: "Valor mínimo de 1,00",
-      errorCpf: "CPF Obrigatório"
-  };
-
+  const tModal = t.donationModal;
   const locale = getLocale(appLanguage);
   const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
@@ -69,10 +55,22 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
     }, 400);
   };
 
+  const getApiErrorMessage = (errorCode: string) => {
+    switch (errorCode) {
+      case 'CPF_REQUIRED':
+        return tModal.errors.cpf;
+      case 'ASAAS_CUSTOMER_ERROR':
+      case 'ASAAS_CHARGE_ERROR':
+      case 'INTERNAL_SERVER_ERROR':
+      default:
+        return tModal.errors.generic;
+    }
+  };
+
   const handleGeneratePix = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cpf || cpf.length < 11) {
-      setError(tModal.errorCpf);
+      setError(tModal.errors.cpf);
       return;
     }
     
@@ -85,7 +83,7 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
     }
 
     if (finalAmount < 1) {
-        setError(tModal.errorMin);
+        setError(tModal.errors.min);
         return;
     }
 
@@ -111,7 +109,7 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Erro ao gerar doação.");
+        throw new Error(getApiErrorMessage(data.error));
       }
 
       setPixData(data.pix);

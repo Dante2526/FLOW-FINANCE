@@ -1,4 +1,3 @@
-
 import React, { useReducer, useEffect, useMemo, useState } from 'react';
 import { X, Copy, Check } from 'lucide-react';
 import { AppLanguage } from '../types';
@@ -312,7 +311,7 @@ const CalculatorModal: React.FC<Props> = ({ isOpen, onClose, appLanguage }) => {
 
   // Determine if we should show 'C' (Clear Entry) or 'AC' (All Clear)
   const isClearEntry = !state.waitingForOperand && state.display !== '0';
-  const clearButtonLabel = isClearEntry ? 'C' : 'AC';
+  const clearButtonLabel = isClearEntry ? t.clearEntry : t.allClear;
 
   // Keyboard & Paste Support
   useEffect(() => {

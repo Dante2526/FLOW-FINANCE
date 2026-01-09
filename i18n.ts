@@ -1,4 +1,3 @@
-
 import { AppLanguage } from './types';
 
 export const getBrowserLanguage = (): AppLanguage => {
@@ -23,6 +22,9 @@ export const TRANSLATIONS = {
     meta: {
       title: "Flow Finance",
       description: "Controle financeiro inteligente e moderno."
+    },
+    ai: {
+      disabled: "Funcionalidade de IA desativada."
     },
     common: {
       defaultUser: "Usuário",
@@ -77,7 +79,9 @@ export const TRANSLATIONS = {
       title: "Calculadora",
       copied: "Copiado",
       copy: "Copiar",
-      error: "Erro"
+      error: "Erro",
+      clearEntry: "C",
+      allClear: "AC"
     },
     analytics: {
       title: "Análise",
@@ -401,8 +405,11 @@ export const TRANSLATIONS = {
       copyTitle: "Copia e Cola",
       btnCopy: "Copiar Código",
       btnCopied: "Copiado!",
-      errorMin: "Valor mínimo de 1,00",
-      errorCpf: "CPF Obrigatório"
+      errors: {
+        min: "Valor mínimo de 1,00",
+        cpf: "CPF Obrigatório",
+        generic: "Erro ao gerar doação. Tente novamente."
+      }
     },
     proModal: {
       header: "Assinatura Premium",
@@ -454,6 +461,9 @@ export const TRANSLATIONS = {
     meta: {
       title: "Flow Finance",
       description: "Smart and modern financial control."
+    },
+    ai: {
+      disabled: "AI functionality is disabled."
     },
     common: {
       defaultUser: "User",
@@ -508,7 +518,9 @@ export const TRANSLATIONS = {
       title: "Calculator",
       copied: "Copied",
       copy: "Copy",
-      error: "Error"
+      error: "Error",
+      clearEntry: "C",
+      allClear: "AC"
     },
     analytics: {
       title: "Analytics",
@@ -832,8 +844,11 @@ export const TRANSLATIONS = {
       copyTitle: "Copy and Paste",
       btnCopy: "Copy Code",
       btnCopied: "Copied!",
-      errorMin: "Minimum value of $ 1.00",
-      errorCpf: "Tax ID Required"
+      errors: {
+        min: "Minimum value of $ 1.00",
+        cpf: "Tax ID Required",
+        generic: "Error generating donation. Please try again."
+      }
     },
     proModal: {
       header: "Premium Subscription",
@@ -886,6 +901,9 @@ export const TRANSLATIONS = {
       title: "Flow Finance",
       description: "Control financiero inteligente y moderno."
     },
+    ai: {
+      disabled: "Funcionalidad de IA desactivada."
+    },
     common: {
       defaultUser: "Usuario",
       confirmDeleteMonth: "¿Borrar Mes?",
@@ -932,14 +950,16 @@ export const TRANSLATIONS = {
       }
     },
     months: {
-        jan: 'ENERO', fev: 'FEBRERO', mar: 'MARZO', abr: 'ABRIL', mai: 'MAIO', jun: 'JUNIO',
+        jan: 'ENERO', fev: 'FEBRERO', mar: 'MARZO', abr: 'ABRIL', mai: 'MAYO', jun: 'JUNIO',
         jul: 'JULIO', ago: 'AGOSTO', set: 'SEPTIEMBRE', out: 'OCTUBRE', nov: 'NOVIEMBRE', dez: 'DICIEMBRE'
     },
     calculator: {
       title: "Calculadora",
       copied: "Copiado",
       copy: "Copiar",
-      error: "Error"
+      error: "Error",
+      clearEntry: "C",
+      allClear: "AC"
     },
     analytics: {
       title: "Análisis",
@@ -1263,8 +1283,11 @@ export const TRANSLATIONS = {
       copyTitle: "Copia y Pega",
       btnCopy: "Copiar Código",
       btnCopied: "¡Copiado!",
-      errorMin: "Monto mínimo de $ 1.00",
-      errorCpf: "Tax ID Obligatorio"
+      errors: {
+        min: "Monto mínimo de $ 1.00",
+        cpf: "Tax ID Obligatorio",
+        generic: "Error al generar la donación. Por favor, inténtalo de nuevo."
+      }
     },
     proModal: {
       header: "Suscripción Premium",
