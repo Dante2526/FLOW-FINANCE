@@ -43,7 +43,7 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
         const rect = element.getBoundingClientRect();
         const computedStyle = window.getComputedStyle(element);
 
-        setHighlightStyle({
+        const newHighlightStyle: React.CSSProperties = {
           position: 'fixed',
           top: `${rect.top}px`,
           left: `${rect.left}px`,
@@ -52,9 +52,17 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
           boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.7)',
           borderRadius: computedStyle.borderRadius, // Dynamic border radius
           zIndex: 100,
-          transition: 'all 0.3s ease-in-out',
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', // Smoother transition
           pointerEvents: 'none',
-        });
+        };
+
+        // Passo 09 (índice 8) é a lista de transações. Adiciona efeito de foco.
+        if (currentStep === 8) {
+            newHighlightStyle.transform = 'scale(1.03)';
+            newHighlightStyle.boxShadow = '0 0 20px rgba(255, 255, 255, 0.15), 0 0 0 9999px rgba(0, 0, 0, 0.7)';
+        }
+        
+        setHighlightStyle(newHighlightStyle);
 
         if (dialogRef.current) {
           const dialogRect = dialogRef.current.getBoundingClientRect();
