@@ -98,7 +98,7 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
             opacity: 1,
           });
         }
-      }, 300);
+      }, 500); // Increased delay for scroll animation
 
     } else {
       console.warn(`Tutorial element not found: ${activeStep.element}`);
@@ -110,10 +110,10 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
     if (isOpen) {
       setDialogStyle(prev => ({ ...prev, opacity: 0, transition: 'none' }));
 
-      // More robust way to wait for layout to be stable, especially with web fonts
+      // More robust way to wait for layout to be stable
       const stableUpdate = async () => {
           try {
-            // Wait for fonts to be ready as they can cause significant layout shifts
+            // Wait for fonts to be ready as they can cause layout shifts
             if (document.fonts) {
                 await document.fonts.ready;
             }
@@ -124,13 +124,11 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
           updatePositions(); 
       };
 
-      // Use a timeout to ensure the component is mounted and initial animations have started
-      const timer = setTimeout(stableUpdate, 300);
+      stableUpdate();
 
       window.addEventListener('resize', updatePositions);
       
       return () => {
-        clearTimeout(timer);
         window.removeEventListener('resize', updatePositions);
       };
     }
