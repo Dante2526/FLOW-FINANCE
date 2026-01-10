@@ -175,10 +175,9 @@ const TransactionSummary: React.FC<Props> = ({ months, activeMonthId, onSelectMo
   }, [activeMonthId, months.length]);
 
   return (
-    <div className="mt-8 mb-2">
+    <div className="mt-8 mb-2" data-tour-id="month-switcher">
       <div 
         ref={containerRef}
-        data-tour-id="month-switcher"
         className="flex gap-4 overflow-x-auto no-scrollbar py-4 px-2 -mx-2 items-center snap-x snap-mandatory relative"
       >
         {months.map((item) => (
