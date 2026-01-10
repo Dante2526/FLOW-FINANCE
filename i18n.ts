@@ -468,6 +468,10 @@ export const TRANSLATIONS = {
           content: "Aqui você pode ver seu nome e avatar. Toque para editar seu perfil, sair da conta ou alterar o idioma."
         },
         {
+          title: "Ações do Cabeçalho",
+          content: "Troque o idioma do app, reinicie este tutorial quando quiser ou veja suas notificações do sistema."
+        },
+        {
           title: "Cartão de Lucro",
           content: "Este é o seu painel principal. Ele mostra o lucro do mês atual (fontes de renda menos contas). Arraste para reordenar."
         },
@@ -949,6 +953,10 @@ export const TRANSLATIONS = {
           content: "Here you can see your name and avatar. Tap to edit your profile, log out, or change the language."
         },
         {
+          title: "Header Actions",
+          content: "Change the app language, restart this tutorial anytime, or check your system notifications."
+        },
+        {
           title: "Profit Card",
           content: "This is your main dashboard. It shows the current month's profit (income sources minus bills). Drag to reorder."
         },
@@ -1428,6 +1436,10 @@ export const TRANSLATIONS = {
         {
           title: "Tu Perfil",
           content: "Aquí puedes ver tu nombre y avatar. Toca para editar tu perfil, cerrar sesión o cambiar el idioma."
+        },
+        {
+          title: "Acciones del Encabezado",
+          content: "Cambia el idioma de la app, reinicia este tutorial cuando quieras o revisa tus notificaciones del sistema."
         },
         {
           title: "Tarjeta de Ganancias",

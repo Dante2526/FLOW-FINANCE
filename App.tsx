@@ -371,12 +371,13 @@ const App: React.FC = () => {
 
   const TUTORIAL_STEPS: TutorialStep[] = useMemo(() => [
     { element: '[data-tour-id="profile-header"]', title: t.tutorial.steps[0].title, content: t.tutorial.steps[0].content, position: 'bottom' },
-    { element: '[data-tour-id="balance-card"]', title: t.tutorial.steps[1].title, content: t.tutorial.steps[1].content, position: 'bottom' },
-    { element: '[data-tour-id="add-button"]', title: t.tutorial.steps[2].title, content: t.tutorial.steps[2].content, position: 'bottom' },
-    { element: '[data-tour-id="quick-access"]', title: t.tutorial.steps[3].title, content: t.tutorial.steps[3].content, position: 'bottom' },
-    { element: '[data-tour-id="month-switcher"]', title: t.tutorial.steps[4].title, content: t.tutorial.steps[4].content, position: 'bottom' },
-    { element: '[data-tour-id="transaction-list"]', title: t.tutorial.steps[5].title, content: t.tutorial.steps[5].content, position: 'top' },
-    { element: '[data-tour-id="bottom-nav"]', title: t.tutorial.steps[6].title, content: t.tutorial.steps[6].content, position: 'top' },
+    { element: '[data-tour-id="header-actions"]', title: t.tutorial.steps[1].title, content: t.tutorial.steps[1].content, position: 'bottom' },
+    { element: '[data-tour-id="balance-card"]', title: t.tutorial.steps[2].title, content: t.tutorial.steps[2].content, position: 'bottom' },
+    { element: '[data-tour-id="add-button"]', title: t.tutorial.steps[3].title, content: t.tutorial.steps[3].content, position: 'bottom' },
+    { element: '[data-tour-id="quick-access"]', title: t.tutorial.steps[4].title, content: t.tutorial.steps[4].content, position: 'bottom' },
+    { element: '[data-tour-id="month-switcher"]', title: t.tutorial.steps[5].title, content: t.tutorial.steps[5].content, position: 'bottom' },
+    { element: '[data-tour-id="transaction-list"]', title: t.tutorial.steps[6].title, content: t.tutorial.steps[6].content, position: 'top' },
+    { element: '[data-tour-id="bottom-nav"]', title: t.tutorial.steps[7].title, content: t.tutorial.steps[7].content, position: 'top' },
   ], [t.tutorial.steps]);
 
   const applyData = (data: any) => {
@@ -777,7 +778,7 @@ const App: React.FC = () => {
                   <div className="flex items-center gap-1"><h1 className="text-white text-xl font-bold leading-none">{userProfile.name || t.common?.defaultUser || 'User'}</h1>{userProfile.isPro && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" data-tour-id="header-actions">
                 
                 <div className="relative" data-tour-id="language-selector">
                    <button 
