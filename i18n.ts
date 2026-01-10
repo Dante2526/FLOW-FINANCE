@@ -1,3 +1,4 @@
+
 import { AppLanguage } from './types';
 
 export const getBrowserLanguage = (): AppLanguage => {
@@ -294,7 +295,7 @@ export const TRANSLATIONS = {
       newTitle: "Nova Parcela",
       form: {
         titleLabel: "Título",
-        titlePlaceholder: "EX: CARRO",
+        titlePlaceholder: "EX: FINANCIAMENTO APTO",
         monthlyLabel: "Valor Parcela",
         countLabel: "Vezes",
         totalLabel: "Valor Total",
@@ -738,7 +739,7 @@ export const TRANSLATIONS = {
       newTitle: "New Installment",
       form: {
         titleLabel: "Title",
-        titlePlaceholder: "EX: CAR",
+        titlePlaceholder: "EX: APARTMENT FINANCING",
         monthlyLabel: "Monthly Amount",
         countLabel: "Count",
         totalLabel: "Total Amount",
@@ -1182,7 +1183,7 @@ export const TRANSLATIONS = {
       newTitle: "Nueva Cuota",
       form: {
         titleLabel: "Título",
-        titlePlaceholder: "EJ: COCHE",
+        titlePlaceholder: "EJ: FINANCIACIÓN APTO",
         monthlyLabel: "Valor Cuota",
         countLabel: "Veces",
         totalLabel: "Valor Total",
