@@ -43,6 +43,13 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
         const rect = element.getBoundingClientRect();
         const computedStyle = window.getComputedStyle(element);
 
+        // FIX: If the element itself isn't rounded (like a container div),
+        // apply a default rounding to avoid sharp square outlines.
+        let borderRadius = computedStyle.borderRadius;
+        if (borderRadius === '0px' || !borderRadius) {
+          borderRadius = '1.5rem'; // A pleasant default that matches the app's aesthetic
+        }
+
         const newHighlightStyle: React.CSSProperties = {
           position: 'fixed',
           top: `${rect.top}px`,
@@ -50,7 +57,7 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
           width: `${rect.width}px`,
           height: `${rect.height}px`,
           boxShadow: '0 0 0 2px white, 0 0 0 9999px rgba(0, 0, 0, 0.7)',
-          borderRadius: computedStyle.borderRadius, // Dynamic border radius
+          borderRadius: borderRadius, // Use the determined (or default) radius
           zIndex: 100,
           transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', // Smoother transition
           pointerEvents: 'none',
