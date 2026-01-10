@@ -35,6 +35,7 @@ export const TRANSLATIONS = {
       duplicateMonth: "Duplicar contas para o próximo mês",
       addSource: "Adicionar Nova Fonte de Renda",
       monthExists: "O mês de {month}/{year} já existe.",
+      restartTutorial: "Reiniciar Tutorial",
       splashVersion: "Flow Finance v1.5"
     },
     nav: {
@@ -515,6 +516,7 @@ export const TRANSLATIONS = {
       duplicateMonth: "Duplicate bills to next month",
       addSource: "Add New Income Source",
       monthExists: "The month of {month}/{year} already exists.",
+      restartTutorial: "Restart Tutorial",
       splashVersion: "Flow Finance v1.5"
     },
     nav: {
@@ -995,6 +997,7 @@ export const TRANSLATIONS = {
       duplicateMonth: "Duplicar contas al próximo mes",
       addSource: "Añadir Nueva Fuente de Ingresos",
       monthExists: "El mes de {month}/{year} ya existe.",
+      restartTutorial: "Reiniciar Tutorial",
       splashVersion: "Flow Finance v1.5"
     },
     nav: {

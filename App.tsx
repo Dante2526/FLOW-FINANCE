@@ -24,7 +24,7 @@ import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, Ap
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { TRANSLATIONS, getBrowserLanguage, getLocale } from './i18n';
 import { IconBell, JeittoLogo } from './components/Icons';
-import { Crown, Languages, ExternalLink, Zap, Heart, Copy, Check, ChevronRight } from 'lucide-react';
+import { Crown, Languages, ExternalLink, Zap, Heart, Copy, Check, ChevronRight, HelpCircle } from 'lucide-react';
 
 // Supabase Services
 import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, upsertItem, deleteItem, hardDeleteMonth } from './services/supabase';
@@ -800,6 +800,14 @@ const App: React.FC = () => {
                       </div>
                    )}
                 </div>
+
+                <button 
+                  onClick={() => setIsTutorialOpen(true)}
+                  className="p-3 bg-surface rounded-2xl hover:bg-surfaceLight transition-colors cursor-pointer active:scale-95 text-gray-400"
+                  title={t.common.restartTutorial}
+                >
+                   <HelpCircle className="w-6 h-6" />
+                </button>
 
                 <IconBell count={notifications.filter(n => !n.read).length} onClick={() => setIsNotificationOpen(true)} />
               </div>
