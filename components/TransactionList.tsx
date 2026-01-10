@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Transaction, AppLanguage } from '../types';
 import { TransactionIcon } from './Icons';
@@ -291,7 +290,7 @@ const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onTo
   const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
   return (
-    <div className="mt-6 flex flex-col">
+    <div className="mt-6 flex flex-col" data-tour-id="transaction-list">
       <h2 className="text-xl font-medium text-gray-400 mb-4 pl-1">{title || t.billsTitle}</h2>
       
       {transactions.map((tx) => (

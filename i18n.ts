@@ -363,7 +363,7 @@ export const TRANSLATIONS = {
            { title: "4. Notificações", text: "Ao ativar as notificações, você concorda em receber alertas sobre vencimentos de contas. Você pode desativar este recurso a qualquer momento nas configurações do seu navegador ou dispositivo." },
            { title: "5. Exclusão de Conta", text: "Você tem o direito de solicitar a exclusão total dos seus dados a qualquer momento através da opção \"Excluir Conta\" presente no menu de perfil. Esta ação é irreversível e remove todas as informações dos nossos servidores." }
         ],
-        footer: "Flow Finance © 2025",
+        footer: "Flow Finance © 2026",
         closeBtn: "Entendi"
       }
     },
@@ -388,7 +388,7 @@ export const TRANSLATIONS = {
       resendBtn: 'Não recebeu? Reenviar código',
       security: 'SEM SENHA · ACESSO SEGURO',
       back: 'Voltar',
-      copyright: "© 2025 Flow Finance",
+      copyright: "© 2026 Flow Finance",
       errors: {
         invalidEmail: 'Por favor, insira um e-mail válido.',
         missingName: 'Por favor, informe seu nome.',
@@ -455,6 +455,42 @@ export const TRANSLATIONS = {
         name: "Por favor, informe o nome completo.",
         generic: "Erro ao criar cobrança. Tente novamente."
       }
+    },
+    tutorial: {
+      next: "Próximo",
+      prev: "Voltar",
+      finish: "Finalizar",
+      skip: "Pular",
+      steps: [
+        {
+          title: "Seu Perfil",
+          content: "Aqui você pode ver seu nome e avatar. Toque para editar seu perfil, sair da conta ou alterar o idioma."
+        },
+        {
+          title: "Cartão de Lucro",
+          content: "Este é o seu painel principal. Ele mostra o lucro do mês atual (fontes de renda menos contas). Arraste para reordenar."
+        },
+        {
+          title: "Adicionar Contas",
+          content: "Use este botão para adicionar uma nova despesa, como uma conta de luz ou uma assinatura."
+        },
+        {
+          title: "Acesso Rápido",
+          content: "Adicione fontes de renda (como salários) ou acesse ferramentas como o Bloco de Notas, Calendário e Análises."
+        },
+        {
+          title: "Seletor de Meses",
+          content: "Navegue entre os meses para ver seus gastos passados ou futuros. Você pode duplicar um mês inteiro para o próximo."
+        },
+        {
+          title: "Sua Lista de Contas",
+          content: "Suas contas do mês aparecem aqui. Deslize um item para a esquerda para excluir ou para a direita para editar."
+        },
+        {
+          title: "Navegação Principal",
+          content: "Use estes botões para alternar entre a tela inicial, investimentos, parcelamentos de longo prazo e configurações."
+        }
+      ]
     }
   },
   en: {
@@ -807,7 +843,7 @@ export const TRANSLATIONS = {
            { title: "4. Notifications", text: "By enabling notifications, you agree to receive alerts about bill due dates. You can disable this feature at any time in your browser or device settings." },
            { title: "5. Account Deletion", text: "You have the right to request the total deletion of your data at any time via the \"Delete Account\" option in the profile menu. This action is irreversible and removes all information from our servers." }
         ],
-        footer: "Flow Finance © 2025",
+        footer: "Flow Finance © 2026",
         closeBtn: "I Understand"
       }
     },
@@ -832,7 +868,7 @@ export const TRANSLATIONS = {
       resendBtn: "Didn't receive it? Resend code",
       security: 'NO PASSWORD · SECURE ACCESS',
       back: 'Back',
-      copyright: "© 2025 Flow Finance",
+      copyright: "© 2026 Flow Finance",
       errors: {
         invalidEmail: 'Please enter a valid email.',
         missingName: 'Please enter your name.',
@@ -899,6 +935,42 @@ export const TRANSLATIONS = {
         name: "Please enter full name.",
         generic: "Error creating charge. Please try again."
       }
+    },
+    tutorial: {
+      next: "Next",
+      prev: "Back",
+      finish: "Finish",
+      skip: "Skip",
+      steps: [
+        {
+          title: "Your Profile",
+          content: "Here you can see your name and avatar. Tap to edit your profile, log out, or change the language."
+        },
+        {
+          title: "Profit Card",
+          content: "This is your main dashboard. It shows the current month's profit (income sources minus bills). Drag to reorder."
+        },
+        {
+          title: "Add Bills",
+          content: "Use this button to add a new expense, such as a utility bill or a subscription."
+        },
+        {
+          title: "Quick Access",
+          content: "Add income sources (like salaries) or access tools like the Notepad, Calendar, and Analytics."
+        },
+        {
+          title: "Month Switcher",
+          content: "Navigate between months to see your past or future expenses. You can duplicate an entire month to the next one."
+        },
+        {
+          title: "Your Bill List",
+          content: "Your bills for the month appear here. Swipe an item left to delete or right to edit."
+        },
+        {
+          title: "Main Navigation",
+          content: "Use these buttons to switch between the home screen, investments, long-term installments, and settings."
+        }
+      ]
     }
   },
   es: {
@@ -1251,7 +1323,7 @@ export const TRANSLATIONS = {
            { title: "4. Notificaciones", text: "Al activar las notificaciones, acepta recibir alertas sobre vencimientos de cuentas. Puede desactivar esta función en cualquier momento en la configuración de su navegador o dispositivo." },
            { title: "5. Eliminación de Cuenta", text: "Tiene derecho a solicitar la eliminación total de sus datos en cualquier momento a través da opción \"Eliminar Cuenta\" en el menú de perfil. Esta acción es irreversible y elimina toda la información de nuestros servidores." }
         ],
-        footer: "Flow Finance © 2025",
+        footer: "Flow Finance © 2026",
         closeBtn: "Entendido"
       }
     },
@@ -1276,7 +1348,7 @@ export const TRANSLATIONS = {
       resendBtn: '¿No lo recibiste? Reenviar código',
       security: 'SIN CONTRASEÑA · ACCESO SEGURO',
       back: 'Volver',
-      copyright: "© 2025 Flow Finance",
+      copyright: "© 2026 Flow Finance",
       errors: {
         invalidEmail: 'Por favor, ingresa un correo válido.',
         missingName: 'Por favor, ingresa tu nombre.',
@@ -1343,6 +1415,42 @@ export const TRANSLATIONS = {
         name: "Por favor, ingresa nombre completo.",
         generic: "Error creando cobro. Inténtalo de nuevo."
       }
+    },
+    tutorial: {
+      next: "Siguiente",
+      prev: "Anterior",
+      finish: "Finalizar",
+      skip: "Saltar",
+      steps: [
+        {
+          title: "Tu Perfil",
+          content: "Aquí puedes ver tu nombre y avatar. Toca para editar tu perfil, cerrar sesión o cambiar el idioma."
+        },
+        {
+          title: "Tarjeta de Ganancias",
+          content: "Este es tu panel principal. Muestra las ganancias del mes actual (fuentes de ingresos menos facturas). Arrastra para reordenar."
+        },
+        {
+          title: "Añadir Cuentas",
+          content: "Usa este botón para añadir un nuevo gasto, como una factura de servicios o una suscripción."
+        },
+        {
+          title: "Acceso Rápido",
+          content: "Añade fuentes de ingresos (como salarios) o accede a herramientas como el Bloc de Notas, Calendario y Análisis."
+        },
+        {
+          title: "Selector de Meses",
+          content: "Navega entre los meses para ver tus gastos pasados o futuros. Puedes duplicar un mes entero para el siguiente."
+        },
+        {
+          title: "Tu Lista de Cuentas",
+          content: "Tus facturas del mes aparecen aquí. Desliza un elemento a la izquierda para eliminar o a la derecha para editar."
+        },
+        {
+          title: "Navegación Principal",
+          content: "Usa estos botones para cambiar entre la pantalla de inicio, inversiones, cuotas a largo plazo y ajustes."
+        }
+      ]
     }
   }
 };

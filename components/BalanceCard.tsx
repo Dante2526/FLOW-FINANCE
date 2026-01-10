@@ -97,6 +97,7 @@ const BalanceCard: React.FC<Props> = ({
   return (
     <div 
       data-card-id={id}
+      data-tour-id="balance-card"
       className="relative w-full bg-accent rounded-[2.5rem] p-6 text-white flex flex-col justify-between min-h-[220px] shadow-lg shadow-accent/20"
       onDragEnter={handleDragEnter}
       onDragOver={(e) => e.preventDefault()}
@@ -158,6 +159,7 @@ const BalanceCard: React.FC<Props> = ({
         {/* Add Button (Promoted to Primary - replaces Send) */}
         <button 
           onClick={(e) => { e.stopPropagation(); onAddClick(); }}
+          data-tour-id="add-button"
           className="flex-1 bg-[#121214] text-white h-16 rounded-[1.5rem] flex items-center justify-center gap-2 hover:bg-black transition-colors shadow-lg"
         >
           <span className="text-lg font-medium">{addButtonLabel}</span>

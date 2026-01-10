@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NotebookPen, Landmark, Calendar, BarChart3, Lock } from 'lucide-react';
 import { Contact, AppLanguage } from '../types';
@@ -17,7 +16,7 @@ const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, is
   const tCommon = TRANSLATIONS[appLanguage].common;
 
   return (
-    <div className="mt-8">
+    <div className="mt-8" data-tour-id="quick-access">
       <h2 className="text-xl font-medium text-gray-400 mb-4 pl-1">{title}</h2>
       <div className="grid grid-cols-4 gap-2">
         

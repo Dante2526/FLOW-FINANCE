@@ -1,4 +1,3 @@
-
 // Keys for LocalStorage
 export const STORAGE_KEYS = {
   TRANSACTIONS: 'flow_transactions',
@@ -19,6 +18,7 @@ export const STORAGE_KEYS = {
   DASHBOARD_ORDER: 'flow_dashboard_order',
   APP_LANGUAGE: 'flow_app_language', // New Key
   DISMISSED_NOTIFICATIONS: 'flow_dismissed_notifications', // New Key for persistence
+  TUTORIAL_COMPLETED: 'flow_tutorial_completed', // New Key for tutorial
 };
 
 // Generic load function

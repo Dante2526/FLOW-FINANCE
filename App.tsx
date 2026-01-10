@@ -18,6 +18,8 @@ import InvestmentsView from './components/InvestmentsView';
 import LoginScreen, { FlowLogo } from './components/LoginScreen';
 import ProModal from './components/ProModal'; 
 import DonationModal from './components/DonationModal';
+import Tutorial from './components/Tutorial';
+import { TutorialStep } from './components/Tutorial';
 import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification, AppLanguage } from './types';
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { TRANSLATIONS, getBrowserLanguage, getLocale } from './i18n';
@@ -138,6 +140,7 @@ const App: React.FC = () => {
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   
   const isAnyModalOpen = isAddTransactionOpen || isAddAccountOpen || isCalculatorOpen || isProfileModalOpen || isNotepadOpen || isCalendarOpen || isNotificationOpen || isAnalyticsOpen || isProModalOpen || isDonationModalOpen;
 
@@ -346,6 +349,35 @@ const App: React.FC = () => {
         }
     }
   }, [transactions, notifications, isLoadingData, currentUserEmail, appLanguage, dismissedNotifIds]); 
+
+  // Tutorial Logic
+  useEffect(() => {
+    if (!isLoadingData && currentUserEmail) {
+        const tutorialCompleted = loadData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_${currentUserEmail}`, false);
+        if (!tutorialCompleted) {
+            setTimeout(() => {
+                setIsTutorialOpen(true);
+            }, 500);
+        }
+    }
+  }, [isLoadingData, currentUserEmail]);
+
+  const handleCloseTutorial = () => {
+    setIsTutorialOpen(false);
+    if (currentUserEmail) {
+        saveData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_${currentUserEmail}`, true);
+    }
+  };
+
+  const TUTORIAL_STEPS: TutorialStep[] = useMemo(() => [
+    { element: '[data-tour-id="profile-header"]', title: t.tutorial.steps[0].title, content: t.tutorial.steps[0].content, position: 'bottom' },
+    { element: '[data-tour-id="balance-card"]', title: t.tutorial.steps[1].title, content: t.tutorial.steps[1].content, position: 'bottom' },
+    { element: '[data-tour-id="add-button"]', title: t.tutorial.steps[2].title, content: t.tutorial.steps[2].content, position: 'bottom' },
+    { element: '[data-tour-id="quick-access"]', title: t.tutorial.steps[3].title, content: t.tutorial.steps[3].content, position: 'bottom' },
+    { element: '[data-tour-id="month-switcher"]', title: t.tutorial.steps[4].title, content: t.tutorial.steps[4].content, position: 'bottom' },
+    { element: '[data-tour-id="transaction-list"]', title: t.tutorial.steps[5].title, content: t.tutorial.steps[5].content, position: 'top' },
+    { element: '[data-tour-id="bottom-nav"]', title: t.tutorial.steps[6].title, content: t.tutorial.steps[6].content, position: 'top' },
+  ], [t.tutorial.steps]);
 
   const applyData = (data: any) => {
       if (data.profile) setUserProfile(data.profile);
@@ -735,7 +767,7 @@ const App: React.FC = () => {
       {currentView === 'home' ? (
           <>
             <div className="flex justify-between items-center mb-6 pl-1">
-              <div className="flex items-center gap-3 cursor-pointer group" onClick={handleOpenProfile}>
+              <div className="flex items-center gap-3 cursor-pointer group" onClick={handleOpenProfile} data-tour-id="profile-header">
                 <div className="relative">
                   <div className={`w-12 h-12 rounded-full border-2 overflow-hidden shadow-lg ${userProfile.isPro ? 'border-yellow-500' : 'border-transparent group-hover:border-accent'}`}><img src={userProfile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" /></div>
                   {userProfile.isPro && <div className="absolute -bottom-1 -right-1 bg-yellow-500 rounded-full p-0.5 border-2 border-[#0a0a0b]"><Crown className="w-3 h-3 text-black fill-black" /></div>}
@@ -896,6 +928,17 @@ const App: React.FC = () => {
         userEmail={currentUserEmail || undefined}
         userName={userProfile.name}
         appLanguage={appLanguage}
+      />
+      <Tutorial 
+        isOpen={isTutorialOpen && currentView === 'home'}
+        onClose={handleCloseTutorial}
+        steps={TUTORIAL_STEPS}
+        labels={{
+            next: t.tutorial.next,
+            prev: t.tutorial.prev,
+            finish: t.tutorial.finish,
+            skip: t.tutorial.skip
+        }}
       />
     </div>
   );
