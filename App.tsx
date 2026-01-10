@@ -374,10 +374,12 @@ const App: React.FC = () => {
     { element: '[data-tour-id="header-actions"]', title: t.tutorial.steps[1].title, content: t.tutorial.steps[1].content, position: 'bottom' },
     { element: '[data-tour-id="balance-card"]', title: t.tutorial.steps[2].title, content: t.tutorial.steps[2].content, position: 'bottom' },
     { element: '[data-tour-id="add-button"]', title: t.tutorial.steps[3].title, content: t.tutorial.steps[3].content, position: 'bottom' },
-    { element: '[data-tour-id="quick-access"]', title: t.tutorial.steps[4].title, content: t.tutorial.steps[4].content, position: 'bottom' },
-    { element: '[data-tour-id="month-switcher"]', title: t.tutorial.steps[5].title, content: t.tutorial.steps[5].content, position: 'bottom' },
-    { element: '[data-tour-id="transaction-list"]', title: t.tutorial.steps[6].title, content: t.tutorial.steps[6].content, position: 'top' },
-    { element: '[data-tour-id="bottom-nav"]', title: t.tutorial.steps[7].title, content: t.tutorial.steps[7].content, position: 'top' },
+    { element: '[data-tour-id="duplicate-button"]', title: t.tutorial.steps[4].title, content: t.tutorial.steps[4].content, position: 'bottom' },
+    { element: '[data-tour-id="calculator-button"]', title: t.tutorial.steps[5].title, content: t.tutorial.steps[5].content, position: 'bottom' },
+    { element: '[data-tour-id="quick-access"]', title: t.tutorial.steps[6].title, content: t.tutorial.steps[6].content, position: 'bottom' },
+    { element: '[data-tour-id="month-switcher"]', title: t.tutorial.steps[7].title, content: t.tutorial.steps[7].content, position: 'bottom' },
+    { element: '[data-tour-id="transaction-list"]', title: t.tutorial.steps[8].title, content: t.tutorial.steps[8].content, position: 'top' },
+    { element: '[data-tour-id="bottom-nav"]', title: t.tutorial.steps[9].title, content: t.tutorial.steps[9].content, position: 'top' },
   ], [t.tutorial.steps]);
 
   const applyData = (data: any) => {

@@ -171,6 +171,7 @@ const BalanceCard: React.FC<Props> = ({
         {/* Duplicate Button (Copy Icon) */}
         <button 
           onClick={(e) => { e.stopPropagation(); onDuplicateClick(); }}
+          data-tour-id="duplicate-button"
           className="w-16 h-16 bg-[#121214] text-white rounded-[1.5rem] flex items-center justify-center hover:bg-black transition-colors shadow-lg"
           title={tCommon.duplicateMonth}
         >
@@ -179,6 +180,7 @@ const BalanceCard: React.FC<Props> = ({
 
         <button 
           onClick={(e) => { e.stopPropagation(); onCalculatorClick(); }}
+          data-tour-id="calculator-button"
           className="w-16 h-16 bg-[#121214] text-white rounded-[1.5rem] flex items-center justify-center hover:bg-black transition-colors shadow-lg"
           title={tCalc.title}
         >

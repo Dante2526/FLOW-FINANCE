@@ -479,6 +479,14 @@ export const TRANSLATIONS = {
           title: "Adicionar Contas",
           content: "Use este botão para adicionar uma nova despesa, como uma conta de luz ou uma assinatura."
         },
+        { 
+          title: "Duplicar Mês", 
+          content: "Cansado de digitar as mesmas contas todo mês? Use este botão para copiar todas as contas do mês atual para o próximo, de forma automática." 
+        },
+        { 
+          title: "Calculadora Rápida", 
+          content: "Precisa fazer uma conta rápida? Use a calculadora integrada sem precisar sair do aplicativo." 
+        },
         {
           title: "Acesso Rápido",
           content: "Adicione fontes de renda (como salários) ou acesse ferramentas como o Bloco de Notas, Calendário e Análises."
@@ -965,6 +973,14 @@ export const TRANSLATIONS = {
           content: "Use this button to add a new expense, such as a utility bill or a subscription."
         },
         {
+          title: "Duplicate Month",
+          content: "Tired of typing the same bills every month? Use this button to automatically copy all bills from the current month to the next."
+        },
+        {
+          title: "Quick Calculator",
+          content: "Need to do a quick calculation? Use the built-in calculator without leaving the app."
+        },
+        {
           title: "Quick Access",
           content: "Add income sources (like salaries) or access tools like the Notepad, Calendar, and Analytics."
         },
@@ -1448,6 +1464,14 @@ export const TRANSLATIONS = {
         {
           title: "Añadir Cuentas",
           content: "Usa este botón para añadir un nuevo gasto, como una factura de servicios o una suscripción."
+        },
+        {
+          title: "Duplicar Mes",
+          content: "¿Cansado de escribir las mismas facturas cada mes? Usa este botón para copiar automáticamente todas las facturas del mes actual al siguiente."
+        },
+        {
+          title: "Calculadora Rápida",
+          content: "¿Necesitas hacer un cálculo rápido? Usa la calculadora integrada sin salir de la aplicación."
         },
         {
           title: "Acceso Rápido",
