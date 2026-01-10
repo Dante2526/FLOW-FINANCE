@@ -17,6 +17,7 @@ interface Props {
   onDragEnter?: (id: string) => void;
   onDragEnd?: () => void;
   appLanguage?: AppLanguage;
+  [key: string]: any; // To accept data-* attributes
 }
 
 const BalanceCard: React.FC<Props> = ({ 
@@ -31,7 +32,8 @@ const BalanceCard: React.FC<Props> = ({
   onDragStart,
   onDragEnter,
   onDragEnd,
-  appLanguage = 'pt'
+  appLanguage = 'pt',
+  ...props
 }) => {
   // State for balance visibility
   const [isVisible, setIsVisible] = useState(() => {
@@ -101,6 +103,7 @@ const BalanceCard: React.FC<Props> = ({
       onDragEnter={handleDragEnter}
       onDragOver={(e) => e.preventDefault()}
       onDragEnd={onDragEnd}
+      {...props}
     >
       
       {/* Header of Card */}

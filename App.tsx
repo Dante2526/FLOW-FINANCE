@@ -815,9 +815,7 @@ const App: React.FC = () => {
             <div className="flex flex-col gap-2 mb-6">
                {dItems.map(id => {
                   if (id === BALANCE_CARD_ID) return (
-                    <div key={id} data-tour-id="balance-card">
-                        <BalanceCard id={id} balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} label={t.balanceLabel} addButtonLabel={t.addBtn} onAddClick={handleOpenAddTransaction} onDuplicateClick={handleDuplicateMonth} onCalculatorClick={handleOpenCalculator} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />
-                    </div>
+                    <BalanceCard key={id} id={id} data-tour-id="balance-card" balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} label={t.balanceLabel} addButtonLabel={t.addBtn} onAddClick={handleOpenAddTransaction} onDuplicateClick={handleDuplicateMonth} onCalculatorClick={handleOpenCalculator} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />
                   );
                   const a = filteredAcc.find(x => x.id === id);
                   if (a) return <SecondaryCard key={a.id} account={a} onDelete={handleDeleteAccount} onEdit={handleEditAccount} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />;
