@@ -49,7 +49,7 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
           left: `${rect.left}px`,
           width: `${rect.width}px`,
           height: `${rect.height}px`,
-          boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.7)',
+          boxShadow: '0 0 0 2px white, 0 0 0 9999px rgba(0, 0, 0, 0.7)',
           borderRadius: computedStyle.borderRadius, // Dynamic border radius
           zIndex: 100,
           transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', // Smoother transition
@@ -58,7 +58,7 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
 
         if (currentStep === 8) {
             newHighlightStyle.transform = 'scale(1.03)';
-            newHighlightStyle.boxShadow = '0 0 20px rgba(255, 255, 255, 0.15), 0 0 0 9999px rgba(0, 0, 0, 0.7)';
+            newHighlightStyle.boxShadow = '0 0 0 2px white, 0 0 20px rgba(255, 255, 255, 0.15), 0 0 0 9999px rgba(0, 0, 0, 0.7)';
         }
         
         setHighlightStyle(newHighlightStyle);
