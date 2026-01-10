@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { X, ArrowRight, ArrowLeft } from 'lucide-react';
 
 export interface TutorialStep {
@@ -22,45 +22,108 @@ interface Props {
 
 const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [highlightRect, setHighlightRect] = useState<DOMRect | null>(null);
+  const [highlightStyle, setHighlightStyle] = useState<React.CSSProperties>({ display: 'none' });
+  const [dialogStyle, setDialogStyle] = useState<React.CSSProperties>({ display: 'none', opacity: 0 });
 
+  const dialogRef = useRef<HTMLDivElement>(null);
   const activeStep = steps[currentStep];
 
-  const updateHighlight = () => {
-    if (!activeStep) return;
-    const element = document.querySelector(activeStep.element);
+  const updatePositions = () => {
+    if (!activeStep) {
+      onClose();
+      return;
+    }
+    const element = document.querySelector<HTMLElement>(activeStep.element);
+
     if (element) {
-      setHighlightRect(element.getBoundingClientRect());
-      // Scroll element into view if needed
       element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+
+      // Delay to ensure scroll animation completes before measuring
+      setTimeout(() => {
+        const rect = element.getBoundingClientRect();
+        const computedStyle = window.getComputedStyle(element);
+
+        setHighlightStyle({
+          position: 'fixed',
+          top: `${rect.top}px`,
+          left: `${rect.left}px`,
+          width: `${rect.width}px`,
+          height: `${rect.height}px`,
+          boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.7)',
+          borderRadius: computedStyle.borderRadius, // Dynamic border radius
+          zIndex: 100,
+          transition: 'all 0.3s ease-in-out',
+          pointerEvents: 'none',
+        });
+
+        if (dialogRef.current) {
+          const dialogRect = dialogRef.current.getBoundingClientRect();
+          const gap = 16;
+          const pos = activeStep.position || 'bottom';
+          let top = 0, left = 0;
+
+          switch (pos) {
+            case 'top':
+              top = rect.top - dialogRect.height - gap;
+              left = rect.left + (rect.width / 2) - (dialogRect.width / 2);
+              break;
+            case 'left':
+              top = rect.top + (rect.height / 2) - (dialogRect.height / 2);
+              left = rect.left - dialogRect.width - gap;
+              break;
+            case 'right':
+              top = rect.top + (rect.height / 2) - (dialogRect.height / 2);
+              left = rect.right + gap;
+              break;
+            case 'center':
+              top = window.innerHeight / 2 - dialogRect.height / 2;
+              left = window.innerWidth / 2 - dialogRect.width / 2;
+              break;
+            default: // bottom
+              top = rect.bottom + gap;
+              left = rect.left + (rect.width / 2) - (dialogRect.width / 2);
+              break;
+          }
+          
+          const clampedLeft = Math.max(16, Math.min(left, window.innerWidth - dialogRect.width - 16));
+          const clampedTop = Math.max(16, Math.min(top, window.innerHeight - dialogRect.height - 16));
+
+          setDialogStyle({
+            position: 'fixed',
+            top: `${clampedTop}px`,
+            left: `${clampedLeft}px`,
+            width: '300px',
+            zIndex: 101,
+            transition: 'all 0.3s ease-in-out',
+            opacity: 1,
+          });
+        }
+      }, 300);
+
     } else {
-      // If element is not found, maybe skip this step or end tour
-      handleNext();
+      console.warn(`Tutorial element not found: ${activeStep.element}`);
+      onClose(); // Gracefully close if element is missing
     }
   };
 
   useEffect(() => {
     if (isOpen) {
-      // Delay to allow UI to render before highlighting
-      const timer = setTimeout(updateHighlight, 100);
-      window.addEventListener('resize', updateHighlight);
+      setDialogStyle(prev => ({ ...prev, opacity: 0, transition: 'none' }));
+      const timer = setTimeout(updatePositions, 100);
+      window.addEventListener('resize', updatePositions);
       
       return () => {
         clearTimeout(timer);
-        window.removeEventListener('resize', updateHighlight);
+        window.removeEventListener('resize', updatePositions);
       };
     }
   }, [isOpen, currentStep]);
 
   useLayoutEffect(() => {
-    if (isOpen) {
-      updateHighlight();
-    }
+    if (isOpen) updatePositions();
   }, [isOpen, currentStep]);
 
-  if (!isOpen || !activeStep || !highlightRect) {
-    return null;
-  }
+  if (!isOpen || !activeStep) return null;
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
@@ -75,75 +138,18 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
       setCurrentStep(currentStep - 1);
     }
   };
-
-  const getDialogPosition = () => {
-    const dialogHeight = 180; // Approximate height of the dialog
-    const dialogWidth = 300;  // Approximate width
-    const gap = 16; // Gap between highlight and dialog
-    const pos = activeStep.position || 'bottom';
-
-    switch (pos) {
-      case 'top':
-        return {
-          top: highlightRect.top - dialogHeight - gap,
-          left: highlightRect.left + (highlightRect.width / 2) - (dialogWidth / 2),
-        };
-      case 'left':
-        return {
-          top: highlightRect.top + (highlightRect.height / 2) - (dialogHeight / 2),
-          left: highlightRect.left - dialogWidth - gap,
-        };
-      case 'right':
-         return {
-          top: highlightRect.top + (highlightRect.height / 2) - (dialogHeight / 2),
-          left: highlightRect.right + gap,
-        };
-      case 'center':
-        return {
-          top: window.innerHeight / 2 - dialogHeight / 2,
-          left: window.innerWidth / 2 - dialogWidth / 2,
-        };
-      case 'bottom':
-      default:
-        return {
-          top: highlightRect.bottom + gap,
-          left: highlightRect.left + (highlightRect.width / 2) - (dialogWidth / 2),
-        };
-    }
-  };
-
-  const dialogPos = getDialogPosition();
-
-  // Clamp dialog position to be within viewport
-  const clampedLeft = Math.max(16, Math.min(dialogPos.left, window.innerWidth - 300 - 16));
   
-  const highlightStyle: React.CSSProperties = {
-    position: 'absolute',
-    top: `${highlightRect.top}px`,
-    left: `${highlightRect.left}px`,
-    width: `${highlightRect.width}px`,
-    height: `${highlightRect.height}px`,
-    boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.7)',
-    borderRadius: '1.5rem', 
-    zIndex: 100,
-    transition: 'all 0.3s ease-in-out',
-    pointerEvents: 'none',
-  };
-
-  const dialogStyle: React.CSSProperties = {
-    position: 'absolute',
-    top: `${dialogPos.top}px`,
-    left: `${clampedLeft}px`,
-    width: '300px',
-    zIndex: 101,
-    transition: 'all 0.3s ease-in-out',
+  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
+      if (e.target === e.currentTarget) {
+          onClose();
+      }
   };
 
   return (
-    <div className="fixed inset-0 z-[100] animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[100] animate-in fade-in duration-300" onClick={handleBackdropClick}>
       <div style={highlightStyle} />
       
-      <div style={dialogStyle}>
+      <div ref={dialogRef} style={dialogStyle}>
         <div className="bg-[#2c2c2e] p-5 rounded-2xl border border-white/10 shadow-2xl relative flex flex-col gap-3">
           <div className="flex justify-between items-start">
             <div>
