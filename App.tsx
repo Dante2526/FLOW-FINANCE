@@ -779,7 +779,7 @@ const App: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 
-                <div className="relative">
+                <div className="relative" data-tour-id="language-selector">
                    <button 
                      onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
                      className="p-3 bg-surface rounded-2xl hover:bg-surfaceLight transition-colors cursor-pointer active:scale-95 text-gray-400"
@@ -809,7 +809,7 @@ const App: React.FC = () => {
                    <HelpCircle className="w-6 h-6" />
                 </button>
 
-                <IconBell count={notifications.filter(n => !n.read).length} onClick={() => setIsNotificationOpen(true)} />
+                <IconBell count={notifications.filter(n => !n.read).length} onClick={() => setIsNotificationOpen(true)} data-tour-id="notification-bell" />
               </div>
             </div>
             <div className="flex flex-col gap-2 mb-6">

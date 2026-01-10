@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Bell, 
@@ -44,10 +43,11 @@ import {
 } from 'lucide-react';
 import { LogoType } from '../types';
 
-export const IconBell = ({ count, onClick }: { count?: number; onClick?: () => void }) => (
+export const IconBell = ({ count, onClick, ...props }: { count?: number; onClick?: () => void, [key: string]: any }) => (
   <button 
     onClick={onClick}
     className="relative p-3 bg-surface rounded-2xl hover:bg-surfaceLight transition-colors cursor-pointer active:scale-95"
+    {...props}
   >
     <Bell className="w-6 h-6 text-gray-400" />
     {count !== undefined && count > 0 && (

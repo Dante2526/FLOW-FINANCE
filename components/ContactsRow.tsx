@@ -25,6 +25,7 @@ const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, is
           onClick={onAddClick}
           className="w-full aspect-[5/4] rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-lg shadow-black/20 hover:brightness-110 transition-all group border-2 border-transparent hover:border-purple-500/50"
           title={tCommon.addSource}
+          data-tour-id="add-income-source"
         >
           <Landmark className="w-7 h-7 text-purple-500 group-hover:text-purple-400 transition-colors" />
         </button>
@@ -39,6 +40,7 @@ const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, is
                 onClick={() => onContactClick(contact)}
                 className="w-full relative group cursor-pointer active:scale-95 transition-transform"
                 title={contact.name}
+                data-tour-id="notepad-button"
               >
                 <div className="w-full aspect-[5/4] rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-lg shadow-black/20 group-hover:brightness-110 transition-all border-2 border-transparent group-hover:border-yellow-500/50">
                    <NotebookPen className="w-7 h-7 text-yellow-500" strokeWidth={2} />
@@ -55,6 +57,7 @@ const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, is
                 onClick={() => onContactClick(contact)}
                 className="w-full relative group cursor-pointer active:scale-95 transition-transform"
                 title={contact.name}
+                data-tour-id="calendar-button"
               >
                 <div className="w-full aspect-[5/4] rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-lg shadow-black/20 group-hover:brightness-110 transition-all border-2 border-transparent group-hover:border-red-500/50">
                    <Calendar className="w-7 h-7 text-red-500" strokeWidth={2} />
@@ -71,6 +74,7 @@ const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, is
                 onClick={() => onContactClick(contact)}
                 className="w-full relative group cursor-pointer active:scale-95 transition-transform"
                 title={contact.name}
+                data-tour-id="analytics-button"
               >
                 <div className={`w-full aspect-[5/4] rounded-2xl flex items-center justify-center shadow-lg shadow-black/20 transition-all border-2 relative overflow-hidden ${
                   isPro 
