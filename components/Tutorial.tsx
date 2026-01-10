@@ -98,7 +98,7 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
             opacity: 1,
           });
         }
-      }, 500); // Increased delay for scroll animation
+      }, 700); // Increased delay for scroll animation
 
     } else {
       console.warn(`Tutorial element not found: ${activeStep.element}`);
