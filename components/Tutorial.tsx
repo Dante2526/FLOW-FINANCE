@@ -181,35 +181,35 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
           </div>
 
           <div className="flex justify-between items-center mt-2">
-            {/* Botão Pular (Ação Secundária) */}
-            <button 
-                onClick={onClose}
-                className="h-14 px-6 text-gray-400 rounded-full text-base font-bold flex items-center justify-center hover:text-white transition-colors"
+            {/* Botão Pular (Ação Secundária) - Estilo de texto */}
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 text-sm font-bold hover:text-white transition-colors"
             >
-                {labels.skip}
+              {labels.skip}
             </button>
 
             {/* Grupo de Navegação Principal */}
             <div className="flex items-center gap-3">
-                {/* Botão Voltar (condicional) */}
-                {currentStep > 0 && (
-                    <button 
-                        onClick={handlePrev}
-                        className="h-14 w-auto px-6 bg-[#3a3a3c] text-white rounded-full text-base font-bold flex items-center justify-center gap-2 hover:bg-[#4a4a4c] transition-all duration-300"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                        {labels.prev}
-                    </button>
-                )}
-                
-                {/* Botão Próximo/Finalizar */}
-                <button 
-                    onClick={handleNext}
-                    className="h-14 w-auto px-6 bg-[#00D67E] text-black rounded-full text-base font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#00D67E]/30 hover:brightness-105 active:scale-95 transition-all"
-                >
-                    {currentStep === steps.length - 1 ? labels.finish : labels.next}
-                    <ArrowRight className="w-5 h-5" />
-                </button>
+              {/* Botão Voltar (ocupa espaço mesmo quando invisível para evitar pulo de layout) */}
+              <button
+                onClick={handlePrev}
+                className={`h-14 w-auto px-6 bg-[#3a3a3c] text-white rounded-full text-base font-bold flex items-center justify-center gap-2 hover:bg-[#4a4a4c] transition-all duration-300 ${
+                  currentStep > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                }`}
+              >
+                <ArrowLeft className="w-5 h-5" />
+                {labels.prev}
+              </button>
+
+              {/* Botão Próximo/Finalizar */}
+              <button
+                onClick={handleNext}
+                className="h-14 w-auto px-6 bg-[#00D67E] text-black rounded-full text-base font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#00D67E]/30 hover:brightness-105 active:scale-95 transition-all"
+              >
+                {currentStep === steps.length - 1 ? labels.finish : labels.next}
+                <ArrowRight className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </div>
