@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Wallet, Plus, ChevronLeft, Calendar, Trash2, Check, Edit2, Info } from 'lucide-react';
 import { LongTermTransaction, AppLanguage } from '../types';
@@ -559,7 +560,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
                             type="text" 
                             name="lt_title_edit_hidden"
                             value={editTitleValue}
-                            onChange={(e) => setEditTitleValue(e.target.value.toUpperCase())}
+                            onChange={(e) => setEditTitleValue(e.target.value)}
                             className="w-full bg-[#2c2c2e] text-white text-xl font-bold py-3 px-4 rounded-xl outline-none focus:ring-2 focus:ring-accent/50 text-center uppercase"
                             autoFocus
                             autoComplete="off"
@@ -803,7 +804,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
                     placeholder={t.form.titlePlaceholder}
                     name="lt_title_hidden"
                     value={newTitle}
-                    onChange={e => setNewTitle(e.target.value.toUpperCase())}
+                    onChange={e => setNewTitle(e.target.value)}
                     required
                     autoComplete="off"
                     autoCorrect="off"

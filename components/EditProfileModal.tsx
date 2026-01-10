@@ -59,7 +59,7 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
     if (!name) return;
 
     onSave({
-      name,
+      name: name.toUpperCase(), // Converte para maiúsculo apenas ao salvar
       subtitle: '', 
       avatarUrl: avatarUrl,
       isPro: currentProfile.isPro, // Mantém o status atual (gerenciado pelo App)
@@ -125,7 +125,7 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
             <input 
               type="text" 
               value={name}
-              onChange={(e) => setName(e.target.value.toUpperCase())}
+              onChange={(e) => setName(e.target.value)}
               placeholder={t.namePlaceholder}
               className="w-full bg-[#2c2c2e] text-white text-lg py-3 px-6 rounded-2xl outline-none focus:ring-2 focus:ring-accent/50 placeholder-gray-600 uppercase font-bold"
               required
