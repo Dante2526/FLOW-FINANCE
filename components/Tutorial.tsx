@@ -109,7 +109,8 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
   useEffect(() => {
     if (isOpen) {
       setDialogStyle(prev => ({ ...prev, opacity: 0, transition: 'none' }));
-      const timer = setTimeout(updatePositions, 100);
+      // Increased initial delay to 300ms to allow for component rendering and layout settlement.
+      const timer = setTimeout(updatePositions, 300);
       window.addEventListener('resize', updatePositions);
       
       return () => {
@@ -117,10 +118,6 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
         window.removeEventListener('resize', updatePositions);
       };
     }
-  }, [isOpen, currentStep]);
-
-  useLayoutEffect(() => {
-    if (isOpen) updatePositions();
   }, [isOpen, currentStep]);
 
   if (!isOpen || !activeStep) return null;
