@@ -56,7 +56,6 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
           pointerEvents: 'none',
         };
 
-        // Passo 09 (índice 8) é a lista de transações. Adiciona efeito de foco.
         if (currentStep === 8) {
             newHighlightStyle.transform = 'scale(1.03)';
             newHighlightStyle.boxShadow = '0 0 20px rgba(255, 255, 255, 0.15), 0 0 0 9999px rgba(0, 0, 0, 0.7)';
@@ -69,15 +68,17 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
           const gap = 16;
           const pos = activeStep.position || 'bottom';
           let top = 0, left = 0;
+          
+          const DIALOG_WIDTH = 320; // Use a fixed, safer width for calculations
 
           switch (pos) {
             case 'top':
               top = rect.top - dialogRect.height - gap;
-              left = rect.left + (rect.width / 2) - (dialogRect.width / 2);
+              left = rect.left + (rect.width / 2) - (DIALOG_WIDTH / 2);
               break;
             case 'left':
               top = rect.top + (rect.height / 2) - (dialogRect.height / 2);
-              left = rect.left - dialogRect.width - gap;
+              left = rect.left - DIALOG_WIDTH - gap;
               break;
             case 'right':
               top = rect.top + (rect.height / 2) - (dialogRect.height / 2);
@@ -85,32 +86,32 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
               break;
             case 'center':
               top = window.innerHeight / 2 - dialogRect.height / 2;
-              left = window.innerWidth / 2 - dialogRect.width / 2;
+              left = window.innerWidth / 2 - DIALOG_WIDTH / 2;
               break;
             default: // bottom
               top = rect.bottom + gap;
-              left = rect.left + (rect.width / 2) - (dialogRect.width / 2);
+              left = rect.left + (rect.width / 2) - (DIALOG_WIDTH / 2);
               break;
           }
           
-          const clampedLeft = Math.max(16, Math.min(left, window.innerWidth - dialogRect.width - 16));
+          const clampedLeft = Math.max(16, Math.min(left, window.innerWidth - DIALOG_WIDTH - 16));
           const clampedTop = Math.max(16, Math.min(top, window.innerHeight - dialogRect.height - 16));
 
           setDialogStyle({
             position: 'fixed',
             top: `${clampedTop}px`,
             left: `${clampedLeft}px`,
-            width: '350px', // Aumentado para acomodar os botões
+            width: `${DIALOG_WIDTH}px`,
             zIndex: 101,
             transition: 'all 0.3s ease-in-out',
             opacity: 1,
           });
         }
-      }, 700); // Increased delay for scroll animation
+      }, 700);
 
     } else {
       console.warn(`Tutorial element not found: ${activeStep.element}`);
-      onClose(); // Gracefully close if element is missing
+      onClose();
     }
   };
 
@@ -118,22 +119,16 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
     if (isOpen) {
       setDialogStyle(prev => ({ ...prev, opacity: 0, transition: 'none' }));
 
-      // More robust way to wait for layout to be stable
       const stableUpdate = async () => {
           try {
-            // Wait for fonts to be ready as they can cause layout shifts
-            if (document.fonts) {
-                await document.fonts.ready;
-            }
+            if (document.fonts) await document.fonts.ready;
           } catch (e) {
             console.warn("Could not wait for document.fonts.ready", e);
           }
-          // After fonts are ready, call the positioning logic
           updatePositions(); 
       };
 
       stableUpdate();
-
       window.addEventListener('resize', updatePositions);
       
       return () => {
@@ -180,9 +175,7 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
             </span>
           </div>
 
-          {/* Corrected Button Layout */}
           <div className="flex justify-between items-center mt-2">
-            {/* Botão Pular (Esquerda) */}
             <button
               onClick={onClose}
               className="p-2 text-gray-400 text-sm font-bold hover:text-white transition-colors"
@@ -190,25 +183,25 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
               {labels.skip}
             </button>
 
-            {/* Botão Voltar (Centro) - Ocupa espaço mesmo invisível para estabilidade */}
-            <button
-              onClick={handlePrev}
-              className={`h-12 w-auto px-5 bg-[#3a3a3c] text-white rounded-full text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#4a4a4c] transition-all duration-300 ${
-                currentStep > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'
-              }`}
-            >
-              <ArrowLeft className="w-4 h-4" />
-              {labels.prev}
-            </button>
+            <div className="flex items-center gap-3">
+              {currentStep > 0 && (
+                <button
+                  onClick={handlePrev}
+                  className="h-12 w-auto px-5 bg-[#3a3a3c] text-white rounded-full text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#4a4a4c] transition-all duration-300 animate-in fade-in"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  {labels.prev}
+                </button>
+              )}
 
-            {/* Botão Próximo (Direita) */}
-            <button
-              onClick={handleNext}
-              className="h-12 w-auto px-5 bg-[#00D67E] text-black rounded-full text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#00D67E]/30 hover:brightness-105 active:scale-95 transition-all"
-            >
-              {currentStep === steps.length - 1 ? labels.finish : labels.next}
-              <ArrowRight className="w-4 h-4" />
-            </button>
+              <button
+                onClick={handleNext}
+                className="h-12 w-auto px-5 bg-[#00D67E] text-black rounded-full text-sm font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#00D67E]/30 hover:brightness-105 active:scale-95 transition-all"
+              >
+                {currentStep === steps.length - 1 ? labels.finish : labels.next}
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
