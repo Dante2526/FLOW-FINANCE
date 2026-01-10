@@ -141,8 +141,9 @@ const App: React.FC = () => {
   const [isProModalOpen, setIsProModalOpen] = useState(false);
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [isInvestmentsTutorialOpen, setIsInvestmentsTutorialOpen] = useState(false);
   
-  const isAnyModalOpen = isAddTransactionOpen || isAddAccountOpen || isCalculatorOpen || isProfileModalOpen || isNotepadOpen || isCalendarOpen || isNotificationOpen || isAnalyticsOpen || isProModalOpen || isDonationModalOpen;
+  const isAnyModalOpen = isAddTransactionOpen || isAddAccountOpen || isCalculatorOpen || isProfileModalOpen || isNotepadOpen || isCalendarOpen || isNotificationOpen || isAnalyticsOpen || isProModalOpen || isDonationModalOpen || isTutorialOpen || isInvestmentsTutorialOpen;
 
   const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_PROFILE);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -184,8 +185,8 @@ const App: React.FC = () => {
     { id: '3', name: t.analytics?.title || 'Analytics', imageUrl: '' }
   ], [t]);
 
-  const currentStateRef = useRef({ transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder, appLanguage });
-  useEffect(() => { currentStateRef.current = { transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder, appLanguage }; });
+  const currentStateRef = useRef({ transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder, appLanguage, currentView });
+  useEffect(() => { currentStateRef.current = { transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder, appLanguage, currentView }; });
 
   // Reset scroll on view change
   useEffect(() => {
@@ -356,17 +357,44 @@ const App: React.FC = () => {
         const tutorialCompleted = loadData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_${currentUserEmail}`, false);
         if (!tutorialCompleted) {
             setTimeout(() => {
-                setIsTutorialOpen(true);
+                // This check prevents the tutorial from starting if the user navigated
+                // to another screen before the delay finished.
+                if (currentStateRef.current.currentView === 'home') {
+                  setIsTutorialOpen(true);
+                }
             }, 500);
         }
     }
+    // This effect should only run ONCE on initial load.
   }, [isLoadingData, currentUserEmail]);
+
+  // Investments Tutorial Logic
+  useEffect(() => {
+      if (currentView === 'investments' && !isLoadingData && currentUserEmail) {
+          const tutorialCompleted = loadData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_investments_${currentUserEmail}`, false);
+          if (!tutorialCompleted) {
+              setTimeout(() => {
+                  // This check prevents the tutorial from starting if the user navigated away
+                  if (currentStateRef.current.currentView === 'investments') {
+                      setIsInvestmentsTutorialOpen(true);
+                  }
+              }, 500); // Delay to allow view transition
+          }
+      }
+  }, [currentView, isLoadingData, currentUserEmail]);
 
   const handleCloseTutorial = () => {
     setIsTutorialOpen(false);
     if (currentUserEmail) {
         saveData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_${currentUserEmail}`, true);
     }
+  };
+
+  const handleCloseInvestmentsTutorial = () => {
+      setIsInvestmentsTutorialOpen(false);
+      if (currentUserEmail) {
+          saveData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_investments_${currentUserEmail}`, true);
+      }
   };
 
   const TUTORIAL_STEPS: TutorialStep[] = useMemo(() => [
@@ -381,6 +409,14 @@ const App: React.FC = () => {
     { element: '[data-tour-id="transaction-list"]', title: t.tutorial.steps[8].title, content: t.tutorial.steps[8].content, position: 'top' },
     { element: '[data-tour-id="bottom-nav"]', title: t.tutorial.steps[9].title, content: t.tutorial.steps[9].content, position: 'top' },
   ], [t.tutorial.steps]);
+
+  const INVESTMENTS_TUTORIAL_STEPS: TutorialStep[] = useMemo(() => [
+      { element: '[data-tour-id="investments-header"]', title: t.tutorial.investmentsSteps[0].title, content: t.tutorial.investmentsSteps[0].content, position: 'bottom' },
+      { element: '[data-tour-id="investments-cdi-rate"]', title: t.tutorial.investmentsSteps[1].title, content: t.tutorial.investmentsSteps[1].content, position: 'bottom' },
+      { element: '[data-tour-id="investments-main-card"]', title: t.tutorial.investmentsSteps[2].title, content: t.tutorial.investmentsSteps[2].content, position: 'bottom' },
+      { element: '[data-tour-id="investments-list"]', title: t.tutorial.investmentsSteps[3].title, content: t.tutorial.investmentsSteps[3].content, position: 'top' },
+      { element: '[data-tour-id="investments-add-button"]', title: t.tutorial.investmentsSteps[4].title, content: t.tutorial.investmentsSteps[4].content, position: 'left' },
+  ], [t.tutorial.investmentsSteps]);
 
   const applyData = (data: any) => {
       if (data.profile) setUserProfile(data.profile);
@@ -946,6 +982,17 @@ const App: React.FC = () => {
         isOpen={isTutorialOpen && currentView === 'home'}
         onClose={handleCloseTutorial}
         steps={TUTORIAL_STEPS}
+        labels={{
+            next: t.tutorial.next,
+            prev: t.tutorial.prev,
+            finish: t.tutorial.finish,
+            skip: t.tutorial.skip
+        }}
+      />
+      <Tutorial 
+        isOpen={isInvestmentsTutorialOpen && currentView === 'investments'}
+        onClose={handleCloseInvestmentsTutorial}
+        steps={INVESTMENTS_TUTORIAL_STEPS}
         labels={{
             next: t.tutorial.next,
             prev: t.tutorial.prev,

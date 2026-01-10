@@ -503,6 +503,13 @@ export const TRANSLATIONS = {
           title: "Navegação Principal",
           content: "Use estes botões para alternar entre a tela inicial, investimentos, parcelamentos de longo prazo e configurações."
         }
+      ],
+      investmentsSteps: [
+        { "title": "Sua Carteira", "content": "Esta é a sua visão geral de investimentos. Acompanhe seu patrimônio e rendimentos." },
+        { "title": "Taxa CDI/Selic", "content": "A taxa CDI base é usada para calcular a rentabilidade dos seus ativos de Renda Fixa. Toque para ajustar manualmente ou atualizar." },
+        { "title": "Painel Principal", "content": "Veja o total investido, a rentabilidade mensal e anual estimada da sua carteira com base nos dados que você inseriu." },
+        { "title": "Seus Ativos", "content": "Aqui ficam listados todos os seus investimentos. Deslize um item para a esquerda para excluir ou para a direita para editar." },
+        { "title": "Adicionar Ativo", "content": "Use este botão para cadastrar um novo investimento, seja de Renda Fixa ou um Fundo Imobiliário (FII)." }
       ]
     }
   },
@@ -996,6 +1003,13 @@ export const TRANSLATIONS = {
           title: "Main Navigation",
           content: "Use these buttons to switch between the home screen, investments, long-term installments, and settings."
         }
+      ],
+      investmentsSteps: [
+        { "title": "Your Portfolio", "content": "This is your investments overview. Track your total equity and returns." },
+        { "title": "CDI/Selic Rate", "content": "The base CDI rate is used to calculate the profitability of your Fixed Income assets. Tap to adjust manually or update." },
+        { "title": "Main Dashboard", "content": "See your total invested amount, and the estimated monthly and yearly return of your portfolio based on the data you've entered." },
+        { "title": "Your Assets", "content": "All your investments are listed here. Swipe an item left to delete or right to edit." },
+        { "title": "Add Asset", "content": "Use this button to register a new investment, whether it's Fixed Income or a Real Estate Fund (REIT)." }
       ]
     }
   },
@@ -1489,6 +1503,13 @@ export const TRANSLATIONS = {
           title: "Navegación Principal",
           content: "Usa estos botones para cambiar entre la pantalla de inicio, inversiones, cuotas a largo plazo y ajustes."
         }
+      ],
+      investmentsSteps: [
+        { "title": "Tu Cartera", "content": "Esta es tu vista general de inversiones. Sigue tu patrimonio y rendimientos." },
+        { "title": "Tasa CDI/Selic", "content": "La tasa base CDI se usa para calcular la rentabilidad de tus activos de Renta Fija. Toca para ajustar manualmente o actualizar." },
+        { "title": "Panel Principal", "content": "Ve el total invertido, y el rendimiento estimado mensual y anual de tu cartera basado en los datos que ingresaste." },
+        { "title": "Tus Activos", "content": "Todos tus inversiones se listan aquí. Desliza un elemento a la izquierda para eliminar o a la derecha para editar." },
+        { "title": "Añadir Activo", "content": "Usa este botón para registrar una nueva inversión, ya sea de Renta Fija o un Fondo Inmobiliario (FII)." }
       ]
     }
   }
