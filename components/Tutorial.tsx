@@ -109,8 +109,24 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
   useEffect(() => {
     if (isOpen) {
       setDialogStyle(prev => ({ ...prev, opacity: 0, transition: 'none' }));
-      // Increased initial delay to 300ms to allow for component rendering and layout settlement.
-      const timer = setTimeout(updatePositions, 300);
+
+      // More robust way to wait for layout to be stable, especially with web fonts
+      const stableUpdate = async () => {
+          try {
+            // Wait for fonts to be ready as they can cause significant layout shifts
+            if (document.fonts) {
+                await document.fonts.ready;
+            }
+          } catch (e) {
+            console.warn("Could not wait for document.fonts.ready", e);
+          }
+          // After fonts are ready, call the positioning logic
+          updatePositions(); 
+      };
+
+      // Use a timeout to ensure the component is mounted and initial animations have started
+      const timer = setTimeout(stableUpdate, 300);
+
       window.addEventListener('resize', updatePositions);
       
       return () => {
