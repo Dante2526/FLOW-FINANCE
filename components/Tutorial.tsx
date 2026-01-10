@@ -180,31 +180,31 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
             </span>
           </div>
 
-          <div className="flex justify-between items-center mt-2">
+          <div className="flex justify-end items-center mt-2 gap-3">
             <button 
               onClick={onClose}
-              className="h-10 px-5 bg-[#3a3a3c] text-gray-300 rounded-full text-sm font-bold flex items-center hover:text-white transition-colors"
+              className="h-12 px-6 text-gray-400 rounded-full text-sm font-bold flex items-center hover:text-white transition-colors"
             >
               {labels.skip}
             </button>
-            <div className="flex gap-3 items-center">
-              {currentStep > 0 && (
-                <button 
-                  onClick={handlePrev}
-                  aria-label={labels.prev}
-                  className="h-12 w-12 bg-transparent border-2 border-gray-600 text-gray-400 rounded-full text-sm font-bold flex items-center justify-center hover:border-gray-400 hover:text-white transition-colors"
-                >
-                  <ArrowLeft className="w-5 h-5" />
-                </button>
-              )}
+            
+            {currentStep > 0 && (
               <button 
-                onClick={handleNext}
-                className="h-12 px-6 bg-accent text-black rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-accent/20 hover:scale-105 active:scale-100 transition-all"
+                onClick={handlePrev}
+                className="h-12 px-6 bg-[#3a3a3c] text-white rounded-full text-sm font-bold flex items-center gap-2 hover:bg-[#4a4a4c] transition-colors"
               >
-                {currentStep === steps.length - 1 ? labels.finish : labels.next}
-                <ArrowRight className="w-5 h-5" />
+                <ArrowLeft className="w-5 h-5" />
+                {labels.prev}
               </button>
-            </div>
+            )}
+            
+            <button 
+              onClick={handleNext}
+              className="h-12 px-6 bg-accent text-black rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-accent/20 hover:scale-105 active:scale-100 transition-all"
+            >
+              {currentStep === steps.length - 1 ? labels.finish : labels.next}
+              <ArrowRight className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
