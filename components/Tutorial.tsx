@@ -100,7 +100,7 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
             position: 'fixed',
             top: `${clampedTop}px`,
             left: `${clampedLeft}px`,
-            width: '300px',
+            width: '320px', // Aumentado para acomodar os botões
             zIndex: 101,
             transition: 'all 0.3s ease-in-out',
             opacity: 1,
@@ -169,42 +169,48 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
       <div style={highlightStyle} />
       
       <div ref={dialogRef} style={dialogStyle}>
-        <div className="bg-[#2c2c2e] p-5 rounded-2xl border border-white/10 shadow-2xl relative flex flex-col gap-3">
+        <div className="bg-[#2c2c2e] p-5 rounded-3xl border border-white/10 shadow-2xl relative flex flex-col gap-4">
           <div className="flex justify-between items-start">
             <div>
-              <h3 className="text-lg font-bold text-white">{activeStep.title}</h3>
-              <p className="text-sm text-gray-400 mt-1">{activeStep.content}</p>
+              <h3 className="text-xl font-bold text-white">{activeStep.title}</h3>
+              <p className="text-sm text-gray-400 mt-1 leading-relaxed">{activeStep.content}</p>
             </div>
-            <span className="text-xs font-bold text-gray-500 bg-[#1c1c1e] px-2 py-1 rounded-full">
+            <span className="text-xs font-bold text-gray-500 bg-[#1c1c1e] px-2 py-1 rounded-full ml-2">
               {currentStep + 1}/{steps.length}
             </span>
           </div>
 
-          <div className="flex justify-end items-center mt-2 gap-3">
+          <div className="flex justify-between items-center mt-2">
+            {/* Botão Pular (Ação Secundária) */}
             <button 
-              onClick={onClose}
-              className="h-12 px-6 text-gray-400 rounded-full text-sm font-bold flex items-center hover:text-white transition-colors"
+                onClick={onClose}
+                className="h-14 px-6 text-gray-400 rounded-full text-base font-bold flex items-center justify-center hover:text-white transition-colors"
             >
-              {labels.skip}
+                {labels.skip}
             </button>
-            
-            {currentStep > 0 && (
-              <button 
-                onClick={handlePrev}
-                className="h-12 px-6 bg-[#3a3a3c] text-white rounded-full text-sm font-bold flex items-center gap-2 hover:bg-[#4a4a4c] transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5" />
-                {labels.prev}
-              </button>
-            )}
-            
-            <button 
-              onClick={handleNext}
-              className="h-12 px-6 bg-accent text-black rounded-full text-sm font-bold flex items-center gap-2 shadow-lg shadow-accent/20 hover:scale-105 active:scale-100 transition-all"
-            >
-              {currentStep === steps.length - 1 ? labels.finish : labels.next}
-              <ArrowRight className="w-5 h-5" />
-            </button>
+
+            {/* Grupo de Navegação Principal */}
+            <div className="flex items-center gap-3">
+                {/* Botão Voltar (condicional) */}
+                {currentStep > 0 && (
+                    <button 
+                        onClick={handlePrev}
+                        className="h-14 w-auto px-6 bg-[#3a3a3c] text-white rounded-full text-base font-bold flex items-center justify-center gap-2 hover:bg-[#4a4a4c] transition-all duration-300"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                        {labels.prev}
+                    </button>
+                )}
+                
+                {/* Botão Próximo/Finalizar */}
+                <button 
+                    onClick={handleNext}
+                    className="h-14 w-auto px-6 bg-[#00D67E] text-black rounded-full text-base font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#00D67E]/30 hover:brightness-105 active:scale-95 transition-all"
+                >
+                    {currentStep === steps.length - 1 ? labels.finish : labels.next}
+                    <ArrowRight className="w-5 h-5" />
+                </button>
+            </div>
           </div>
         </div>
       </div>
