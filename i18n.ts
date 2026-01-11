@@ -396,7 +396,7 @@ export const TRANSLATIONS = {
         invalidCode: 'O código deve ter exatamente 6 dígitos.',
         genericSend: "Erro ao enviar código.",
         genericVerify: "Erro de verificação. Tente novamente.",
-        userNotFound: "Usuário não encontrado.",
+        userNotFound: "Acesso não encontrado. Considere criar uma conta.",
         emailExists: "Este e-mail já possui cadastro.",
         invalidCodeServer: "Código inválido ou expirado."
       }
@@ -896,7 +896,7 @@ export const TRANSLATIONS = {
         invalidCode: 'The code must be exactly 6 digits.',
         genericSend: "Error sending code.",
         genericVerify: "Verification error. Please try again.",
-        userNotFound: "User not found.",
+        userNotFound: "Access not found. Consider creating an account.",
         emailExists: "This email is already registered.",
         invalidCodeServer: "Invalid or expired code."
       }
@@ -1393,10 +1393,10 @@ export const TRANSLATIONS = {
       errors: {
         invalidEmail: 'Por favor, ingresa un correo válido.',
         missingName: 'Por favor, ingresa tu nombre.',
-        invalidCode: 'El código deve ter exatamente 6 dígitos.',
+        invalidCode: 'El código debe tener exactamente 6 dígitos.',
         genericSend: "Error al enviar código.",
         genericVerify: "Error de verificación. Inténtalo de nuevo.",
-        userNotFound: "Usuario no encontrado.",
+        userNotFound: "Acceso no encontrado. Considere crear una cuenta.",
         emailExists: "Este correo ya está registrado.",
         invalidCodeServer: "Código inválido o expirado."
       }

@@ -3,6 +3,7 @@ import { Mail, ArrowRight, ShieldCheck, User, KeyRound, ChevronLeft, AlertCircle
 import { sendAuthOtp, verifyAuthOtp, supabase } from '../services/supabase';
 import { TRANSLATIONS } from '../i18n';
 import { AppLanguage } from '../types';
+import { loadData, saveData, STORAGE_KEYS } from '../services/storage';
 
 interface Props {
   onLogin: (email: string, name?: string) => Promise<void>;
@@ -49,6 +50,16 @@ const LoginScreen: React.FC<Props> = ({ onLogin, currentLang, onLanguageChange }
 
   // Translations shortcut
   const t = TRANSLATIONS[currentLang].auth;
+
+  // Smart Login/Register Mode
+  useEffect(() => {
+    const visitCount = loadData<number>(STORAGE_KEYS.VISIT_COUNT, 0);
+    if (visitCount === 0) {
+      setMode('register');
+    }
+    // Increment visit count for next time
+    saveData(STORAGE_KEYS.VISIT_COUNT, visitCount + 1);
+  }, []); // Empty dependency array ensures this runs only once on mount.
 
   // Helper to map error codes to translations
   const getErrorMessage = (errMessage: string) => {
@@ -97,6 +108,24 @@ const LoginScreen: React.FC<Props> = ({ onLogin, currentLang, onLanguageChange }
       if (mode === 'login' && isSessionValid) {
          await onLogin(email);
          return; 
+      }
+
+      if (mode === 'login') {
+        const { data: userExistsData, error: checkError } = await supabase
+          .from('users')
+          .select('email')
+          .eq('email', email.toLowerCase().trim())
+          .maybeSingle();
+
+        if (checkError) {
+          throw new Error(checkError.message);
+        }
+
+        if (!userExistsData) {
+          setError(t.errors.userNotFound);
+          setIsLoading(false);
+          return;
+        }
       }
 
       await sendAuthOtp(email);

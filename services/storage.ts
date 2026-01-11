@@ -19,6 +19,7 @@ export const STORAGE_KEYS = {
   APP_LANGUAGE: 'flow_app_language', // New Key
   DISMISSED_NOTIFICATIONS: 'flow_dismissed_notifications', // New Key for persistence
   TUTORIAL_COMPLETED: 'flow_tutorial_completed', // New Key for tutorial
+  VISIT_COUNT: 'flow_visit_count', // New key for smart login screen
 };
 
 // Generic load function
