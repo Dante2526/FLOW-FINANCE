@@ -10,7 +10,10 @@ export interface TutorialStep {
 
 interface Props {
   isOpen: boolean;
+  currentStep: number;
   onClose: () => void;
+  onNext: () => void;
+  onPrev: () => void;
   steps: TutorialStep[];
   labels: {
     next: string;
@@ -20,8 +23,7 @@ interface Props {
   }
 }
 
-const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
-  const [currentStep, setCurrentStep] = useState(0);
+const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPrev, steps, labels }) => {
   const [highlightStyle, setHighlightStyle] = useState<React.CSSProperties>({ display: 'none' });
   const [dialogStyle, setDialogStyle] = useState<React.CSSProperties>({ display: 'none', opacity: 0 });
 
@@ -148,7 +150,7 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      onNext();
     } else {
       onClose();
     }
@@ -156,7 +158,7 @@ const Tutorial: React.FC<Props> = ({ isOpen, onClose, steps, labels }) => {
 
   const handlePrev = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
+      onPrev();
     }
   };
   

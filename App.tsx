@@ -140,10 +140,13 @@ const App: React.FC = () => {
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
-  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  
+  // Tutorial State now lives in App.tsx
+  const [isTutorialActive, setIsTutorialActive] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(0);
   const [isInvestmentsTutorialOpen, setIsInvestmentsTutorialOpen] = useState(false);
   
-  const isAnyModalOpen = isAddTransactionOpen || isAddAccountOpen || isCalculatorOpen || isProfileModalOpen || isNotepadOpen || isCalendarOpen || isNotificationOpen || isAnalyticsOpen || isProModalOpen || isDonationModalOpen || isTutorialOpen || isInvestmentsTutorialOpen;
+  const isAnyModalOpen = isAddTransactionOpen || isAddAccountOpen || isCalculatorOpen || isProfileModalOpen || isNotepadOpen || isCalendarOpen || isNotificationOpen || isAnalyticsOpen || isProModalOpen || isDonationModalOpen || isTutorialActive || isInvestmentsTutorialOpen;
 
   const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_PROFILE);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -351,44 +354,47 @@ const App: React.FC = () => {
     }
   }, [transactions, notifications, isLoadingData, currentUserEmail, appLanguage, dismissedNotifIds]); 
 
-  // Tutorial Logic
+  const activeMonth = useMemo(() => months.find(m => m.id === activeMonthId) || months[0], [months, activeMonthId]);
+
+  const filteredTx = useMemo(() => {
+    if (!activeMonth) return [];
+    const mName = (activeMonth.month || "").toUpperCase().trim();
+    const mYear = activeMonth.year || "";
+    return transactions.filter(t => 
+        (t.month || getMonthFromDateStr(t.date) || "").toUpperCase().trim() === mName && 
+        (t.year || getYearFromDateStr(t.date, mYear)) === mYear
+    );
+  }, [transactions, activeMonth]);
+
+  // --- TUTORIAL LOGIC ---
+  const handleStartTutorial = useCallback(() => {
+    setTutorialStep(0);
+    setIsTutorialActive(true);
+  }, []);
+
+  const handleTutorialNext = () => setTutorialStep(prev => prev + 1);
+  const handleTutorialPrev = () => setTutorialStep(prev => prev - 1);
+
+  const handleCloseTutorial = useCallback(() => {
+    setIsTutorialActive(false);
+    setTutorialStep(0);
+    if (currentUserEmail) {
+      saveData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_${currentUserEmail}`, true);
+    }
+  }, [currentUserEmail]);
+  
   useEffect(() => {
     if (!isLoadingData && currentUserEmail) {
-        const tutorialCompleted = loadData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_${currentUserEmail}`, false);
-        if (!tutorialCompleted) {
-            setTimeout(() => {
-                // This check prevents the tutorial from starting if the user navigated
-                // to another screen before the delay finished.
-                if (currentStateRef.current.currentView === 'home') {
-                  setIsTutorialOpen(true);
-                }
-            }, 500);
-        }
-    }
-    // This effect should only run ONCE on initial load.
-  }, [isLoadingData, currentUserEmail]);
-
-  // Investments Tutorial Logic
-  useEffect(() => {
-      if (currentView === 'investments' && !isLoadingData && currentUserEmail) {
-          const tutorialCompleted = loadData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_investments_${currentUserEmail}`, false);
-          if (!tutorialCompleted) {
-              setTimeout(() => {
-                  // This check prevents the tutorial from starting if the user navigated away
-                  if (currentStateRef.current.currentView === 'investments') {
-                      setIsInvestmentsTutorialOpen(true);
-                  }
-              }, 500); // Delay to allow view transition
+      const tutorialCompleted = loadData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_${currentUserEmail}`, false);
+      if (!tutorialCompleted) {
+        setTimeout(() => {
+          if (currentStateRef.current.currentView === 'home') {
+            handleStartTutorial();
           }
+        }, 500);
       }
-  }, [currentView, isLoadingData, currentUserEmail]);
-
-  const handleCloseTutorial = () => {
-    setIsTutorialOpen(false);
-    if (currentUserEmail) {
-        saveData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_${currentUserEmail}`, true);
     }
-  };
+  }, [isLoadingData, currentUserEmail, handleStartTutorial]);
 
   const handleCloseInvestmentsTutorial = () => {
       setIsInvestmentsTutorialOpen(false);
@@ -399,27 +405,30 @@ const App: React.FC = () => {
 
   const handleRestartTutorials = useCallback(() => {
     if (!currentUserEmail) return;
-
-    // Reset completion status for both tutorials
     saveData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_${currentUserEmail}`, false);
     saveData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_investments_${currentUserEmail}`, false);
-    
-    // Start the main tutorial immediately
-    setIsTutorialOpen(true);
-  }, [currentUserEmail]);
+    handleStartTutorial();
+  }, [currentUserEmail, handleStartTutorial]);
 
-  const TUTORIAL_STEPS: TutorialStep[] = useMemo(() => [
-    { element: '[data-tour-id="profile-header"]', title: t.tutorial.steps[0].title, content: t.tutorial.steps[0].content, position: 'bottom' },
-    { element: '[data-tour-id="header-actions"]', title: t.tutorial.steps[1].title, content: t.tutorial.steps[1].content, position: 'bottom' },
-    { element: '[data-tour-id="balance-card"]', title: t.tutorial.steps[2].title, content: t.tutorial.steps[2].content, position: 'bottom' },
-    { element: '[data-tour-id="add-button"]', title: t.tutorial.steps[3].title, content: t.tutorial.steps[3].content, position: 'bottom' },
-    { element: '[data-tour-id="duplicate-button"]', title: t.tutorial.steps[4].title, content: t.tutorial.steps[4].content, position: 'bottom' },
-    { element: '[data-tour-id="calculator-button"]', title: t.tutorial.steps[5].title, content: t.tutorial.steps[5].content, position: 'bottom' },
-    { element: '[data-tour-id="quick-access"]', title: t.tutorial.steps[6].title, content: t.tutorial.steps[6].content, position: 'bottom' },
-    { element: '[data-tour-id="month-switcher"]', title: t.tutorial.steps[7].title, content: t.tutorial.steps[7].content, position: 'bottom' },
-    { element: '[data-tour-id="transaction-list"]', title: t.tutorial.steps[8].title, content: t.tutorial.steps[8].content, position: 'top' },
-    { element: '[data-tour-id="bottom-nav"]', title: t.tutorial.steps[9].title, content: t.tutorial.steps[9].content, position: 'top' },
-  ], [t.tutorial.steps]);
+  const TUTORIAL_STEPS: TutorialStep[] = useMemo(() => {
+    return [
+      { element: '[data-tour-id="profile-header"]', title: t.tutorial.steps[0].title, content: t.tutorial.steps[0].content, position: 'bottom' },
+      { element: '[data-tour-id="header-actions"]', title: t.tutorial.steps[1].title, content: t.tutorial.steps[1].content, position: 'bottom' },
+      { element: '[data-tour-id="balance-card"]', title: t.tutorial.steps[2].title, content: t.tutorial.steps[2].content, position: 'bottom' },
+      { element: '[data-tour-id="add-button"]', title: t.tutorial.steps[3].title, content: t.tutorial.steps[3].content, position: 'bottom' },
+      { element: '[data-tour-id="duplicate-button"]', title: t.tutorial.steps[4].title, content: t.tutorial.steps[4].content, position: 'bottom' },
+      { element: '[data-tour-id="calculator-button"]', title: t.tutorial.steps[5].title, content: t.tutorial.steps[5].content, position: 'bottom' },
+      { element: '[data-tour-id="quick-access"]', title: t.tutorial.steps[6].title, content: t.tutorial.steps[6].content, position: 'bottom' },
+      { element: '[data-tour-id="month-switcher"]', title: t.tutorial.steps[7].title, content: t.tutorial.steps[7].content, position: 'bottom' },
+      { 
+        element: filteredTx.length > 0 ? '[data-tour-id="transaction-item-0"]' : '[data-tour-id="transaction-list"]', 
+        title: t.tutorial.steps[8].title, 
+        content: t.tutorial.steps[8].content, 
+        position: 'top' 
+      },
+      { element: '[data-tour-id="bottom-nav"]', title: t.tutorial.steps[9].title, content: t.tutorial.steps[9].content, position: 'top' },
+    ];
+  }, [t.tutorial.steps, filteredTx]);
 
   const INVESTMENTS_TUTORIAL_STEPS: TutorialStep[] = useMemo(() => [
       { element: '[data-tour-id="investments-header"]', title: t.tutorial.investmentsSteps[0].title, content: t.tutorial.investmentsSteps[0].content, position: 'bottom' },
@@ -428,6 +437,21 @@ const App: React.FC = () => {
       { element: '[data-tour-id="investments-list"]', title: t.tutorial.investmentsSteps[3].title, content: t.tutorial.investmentsSteps[3].content, position: 'top' },
       { element: '[data-tour-id="investments-add-button"]', title: t.tutorial.investmentsSteps[4].title, content: t.tutorial.investmentsSteps[4].content, position: 'left' },
   ], [t.tutorial.investmentsSteps]);
+
+  // Investments Tutorial Logic
+  useEffect(() => {
+      if (currentView === 'investments' && !isLoadingData && currentUserEmail) {
+          const tutorialCompleted = loadData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_investments_${currentUserEmail}`, false);
+          if (!tutorialCompleted) {
+              setTimeout(() => {
+                  if (currentStateRef.current.currentView === 'investments') {
+                      setIsInvestmentsTutorialOpen(true);
+                  }
+              }, 500);
+          }
+      }
+  }, [currentView, isLoadingData, currentUserEmail]);
+
 
   const applyData = (data: any) => {
       if (data.profile) setUserProfile(data.profile);
@@ -777,18 +801,6 @@ const App: React.FC = () => {
       }
   }, [currentUserEmail]);
 
-  const activeMonth = useMemo(() => months.find(m => m.id === activeMonthId) || months[0], [months, activeMonthId]);
-
-  const filteredTx = useMemo(() => {
-    if (!activeMonth) return [];
-    const mName = (activeMonth.month || "").toUpperCase().trim();
-    const mYear = activeMonth.year || "";
-    return transactions.filter(t => 
-        (t.month || getMonthFromDateStr(t.date) || "").toUpperCase().trim() === mName && 
-        (t.year || getYearFromDateStr(t.date, mYear)) === mYear
-    );
-  }, [transactions, activeMonth]);
-
   const filteredAcc = useMemo(() => {
     if (!activeMonth) return [];
     const mName = (activeMonth.month || "").toUpperCase().trim();
@@ -804,6 +816,24 @@ const App: React.FC = () => {
     if (!items.includes(BALANCE_CARD_ID)) items.unshift(BALANCE_CARD_ID);
     return Array.from(new Set(items));
   }, [dashboardOrder, filteredAcc]);
+
+  const fakeTransactionForTutorial: Transaction = useMemo(() => ({
+    id: 'tutorial-fake-tx',
+    name: 'CAFÉ DA MANHÃ',
+    date: t.transactionList.today,
+    amount: 15.50,
+    type: 'purchase',
+    logoType: 'food',
+    paid: false,
+    paymentMethod: 'card'
+  }), [t.transactionList.today]);
+
+  // Dynamic Transaction List for Tutorial
+  const transactionListStepIndex = 8;
+  let transactionsForList = filteredTx;
+  if (isTutorialActive && tutorialStep === transactionListStepIndex && filteredTx.length === 0) {
+      transactionsForList = [fakeTransactionForTutorial];
+  }
 
   // LOGIN SCREEN
   if (!currentUserEmail) {
@@ -875,7 +905,7 @@ const App: React.FC = () => {
             <ContactsRow contacts={mockContacts} onAddClick={handleOpenAddAccount} onContactClick={handleContactClick} isPro={!!userProfile.isPro} title={t.quickAccessTitle} appLanguage={appLanguage} />
             <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} appLanguage={appLanguage} />
             <TransactionList 
-              transactions={filteredTx} 
+              transactions={transactionsForList} 
               onDelete={handleDeleteTransaction} 
               onEdit={handleEditTransaction} 
               onToggleStatus={handleToggleStatus} 
@@ -990,8 +1020,11 @@ const App: React.FC = () => {
         appLanguage={appLanguage}
       />
       <Tutorial 
-        isOpen={isTutorialOpen && currentView === 'home'}
+        isOpen={isTutorialActive && currentView === 'home'}
+        currentStep={tutorialStep}
         onClose={handleCloseTutorial}
+        onNext={handleTutorialNext}
+        onPrev={handleTutorialPrev}
         steps={TUTORIAL_STEPS}
         labels={{
             next: t.tutorial.next,
@@ -1002,7 +1035,10 @@ const App: React.FC = () => {
       />
       <Tutorial 
         isOpen={isInvestmentsTutorialOpen && currentView === 'investments'}
+        currentStep={0} // Simplified for now, can be expanded if needed
         onClose={handleCloseInvestmentsTutorial}
+        onNext={handleCloseInvestmentsTutorial} // Simple next = finish
+        onPrev={() => {}} // No prev
         steps={INVESTMENTS_TUTORIAL_STEPS}
         labels={{
             next: t.tutorial.next,

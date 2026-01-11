@@ -47,6 +47,7 @@ const formatDateDisplay = (dateStr: string, todayLabel: string, locale: string) 
 
 interface SwipeableTransactionItemProps {
   tx: Transaction;
+  index: number;
   onDelete: (id: string) => void;
   onEdit: (tx: Transaction) => void;
   onToggleStatus: (id: string) => void;
@@ -59,6 +60,7 @@ interface SwipeableTransactionItemProps {
 // MEMOIZED ATOMIC COMPONENT
 const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({ 
   tx, 
+  index,
   onDelete,
   onEdit,
   onToggleStatus,
@@ -167,7 +169,7 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
   };
 
   return (
-    <div data-tour-id="transaction-item" className="relative mb-3 h-24 rounded-2xl bg-[#1c1c1e] overflow-hidden select-none cursor-grab active:cursor-grabbing will-change-transform">
+    <div data-tour-id={`transaction-item-${index}`} className="relative mb-3 h-24 rounded-2xl bg-[#1c1c1e] overflow-hidden select-none cursor-grab active:cursor-grabbing will-change-transform">
       {/* Background (Buttons) */}
       <div className={`absolute inset-0 flex justify-between rounded-2xl transition-all duration-200 ${offsetX === 0 ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
          
@@ -293,10 +295,11 @@ const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onTo
     <div className="mt-6 flex flex-col" data-tour-id="transaction-list">
       <h2 className="text-xl font-medium text-gray-400 mb-4 pl-1">{title || t.billsTitle}</h2>
       
-      {transactions.map((tx) => (
+      {transactions.map((tx, index) => (
         <SwipeableTransactionItem 
           key={tx.id} 
           tx={tx} 
+          index={index}
           onDelete={onDelete} 
           onEdit={onEdit}
           onToggleStatus={onToggleStatus}

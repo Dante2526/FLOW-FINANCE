@@ -497,7 +497,7 @@ export const TRANSLATIONS = {
         },
         {
           title: "Sua Lista de Contas",
-          content: "Suas contas do mês aparecem aqui. Deslize um item para a esquerda para excluir ou para a direita para editar."
+          content: "Esta é sua lista de contas. Deslize um item para a esquerda para excluir, ou para a direita para editar."
         },
         {
           title: "Navegação Principal",
@@ -997,7 +997,7 @@ export const TRANSLATIONS = {
         },
         {
           title: "Your Bill List",
-          content: "Your bills for the month appear here. Swipe an item left to delete or right to edit."
+          content: "This is your bill list. Swipe an item left to delete, or right to edit."
         },
         {
           title: "Main Navigation",
@@ -1401,22 +1401,6 @@ export const TRANSLATIONS = {
         invalidCodeServer: "Código inválido o expirado."
       }
     },
-    donationModal: {
-      title: "Apoyar",
-      subtitle: "Contribución Voluntaria",
-      desc: "Tu donación ayuda a mantener el sistema en línea y desarrollar nuevas funciones.",
-      valueLabel: "Monto de Donación",
-      cpfLabel: "CPF (Para Pix)",
-      btnGenerate: "Generar Pix",
-      copyTitle: "Copia y Pega",
-      btnCopy: "Copiar Código",
-      btnCopied: "¡Copiado!",
-      errors: {
-        min: "Monto mínimo de $ 1.00",
-        cpf: "Tax ID Obligatorio",
-        generic: "Error al generar la donación. Por favor, inténtalo de nuevo."
-      }
-    },
     proModal: {
       header: "Suscripción Premium",
       title: "Desbloquear Todo",
@@ -1489,7 +1473,7 @@ export const TRANSLATIONS = {
         },
         {
           title: "Acceso Rápido",
-          content: "Añade fuentes de ingresos (como salarios) o accede a herramientas como el Bloc de Notas, Calendario y Análisis."
+          content: "Añade fuentes de ingresos (como salarios) o accede a herramientas como el Bloc de Notas, Análisis y Calendario."
         },
         {
           title: "Selector de Meses",
@@ -1497,7 +1481,7 @@ export const TRANSLATIONS = {
         },
         {
           title: "Tu Lista de Cuentas",
-          content: "Tus facturas del mes aparecen aquí. Desliza un elemento a la izquierda para eliminar o a la derecha para editar."
+          content: "Esta es tu lista de cuentas. Desliza un elemento a la izquierda para eliminar, o a la derecha para editar."
         },
         {
           title: "Navegación Principal",
