@@ -40,7 +40,7 @@ const SHORT_CODE_TO_FULL: Record<string, string> = {
   'Jan': 'JANEIRO', 'Fev': 'FEVEREIRO', 'Mar': 'MARÇO', 'Abr': 'ABRIL', 'Mai': 'MAIO', 'Jun': 'JUNHO', 
   'Jul': 'JULHO', 'Ago': 'AGOSTO', 'Set': 'SETEMBRO', 'Out': 'OUTUBRO', 'Nov': 'NOVEMBRO', 'Dez': 'DEZEMBRO',
   // EN
-  'Feb': 'FEVEREIRO', 'Apr': 'ABRIL', 'May': 'MAIO', 'Aug': 'AGOSTO', 'Sep': 'SETEMBRO', 'Oct': 'OUTUBRO', 'Dec': 'DEZEMBRO',
+  'Feb': 'FEVEREIRO', 'Apr': 'ABRIL', 'May': 'MAIO', 'Aug': 'AGOSTO', 'Sep': 'SETEMBRO', 'Oct': 'OCTUBRE', 'Dec': 'DEZEMBRO',
   // ES
   'Ene': 'JANEIRO', 'Dic': 'DEZEMBRO'
 };
@@ -396,6 +396,17 @@ const App: React.FC = () => {
           saveData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_investments_${currentUserEmail}`, true);
       }
   };
+
+  const handleRestartTutorials = useCallback(() => {
+    if (!currentUserEmail) return;
+
+    // Reset completion status for both tutorials
+    saveData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_${currentUserEmail}`, false);
+    saveData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_investments_${currentUserEmail}`, false);
+    
+    // Start the main tutorial immediately
+    setIsTutorialOpen(true);
+  }, [currentUserEmail]);
 
   const TUTORIAL_STEPS: TutorialStep[] = useMemo(() => [
     { element: '[data-tour-id="profile-header"]', title: t.tutorial.steps[0].title, content: t.tutorial.steps[0].content, position: 'bottom' },
@@ -841,7 +852,7 @@ const App: React.FC = () => {
                 </div>
 
                 <button 
-                  onClick={() => setIsTutorialOpen(true)}
+                  onClick={handleRestartTutorials}
                   className="p-3 bg-surface rounded-2xl hover:bg-surfaceLight transition-colors cursor-pointer active:scale-95 text-gray-400"
                   title={t.common.restartTutorial}
                 >
