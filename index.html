@@ -100,22 +100,6 @@
         -webkit-user-select: none;
         user-select: none;
       }
-
-      /* --- TUTORIAL SWIPE ANIMATION --- */
-      @keyframes swipe-demo {
-        0%, 100% { transform: translateX(0px); }
-        20%, 35% { transform: translateX(-80px); } /* Swipe left to show delete, then pause */
-        50% { transform: translateX(0px); }
-        70%, 85% { transform: translateX(80px); }  /* Swipe right to show edit, then pause */
-      }
-
-      /* 
-        Targets the second direct child div (the foreground card that moves)
-        of the element that gets the .tutorial-swipe-animation class.
-      */
-      .tutorial-swipe-animation > div:nth-of-type(2) {
-        animation: swipe-demo 4.5s ease-in-out infinite 1s; /* 4.5s duration, 1s delay before starting */
-      }
     </style>
   <script type="importmap">
 {

@@ -26,9 +26,8 @@ interface Props {
 const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPrev, steps, labels }) => {
   const [highlightStyle, setHighlightStyle] = useState<React.CSSProperties>({ display: 'none' });
   const [dialogStyle, setDialogStyle] = useState<React.CSSProperties>({ display: 'none', opacity: 0 });
-  
+
   const dialogRef = useRef<HTMLDivElement>(null);
-  const animatedElementRef = useRef<HTMLElement | null>(null); // Ref to store the element we're animating
   const activeStep = steps[currentStep];
 
   const updatePositions = () => {
@@ -41,13 +40,16 @@ const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPre
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
 
+      // Delay to ensure scroll animation completes before measuring
       setTimeout(() => {
         const rect = element.getBoundingClientRect();
         const computedStyle = window.getComputedStyle(element);
 
+        // FIX: If the element itself isn't rounded (like a container div),
+        // apply a default rounding to avoid sharp square outlines.
         let borderRadius = computedStyle.borderRadius;
         if (borderRadius === '0px' || !borderRadius) {
-          borderRadius = '1.5rem';
+          borderRadius = '1.5rem'; // A pleasant default that matches the app's aesthetic
         }
 
         const newHighlightStyle: React.CSSProperties = {
@@ -57,9 +59,9 @@ const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPre
           width: `${rect.width}px`,
           height: `${rect.height}px`,
           boxShadow: '0 0 0 2px white, 0 0 0 9999px rgba(0, 0, 0, 0.7)',
-          borderRadius: borderRadius,
+          borderRadius: borderRadius, // Use the determined (or default) radius
           zIndex: 100,
-          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', // Smoother transition
           pointerEvents: 'none',
         };
 
@@ -76,7 +78,7 @@ const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPre
           const pos = activeStep.position || 'bottom';
           let top = 0, left = 0;
           
-          const DIALOG_WIDTH = 320;
+          const DIALOG_WIDTH = 320; // Use a fixed, safer width for calculations
 
           switch (pos) {
             case 'top':
@@ -125,7 +127,6 @@ const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPre
   useEffect(() => {
     if (isOpen) {
       setDialogStyle(prev => ({ ...prev, opacity: 0, transition: 'none' }));
-      const TRANSACTION_SWIPE_STEP_INDEX = 8;
 
       const stableUpdate = async () => {
           try {
@@ -133,26 +134,7 @@ const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPre
           } catch (e) {
             console.warn("Could not wait for document.fonts.ready", e);
           }
-          updatePositions();
-
-          // --- NEW ANIMATION LOGIC ---
-          // Remove any lingering animation class
-          if (animatedElementRef.current) {
-            animatedElementRef.current.classList.remove('tutorial-swipe-animation');
-            animatedElementRef.current = null;
-          }
-
-          // If this is the swipe demo step, find the element and add the animation class
-          if (activeStep && currentStep === TRANSACTION_SWIPE_STEP_INDEX) {
-            const elementToAnimate = document.querySelector<HTMLElement>(activeStep.element);
-            if (elementToAnimate) {
-              // Delay slightly to let highlight appear
-              setTimeout(() => {
-                elementToAnimate.classList.add('tutorial-swipe-animation');
-                animatedElementRef.current = elementToAnimate; // Store reference for cleanup
-              }, 700);
-            }
-          }
+          updatePositions(); 
       };
 
       stableUpdate();
@@ -160,11 +142,6 @@ const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPre
       
       return () => {
         window.removeEventListener('resize', updatePositions);
-        // --- CLEANUP ---
-        // Ensure the class is removed when the step changes or component unmounts
-        if (animatedElementRef.current) {
-          animatedElementRef.current.classList.remove('tutorial-swipe-animation');
-        }
       };
     }
   }, [isOpen, currentStep]);
