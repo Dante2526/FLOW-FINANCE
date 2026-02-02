@@ -285,8 +285,22 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!currentUserEmail || !isSessionReady) return;
     const handleSync = () => {
-       if (Date.now() - lastActionTimeRef.current < 15000) return;
-       loadUserData(currentUserEmail).then(data => data && applyData(data));
+      const syncStartTime = Date.now();
+      // Block sync if a user action happened recently to prevent race conditions.
+      if (syncStartTime - lastActionTimeRef.current < 5000) {
+        return;
+      }
+
+      loadUserData(currentUserEmail).then(data => {
+        if (data) {
+          // After fetching, check again. If an action happened DURING the fetch, discard stale data.
+          if (lastActionTimeRef.current > syncStartTime) {
+            console.warn("Stale sync data detected after user action. Discarding.");
+            return;
+          }
+          applyData(data);
+        }
+      });
     };
     const unsubscribe = subscribeToUserChanges(currentUserEmail, handleSync);
     window.addEventListener('focus', handleSync);
