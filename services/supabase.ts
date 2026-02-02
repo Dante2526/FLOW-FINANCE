@@ -171,8 +171,6 @@ export const loadUserData = async (email: string) => {
         profile: profile,
         cdiRate: user.cdi_rate ?? 11.25,
         appLanguage: user.app_language,
-        notepadContent: user.notepad_content || '',
-        notepadDrawing: user.profile?.notepadDrawing || null,
         theme: user.theme || null,
         dashboardOrder: user.profile?.dashboardOrder || [], 
         transactions: toCamelCase(txRes.data || []),
@@ -196,8 +194,14 @@ export const upsertItem = async (email: string, collection: string, item: any) =
     const table = collection === 'longTerm' ? 'long_term' : collection;
     const snake = toSnakeCase(item);
     const { error } = await supabase.from(table).upsert({ ...snake, user_id: userId }, { onConflict: 'id' });
+    if (error) {
+       console.error(`[Supabase Upsert Error] on table '${table}':`, error);
+    }
     return !error;
-  } catch (e) { return false; }
+  } catch (e) { 
+    console.error(`[JS Upsert Error] on table '${collection}':`, e);
+    return false; 
+  }
 };
 
 export const deleteItem = async (email: string, collection: string, id: string) => {
@@ -253,7 +257,8 @@ export const saveUserField = async (email: string, field: string, data: any): Pr
   try {
     let payload: any = {};
     
-    const profileFields = ['notepadDrawing', 'dashboardOrder', 'profile'];
+    // CORREÇÃO: Removido 'notepadDrawing' pois pertence a 'months', não a 'users'
+    const profileFields = ['dashboardOrder', 'profile'];
     
     if (profileFields.includes(field)) {
         const { data: user } = await supabase.from('users').select('profile').eq('email', email.toLowerCase().trim()).maybeSingle();
@@ -265,12 +270,12 @@ export const saveUserField = async (email: string, field: string, data: any): Pr
              payload = { profile: { ...currentProfile, [field]: data } };
         }
     } else {
+        // CORREÇÃO: Removido 'notepadContent' do mapeamento
         const map: any = { 
-            notepadContent: 'notepad_content', 
             cdiRate: 'cdi_rate', 
             theme: 'theme',
             appLanguage: 'app_language',
-            pushSubscription: 'push_subscription' // *** CORRECTED COLUMN NAME ***
+            pushSubscription: 'push_subscription'
         };
         payload = { [map[field] || field.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)]: data };
     }
