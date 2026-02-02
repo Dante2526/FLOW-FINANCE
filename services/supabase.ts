@@ -43,16 +43,14 @@ const toSnakeCase = (obj: any): any => {
 
 // --- AUTH HELPERS ---
 
-export const sendAuthOtp = async (email: string) => {
-  const { error } = await supabase.auth.signInWithOtp({ email: email.toLowerCase().trim() });
+export const sendMagicLink = async (email: string, name?: string) => {
+  const options: { email: string, options?: any } = { email: email.toLowerCase().trim() };
+  if (name) {
+    options.options = { data: { name: name } };
+  }
+  const { error } = await supabase.auth.signInWithOtp(options);
   if (error) throw new Error(error.message);
   return true;
-};
-
-export const verifyAuthOtp = async (email: string, token: string) => {
-  const { data, error } = await supabase.auth.verifyOtp({ email: email.toLowerCase().trim(), token, type: 'email' });
-  if (error) throw new Error("INVALID_CODE");
-  return data;
 };
 
 // --- USER MANAGEMENT ---
@@ -63,28 +61,6 @@ const getAuthUserId = async (): Promise<string> => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) return session.user.id;
     throw new Error("AUTH_REQUIRED");
-};
-
-export const loginUser = async (email: string) => {
-  const { data } = await supabase.from('users').select('email').eq('email', email.toLowerCase().trim()).maybeSingle();
-  if (!data) throw new Error("USER_NOT_FOUND");
-  return await getAuthUserId();
-};
-
-export const registerUser = async (email: string, name: string, initialData: any) => {
-  const emailNorm = email.toLowerCase().trim();
-  const { data: exists } = await supabase.from('users').select('email').eq('email', emailNorm).maybeSingle();
-  if (exists) throw new Error("EMAIL_ALREADY_REGISTERED");
-  
-  const { error } = await supabase.from('users').insert({
-    email: emailNorm,
-    name: name.toUpperCase(),
-    profile: { name: name.toUpperCase(), avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix', isPro: false },
-    cdi_rate: initialData.cdiRate || 11.25,
-    app_language: initialData.language || 'pt'
-  });
-  if (error) throw error;
-  return { email: emailNorm, name };
 };
 
 export const deleteUser = async (email: string) => {
@@ -106,8 +82,36 @@ export const deleteUser = async (email: string) => {
 export const loadUserData = async (email: string) => {
   try {
     const userId = await getAuthUserId();
-    const [userRes, txRes, accRes, monRes, invRes, ltRes, notRes] = await Promise.all([
-      supabase.from('users').select('*').eq('email', email.toLowerCase().trim()).single(),
+    
+    // 1. Tenta carregar o perfil do usuário
+    let userRes = await supabase.from('users').select('*').eq('email', email.toLowerCase().trim()).single();
+
+    // 2. Se o perfil não existe, cria um (lógica para novos usuários)
+    if (userRes.error || !userRes.data) {
+      console.warn(`Perfil de usuário para ${email} não encontrado. Criando um perfil padrão.`);
+      
+      const { data: { user: authUser }, error: authUserError } = await supabase.auth.getUser();
+      if (authUserError || !authUser) throw new Error("Não foi possível recuperar o usuário autenticado para criar o perfil.");
+
+      const newUserName = authUser.user_metadata?.name || 'USUÁRIO';
+
+      const { data: newUser, error: insertError } = await supabase.from('users').insert({
+        email: email.toLowerCase().trim(),
+        name: newUserName.toUpperCase(),
+        profile: { name: newUserName.toUpperCase(), avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix', isPro: false },
+        cdi_rate: 11.25,
+        app_language: 'pt'
+      }).select().single();
+
+      if (insertError) {
+        console.error("Falha ao criar perfil de usuário:", insertError);
+        throw insertError;
+      }
+      userRes.data = newUser;
+    }
+
+    // 3. Carrega o resto dos dados do usuário
+    const [txRes, accRes, monRes, invRes, ltRes, notRes] = await Promise.all([
       supabase.from('transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
       supabase.from('accounts').select('*').eq('user_id', userId),
       supabase.from('months').select('*').eq('user_id', userId),
@@ -122,16 +126,12 @@ export const loadUserData = async (email: string) => {
     if (profile.profile && typeof profile.profile === 'object') {
         profile = { ...profile, ...profile.profile };
     }
-
-    // *** FIX: Manually read from top-level `push_subscription` column
-    // and map it to the `pushSubscription` field inside the app's profile state object.
     profile.pushSubscription = user.push_subscription || null;
 
     if (profile.isPro && profile.subscriptionExpiry) {
         const expiry = new Date(profile.subscriptionExpiry);
         const now = new Date();
         if (now > expiry) {
-            console.log("Assinatura PRO expirada. Revertendo para básico.");
             profile.isPro = false;
         }
     }
@@ -152,7 +152,7 @@ export const loadUserData = async (email: string) => {
         notifications: toCamelCase(notRes.data || [])
     };
   } catch (error) {
-    console.error("Load Error:", error);
+    console.error("Erro ao carregar dados do usuário:", error);
     return null;
   }
 };
@@ -165,7 +165,8 @@ export const upsertItem = async (email: string, collection: string, item: any) =
     const table = collection === 'longTerm' ? 'long_term' : collection;
     const snake = toSnakeCase(item);
     const { error } = await supabase.from(table).upsert({ ...snake, user_id: userId }, { onConflict: 'id' });
-    return !error;
+    if (error) throw error;
+    return true;
   } catch (e) { return false; }
 };
 
@@ -174,7 +175,8 @@ export const deleteItem = async (email: string, collection: string, id: string) 
     const userId = await getAuthUserId();
     const table = collection === 'longTerm' ? 'long_term' : collection;
     const { error } = await supabase.from(table).delete().eq('user_id', userId).eq('id', id);
-    return !error;
+    if (error) throw error;
+    return true;
   } catch (e) { return false; }
 };
 
@@ -239,7 +241,7 @@ export const saveUserField = async (email: string, field: string, data: any): Pr
             cdiRate: 'cdi_rate', 
             theme: 'theme',
             appLanguage: 'app_language',
-            pushSubscription: 'push_subscription' // *** CORRECTED COLUMN NAME ***
+            pushSubscription: 'push_subscription'
         };
         payload = { [map[field] || field.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)]: data };
     }

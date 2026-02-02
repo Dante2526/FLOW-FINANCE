@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Mail, ArrowRight, ShieldCheck, User, KeyRound, ChevronLeft, AlertCircle, Languages } from 'lucide-react';
-import { sendAuthOtp, verifyAuthOtp, supabase } from '../services/supabase';
+import { Mail, ArrowRight, ShieldCheck, User, ChevronLeft, AlertCircle, Languages, MailCheck } from 'lucide-react';
+import { sendMagicLink } from '../services/supabase';
 import { TRANSLATIONS } from '../i18n';
 import { AppLanguage } from '../types';
 import { loadData, saveData, STORAGE_KEYS } from '../services/storage';
 
 interface Props {
-  onLogin: (email: string, name?: string) => Promise<void>;
+  onLogin: (email: string) => Promise<void>;
   currentLang: AppLanguage;
   onLanguageChange: (lang: AppLanguage) => void;
 }
@@ -34,65 +34,33 @@ export const FlowLogo = ({ className }: { className?: string }) => (
 
 const LoginScreen: React.FC<Props> = ({ onLogin, currentLang, onLanguageChange }) => {
   const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [step, setStep] = useState<'email' | 'otp'>('email');
+  const [step, setStep] = useState<'email' | 'magic_link_sent'>('email');
   
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [otpCode, setOtpCode] = useState('');
   
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  // Timer para evitar spam no botão de reenvio
-  const [resendTimer, setResendTimer] = useState(0);
-
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
-  // Translations shortcut
   const t = TRANSLATIONS[currentLang].auth;
 
-  // Smart Login/Register Mode
   useEffect(() => {
     const visitCount = loadData<number>(STORAGE_KEYS.VISIT_COUNT, 0);
     if (visitCount === 0) {
       setMode('register');
     }
-    // Increment visit count for next time
     saveData(STORAGE_KEYS.VISIT_COUNT, visitCount + 1);
-  }, []); // Empty dependency array ensures this runs only once on mount.
+  }, []);
 
-  // Helper to map error codes to translations
-  const getErrorMessage = (errMessage: string) => {
-      const map: Record<string, string> = {
-          'USER_NOT_FOUND': t.errors.userNotFound,
-          'EMAIL_ALREADY_REGISTERED': t.errors.emailExists,
-          'INVALID_CODE': t.errors.invalidCodeServer
-      };
-      return map[errMessage] || errMessage || t.errors.genericVerify;
-  };
-
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (resendTimer > 0) {
-      interval = setInterval(() => {
-        setResendTimer((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [resendTimer]);
-
-  const handleSendCode = async (e?: React.FormEvent | React.MouseEvent) => {
-    if (e) e.preventDefault();
-    
-    if (resendTimer > 0) return;
-
+  const handleSendLink = async (e: React.FormEvent) => {
+    e.preventDefault();
     setError('');
 
-    if (!email || !email.includes('@') || !email.includes('.')) {
+    if (!email || !email.includes('@')) {
       setError(t.errors.invalidEmail);
       return;
     }
-
     if (mode === 'register' && !name.trim()) {
       setError(t.errors.missingName);
       return;
@@ -101,91 +69,22 @@ const LoginScreen: React.FC<Props> = ({ onLogin, currentLang, onLanguageChange }
     setIsLoading(true);
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const currentSessionEmail = sessionData.session?.user?.email;
-      const isSessionValid = currentSessionEmail && currentSessionEmail.toLowerCase() === email.toLowerCase().trim();
-
-      if (mode === 'login' && isSessionValid) {
-         await onLogin(email);
-         return; 
-      }
-
-      if (mode === 'login') {
-        const { data: userExistsData, error: checkError } = await supabase
-          .from('users')
-          .select('email')
-          .eq('email', email.toLowerCase().trim())
-          .maybeSingle();
-
-        if (checkError) {
-          throw new Error(checkError.message);
-        }
-
-        if (!userExistsData) {
-          setError(t.errors.userNotFound);
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      await sendAuthOtp(email);
-      
-      setStep('otp');
-      setError('');
-      setResendTimer(60);
+      await sendMagicLink(email, mode === 'register' ? name : undefined);
+      setStep('magic_link_sent');
     } catch (err: any) {
-      const msg = err.message || t.errors.genericSend;
-      setError(msg);
-
-      if (msg.includes('Aguarde') && msg.includes('s')) {
-         const match = msg.match(/(\d+)s/);
-         if (match) {
-            setResendTimer(parseInt(match[1]));
-         } else {
-            setResendTimer(60);
-         }
-      }
+      setError(err.message || t.errors.genericSend);
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    
-    if (otpCode.length !== 6) {
-      setError(t.errors.invalidCode);
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      await verifyAuthOtp(email, otpCode);
-      
-      if (mode === 'register') {
-        await onLogin(email, name);
-      } else {
-        await onLogin(email);
-      }
-    } catch (err: any) {
-      setError(getErrorMessage(err.message));
       setIsLoading(false);
     }
   };
 
   const toggleMode = () => {
     setMode(prev => prev === 'login' ? 'register' : 'login');
-    setStep('email');
     setError('');
-    setOtpCode('');
-    setResendTimer(0);
   };
 
-  const handleBackToEmail = () => {
+  const backToForm = () => {
     setStep('email');
-    setOtpCode('');
     setError('');
   };
 
@@ -197,203 +96,76 @@ const LoginScreen: React.FC<Props> = ({ onLogin, currentLang, onLanguageChange }
 
       <div className="absolute top-4 right-4 z-50">
         <div className="relative">
-            <button 
-              onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-              className="p-2.5 bg-[#1c1c1e] border border-white/5 rounded-2xl hover:bg-[#2c2c2e] transition-colors cursor-pointer active:scale-95 text-gray-400 flex items-center justify-center shadow-lg"
-            >
+            <button onClick={() => setIsLangMenuOpen(!isLangMenuOpen)} className="p-2.5 bg-[#1c1c1e] border border-white/5 rounded-2xl hover:bg-[#2c2c2e] transition-colors cursor-pointer active:scale-95 text-gray-400 flex items-center justify-center shadow-lg">
               <Languages className="w-5 h-5" />
             </button>
             {isLangMenuOpen && (
               <div className="absolute top-full right-0 mt-2 bg-[#1c1c1e] border border-white/5 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 w-32 animate-in fade-in zoom-in duration-200">
-                  <button onClick={() => { onLanguageChange('pt'); setIsLangMenuOpen(false); }} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${currentLang === 'pt' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
-                    Português
-                  </button>
-                  <button onClick={() => { onLanguageChange('en'); setIsLangMenuOpen(false); }} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${currentLang === 'en' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
-                    English
-                  </button>
-                  <button onClick={() => { onLanguageChange('es'); setIsLangMenuOpen(false); }} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${currentLang === 'es' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
-                    Español
-                  </button>
+                  <button onClick={() => { onLanguageChange('pt'); setIsLangMenuOpen(false); }} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${currentLang === 'pt' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>Português</button>
+                  <button onClick={() => { onLanguageChange('en'); setIsLangMenuOpen(false); }} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${currentLang === 'en' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>English</button>
+                  <button onClick={() => { onLanguageChange('es'); setIsLangMenuOpen(false); }} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${currentLang === 'es' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>Español</button>
               </div>
             )}
         </div>
       </div>
 
       <div className={`flex-1 flex flex-col items-center justify-center w-full max-w-md relative z-10 gap-6 animate-in fade-in slide-in-from-bottom-8 duration-700 min-h-0`}>
-        
-        <div className={`flex flex-col items-center text-center gap-1 flex-shrink-0 transition-all ${step === 'otp' ? 'scale-75 mb-4' : 'scale-100'}`}>
+        <div className="flex flex-col items-center text-center gap-1 flex-shrink-0">
           <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#1c1c1e] rounded-2xl sm:rounded-3xl flex items-center justify-center border border-white/5 shadow-2xl shadow-accent/10 mb-2 group">
-             <div className="relative">
-                <FlowLogo className="w-8 h-8 sm:w-10 sm:h-10 text-accent group-hover:scale-110 transition-transform duration-500" />
-             </div>
+             <FlowLogo className="w-8 h-8 sm:w-10 sm:h-10 text-accent group-hover:scale-110 transition-transform duration-500" />
           </div>
-          {step === 'email' && (
-            <div className="items-center flex flex-col">
-              <h1 className="text-2xl sm:text-4xl font-bold text-white tracking-tight leading-none text-center">Flow Finance</h1>
-              <p className="text-gray-400 text-xs sm:text-sm mt-1 text-center">{t.appSubtitle}</p>
-            </div>
-          )}
+          <h1 className="text-2xl sm:text-4xl font-bold text-white tracking-tight leading-none text-center">Flow Finance</h1>
+          <p className="text-gray-400 text-xs sm:text-sm mt-1 text-center">{t.appSubtitle}</p>
         </div>
 
         <div className={`bg-[#1c1c1e]/80 backdrop-blur-xl border border-white/5 p-6 sm:p-8 rounded-[2rem] shadow-2xl w-full flex flex-col justify-center transition-all duration-300 relative overflow-hidden`}>
            
-           {step === 'email' && (
+           {step === 'email' ? (
              <div className="animate-in fade-in slide-in-from-right-8 duration-300">
                 <div className="mb-6 flex flex-col gap-1 items-center text-center">
-                  <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">
-                      {mode === 'login' ? t.welcomeBack : t.createAccount}
-                  </h2>
-                  <p className="text-xs sm:text-sm text-gray-500">
-                      {mode === 'login' ? t.loginSub : t.registerSub}
-                  </p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">{mode === 'login' ? t.welcomeBack : t.createAccount}</h2>
+                  <p className="text-xs sm:text-sm text-gray-500">{mode === 'login' ? t.loginSub : t.registerSub}</p>
                 </div>
 
-                <form onSubmit={handleSendCode} className="flex flex-col gap-4">
-                    
+                <form onSubmit={handleSendLink} className="flex flex-col gap-4">
                     {mode === 'register' && (
-                      <div className="flex flex-col gap-1 animate-in slide-in-from-top-2 fade-in duration-300">
-                        <div className="relative group">
-                            <div className="relative flex items-center bg-[#0a0a0b] border border-white/10 rounded-2xl overflow-hidden focus-within:border-accent transition-colors h-12">
-                              <div className="pl-4 text-gray-400">
-                                  <User className="w-5 h-5" />
-                              </div>
-                              <input 
-                                type="text" 
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
-                                placeholder={t.namePlaceholder}
-                                className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium capitalize"
-                              />
-                            </div>
-                        </div>
+                      <div className="relative flex items-center bg-[#0a0a0b] border border-white/10 rounded-2xl overflow-hidden focus-within:border-accent h-12 animate-in slide-in-from-top-2 fade-in duration-300">
+                        <div className="pl-4 text-gray-400"><User className="w-5 h-5" /></div>
+                        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t.namePlaceholder} className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium capitalize" required />
                       </div>
                     )}
-
-                    <div className="flex flex-col gap-1">
-                      <div className="relative group">
-                          <div className="relative flex items-center bg-[#0a0a0b] border border-white/10 rounded-2xl overflow-hidden focus-within:border-accent transition-colors h-12">
-                            <div className="pl-4 text-gray-400">
-                                <Mail className="w-5 h-5" />
-                            </div>
-                            <input 
-                              type="email" 
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
-                              placeholder={t.emailPlaceholder}
-                              className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium"
-                              autoComplete="email"
-                              autoFocus
-                            />
-                          </div>
-                      </div>
+                    <div className="relative flex items-center bg-[#0a0a0b] border border-white/10 rounded-2xl overflow-hidden focus-within:border-accent h-12">
+                      <div className="pl-4 text-gray-400"><Mail className="w-5 h-5" /></div>
+                      <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.emailPlaceholder} className="w-full bg-transparent text-white p-4 outline-none placeholder-gray-600 font-medium" autoComplete="email" required autoFocus />
                     </div>
 
                     {error && <p className="text-red-500 text-xs text-center">{error}</p>}
 
-                    <button 
-                      type="submit"
-                      disabled={isLoading || resendTimer > 0}
-                      className="w-full h-14 bg-accent text-black rounded-2xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-accentDark transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 shadow-lg shadow-accent/20 group mt-2"
-                    >
-                      {isLoading ? (
-                        <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                      ) : resendTimer > 0 ? (
-                        <span className="text-sm">{t.resendWait.replace('{s}', resendTimer.toString())}</span>
-                      ) : (
-                        <>
-                          {mode === 'login' ? t.btnEnter : t.btnCreate}
-                          <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                        </>
-                      )}
+                    <button type="submit" disabled={isLoading} className="w-full h-14 bg-accent text-black rounded-2xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-accentDark transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 shadow-lg shadow-accent/20 group mt-2">
+                      {isLoading ? <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" /> : (<>{mode === 'login' ? t.btnEnter : t.btnCreate}<ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></>)}
                     </button>
                 </form>
 
-                <div className={`${mode === 'register' ? 'mt-4' : 'mt-6'} flex justify-center transition-all`}>
-                  <button 
-                      onClick={toggleMode}
-                      className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors underline decoration-transparent hover:decoration-white/30 underline-offset-4"
-                  >
-                    {mode === 'login' 
-                      ? t.noAccount
-                      : t.haveAccount}
+                <div className="mt-6 flex justify-center">
+                  <button onClick={toggleMode} className="text-xs sm:text-sm text-gray-400 hover:text-white transition-colors underline decoration-transparent hover:decoration-white/30 underline-offset-4">
+                    {mode === 'login' ? t.noAccount : t.haveAccount}
                   </button>
                 </div>
              </div>
-           )}
-
-           {step === 'otp' && (
-             <div className="animate-in fade-in slide-in-from-right-8 duration-300">
-               
-               <button onClick={handleBackToEmail} className="flex items-center gap-1 text-gray-500 hover:text-white mb-4 text-xs transition-colors">
-                  <ChevronLeft className="w-4 h-4" /> {t.back}
-               </button>
-
-               <div className="mb-6 flex flex-col gap-1 items-center text-center">
-                 <h2 className="text-xl sm:text-2xl font-bold text-white leading-tight">
-                    {t.verifyTitle}
-                 </h2>
-                 <p className="text-xs sm:text-sm text-gray-500">
-                    {t.verifySub} <strong>{email}</strong>
-                 </p>
-                 
-                 <div className="mt-2 flex items-center gap-2 bg-yellow-500/10 text-yellow-500 px-3 py-1.5 rounded-lg border border-yellow-500/20">
+           ) : (
+             <div className="animate-in fade-in duration-300 text-center flex flex-col items-center gap-4">
+                <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center border-2 border-emerald-500/20">
+                  <MailCheck className="w-8 h-8 text-emerald-500" />
+                </div>
+                <h2 className="text-xl font-bold text-white leading-tight">{t.magicLinkTitle}</h2>
+                <p className="text-sm text-gray-400">{t.magicLinkSub.replace('{email}', email)}</p>
+                <div className="mt-2 flex items-center gap-2 bg-yellow-500/10 text-yellow-500 px-3 py-1.5 rounded-lg border border-yellow-500/20">
                     <AlertCircle className="w-3 h-3" />
                     <p className="text-[10px] font-bold uppercase">{t.spamWarning}</p>
-                 </div>
-               </div>
-
-               <form onSubmit={handleVerifyCode} className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-1">
-                     <div className="relative group">
-                        <div className="relative flex items-center bg-[#0a0a0b] border border-white/10 rounded-2xl overflow-hidden focus-within:border-accent transition-colors h-14 justify-center">
-                           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                              <KeyRound className="w-5 h-5" />
-                           </div>
-                           <input 
-                             id="otp-input"
-                             name="one-time-code"
-                             type="text" 
-                             inputMode="numeric"
-                             pattern="\d*"
-                             autoComplete="one-time-code"
-                             maxLength={6}
-                             value={otpCode}
-                             onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
-                             placeholder={t.otpPlaceholder}
-                             className="w-full bg-transparent text-white text-center p-4 px-12 outline-none placeholder-gray-700 font-mono text-2xl tracking-widest font-bold"
-                             autoFocus
-                           />
-                        </div>
-                     </div>
-                  </div>
-
-                  {error && <p className="text-red-500 text-xs text-center">{error}</p>}
-
-                  <button 
-                    type="submit"
-                    disabled={isLoading || otpCode.length !== 6}
-                    className="w-full h-14 bg-accent text-black rounded-2xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-accentDark transition-all active:scale-95 disabled:opacity-50 disabled:scale-100 shadow-lg shadow-accent/20 group mt-2"
-                  >
-                    {isLoading ? (
-                      <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        {t.btnVerify}
-                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                      </>
-                    )}
-                  </button>
-               </form>
-               
-               <div className="mt-6 flex justify-center">
-                 <button 
-                    onClick={(e) => handleSendCode(e)} // Resend
-                    disabled={resendTimer > 0 || isLoading}
-                    className={`text-xs transition-colors ${resendTimer > 0 ? 'text-gray-600 cursor-not-allowed' : 'text-gray-500 hover:text-accent'}`}
-                 >
-                   {resendTimer > 0 ? t.resendWait.replace('{s}', resendTimer.toString()) : t.resendBtn}
-                 </button>
-               </div>
+                </div>
+                <button onClick={backToForm} className="w-full h-12 bg-[#2c2c2e] text-white rounded-2xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#3a3a3c] transition-all mt-4">
+                   <ChevronLeft className="w-4 h-4" /> {t.back}
+                </button>
              </div>
            )}
 
@@ -403,15 +175,12 @@ const LoginScreen: React.FC<Props> = ({ onLogin, currentLang, onLanguageChange }
                   <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">{t.security}</span>
               </div>
            </div>
-
         </div>
-
       </div>
       
       <div className="w-full flex flex-col items-center gap-3 relative z-10 flex-shrink-0 pb-6 pt-2">
          <p className="text-[10px] text-gray-600">{t.copyright}</p>
       </div>
-
     </div>
   );
 };

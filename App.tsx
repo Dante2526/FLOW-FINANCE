@@ -27,7 +27,7 @@ import { IconBell, JeittoLogo } from './components/Icons';
 import { Crown, Languages, ExternalLink, Zap, Heart, Copy, Check, ChevronRight, HelpCircle } from 'lucide-react';
 
 // Supabase Services
-import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, upsertItem, deleteItem, hardDeleteMonth } from './services/supabase';
+import { loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, upsertItem, deleteItem, hardDeleteMonth } from './services/supabase';
 
 const AnalyticsModal = React.lazy(() => import('./components/AnalyticsModal'));
 
@@ -151,7 +151,7 @@ const App: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_PROFILE);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [months, setMonths] = useState<MonthSummary[]>([SYSTEM_INITIAL_MONTH]);
+  const [months, setMonths] = useState<MonthSummary[]>([]);
   const [longTermTransactions, setLongTermTransactions] = useState<LongTermTransaction[]>([]);
   const [investments, setInvestments] = useState<Investment[]>([]);
   const [notepadContent, setNotepadContent] = useState<string>('');
@@ -176,7 +176,7 @@ const App: React.FC = () => {
 
   const dragItem = useRef<string | null>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
-  const lastActionTimeRef = useRef<number>(0); 
+  const lastActionTimeRef = useRef<number>(Date.now()); 
   
   // Robust translation retrieval with fallback
   const t = TRANSLATIONS[appLanguage] || TRANSLATIONS['pt'];
@@ -225,6 +225,7 @@ const App: React.FC = () => {
   }, [dismissedNotifIds]);
 
   useEffect(() => {
+    if (!months || months.length === 0) return;
     setMonths(prev => {
       let changed = false;
       const updated = prev.map(m => {
@@ -240,7 +241,7 @@ const App: React.FC = () => {
       });
       return changed ? updated : prev;
     });
-  }, [transactions]); 
+  }, [transactions, months?.length]); 
 
   useEffect(() => {
     const initAuth = async () => {
@@ -268,6 +269,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
      if (!currentUserEmail) {
+        // Reset all modals and view state on logout
         setIsProfileModalOpen(false);
         setIsAddTransactionOpen(false);
         setIsAddAccountOpen(false);
@@ -279,13 +281,19 @@ const App: React.FC = () => {
         setIsProModalOpen(false);
         setIsDonationModalOpen(false);
         setCurrentView('home');
+        // Reset user-specific data to initial state
+        setUserProfile(INITIAL_PROFILE);
+        setTransactions([]);
+        setAccounts([]);
+        setMonths([]);
      }
   }, [currentUserEmail]);
 
   useEffect(() => {
     if (!currentUserEmail || !isSessionReady) return;
     const handleSync = () => {
-       if (Date.now() - lastActionTimeRef.current < 15000) return;
+       // Debounce sync to avoid excessive re-fetches from multiple quick changes
+       if (Date.now() - lastActionTimeRef.current < 5000) return;
        loadUserData(currentUserEmail).then(data => data && applyData(data));
     };
     const unsubscribe = subscribeToUserChanges(currentUserEmail, handleSync);
@@ -295,7 +303,7 @@ const App: React.FC = () => {
 
   // SYSTEM: Check for bills due today and generate notifications
   useEffect(() => {
-    if (isLoadingData) return;
+    if (isLoadingData || !transactions) return;
     
     const todayStr = getLocalISODateString();
     const now = new Date();
@@ -354,10 +362,13 @@ const App: React.FC = () => {
     }
   }, [transactions, notifications, isLoadingData, currentUserEmail, appLanguage, dismissedNotifIds]); 
 
-  const activeMonth = useMemo(() => months.find(m => m.id === activeMonthId) || months[0], [months, activeMonthId]);
+  const activeMonth = useMemo(() => {
+      if (!months || months.length === 0) return null;
+      return months.find(m => m.id === activeMonthId) || months[months.length - 1];
+  }, [months, activeMonthId]);
 
   const filteredTx = useMemo(() => {
-    if (!activeMonth) return [];
+    if (!activeMonth || !transactions) return [];
     const mName = (activeMonth.month || "").toUpperCase().trim();
     const mYear = activeMonth.year || "";
     return transactions.filter(t => 
@@ -463,11 +474,18 @@ const App: React.FC = () => {
       if (data.theme) { setAppTheme(data.theme); saveData(STORAGE_KEYS.APP_THEME, data.theme); }
       if (data.notepadContent !== undefined) setNotepadContent(data.notepadContent);
       if (data.notepadDrawing !== undefined) setNotepadDrawing(data.notepadDrawing);
+      
       if (data.months && data.months.length > 0) {
         const sorted = sortMonths(data.months);
         setMonths(sorted);
-        if (activeMonthId === SYSTEM_INITIAL_MONTH.id || !sorted.find(m => m.id === activeMonthId)) setActiveMonthId(sorted[sorted.length - 1].id);
+        if (!activeMonthId || !sorted.find(m => m.id === activeMonthId)) setActiveMonthId(sorted[sorted.length - 1].id);
+      } else {
+        const newMonth = { ...SYSTEM_INITIAL_MONTH, id: generateUUID() };
+        setMonths([newMonth]);
+        setActiveMonthId(newMonth.id);
+        if (currentUserEmail) { upsertItem(currentUserEmail, 'months', newMonth); }
       }
+
       if (data.cdiRate !== undefined) setCdiRate(data.cdiRate);
       if (data.dashboardOrder) setDashboardOrder(data.dashboardOrder);
       
@@ -490,7 +508,8 @@ const App: React.FC = () => {
 
   const handleDuplicateMonth = useCallback(async () => {
     const cur = currentStateRef.current;
-    const act = cur.months.find(m => m.id === activeMonthId) || cur.months[0];
+    if (!cur.months || cur.months.length === 0) return;
+    const act = cur.months.find(m => m.id === activeMonthId) || cur.months[cur.months.length-1];
     if (!act) return;
 
     const actMonthNorm = (act.month || "").trim().toUpperCase();
@@ -617,36 +636,36 @@ const App: React.FC = () => {
   }, [months, activeMonthId, currentUserEmail]);
 
   const handleSaveTransaction = useCallback((data: any) => { 
-      const act = currentStateRef.current.months.find(m => m.id === activeMonthId);
+      if (!activeMonth) return;
       setTransactions(prev => {
          if (editingTransaction) {
              const upd = { ...editingTransaction, ...data };
              if(currentUserEmail) { upsertItem(currentUserEmail, 'transactions', upd); lastActionTimeRef.current = Date.now(); }
              return prev.map(t => t.id === editingTransaction.id ? upd : t);
          } else {
-             const nTx = { id: generateUUID(), ...data, month: act?.month, year: act?.year, createdAt: new Date().toISOString() };
+             const nTx = { id: generateUUID(), ...data, month: activeMonth?.month, year: activeMonth?.year, createdAt: new Date().toISOString() };
              if(currentUserEmail) { upsertItem(currentUserEmail, 'transactions', nTx); lastActionTimeRef.current = Date.now(); }
              return [nTx, ...prev];
          }
       });
       setEditingTransaction(null);
-  }, [editingTransaction, activeMonthId, currentUserEmail]);
+  }, [editingTransaction, activeMonth, currentUserEmail]);
 
   const handleSaveAccount = useCallback((name: string, balance: number, theme: CardTheme) => {
-    const act = currentStateRef.current.months.find(m => m.id === activeMonthId);
+    if (!activeMonth) return;
     if (editingAccount) {
       const upd = { ...editingAccount, name, balance, colorTheme: theme };
       setAccounts(prev => prev.map(a => a.id === editingAccount.id ? upd : a));
       if (currentUserEmail) { upsertItem(currentUserEmail, 'accounts', upd); lastActionTimeRef.current = Date.now(); }
       setEditingAccount(null);
     } else {
-      const nAcc = { id: generateUUID(), name, balance, colorTheme: theme, month: act?.month, year: act?.year };
+      const nAcc = { id: generateUUID(), name, balance, colorTheme: theme, month: activeMonth?.month, year: activeMonth?.year };
       const newOrder = [...dashboardOrder, nAcc.id];
       setAccounts(prev => [...prev, nAcc]);
       setDashboardOrder(newOrder); 
       if (currentUserEmail) { upsertItem(currentUserEmail, 'accounts', nAcc); saveUserField(currentUserEmail, 'dashboardOrder', newOrder); lastActionTimeRef.current = Date.now(); }
     }
-  }, [editingAccount, activeMonthId, currentUserEmail, dashboardOrder]);
+  }, [editingAccount, activeMonth, currentUserEmail, dashboardOrder]);
 
   const handleDeleteAccount = useCallback((id: string) => {
     const newOrder = dashboardOrder.filter(o => o !== id);
@@ -743,33 +762,14 @@ const App: React.FC = () => {
   const handleOpenPro = useCallback(() => setIsProModalOpen(true), []);
 
   const handleLogout = useCallback(async () => {
-    setIsProfileModalOpen(false);
-    setIsAddTransactionOpen(false);
-    setIsAddAccountOpen(false);
-    setIsCalculatorOpen(false);
-    setIsNotepadOpen(false);
-    setIsCalendarOpen(false);
-    setIsNotificationOpen(false);
-    setIsAnalyticsOpen(false);
-    setIsProModalOpen(false);
-    setIsDonationModalOpen(false);
-    setCurrentView('home');
     localStorage.removeItem(STORAGE_KEYS.USER_SESSION);
     await supabase.auth.signOut();
     setCurrentUserEmail(null);
   }, []);
 
-  const handleLoginSuccess = useCallback(async (email: string, name?: string) => {
-    if (name) {
-      await registerUser(email, name, { months: [SYSTEM_INITIAL_MONTH], language: appLanguage });
-    } else {
-      await loginUser(email);
-    }
-    
+  const handleLoginSuccess = useCallback(async (email: string) => {
     setCurrentUserEmail(email);
     saveData(STORAGE_KEYS.USER_SESSION, email);
-    
-    setIsProfileModalOpen(false);
     setCurrentView('home');
 
     // UX: Request permission after UI settles on home screen
@@ -779,7 +779,7 @@ const App: React.FC = () => {
       }
     }, 1000);
     
-  }, [appLanguage]);
+  }, []);
 
   const handleDragStart = useCallback((id: string) => { dragItem.current = id; }, []);
   const handleDragEnd = useCallback(() => { dragItem.current = null; }, []);
@@ -802,13 +802,14 @@ const App: React.FC = () => {
   }, [currentUserEmail]);
 
   const filteredAcc = useMemo(() => {
-    if (!activeMonth) return [];
+    if (!activeMonth || !accounts) return [];
     const mName = (activeMonth.month || "").toUpperCase().trim();
     const mYear = activeMonth.year || "";
     return accounts.filter(a => (a.month || "").toUpperCase().trim() === mName && (a.year || "") === mYear);
   }, [accounts, activeMonth]);
 
   const dItems = useMemo(() => {
+    if (!filteredAcc) return [BALANCE_CARD_ID];
     const filteredAccIds = new Set(filteredAcc.map(a => a.id));
     const items: string[] = [];
     dashboardOrder.forEach(id => { if (id === BALANCE_CARD_ID || filteredAccIds.has(id)) items.push(id); });
@@ -836,7 +837,7 @@ const App: React.FC = () => {
   }
 
   // LOGIN SCREEN
-  if (!currentUserEmail) {
+  if (!currentUserEmail || !isSessionReady) {
      return <LoginScreen onLogin={handleLoginSuccess} currentLang={appLanguage} onLanguageChange={handleChangeLanguage} />;
   }
 
@@ -903,7 +904,7 @@ const App: React.FC = () => {
                })}
             </div>
             <ContactsRow contacts={mockContacts} onAddClick={handleOpenAddAccount} onContactClick={handleContactClick} isPro={!!userProfile.isPro} title={t.quickAccessTitle} appLanguage={appLanguage} />
-            <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} appLanguage={appLanguage} />
+            {months && months.length > 0 && <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} appLanguage={appLanguage} />}
             <TransactionList 
               transactions={transactionsForList} 
               onDelete={handleDeleteTransaction} 
@@ -968,12 +969,12 @@ const App: React.FC = () => {
           <InvestmentsView investments={investments} onAdd={handleInvestmentAdd} onEdit={handleInvestmentEdit} onDelete={handleInvestmentDelete} onBack={handleGoHome} cdiRate={cdiRate} onUpdateCdiRate={handleInvestmentUpdateRate} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
       )}
       <BottomNav currentView={currentView} onChangeView={setCurrentView} labels={t.nav || { home: 'INÍCIO', invest: 'INVEST', wallet: 'CARTEIRA', config: 'CONFIG' }} />
-      <AddTransactionModal isOpen={isAddTransactionOpen} onClose={() => { setIsAddTransactionOpen(false); setEditingTransaction(null); }} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} activeMonthContext={{ monthIndex: MONTH_NAMES.indexOf((activeMonth.month || "").toUpperCase()), year: parseInt(activeMonth.year) }} appLanguage={appLanguage} />
+      <AddTransactionModal isOpen={isAddTransactionOpen} onClose={() => { setIsAddTransactionOpen(false); setEditingTransaction(null); }} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} activeMonthContext={activeMonth ? { monthIndex: MONTH_NAMES.indexOf((activeMonth.month || "").toUpperCase()), year: parseInt(activeMonth.year) } : undefined} appLanguage={appLanguage} />
       <AddAccountModal isOpen={isAddAccountOpen} onClose={() => { setIsAddAccountOpen(false); setEditingAccount(null); }} onSave={handleSaveAccount} accountToEdit={editingAccount} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
       <CalculatorModal isOpen={isCalculatorOpen} onClose={() => setIsCalculatorOpen(false)} appLanguage={appLanguage} />
       <EditProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} onSave={p => { setUserProfile(p); if(currentUserEmail) { saveUserField(currentUserEmail, 'profile', p); lastActionTimeRef.current = Date.now(); } }} onLogout={handleLogout} onDeleteAccount={() => {}} currentProfile={userProfile} appLanguage={appLanguage} onOpenProModal={handleOpenPro} />
       <NotepadModal isOpen={isNotepadOpen} onClose={() => setIsNotepadOpen(false)} initialContent={notepadContent} initialDrawing={notepadDrawing} onSave={(c, d) => { setNotepadContent(c); setNotepadDrawing(d); if(currentUserEmail) { saveUserField(currentUserEmail, 'notepadContent', c); saveUserField(currentUserEmail, 'notepadDrawing', d); lastActionTimeRef.current = Date.now(); } }} appLanguage={appLanguage} />
-      <CalendarModal isOpen={isCalendarOpen} onClose={() => setIsCalendarOpen(false)} transactions={transactions} activeMonthContext={{ monthIndex: MONTH_NAMES.indexOf((activeMonth.month || "").toUpperCase()), year: parseInt(activeMonth.year) }} appLanguage={appLanguage} />
+      <CalendarModal isOpen={isCalendarOpen} onClose={() => setIsCalendarOpen(false)} transactions={transactions} activeMonthContext={activeMonth ? { monthIndex: MONTH_NAMES.indexOf((activeMonth.month || "").toUpperCase()), year: parseInt(activeMonth.year) } : undefined} appLanguage={appLanguage} />
       <NotificationModal 
         isOpen={isNotificationOpen} 
         onClose={() => setIsNotificationOpen(false)} 
