@@ -43,6 +43,22 @@ const toSnakeCase = (obj: any): any => {
 
 // --- AUTH HELPERS ---
 
+export const checkUserExists = async (email: string): Promise<boolean> => {
+  if (!email) return false;
+  const { data, error } = await supabase
+    .from('users')
+    .select('email')
+    .eq('email', email.toLowerCase().trim())
+    .maybeSingle();
+
+  if (error) {
+    console.error("Error checking user existence:", error.message);
+    return false; // Fail safely
+  }
+
+  return !!data;
+};
+
 export const sendAuthOtp = async (email: string) => {
   const { error } = await supabase.auth.signInWithOtp({ email: email.toLowerCase().trim() });
   if (error) throw new Error(error.message);
@@ -67,33 +83,22 @@ const getAuthUserId = async (): Promise<string> => {
 
 export const loginUser = async (email: string) => {
   const emailNorm = email.toLowerCase().trim();
+  // The check for existence is now done on the client-side before sending the OTP.
+  // This function is now only responsible for returning the auth user ID.
+  // We remove the automatic profile creation logic as requested.
   const { data, error: checkError } = await supabase.from('users').select('email').eq('email', emailNorm).maybeSingle();
 
   if (checkError) {
-    console.error("Error checking for user profile:", checkError);
-    // Don't block login, but log the error
-    return await getAuthUserId();
+    // This is not a critical error for login flow, just a sanity check.
+    console.error("Error during post-login user check:", checkError);
   }
 
-  // If user profile does NOT exist in our public table, create one.
   if (!data) {
-    console.warn(`User ${emailNorm} authenticated but has no profile. Creating a default one.`);
-    try {
-      const { error: insertError } = await supabase.from('users').insert({
-        email: emailNorm,
-        name: 'USUÁRIO', // Placeholder name
-        profile: { name: 'USUÁRIO', avatarUrl: 'https://api.dicebear.com/9.x/adventurer/svg?seed=Felix', isPro: false },
-        cdi_rate: 11.25,
-        app_language: 'pt'
-      });
-      if (insertError) {
-        console.error("Failed to create fallback user profile:", insertError);
-      }
-    } catch (e) {
-        console.error("Exception during fallback profile creation:", e);
-    }
+    // This case should not be reached with the new client-side checks.
+    // If it is, it indicates a data inconsistency (auth user exists but no profile).
+    console.warn(`User ${emailNorm} authenticated but has no public user profile. Data loading may fail.`);
   }
-  // Always return auth user ID to signify a successful login, regardless of profile state.
+
   return await getAuthUserId();
 };
 

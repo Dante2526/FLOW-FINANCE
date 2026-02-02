@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Mail, ArrowRight, ShieldCheck, User, KeyRound, ChevronLeft, AlertCircle, Languages } from 'lucide-react';
-import { sendAuthOtp, verifyAuthOtp, supabase } from '../services/supabase';
+import { sendAuthOtp, verifyAuthOtp, supabase, checkUserExists } from '../services/supabase';
 import { TRANSLATIONS } from '../i18n';
 import { AppLanguage } from '../types';
 import { loadData, saveData, STORAGE_KEYS } from '../services/storage';
@@ -83,9 +83,7 @@ const LoginScreen: React.FC<Props> = ({ onLogin, currentLang, onLanguageChange }
 
   const handleSendCode = async (e?: React.FormEvent | React.MouseEvent) => {
     if (e) e.preventDefault();
-    
     if (resendTimer > 0) return;
-
     setError('');
 
     if (!email || !email.includes('@') || !email.includes('.')) {
@@ -93,28 +91,47 @@ const LoginScreen: React.FC<Props> = ({ onLogin, currentLang, onLanguageChange }
       return;
     }
 
-    if (mode === 'register' && !name.trim()) {
-      setError(t.errors.missingName);
-      return;
-    }
-
     setIsLoading(true);
-
+    
     try {
+      // Fast path: if user is already logged in with this email, just log them in.
       const { data: sessionData } = await supabase.auth.getSession();
       const currentSessionEmail = sessionData.session?.user?.email;
-      const isSessionValid = currentSessionEmail && currentSessionEmail.toLowerCase() === email.toLowerCase().trim();
-
-      if (mode === 'login' && isSessionValid) {
+      if (mode === 'login' && currentSessionEmail && currentSessionEmail.toLowerCase() === email.toLowerCase().trim()) {
          await onLogin(email);
+         // Don't need to setIsLoading(false) because component will unmount
          return; 
       }
-      
+
+      // Pre-OTP database checks based on user request
+      if (mode === 'login') {
+        const userExists = await checkUserExists(email);
+        if (!userExists) {
+          setError(t.errors.userNotFound);
+          setIsLoading(false);
+          return;
+        }
+      } else { // 'register' mode
+        if (!name.trim()) {
+          setError(t.errors.missingName);
+          setIsLoading(false);
+          return;
+        }
+        const userExists = await checkUserExists(email);
+        if (userExists) {
+          setError(t.errors.emailExists);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // If all checks pass, proceed to send OTP
       await sendAuthOtp(email);
       
       setStep('otp');
       setError('');
       setResendTimer(60);
+
     } catch (err: any) {
       const msg = err.message || t.errors.genericSend;
       setError(msg);
