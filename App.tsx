@@ -154,8 +154,6 @@ const App: React.FC = () => {
   const [months, setMonths] = useState<MonthSummary[]>([SYSTEM_INITIAL_MONTH]);
   const [longTermTransactions, setLongTermTransactions] = useState<LongTermTransaction[]>([]);
   const [investments, setInvestments] = useState<Investment[]>([]);
-  const [notepadContent, setNotepadContent] = useState<string>('');
-  const [notepadDrawing, setNotepadDrawing] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [cdiRate, setCdiRate] = useState<number>(11.25);
   const [dashboardOrder, setDashboardOrder] = useState<string[]>([BALANCE_CARD_ID]);
@@ -188,8 +186,8 @@ const App: React.FC = () => {
     { id: '3', name: t.analytics?.title || 'Analytics', imageUrl: '' }
   ], [t]);
 
-  const currentStateRef = useRef({ transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder, appLanguage, currentView });
-  useEffect(() => { currentStateRef.current = { transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, notepadContent, notepadDrawing, cdiRate, dashboardOrder, appLanguage, currentView }; });
+  const currentStateRef = useRef({ transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, cdiRate, dashboardOrder, appLanguage, currentView });
+  useEffect(() => { currentStateRef.current = { transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, cdiRate, dashboardOrder, appLanguage, currentView }; });
 
   // Reset scroll on view change
   useEffect(() => {
@@ -475,8 +473,6 @@ const App: React.FC = () => {
       if (data.longTerm) setLongTermTransactions(data.longTerm);
       if (data.notifications) setNotifications(data.notifications);
       if (data.theme) { setAppTheme(data.theme); saveData(STORAGE_KEYS.APP_THEME, data.theme); }
-      if (data.notepadContent !== undefined) setNotepadContent(data.notepadContent);
-      if (data.notepadDrawing !== undefined) setNotepadDrawing(data.notepadDrawing);
       if (data.months && data.months.length > 0) {
         const sorted = sortMonths(data.months);
         setMonths(sorted);
@@ -986,7 +982,30 @@ const App: React.FC = () => {
       <AddAccountModal isOpen={isAddAccountOpen} onClose={() => { setIsAddAccountOpen(false); setEditingAccount(null); }} onSave={handleSaveAccount} accountToEdit={editingAccount} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
       <CalculatorModal isOpen={isCalculatorOpen} onClose={() => setIsCalculatorOpen(false)} appLanguage={appLanguage} />
       <EditProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} onSave={p => { setUserProfile(p); if(currentUserEmail) { saveUserField(currentUserEmail, 'profile', p); lastActionTimeRef.current = Date.now(); } }} onLogout={handleLogout} onDeleteAccount={() => {}} currentProfile={userProfile} appLanguage={appLanguage} onOpenProModal={handleOpenPro} />
-      <NotepadModal isOpen={isNotepadOpen} onClose={() => setIsNotepadOpen(false)} initialContent={notepadContent} initialDrawing={notepadDrawing} onSave={(c, d) => { setNotepadContent(c); setNotepadDrawing(d); if(currentUserEmail) { saveUserField(currentUserEmail, 'notepadContent', c); saveUserField(currentUserEmail, 'notepadDrawing', d); lastActionTimeRef.current = Date.now(); } }} appLanguage={appLanguage} />
+      <NotepadModal 
+        isOpen={isNotepadOpen} 
+        onClose={() => setIsNotepadOpen(false)} 
+        initialContent={activeMonth?.notepadContent || ''} 
+        initialDrawing={activeMonth?.notepadDrawing || null} 
+        onSave={(c, d) => { 
+            const updatedMonths = months.map(m => 
+                m.id === activeMonthId 
+                    ? { ...m, notepadContent: c, notepadDrawing: d } 
+                    : m
+            );
+            setMonths(updatedMonths);
+            if(currentUserEmail) {
+                const monthToSave = updatedMonths.find(m => m.id === activeMonthId);
+                if (monthToSave) {
+                    // Don't save client-side 'count' field to DB
+                    const { count, ...restOfMonth } = monthToSave;
+                    upsertItem(currentUserEmail, 'months', restOfMonth);
+                    lastActionTimeRef.current = Date.now();
+                }
+            } 
+        }} 
+        appLanguage={appLanguage} 
+      />
       <CalendarModal isOpen={isCalendarOpen} onClose={() => setIsCalendarOpen(false)} transactions={transactions} activeMonthContext={{ monthIndex: MONTH_NAMES.indexOf((activeMonth.month || "").toUpperCase()), year: parseInt(activeMonth.year) }} appLanguage={appLanguage} />
       <NotificationModal 
         isOpen={isNotificationOpen} 

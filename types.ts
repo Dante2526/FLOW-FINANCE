@@ -77,6 +77,8 @@ export interface MonthSummary {
   year: string;
   total: number;
   count?: number;
+  notepadContent?: string;
+  notepadDrawing?: string;
 }
 
 export interface UserProfile {
