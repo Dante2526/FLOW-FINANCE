@@ -14,35 +14,45 @@ interface Props {
   appLanguage: AppLanguage;
 }
 
-const TODAY_KEYWORDS = ['hoje', 'today', 'hoy'];
+// Helper to get today's date string in YYYY-MM-DD format, timezone-safe.
+const getLocalISODateString = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
 
 const formatDateDisplay = (dateStr: string, todayLabel: string, locale: string) => {
   if (!dateStr) return '';
-  const lower = dateStr.toLowerCase();
-  
-  // Check multilingual 'today' keywords from the database
-  if (TODAY_KEYWORDS.some(k => lower.includes(k))) return todayLabel;
-  
-  // Handle ISO YYYY-MM-DD
-  if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
-    try {
-      // TIMEZONE FIX: Construct date from parts to avoid UTC interpretation
-      const parts = dateStr.split(' ')[0].split('-');
-      const year = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1; // month is 0-indexed
-      const day = parseInt(parts[2], 10);
-      const d = new Date(year, month, day);
 
-      // Verificação de data válida
-      if (isNaN(d.getTime())) return dateStr; 
-      // Force short month format
-      return d.toLocaleDateString(locale, { day: '2-digit', month: 'short' }).replace('.', '');
-    } catch (e) {
-      return dateStr;
-    }
+  const todayStr = getLocalISODateString();
+  // Check if the date string (now guaranteed to be 'YYYY-MM-DD') is today.
+  if (dateStr === todayStr) {
+    return todayLabel;
   }
-  
-  return dateStr;
+
+  // Handle legacy "Hoje" text for old data that hasn't been updated yet.
+  if (dateStr.toLowerCase().includes(todayLabel.toLowerCase())) {
+    return todayLabel;
+  }
+
+  // If not today, format the date for display.
+  try {
+    // TIMEZONE FIX: Construct date from parts to avoid UTC interpretation
+    const parts = dateStr.split(' ')[0].split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // month is 0-indexed
+    const day = parseInt(parts[2], 10);
+    const d = new Date(year, month, day);
+
+    if (isNaN(d.getTime())) return dateStr; 
+    // Force short month format
+    return d.toLocaleDateString(locale, { day: '2-digit', month: 'short' }).replace('.', '');
+  } catch (e) {
+    // Fallback for any other legacy format.
+    return dateStr;
+  }
 };
 
 interface SwipeableTransactionItemProps {

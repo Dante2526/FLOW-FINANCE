@@ -182,15 +182,9 @@ const AddTransactionModal: React.FC<Props> = ({ isOpen, onClose, onSave, transac
     e.preventDefault();
     if (!amount || !name || !date) return;
 
-    const now = new Date();
-    const today = getLocalISODate();
-    let finalDateString = '';
-    
-    if (date === today) {
-       finalDateString = `${tCommon.today} ${now.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}`;
-    } else {
-       finalDateString = date;
-    }
+    // The 'date' state is already in YYYY-MM-DD format from the <input type="date">
+    // We no longer convert it to a friendly string like "Hoje".
+    const finalDateString = date;
 
     let parsedAmount = 0;
     if (locale === 'en-US') {

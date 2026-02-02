@@ -40,43 +40,39 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
   }, [isOpen, activeMonthContext]);
 
   // --- Helper to parse transaction dates ---
-  // Defined before useMemo to ensure it's available
   const parseTransactionDate = (dateStr: string, currentViewDate: Date): Date | null => {
     if (!dateStr) return null;
-    const lower = dateStr.toLowerCase();
-    const now = new Date();
-    
-    // Case 1: "Hoje ..."
-    if (lower.includes('hoje')) {
-      return now;
-    }
 
-    // Case 2: ISO String "YYYY-MM-DD"
+    // Primary, reliable path: ISO String "YYYY-MM-DD"
     if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
-        // TIMEZONE FIX: Construct date from parts to avoid UTC interpretation
         const parts = dateStr.split(' ')[0].split('-');
         const year = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10) - 1; // month is 0-indexed
+        const month = parseInt(parts[1], 10) - 1;
         const day = parseInt(parts[2], 10);
         return new Date(year, month, day);
     }
-
-    // Case 3: "DD Mmm" (e.g. "24 Jan") - LEGACY SUPPORT
-    // This relies on the translation map to parse the month name
+    
+    // --- LEGACY DATA FALLBACKS ---
+    const lower = dateStr.toLowerCase();
+    const now = new Date();
+    
+    // Case 2: "Hoje ..." - This is imperfect but needed for old data.
+    if (lower.includes('hoje')) {
+      return now;
+    }
+    
+    // Case 3: "DD Mmm" (e.g. "24 Jan")
     const parts = dateStr.split(' ');
     if (parts.length >= 2) {
        const day = parseInt(parts[0]);
        const monthStr = parts[1].toLowerCase().slice(0, 3);
        
-       // Use the localized map to find the month index
        const monthsMap = t.monthsShort as Record<string, number>;
        
        if (monthsMap[monthStr] !== undefined && !isNaN(day)) {
            const txMonthIndex = monthsMap[monthStr];
            let txYear = now.getFullYear();
            
-           // Heuristic: If the transaction month matches the view month, assume it's for the viewed year.
-           // This helps mapping "05 Jan" to "2026" if we are viewing Jan 2026.
            if (currentViewDate.getMonth() === txMonthIndex) {
               txYear = currentViewDate.getFullYear();
            }
@@ -89,7 +85,6 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
   };
 
   // --- OPTIMIZATION: DAY STATUS MAP ---
-  // MOVED UP: Must be called before any conditional return
   const dayStatusMap = useMemo(() => {
       const map = new Map<number, { count: number; hasUnpaid: boolean; hasSubscription: boolean }>();
       const targetMonth = viewDate.getMonth();
@@ -117,7 +112,6 @@ export const CalendarModal: React.FC<Props> = ({ isOpen, onClose, transactions =
   }, [transactions, viewDate, appLanguage]); // Re-calc if language changes (month map changes)
 
   // Filter transactions for the list (Selected Day)
-  // MOVED UP: Must be called before any conditional return
   const selectedDayTransactions = useMemo(() => {
       return transactions.filter(t => {
         const d = parseTransactionDate(t.date, viewDate); // Use viewDate context for year guessing

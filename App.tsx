@@ -45,8 +45,6 @@ const SHORT_CODE_TO_FULL: Record<string, string> = {
   'Ene': 'JANEIRO', 'Dic': 'DEZEMBRO'
 };
 
-const TODAY_KEYWORDS = ['hoje', 'today', 'hoy'];
-
 const generateUUID = () => typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => (Math.random() * 16 | 0).toString(16));
 const roundMoney = (amount: number) => Math.round((amount + Number.EPSILON) * 100) / 100;
 
@@ -66,30 +64,41 @@ const getLocalISODateString = () => {
 
 const getMonthFromDateStr = (dateStr: string): string => {
   if (!dateStr) return '';
-  const lower = dateStr.toLowerCase();
-  
-  // Check against all supported languages for "Today"
-  if (TODAY_KEYWORDS.some(k => lower.includes(k))) {
-     return MONTH_NAMES[new Date().getMonth()];
-  }
 
+  // Primary path for 'YYYY-MM-DD'
+  if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+    const monthIndex = parseInt(dateStr.split('-')[1], 10) - 1;
+    return MONTH_NAMES[monthIndex];
+  }
+  
+  // Legacy path for 'DD Mmm' format
   const parts = dateStr.split(' ');
-  if (parts.length >= 2 && !dateStr.includes('-')) {
+  if (parts.length >= 2) {
     const code = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
-    // Use expanded map to find the correct PT-BR key regardless of input lang
     return SHORT_CODE_TO_FULL[code] || '';
   }
-  if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
-    const d = new Date(dateStr.split(' ')[0] + 'T00:00:00');
-    return MONTH_NAMES[d.getMonth()];
+
+  // Legacy path for 'hoje'
+  if (dateStr.toLowerCase().includes('hoje')) {
+     return MONTH_NAMES[new Date().getMonth()];
   }
+  
   return '';
 };
 
 const getYearFromDateStr = (dateStr: string, activeYearContext?: string): string => {
-  const lower = dateStr.toLowerCase();
-  if (TODAY_KEYWORDS.some(k => lower.includes(k))) return new Date().getFullYear().toString();
-  if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) return dateStr.split('-')[0];
+  if (!dateStr) return activeYearContext || new Date().getFullYear().toString();
+
+  // Primary path for 'YYYY-MM-DD'
+  if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+    return dateStr.split('-')[0];
+  }
+  
+  // Legacy path for 'hoje'
+  if (dateStr.toLowerCase().includes('hoje')) {
+     return new Date().getFullYear().toString();
+  }
+
   return activeYearContext || new Date().getFullYear().toString();
 };
 
@@ -321,11 +330,9 @@ const App: React.FC = () => {
     transactions.forEach(t => {
        if (t.paid) return;
 
-       let isToday = false;
-       
-       const lowerDate = t.date.toLowerCase();
-       if (TODAY_KEYWORDS.some(k => lowerDate.includes(k))) isToday = true;
-       else if (t.date.startsWith(todayStr)) isToday = true;
+       // The check is now a simple and reliable string comparison.
+       // t.date is 'YYYY-MM-DD', and so is todayStr.
+       const isToday = t.date === todayStr;
 
        if (isToday) {
            const notifId = t.id;
@@ -538,7 +545,7 @@ const App: React.FC = () => {
         if (t.date.match(/^\d{4}-\d{2}-\d{2}/)) {
              const parts = t.date.split(' ')[0].split('-');
              originalDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        } else if (TODAY_KEYWORDS.some(k => t.date.toLowerCase().includes(k))) {
+        } else if (t.date.toLowerCase().includes('hoje')) { // Legacy "hoje"
              originalDate = new Date();
         } else {
              const parts = t.date.split(' ');
@@ -830,7 +837,7 @@ const App: React.FC = () => {
   const fakeTransactionForTutorial: Transaction = useMemo(() => ({
     id: 'tutorial-fake-tx',
     name: 'CAFÉ DA MANHÃ',
-    date: t.transactionList.today,
+    date: getLocalISODateString(), // Use standardized date
     amount: 15.50,
     type: 'purchase',
     logoType: 'food',
