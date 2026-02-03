@@ -296,8 +296,9 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
   );
 });
 
+// FIX: Changed to get the root translation object and pass the specific 'transactionList' part to the child component.
 const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onToggleStatus, onTogglePaymentMethod, title, appLanguage }) => {
-  const t = TRANSLATIONS[appLanguage].transactionList;
+  const t = TRANSLATIONS[appLanguage];
   const locale = getLocale(appLanguage);
   const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
@@ -314,7 +315,7 @@ const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onTo
           onEdit={onEdit}
           onToggleStatus={onToggleStatus}
           onTogglePaymentMethod={onTogglePaymentMethod}
-          t={t}
+          t={t.transactionList}
           locale={locale}
           currencySymbol={currencySymbol}
         />

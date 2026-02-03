@@ -1401,6 +1401,23 @@ export const TRANSLATIONS = {
         invalidCodeServer: "Código inválido o expirado."
       }
     },
+    // FIX: Added missing 'donationModal' translations for Spanish ('es').
+    donationModal: {
+      title: "Apoyar",
+      subtitle: "Contribución Voluntaria",
+      desc: "Tu donación ayuda a mantener el sistema en línea y a desarrollar nuevas funciones.",
+      valueLabel: "Valor de la Donación",
+      cpfLabel: "ID Fiscal (Para Pix)",
+      btnGenerate: "Generar Pix",
+      copyTitle: "Copia y Pega",
+      btnCopy: "Copiar Código",
+      btnCopied: "¡Copiado!",
+      errors: {
+        min: "Valor mínimo de 1,00",
+        cpf: "ID Fiscal Obligatorio",
+        generic: "Error al generar la donación. Inténtalo de nuevo."
+      }
+    },
     proModal: {
       header: "Suscripción Premium",
       title: "Desbloquear Todo",
