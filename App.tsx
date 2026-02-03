@@ -552,7 +552,7 @@ const App: React.FC = () => {
              if (parts.length >= 2) {
                  const day = parseInt(parts[0], 10);
                  const code = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
-                 const fullMonth = SHORT_CODE_TO_FULL[code] || ''; 
+                 const fullMonth = SHORT_CODE_TO_FULL[code]; 
                  const monthIdx = MONTH_NAMES.indexOf(fullMonth);
                  if (monthIdx !== -1) {
                     originalDate = new Date(parseInt(actYear), monthIdx, day);
@@ -863,127 +863,126 @@ const App: React.FC = () => {
     <div key={currentUserEmail} ref={mainScrollRef} className={`h-full overflow-y-auto bg-[#0a0a0b] text-white px-2 pt-4 pb-32 font-sans selection:bg-accent selection:text-black no-scrollbar ${isAnyModalOpen ? 'overflow-hidden' : ''}`} style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
       {currentView === 'home' ? (
           <>
-            <div className="max-w-screen-xl mx-auto">
-              <div className="flex justify-between items-center mb-6 pl-1" data-tour-id="profile-header">
-                <div className="flex items-center gap-3 cursor-pointer group" onClick={handleOpenProfile}>
-                  <div className="relative">
-                    <div className={`w-12 h-12 rounded-full border-2 overflow-hidden shadow-lg ${userProfile.isPro ? 'border-yellow-500' : 'border-transparent group-hover:border-accent'}`}><img src={userProfile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" /></div>
-                    {userProfile.isPro && <div className="absolute -bottom-1 -right-1 bg-yellow-500 rounded-full p-0.5 border-2 border-[#0a0a0b]"><Crown className="w-3 h-3 text-black fill-black" /></div>}
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">{t.welcome},</span>
-                    <div className="flex items-center gap-1"><h1 className="text-white text-xl font-bold leading-none">{userProfile.name || t.common?.defaultUser || 'User'}</h1>{userProfile.isPro && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />}</div>
-                  </div>
+            <div className="flex justify-between items-center mb-6 pl-1">
+              <div className="flex items-center gap-3 cursor-pointer group" onClick={handleOpenProfile} data-tour-id="profile-header">
+                <div className="relative">
+                  <div className={`w-12 h-12 rounded-full border-2 overflow-hidden shadow-lg ${userProfile.isPro ? 'border-yellow-500' : 'border-transparent group-hover:border-accent'}`}><img src={userProfile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" /></div>
+                  {userProfile.isPro && <div className="absolute -bottom-1 -right-1 bg-yellow-500 rounded-full p-0.5 border-2 border-[#0a0a0b]"><Crown className="w-3 h-3 text-black fill-black" /></div>}
                 </div>
-                <div className="flex items-center gap-2" data-tour-id="header-actions">
-                  <div className="relative" data-tour-id="language-selector">
-                     <button 
-                       onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-                       className="p-3 bg-surface rounded-2xl hover:bg-surfaceLight transition-colors cursor-pointer active:scale-95 text-gray-400"
-                     >
-                        <Languages className="w-6 h-6" />
-                     </button>
-                     {isLangMenuOpen && (
-                        <div className="absolute top-full right-0 mt-2 bg-[#1c1c1e] border border-white/5 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 z-50 w-28 animate-in fade-in zoom-in duration-200">
-                           <button onClick={() => handleChangeLanguage('pt')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${appLanguage === 'pt' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
-                              Português
-                           </button>
-                           <button onClick={() => handleChangeLanguage('en')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${appLanguage === 'en' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
-                              English
-                           </button>
-                           <button onClick={() => handleChangeLanguage('es')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${appLanguage === 'es' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
-                              Español
-                           </button>
-                        </div>
-                     )}
-                  </div>
-                  <button 
-                    onClick={handleRestartTutorials}
-                    className="p-3 bg-surface rounded-2xl hover:bg-surfaceLight transition-colors cursor-pointer active:scale-95 text-gray-400"
-                    title={t.common.restartTutorial}
-                  >
-                     <HelpCircle className="w-6 h-6" />
-                  </button>
-                  <IconBell count={notifications.filter(n => !n.read).length} onClick={() => setIsNotificationOpen(true)} data-tour-id="notification-bell" />
+                <div className="flex flex-col">
+                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">{t.welcome},</span>
+                  <div className="flex items-center gap-1"><h1 className="text-white text-xl font-bold leading-none">{userProfile.name || t.common?.defaultUser || 'User'}</h1>{userProfile.isPro && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />}</div>
                 </div>
+              </div>
+              <div className="flex items-center gap-2" data-tour-id="header-actions">
+                
+                <div className="relative" data-tour-id="language-selector">
+                   <button 
+                     onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
+                     className="p-3 bg-surface rounded-2xl hover:bg-surfaceLight transition-colors cursor-pointer active:scale-95 text-gray-400"
+                   >
+                      <Languages className="w-6 h-6" />
+                   </button>
+                   {isLangMenuOpen && (
+                      <div className="absolute top-full right-0 mt-2 bg-[#1c1c1e] border border-white/5 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 z-50 w-28 animate-in fade-in zoom-in duration-200">
+                         <button onClick={() => handleChangeLanguage('pt')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${appLanguage === 'pt' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
+                            Português
+                         </button>
+                         <button onClick={() => handleChangeLanguage('en')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${appLanguage === 'en' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
+                            English
+                         </button>
+                         <button onClick={() => handleChangeLanguage('es')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${appLanguage === 'es' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
+                            Español
+                         </button>
+                      </div>
+                   )}
+                </div>
+
+                <button 
+                  onClick={handleRestartTutorials}
+                  className="p-3 bg-surface rounded-2xl hover:bg-surfaceLight transition-colors cursor-pointer active:scale-95 text-gray-400"
+                  title={t.common.restartTutorial}
+                >
+                   <HelpCircle className="w-6 h-6" />
+                </button>
+
+                <IconBell count={notifications.filter(n => !n.read).length} onClick={() => setIsNotificationOpen(true)} data-tour-id="notification-bell" />
               </div>
             </div>
+            <div className="flex flex-col gap-2 mb-6">
+               {dItems.map(id => {
+                  if (id === BALANCE_CARD_ID) return (
+                    <BalanceCard key={id} id={id} data-tour-id="balance-card" balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} label={t.balanceLabel} addButtonLabel={t.addBtn} onAddClick={handleOpenAddTransaction} onDuplicateClick={handleDuplicateMonth} onCalculatorClick={handleOpenCalculator} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />
+                  );
+                  const a = filteredAcc.find(x => x.id === id);
+                  if (a) return <SecondaryCard key={a.id} account={a} onDelete={handleDeleteAccount} onEdit={handleEditAccount} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />;
+                  return null;
+               })}
+            </div>
+            <ContactsRow contacts={mockContacts} onAddClick={handleOpenAddAccount} onContactClick={handleContactClick} isPro={!!userProfile.isPro} title={t.quickAccessTitle} appLanguage={appLanguage} />
+            <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} appLanguage={appLanguage} />
+            <TransactionList 
+              transactions={transactionsForList} 
+              onDelete={handleDeleteTransaction} 
+              onEdit={handleEditTransaction} 
+              onToggleStatus={handleToggleStatus} 
+              onTogglePaymentMethod={handleTogglePaymentMethod} 
+              title={t.billsTitle}
+              appLanguage={appLanguage}
+            />
 
-            <div className="lg:grid lg:grid-cols-5 lg:gap-8 lg:items-start max-w-screen-xl mx-auto">
-              <div className="lg:col-span-2 flex flex-col gap-2 mb-6 lg:mb-0">
-                 {dItems.map(id => {
-                    if (id === BALANCE_CARD_ID) return (
-                      <BalanceCard key={id} id={id} data-tour-id="balance-card" balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} label={t.balanceLabel} addButtonLabel={t.addBtn} onAddClick={handleOpenAddTransaction} onDuplicateClick={handleDuplicateMonth} onCalculatorClick={handleOpenCalculator} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />
-                    );
-                    const a = filteredAcc.find(x => x.id === id);
-                    if (a) return <SecondaryCard key={a.id} account={a} onDelete={handleDeleteAccount} onEdit={handleEditAccount} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />;
-                    return null;
-                 })}
-              </div>
+            {!userProfile.isPro && (
+              <div className="px-1 mt-6">
+                
+                <div
+                  onClick={() => setIsDonationModalOpen(true)}
+                  className="mb-4 block w-full bg-[#1c1c1e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all cursor-pointer"
+                >
+                  <div className="absolute -top-[1px] -right-[1px] bg-emerald-500/20 px-3 py-1 rounded-bl-xl border-l border-b border-emerald-500/10 z-10">
+                     <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">{t.home?.support?.tag || "Apoie"}</span>
+                  </div>
 
-              <div className="lg:col-span-3">
-                <ContactsRow contacts={mockContacts} onAddClick={handleOpenAddAccount} onContactClick={handleContactClick} isPro={!!userProfile.isPro} title={t.quickAccessTitle} appLanguage={appLanguage} />
-                <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} appLanguage={appLanguage} />
-                <TransactionList 
-                  transactions={transactionsForList} 
-                  onDelete={handleDeleteTransaction} 
-                  onEdit={handleEditTransaction} 
-                  onToggleStatus={handleToggleStatus} 
-                  onTogglePaymentMethod={handleTogglePaymentMethod} 
-                  title={t.billsTitle}
-                  appLanguage={appLanguage}
-                />
-
-                {!userProfile.isPro && (
-                  <div className="px-1 mt-6">
-                    <div
-                      onClick={() => setIsDonationModalOpen(true)}
-                      className="mb-4 block w-full bg-[#1c1c1e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all cursor-pointer"
-                    >
-                      <div className="absolute -top-[1px] -right-[1px] bg-emerald-500/20 px-3 py-1 rounded-bl-xl border-l border-b border-emerald-500/10 z-10">
-                         <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">{t.home?.support?.tag || "Apoie"}</span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-[1.2rem] bg-[#2c2c2e] flex items-center justify-center shrink-0">
-                           <Heart className="w-6 h-6 text-emerald-500 fill-emerald-500/20" />
-                        </div>
-                        <div className="flex-1">
-                           <h3 className="text-white font-bold text-sm">{t.home?.support?.title || "Apoie o Projeto"}</h3>
-                           <p className="text-gray-400 text-xs mt-0.5">{t.home?.support?.subtitle || "Doe qualquer valor via Pix."}</p>
-                        </div>
-                        <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
-                      </div>
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-[1.2rem] bg-[#2c2c2e] flex items-center justify-center shrink-0">
+                       <Heart className="w-6 h-6 text-emerald-500 fill-emerald-500/20" />
                     </div>
 
-                    <a 
-                      href="https://jeitto.onelink.me/QMGg/mcgv9w9n" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="block w-full bg-[#1c1c1e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all mb-4"
-                    >
-                      <div className="absolute -top-[1px] -right-[1px] bg-[#552d36] px-3 py-1 rounded-bl-xl border-l border-b border-[#f82f58]/20 z-10">
-                         <span className="text-[10px] font-bold text-[#f82f58] uppercase tracking-wider">{t.home?.jeitto?.tag || "Indicação"}</span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <JeittoLogo />
-                        <div className="flex-1">
-                           <h3 className="text-white font-bold text-sm">{t.home?.jeitto?.title || "Limite Extra Disponível?"}</h3>
-                           <p className="text-gray-400 text-xs mt-0.5">{t.home?.jeitto?.subtitle || "Baixe o Jeitto e confira sua aprovação."}</p>
-                        </div>
-                        <ExternalLink className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
-                      </div>
-                    </a>
+                    <div className="flex-1">
+                       <h3 className="text-white font-bold text-sm">{t.home?.support?.title || "Apoie o Projeto"}</h3>
+                       <p className="text-gray-400 text-xs mt-0.5">{t.home?.support?.subtitle || "Doe qualquer valor via Pix."}</p>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
                   </div>
-                )}
+                </div>
+
+                <a 
+                  href="https://jeitto.onelink.me/QMGg/mcgv9w9n" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="block w-full bg-[#1c1c1e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all mb-4"
+                >
+                  <div className="absolute -top-[1px] -right-[1px] bg-[#552d36] px-3 py-1 rounded-bl-xl border-l border-b border-[#f82f58]/20 z-10">
+                     <span className="text-[10px] font-bold text-[#f82f58] uppercase tracking-wider">{t.home?.jeitto?.tag || "Indicação"}</span>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <JeittoLogo />
+                    <div className="flex-1">
+                       <h3 className="text-white font-bold text-sm">{t.home?.jeitto?.title || "Limite Extra Disponível?"}</h3>
+                       <p className="text-gray-400 text-xs mt-0.5">{t.home?.jeitto?.subtitle || "Baixe o Jeitto e confira sua aprovação."}</p>
+                    </div>
+                    <ExternalLink className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
+                  </div>
+                </a>
               </div>
-            </div>
+            )}
           </>
       ) : currentView === 'settings' ? (
-          <div className="max-w-screen-xl mx-auto w-full"><SettingsView currentThemeId={appTheme.id} onSaveTheme={t => { setAppTheme(t); saveData(STORAGE_KEYS.APP_THEME, t); if(currentUserEmail) { saveUserField(currentUserEmail, 'theme', t); lastActionTimeRef.current = Date.now(); } setCurrentView('home'); }} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} /></div>
+          <SettingsView currentThemeId={appTheme.id} onSaveTheme={t => { setAppTheme(t); saveData(STORAGE_KEYS.APP_THEME, t); if(currentUserEmail) { saveUserField(currentUserEmail, 'theme', t); lastActionTimeRef.current = Date.now(); } setCurrentView('home'); }} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
       ) : currentView === 'long-term' ? (
-          <div className="max-w-screen-xl mx-auto w-full"><LongTermView items={longTermTransactions} onAdd={handleLongTermAdd} onEdit={handleLongTermEdit} onDelete={handleLongTermDelete} appLanguage={appLanguage} isPro={!!userProfile.isPro} /></div>
+          <LongTermView items={longTermTransactions} onAdd={handleLongTermAdd} onEdit={handleLongTermEdit} onDelete={handleLongTermDelete} appLanguage={appLanguage} isPro={!!userProfile.isPro} />
       ) : (
-          <div className="max-w-screen-xl mx-auto w-full"><InvestmentsView investments={investments} onAdd={handleInvestmentAdd} onEdit={handleInvestmentEdit} onDelete={handleInvestmentDelete} onBack={handleGoHome} cdiRate={cdiRate} onUpdateCdiRate={handleInvestmentUpdateRate} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} /></div>
+          <InvestmentsView investments={investments} onAdd={handleInvestmentAdd} onEdit={handleInvestmentEdit} onDelete={handleInvestmentDelete} onBack={handleGoHome} cdiRate={cdiRate} onUpdateCdiRate={handleInvestmentUpdateRate} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
       )}
       <BottomNav currentView={currentView} onChangeView={setCurrentView} labels={t.nav || { home: 'INÍCIO', invest: 'INVEST', wallet: 'CARTEIRA', config: 'CONFIG' }} />
       <AddTransactionModal isOpen={isAddTransactionOpen} onClose={() => { setIsAddTransactionOpen(false); setEditingTransaction(null); }} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} activeMonthContext={{ monthIndex: MONTH_NAMES.indexOf((activeMonth.month || "").toUpperCase()), year: parseInt(activeMonth.year) }} appLanguage={appLanguage} />
