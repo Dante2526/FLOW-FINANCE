@@ -105,13 +105,16 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
     const diffY = clientY - startY.current;
 
     if (interactionType.current === null) {
-      if (Math.abs(diffX) < 5 && Math.abs(diffY) < 5) return;
-      if (Math.abs(diffX) > Math.abs(diffY) * 0.2) interactionType.current = 'swipe';
+      // Need a decent threshold to decide intentionality on mobile touch screens
+      if (Math.abs(diffX) < 15 && Math.abs(diffY) < 15) return;
+
+      // Strict rule: horizontal movement MUST be clearly greater than vertical
+      if (Math.abs(diffX) > Math.abs(diffY) * 1.5) interactionType.current = 'swipe';
       else { interactionType.current = 'scroll'; return; }
     }
 
     if (interactionType.current === 'swipe') {
-      const newOffset = startOffset.current + diffX;
+      const newOffset = startOffset.current + diffX; // No artificial speed multiplier for pure touch
       if (newOffset > 100) setOffsetX(100);
       else if (newOffset < -100) setOffsetX(-100);
       else setOffsetX(newOffset);
