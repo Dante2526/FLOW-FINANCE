@@ -41,7 +41,7 @@ const PRESET_AVATARS = [
 const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, onDeleteAccount, currentProfile, appLanguage, onOpenProModal }) => {
   const [name, setName] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
-  
+
   const t = TRANSLATIONS[appLanguage].profile;
   const locale = getLocale(appLanguage);
 
@@ -60,7 +60,7 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
 
     onSave({
       name: name.toUpperCase(), // Converte para maiúsculo apenas ao salvar
-      subtitle: '', 
+      subtitle: '',
       avatarUrl: avatarUrl,
       isPro: currentProfile.isPro, // Mantém o status atual (gerenciado pelo App)
       subscriptionExpiry: currentProfile.subscriptionExpiry // Mantém a data de expiração
@@ -81,25 +81,25 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2.5rem] p-6 shadow-2xl border border-white/5 relative flex flex-col gap-5 max-h-[90dvh] overflow-hidden">
-        
+
         {/* Header */}
         <div className="flex justify-between items-center flex-shrink-0">
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-white">{t.title}</h2>
             {currentProfile.isPro && (
-               <div className="bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full text-[10px] font-bold border border-yellow-500/50 flex items-center gap-1">
-                 <Crown className="w-3 h-3" fill="currentColor" /> 
-                 <span>PRO</span>
-                 {currentProfile.subscriptionExpiry && (
-                    <span className="font-medium opacity-80 border-l border-yellow-500/30 pl-1 ml-1">
-                       {t.proExpiry} {new Date(currentProfile.subscriptionExpiry).toLocaleDateString(locale)}
-                    </span>
-                 )}
-               </div>
+              <div className="bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full text-[10px] font-bold border border-yellow-500/50 flex items-center gap-1">
+                <Crown className="w-3 h-3" fill="currentColor" />
+                <span>PRO</span>
+                {currentProfile.subscriptionExpiry && (
+                  <span className="font-medium opacity-80 border-l border-yellow-500/30 pl-1 ml-1">
+                    {t.proExpiry} {new Date(currentProfile.subscriptionExpiry).toLocaleDateString(locale)}
+                  </span>
+                )}
+              </div>
             )}
           </div>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-white/10 transition-colors"
           >
             <X className="w-5 h-5 text-gray-400" />
@@ -107,13 +107,13 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5 flex-1 min-h-0 overflow-y-auto no-scrollbar">
-          
+
           {/* Current Avatar Preview */}
           <div className="flex justify-center flex-shrink-0 mt-2">
             <div className="w-20 h-20 rounded-full border-4 border-accent overflow-hidden relative shadow-lg shadow-accent/20 bg-white/10">
-              <img 
-                src={avatarUrl} 
-                alt="Preview" 
+              <img
+                src={avatarUrl}
+                alt="Preview"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -122,8 +122,8 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
           {/* Name Input */}
           <div className="flex flex-col gap-2 flex-shrink-0">
             <label className="text-gray-400 text-sm ml-2">{t.nameLabel}</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder={t.namePlaceholder}
@@ -135,10 +135,10 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
           {/* Avatar Selection - Horizontal Scroll */}
           <div className="flex flex-col gap-2 flex-shrink-0">
             <div className="flex justify-between items-end ml-2 mr-2">
-               <label className="text-gray-400 text-sm">{t.avatarLabel}</label>
-               {!currentProfile.isPro && <span className="text-[10px] text-yellow-500 font-bold flex items-center gap-1"><Lock className="w-3 h-3" /> 8 {t.lockedLabel}</span>}
+              <label className="text-gray-400 text-sm">{t.avatarLabel}</label>
+              {!currentProfile.isPro && <span className="text-[10px] text-yellow-500 font-bold flex items-center gap-1"><Lock className="w-3 h-3" /> 8 {t.lockedLabel}</span>}
             </div>
-            
+
             <div className="flex gap-3 p-1 pb-4 overflow-x-auto no-scrollbar">
               {PRESET_AVATARS.map((url, index) => {
                 // Updated logic: First 6 are free
@@ -151,14 +151,13 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
                     key={url}
                     type="button"
                     onClick={() => handleAvatarSelect(url, index)}
-                    className={`relative w-20 h-20 shrink-0 rounded-xl overflow-hidden border-2 transition-all ${
-                      isSelected
-                        ? 'border-accent opacity-100 scale-105 z-10 shadow-lg shadow-accent/20' 
+                    className={`relative w-20 h-20 shrink-0 rounded-xl overflow-hidden border-2 transition-all ${isSelected
+                        ? 'border-accent opacity-100 scale-105 z-10 shadow-lg shadow-accent/20'
                         : 'border-transparent opacity-100 hover:opacity-80'
-                    } ${isLocked ? 'opacity-50 bg-black/40' : 'bg-white/5'}`}
+                      } ${isLocked ? 'opacity-50 bg-black/40' : 'bg-white/5'}`}
                   >
                     <img src={url} alt="Avatar" className={`w-full h-full object-cover ${isLocked ? 'blur-[2px] grayscale' : ''}`} />
-                    
+
                     {isLocked && (
                       <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                         <Lock className="w-5 h-5 text-yellow-500 drop-shadow-md" />
@@ -166,7 +165,7 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
                     )}
                     {isPremium && !isLocked && (
                       <div className="absolute top-1 right-1">
-                         <Crown className="w-3 h-3 text-yellow-500 fill-yellow-500 drop-shadow-md" />
+                        <Crown className="w-3 h-3 text-yellow-500 fill-yellow-500 drop-shadow-md" />
                       </div>
                     )}
                   </button>
@@ -177,16 +176,16 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
 
           {/* Buttons Group */}
           <div className="flex flex-col gap-3 mt-auto flex-shrink-0 pb-2">
-            
-            <button 
+
+            <button
               type="submit"
               className="w-full bg-accent text-black h-14 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-2 hover:bg-accentDark transition-colors shadow-lg"
             >
               {t.btnSave}
               <Check className="w-5 h-5" />
             </button>
-            
-            <button 
+
+            <button
               type="button"
               onClick={onLogout}
               className="w-full bg-[#2c2c2e] text-white h-14 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#3a3a3c] transition-colors"
@@ -195,7 +194,7 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
               <LogOut className="w-5 h-5" />
             </button>
 
-            <button 
+            <button
               type="button"
               onClick={onDeleteAccount}
               className="w-full bg-transparent border border-red-900/30 text-red-600 h-14 rounded-[1.5rem] font-bold text-sm flex items-center justify-center gap-2 hover:bg-red-950/10 transition-colors mt-2"
@@ -211,4 +210,4 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
   );
 };
 
-export default EditProfileModal;
+export default React.memo(EditProfileModal);

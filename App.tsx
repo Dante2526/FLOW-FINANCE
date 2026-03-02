@@ -16,7 +16,7 @@ import SettingsView, { AVAILABLE_THEMES } from './components/SettingsView';
 import LongTermView from './components/LongTermView';
 import InvestmentsView from './components/InvestmentsView';
 import LoginScreen, { FlowLogo } from './components/LoginScreen';
-import ProModal from './components/ProModal'; 
+import ProModal from './components/ProModal';
 import DonationModal from './components/DonationModal';
 import Tutorial from './components/Tutorial';
 import { TutorialStep } from './components/Tutorial';
@@ -37,7 +37,7 @@ const MONTH_NAMES = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO',
 // Expanded Mapping to map ANY language short code to the Internal DB Key
 const SHORT_CODE_TO_FULL: Record<string, string> = {
   // PT
-  'Jan': 'JANEIRO', 'Fev': 'FEVEREIRO', 'Mar': 'MARÇO', 'Abr': 'ABRIL', 'Mai': 'MAIO', 'Jun': 'JUNHO', 
+  'Jan': 'JANEIRO', 'Fev': 'FEVEREIRO', 'Mar': 'MARÇO', 'Abr': 'ABRIL', 'Mai': 'MAIO', 'Jun': 'JUNHO',
   'Jul': 'JULHO', 'Ago': 'AGOSTO', 'Set': 'SETEMBRO', 'Out': 'OUTUBRO', 'Nov': 'NOVEMBRO', 'Dez': 'DEZEMBRO',
   // EN
   'Feb': 'FEVEREIRO', 'Apr': 'ABRIL', 'May': 'MAIO', 'Aug': 'AGOSTO', 'Sep': 'SETEMBRO', 'Oct': 'OCTUBRE', 'Dec': 'DEZEMBRO',
@@ -70,7 +70,7 @@ const getMonthFromDateStr = (dateStr: string): string => {
     const monthIndex = parseInt(dateStr.split('-')[1], 10) - 1;
     return MONTH_NAMES[monthIndex];
   }
-  
+
   // Legacy path for 'DD Mmm' format
   const parts = dateStr.split(' ');
   if (parts.length >= 2) {
@@ -80,9 +80,9 @@ const getMonthFromDateStr = (dateStr: string): string => {
 
   // Legacy path for 'hoje'
   if (dateStr.toLowerCase().includes('hoje')) {
-     return MONTH_NAMES[new Date().getMonth()];
+    return MONTH_NAMES[new Date().getMonth()];
   }
-  
+
   return '';
 };
 
@@ -93,21 +93,21 @@ const getYearFromDateStr = (dateStr: string, activeYearContext?: string): string
   if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
     return dateStr.split('-')[0];
   }
-  
+
   // Legacy path for 'hoje'
   if (dateStr.toLowerCase().includes('hoje')) {
-     return new Date().getFullYear().toString();
+    return new Date().getFullYear().toString();
   }
 
   return activeYearContext || new Date().getFullYear().toString();
 };
 
 const sortMonths = (list: MonthSummary[]) => [...list].sort((a, b) => {
-    const yA = parseInt(a.year || "0"), yB = parseInt(b.year || "0");
-    if (yA !== yB) return yA - yB;
-    const idxA = MONTH_NAMES.indexOf((a.month || "").toUpperCase().trim());
-    const idxB = MONTH_NAMES.indexOf((b.month || "").toUpperCase().trim());
-    return idxA - idxB;
+  const yA = parseInt(a.year || "0"), yB = parseInt(b.year || "0");
+  if (yA !== yB) return yA - yB;
+  const idxA = MONTH_NAMES.indexOf((a.month || "").toUpperCase().trim());
+  const idxB = MONTH_NAMES.indexOf((b.month || "").toUpperCase().trim());
+  return idxA - idxB;
 });
 
 const SplashScreen = () => {
@@ -117,11 +117,11 @@ const SplashScreen = () => {
   return (
     <div className="fixed inset-0 bg-[#0a0a0b] flex flex-col items-center justify-center z-[100] animate-out fade-out duration-700">
       <div className="w-32 h-32 bg-[#1c1c1e] rounded-[2rem] flex items-center justify-center animate-pulse shadow-2xl shadow-black/20 mb-6">
-         <FlowLogo className="w-24 h-24 text-accent" />
+        <FlowLogo className="w-24 h-24 text-accent" />
       </div>
       <div className="flex flex-col items-center gap-2">
-         <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-         <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">{tCommon.splashVersion}</p>
+        <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+        <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest opacity-60">{tCommon.splashVersion}</p>
       </div>
     </div>
   );
@@ -149,12 +149,12 @@ const App: React.FC = () => {
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [isProModalOpen, setIsProModalOpen] = useState(false);
   const [isDonationModalOpen, setIsDonationModalOpen] = useState(false);
-  
+
   // Tutorial State now lives in App.tsx
   const [isTutorialActive, setIsTutorialActive] = useState(false);
   const [tutorialStep, setTutorialStep] = useState(0);
   const [isInvestmentsTutorialOpen, setIsInvestmentsTutorialOpen] = useState(false);
-  
+
   const isAnyModalOpen = isAddTransactionOpen || isAddAccountOpen || isCalculatorOpen || isProfileModalOpen || isNotepadOpen || isCalendarOpen || isNotificationOpen || isAnalyticsOpen || isProModalOpen || isDonationModalOpen || isTutorialActive || isInvestmentsTutorialOpen;
 
   const [userProfile, setUserProfile] = useState<UserProfile>(INITIAL_PROFILE);
@@ -170,7 +170,7 @@ const App: React.FC = () => {
   const [activeMonthId, setActiveMonthId] = useState<string>(SYSTEM_INITIAL_MONTH.id);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
-  
+
   // Persistent dismissed notifications
   const [dismissedNotifIds, setDismissedNotifIds] = useState<string[]>(() => {
     const todayStr = getLocalISODateString();
@@ -183,8 +183,8 @@ const App: React.FC = () => {
 
   const dragItem = useRef<string | null>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
-  const lastActionTimeRef = useRef<number>(0); 
-  
+  const lastActionTimeRef = useRef<number>(0);
+
   // Robust translation retrieval with fallback
   const t = TRANSLATIONS[appLanguage] || TRANSLATIONS['pt'];
 
@@ -195,8 +195,8 @@ const App: React.FC = () => {
     { id: '3', name: t.analytics?.title || 'Analytics', imageUrl: '' }
   ], [t]);
 
-  const currentStateRef = useRef({ transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, cdiRate, dashboardOrder, appLanguage, currentView });
-  useEffect(() => { currentStateRef.current = { transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, cdiRate, dashboardOrder, appLanguage, currentView }; });
+  const currentStateRef = useRef({ transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, cdiRate, dashboardOrder, appLanguage, currentView, currentUserEmail, activeMonthId, editingAccount, editingTransaction });
+  useEffect(() => { currentStateRef.current = { transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, cdiRate, dashboardOrder, appLanguage, currentView, currentUserEmail, activeMonthId, editingAccount, editingTransaction }; });
 
   // Reset scroll on view change
   useEffect(() => {
@@ -214,17 +214,17 @@ const App: React.FC = () => {
   // Sync HTML Lang and Meta Data
   useEffect(() => {
     document.documentElement.lang = appLanguage === 'pt' ? 'pt-BR' : appLanguage === 'es' ? 'es-ES' : 'en-US';
-    
+
     // Update Title and Description
     if (t.meta) {
-        document.title = t.meta.title;
-        const metaDesc = document.querySelector('meta[name="description"]');
-        if (metaDesc) {
-            metaDesc.setAttribute('content', t.meta.description);
-        }
+      document.title = t.meta.title;
+      const metaDesc = document.querySelector('meta[name="description"]');
+      if (metaDesc) {
+        metaDesc.setAttribute('content', t.meta.description);
+      }
     }
   }, [appLanguage, t]);
-  
+
   // Persist dismissed notifications
   useEffect(() => {
     const todayStr = getLocalISODateString();
@@ -237,9 +237,9 @@ const App: React.FC = () => {
       const updated = prev.map(m => {
         const mName = (m.month || "").toUpperCase().trim();
         const mYear = m.year || "";
-        const mTx = transactions.filter(t => 
-            (t.month || getMonthFromDateStr(t.date) || "").toUpperCase().trim() === mName && 
-            (t.year || getYearFromDateStr(t.date, mYear)) === mYear
+        const mTx = transactions.filter(t =>
+          (t.month || getMonthFromDateStr(t.date) || "").toUpperCase().trim() === mName &&
+          (t.year || getYearFromDateStr(t.date, mYear)) === mYear
         );
         const total = roundMoney(mTx.reduce((s, t) => s + t.amount, 0)), count = mTx.length;
         if (m.total !== total || m.count !== count) { changed = true; return { ...m, total, count }; }
@@ -247,7 +247,7 @@ const App: React.FC = () => {
       });
       return changed ? updated : prev;
     });
-  }, [transactions]); 
+  }, [transactions]);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -260,9 +260,9 @@ const App: React.FC = () => {
     };
     initAuth();
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-       if (event === 'SIGNED_OUT') { setCurrentUserEmail(null); localStorage.removeItem(STORAGE_KEYS.USER_SESSION); }
-       else if (session?.user?.email) { setCurrentUserEmail(session.user.email); saveData(STORAGE_KEYS.USER_SESSION, session.user.email); }
-       setIsSessionReady(true);
+      if (event === 'SIGNED_OUT') { setCurrentUserEmail(null); localStorage.removeItem(STORAGE_KEYS.USER_SESSION); }
+      else if (session?.user?.email) { setCurrentUserEmail(session.user.email); saveData(STORAGE_KEYS.USER_SESSION, session.user.email); }
+      setIsSessionReady(true);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -274,19 +274,19 @@ const App: React.FC = () => {
   }, [currentUserEmail, isSessionReady]);
 
   useEffect(() => {
-     if (!currentUserEmail) {
-        setIsProfileModalOpen(false);
-        setIsAddTransactionOpen(false);
-        setIsAddAccountOpen(false);
-        setIsCalculatorOpen(false);
-        setIsNotepadOpen(false);
-        setIsCalendarOpen(false);
-        setIsNotificationOpen(false);
-        setIsAnalyticsOpen(false);
-        setIsProModalOpen(false);
-        setIsDonationModalOpen(false);
-        setCurrentView('home');
-     }
+    if (!currentUserEmail) {
+      setIsProfileModalOpen(false);
+      setIsAddTransactionOpen(false);
+      setIsAddAccountOpen(false);
+      setIsCalculatorOpen(false);
+      setIsNotepadOpen(false);
+      setIsCalendarOpen(false);
+      setIsNotificationOpen(false);
+      setIsAnalyticsOpen(false);
+      setIsProModalOpen(false);
+      setIsDonationModalOpen(false);
+      setCurrentView('home');
+    }
   }, [currentUserEmail]);
 
   useEffect(() => {
@@ -317,61 +317,61 @@ const App: React.FC = () => {
   // SYSTEM: Check for bills due today and generate notifications
   useEffect(() => {
     if (isLoadingData) return;
-    
+
     const todayStr = getLocalISODateString();
     const now = new Date();
     const nowTime = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    
+
     const missingNotifs: AppNotification[] = [];
 
     const locale = getLocale(appLanguage);
     const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
     transactions.forEach(t => {
-       if (t.paid) return;
+      if (t.paid) return;
 
-       // The check is now a simple and reliable string comparison.
-       // t.date is 'YYYY-MM-DD', and so is todayStr.
-       const isToday = t.date === todayStr;
+      // The check is now a simple and reliable string comparison.
+      // t.date is 'YYYY-MM-DD', and so is todayStr.
+      const isToday = t.date === todayStr;
 
-       if (isToday) {
-           const notifId = t.id;
-           const exists = notifications.some(n => n.id === notifId);
-           const isDismissed = dismissedNotifIds.includes(notifId);
+      if (isToday) {
+        const notifId = t.id;
+        const exists = notifications.some(n => n.id === notifId);
+        const isDismissed = dismissedNotifIds.includes(notifId);
 
-           if (!exists && !isDismissed) {
-               const formattedValue = t.amount.toLocaleString(locale, { minimumFractionDigits: 2 });
-               
-               const systemT = TRANSLATIONS[appLanguage]?.notifications?.system || TRANSLATIONS['pt'].notifications.system;
-               
-               const title = systemT.billDueTitle;
-               const message = systemT.billDueMessage
-                  .replace('{name}', t.name)
-                  .replace('{value}', `${currencySymbol} ${formattedValue}`);
-               const dateStr = systemT.todayAt.replace('{time}', nowTime);
+        if (!exists && !isDismissed) {
+          const formattedValue = t.amount.toLocaleString(locale, { minimumFractionDigits: 2 });
 
-               missingNotifs.push({
-                   id: notifId,
-                   title: title,
-                   message: message,
-                   date: dateStr,
-                   read: false,
-                   type: 'alert'
-               });
-           }
-       }
+          const systemT = TRANSLATIONS[appLanguage]?.notifications?.system || TRANSLATIONS['pt'].notifications.system;
+
+          const title = systemT.billDueTitle;
+          const message = systemT.billDueMessage
+            .replace('{name}', t.name)
+            .replace('{value}', `${currencySymbol} ${formattedValue}`);
+          const dateStr = systemT.todayAt.replace('{time}', nowTime);
+
+          missingNotifs.push({
+            id: notifId,
+            title: title,
+            message: message,
+            date: dateStr,
+            read: false,
+            type: 'alert'
+          });
+        }
+      }
     });
 
     if (missingNotifs.length > 0) {
-        const updatedNotifications = [...missingNotifs, ...notifications];
-        setNotifications(updatedNotifications);
-        
-        if (currentUserEmail) {
-            Promise.all(missingNotifs.map(n => upsertItem(currentUserEmail!, 'notifications', n)))
-               .then(() => lastActionTimeRef.current = Date.now());
-        }
+      const updatedNotifications = [...missingNotifs, ...notifications];
+      setNotifications(updatedNotifications);
+
+      if (currentUserEmail) {
+        Promise.all(missingNotifs.map(n => upsertItem(currentUserEmail!, 'notifications', n)))
+          .then(() => lastActionTimeRef.current = Date.now());
+      }
     }
-  }, [transactions, notifications, isLoadingData, currentUserEmail, appLanguage, dismissedNotifIds]); 
+  }, [transactions, notifications, isLoadingData, currentUserEmail, appLanguage, dismissedNotifIds]);
 
   const activeMonth = useMemo(() => months.find(m => m.id === activeMonthId) || months[0], [months, activeMonthId]);
 
@@ -379,9 +379,9 @@ const App: React.FC = () => {
     if (!activeMonth) return [];
     const mName = (activeMonth.month || "").toUpperCase().trim();
     const mYear = activeMonth.year || "";
-    return transactions.filter(t => 
-        (t.month || getMonthFromDateStr(t.date) || "").toUpperCase().trim() === mName && 
-        (t.year || getYearFromDateStr(t.date, mYear)) === mYear
+    return transactions.filter(t =>
+      (t.month || getMonthFromDateStr(t.date) || "").toUpperCase().trim() === mName &&
+      (t.year || getYearFromDateStr(t.date, mYear)) === mYear
     );
   }, [transactions, activeMonth]);
 
@@ -391,8 +391,8 @@ const App: React.FC = () => {
     setIsTutorialActive(true);
   }, []);
 
-  const handleTutorialNext = () => setTutorialStep(prev => prev + 1);
-  const handleTutorialPrev = () => setTutorialStep(prev => prev - 1);
+  const handleTutorialNext = useCallback(() => setTutorialStep(prev => prev + 1), []);
+  const handleTutorialPrev = useCallback(() => setTutorialStep(prev => prev - 1), []);
 
   const handleCloseTutorial = useCallback(() => {
     setIsTutorialActive(false);
@@ -401,7 +401,7 @@ const App: React.FC = () => {
       saveData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_${currentUserEmail}`, true);
     }
   }, [currentUserEmail]);
-  
+
   useEffect(() => {
     if (!isLoadingData && currentUserEmail) {
       const tutorialCompleted = loadData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_${currentUserEmail}`, false);
@@ -415,12 +415,13 @@ const App: React.FC = () => {
     }
   }, [isLoadingData, currentUserEmail, handleStartTutorial]);
 
-  const handleCloseInvestmentsTutorial = () => {
-      setIsInvestmentsTutorialOpen(false);
-      if (currentUserEmail) {
-          saveData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_investments_${currentUserEmail}`, true);
-      }
-  };
+  const handleCloseInvestmentsTutorial = useCallback(() => {
+    setIsInvestmentsTutorialOpen(false);
+    const email = currentStateRef.current.currentUserEmail;
+    if (email) {
+      saveData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_investments_${email}`, true);
+    }
+  }, []);
 
   const handleRestartTutorials = useCallback(() => {
     if (!currentUserEmail) return;
@@ -439,71 +440,75 @@ const App: React.FC = () => {
       { element: '[data-tour-id="calculator-button"]', title: t.tutorial.steps[5].title, content: t.tutorial.steps[5].content, position: 'bottom' },
       { element: '[data-tour-id="quick-access"]', title: t.tutorial.steps[6].title, content: t.tutorial.steps[6].content, position: 'bottom' },
       { element: '[data-tour-id="month-switcher"]', title: t.tutorial.steps[7].title, content: t.tutorial.steps[7].content, position: 'bottom' },
-      { 
-        element: filteredTx.length > 0 ? '[data-tour-id="transaction-item-0"]' : '[data-tour-id="transaction-list"]', 
-        title: t.tutorial.steps[8].title, 
-        content: t.tutorial.steps[8].content, 
-        position: 'top' 
+      {
+        element: filteredTx.length > 0 ? '[data-tour-id="transaction-item-0"]' : '[data-tour-id="transaction-list"]',
+        title: t.tutorial.steps[8].title,
+        content: t.tutorial.steps[8].content,
+        position: 'top'
       },
       { element: '[data-tour-id="bottom-nav"]', title: t.tutorial.steps[9].title, content: t.tutorial.steps[9].content, position: 'top' },
     ];
   }, [t.tutorial.steps, filteredTx]);
 
   const INVESTMENTS_TUTORIAL_STEPS: TutorialStep[] = useMemo(() => [
-      { element: '[data-tour-id="investments-header"]', title: t.tutorial.investmentsSteps[0].title, content: t.tutorial.investmentsSteps[0].content, position: 'bottom' },
-      { element: '[data-tour-id="investments-cdi-rate"]', title: t.tutorial.investmentsSteps[1].title, content: t.tutorial.investmentsSteps[1].content, position: 'bottom' },
-      { element: '[data-tour-id="investments-main-card"]', title: t.tutorial.investmentsSteps[2].title, content: t.tutorial.investmentsSteps[2].content, position: 'bottom' },
-      { element: '[data-tour-id="investments-list"]', title: t.tutorial.investmentsSteps[3].title, content: t.tutorial.investmentsSteps[3].content, position: 'top' },
-      { element: '[data-tour-id="investments-add-button"]', title: t.tutorial.investmentsSteps[4].title, content: t.tutorial.investmentsSteps[4].content, position: 'left' },
+    { element: '[data-tour-id="investments-header"]', title: t.tutorial.investmentsSteps[0].title, content: t.tutorial.investmentsSteps[0].content, position: 'bottom' },
+    { element: '[data-tour-id="investments-cdi-rate"]', title: t.tutorial.investmentsSteps[1].title, content: t.tutorial.investmentsSteps[1].content, position: 'bottom' },
+    { element: '[data-tour-id="investments-main-card"]', title: t.tutorial.investmentsSteps[2].title, content: t.tutorial.investmentsSteps[2].content, position: 'bottom' },
+    { element: '[data-tour-id="investments-list"]', title: t.tutorial.investmentsSteps[3].title, content: t.tutorial.investmentsSteps[3].content, position: 'top' },
+    { element: '[data-tour-id="investments-add-button"]', title: t.tutorial.investmentsSteps[4].title, content: t.tutorial.investmentsSteps[4].content, position: 'left' },
   ], [t.tutorial.investmentsSteps]);
 
   // Investments Tutorial Logic
   useEffect(() => {
-      if (currentView === 'investments' && !isLoadingData && currentUserEmail) {
-          const tutorialCompleted = loadData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_investments_${currentUserEmail}`, false);
-          if (!tutorialCompleted) {
-              setTimeout(() => {
-                  if (currentStateRef.current.currentView === 'investments') {
-                      setIsInvestmentsTutorialOpen(true);
-                  }
-              }, 500);
+    if (currentView === 'investments' && !isLoadingData && currentUserEmail) {
+      const tutorialCompleted = loadData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_investments_${currentUserEmail}`, false);
+      if (!tutorialCompleted) {
+        setTimeout(() => {
+          if (currentStateRef.current.currentView === 'investments') {
+            setIsInvestmentsTutorialOpen(true);
           }
+        }, 500);
       }
+    }
   }, [currentView, isLoadingData, currentUserEmail]);
 
 
-  const applyData = (data: any) => {
-      if (data.profile) setUserProfile(data.profile);
-      if (data.transactions) setTransactions(data.transactions);
-      if (data.accounts) setAccounts(data.accounts);
-      if (data.investments) setInvestments(data.investments);
-      if (data.longTerm) setLongTermTransactions(data.longTerm);
-      if (data.notifications) setNotifications(data.notifications);
-      if (data.theme) { setAppTheme(data.theme); saveData(STORAGE_KEYS.APP_THEME, data.theme); }
-      if (data.months && data.months.length > 0) {
-        const sorted = sortMonths(data.months);
-        setMonths(sorted);
-        if (activeMonthId === SYSTEM_INITIAL_MONTH.id || !sorted.find(m => m.id === activeMonthId)) setActiveMonthId(sorted[sorted.length - 1].id);
-      }
-      if (data.cdiRate !== undefined) setCdiRate(data.cdiRate);
-      if (data.dashboardOrder) setDashboardOrder(data.dashboardOrder);
-      
-      if (data.appLanguage && ['pt', 'en', 'es'].includes(data.appLanguage)) {
-          setAppLanguage(data.appLanguage);
-          saveData(STORAGE_KEYS.APP_LANGUAGE, data.appLanguage);
-      }
-  };
+  const applyData = useCallback((data: any) => {
+    if (data.profile) setUserProfile(data.profile);
+    if (data.transactions) setTransactions(data.transactions);
+    if (data.accounts) setAccounts(data.accounts);
+    if (data.investments) setInvestments(data.investments);
+    if (data.longTerm) setLongTermTransactions(data.longTerm);
+    if (data.notifications) setNotifications(data.notifications);
+    if (data.theme) { setAppTheme(data.theme); saveData(STORAGE_KEYS.APP_THEME, data.theme); }
+    if (data.months && data.months.length > 0) {
+      const sorted = sortMonths(data.months);
+      setMonths(sorted);
+      setActiveMonthId(prev => {
+        if (prev === SYSTEM_INITIAL_MONTH.id || !sorted.find(m => m.id === prev)) return sorted[sorted.length - 1].id;
+        return prev;
+      });
+    }
+    if (data.cdiRate !== undefined) setCdiRate(data.cdiRate);
+    if (data.dashboardOrder) setDashboardOrder(data.dashboardOrder);
 
-  const handleChangeLanguage = (lang: AppLanguage) => {
-      setAppLanguage(lang);
-      saveData(STORAGE_KEYS.APP_LANGUAGE, lang);
-      setIsLangMenuOpen(false);
-      
-      if (currentUserEmail) {
-          saveUserField(currentUserEmail, 'appLanguage', lang);
-          lastActionTimeRef.current = Date.now();
-      }
-  };
+    if (data.appLanguage && ['pt', 'en', 'es'].includes(data.appLanguage)) {
+      setAppLanguage(data.appLanguage);
+      saveData(STORAGE_KEYS.APP_LANGUAGE, data.appLanguage);
+    }
+  }, []);
+
+  const handleChangeLanguage = useCallback((lang: AppLanguage) => {
+    setAppLanguage(lang);
+    saveData(STORAGE_KEYS.APP_LANGUAGE, lang);
+    setIsLangMenuOpen(false);
+
+    const email = currentStateRef.current.currentUserEmail;
+    if (email) {
+      saveUserField(email, 'appLanguage', lang);
+      lastActionTimeRef.current = Date.now();
+    }
+  }, []);
 
   const handleDuplicateMonth = useCallback(async () => {
     const cur = currentStateRef.current;
@@ -512,84 +517,84 @@ const App: React.FC = () => {
 
     const actMonthNorm = (act.month || "").trim().toUpperCase();
     const actYear = act.year || "";
-    
+
     let currentIdx = MONTH_NAMES.indexOf(actMonthNorm);
     if (currentIdx === -1) currentIdx = 0;
 
     let nIdx = currentIdx + 1;
     let nYr = parseInt(actYear) || new Date().getFullYear();
-    
+
     if (nIdx > 11) { nIdx = 0; nYr += 1; }
 
     const nName = MONTH_NAMES[nIdx];
     const nYrS = nYr.toString();
 
     if (cur.months.find(m => (m.month || "").toUpperCase().trim() === nName && m.year === nYrS)) {
-        const currentLang = cur.appLanguage;
-        const tCommon = (TRANSLATIONS[currentLang] || TRANSLATIONS['pt']).common;
-        alert(tCommon.monthExists.replace('{month}', nName).replace('{year}', nYrS));
-        return;
+      const currentLang = cur.appLanguage;
+      const tCommon = (TRANSLATIONS[currentLang] || TRANSLATIONS['pt']).common;
+      alert(tCommon.monthExists.replace('{month}', nName).replace('{year}', nYrS));
+      return;
     }
 
     lastActionTimeRef.current = Date.now();
     const nId = generateUUID();
 
-    const sourceTx = cur.transactions.filter(t => 
-        (t.month || getMonthFromDateStr(t.date) || "").toUpperCase().trim() === actMonthNorm && 
-        (t.year || getYearFromDateStr(t.date, actYear)) === actYear
+    const sourceTx = cur.transactions.filter(t =>
+      (t.month || getMonthFromDateStr(t.date) || "").toUpperCase().trim() === actMonthNorm &&
+      (t.year || getYearFromDateStr(t.date, actYear)) === actYear
     );
     const sourceAcc = cur.accounts.filter(a => (a.month || "").toUpperCase().trim() === actMonthNorm && (a.year || "") === actYear);
 
     const nTx: Transaction[] = sourceTx.map((t, i) => {
-        let originalDate = new Date();
-        if (t.date.match(/^\d{4}-\d{2}-\d{2}/)) {
-             const parts = t.date.split(' ')[0].split('-');
-             originalDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-        } else if (t.date.toLowerCase().includes('hoje')) { // Legacy "hoje"
-             originalDate = new Date();
-        } else {
-             const parts = t.date.split(' ');
-             if (parts.length >= 2) {
-                 const day = parseInt(parts[0], 10);
-                 const code = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
-                 const fullMonth = SHORT_CODE_TO_FULL[code]; 
-                 const monthIdx = MONTH_NAMES.indexOf(fullMonth);
-                 if (monthIdx !== -1) {
-                    originalDate = new Date(parseInt(actYear), monthIdx, day);
-                 }
-             }
+      let originalDate = new Date();
+      if (t.date.match(/^\d{4}-\d{2}-\d{2}/)) {
+        const parts = t.date.split(' ')[0].split('-');
+        originalDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      } else if (t.date.toLowerCase().includes('hoje')) { // Legacy "hoje"
+        originalDate = new Date();
+      } else {
+        const parts = t.date.split(' ');
+        if (parts.length >= 2) {
+          const day = parseInt(parts[0], 10);
+          const code = parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase();
+          const fullMonth = SHORT_CODE_TO_FULL[code];
+          const monthIdx = MONTH_NAMES.indexOf(fullMonth);
+          if (monthIdx !== -1) {
+            originalDate = new Date(parseInt(actYear), monthIdx, day);
+          }
         }
+      }
 
-        const targetDate = new Date(originalDate);
-        const originalDay = targetDate.getDate();
-        targetDate.setMonth(targetDate.getMonth() + 1);
-        if (targetDate.getDate() !== originalDay) {
-            targetDate.setDate(0);
-        }
+      const targetDate = new Date(originalDate);
+      const originalDay = targetDate.getDate();
+      targetDate.setMonth(targetDate.getMonth() + 1);
+      if (targetDate.getDate() !== originalDay) {
+        targetDate.setDate(0);
+      }
 
-        const yyyy = targetDate.getFullYear();
-        const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
-        const dd = String(targetDate.getDate()).padStart(2, '0');
-        const newDate = `${yyyy}-${mm}-${dd}`;
+      const yyyy = targetDate.getFullYear();
+      const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(targetDate.getDate()).padStart(2, '0');
+      const newDate = `${yyyy}-${mm}-${dd}`;
 
-        return { ...t, id: generateUUID(), month: nName, year: nYrS, date: newDate, paid: false, createdAt: new Date(Date.now() - i * 10).toISOString() };
+      return { ...t, id: generateUUID(), month: nName, year: nYrS, date: newDate, paid: false, createdAt: new Date(Date.now() - i * 10).toISOString() };
     });
-    
+
     const oldToNewAccMap = new Map<string, string>();
     const nAcc: Account[] = sourceAcc.map(a => {
-        const newId = generateUUID();
-        oldToNewAccMap.set(a.id, newId);
-        return { ...a, id: newId, month: nName, year: nYrS };
+      const newId = generateUUID();
+      oldToNewAccMap.set(a.id, newId);
+      return { ...a, id: newId, month: nName, year: nYrS };
     });
 
     const nMonth = { id: nId, month: nName, year: nYrS, total: roundMoney(nTx.reduce((s, t) => s + t.amount, 0)), count: nTx.length };
-    
+
     const updMonths = sortMonths([...cur.months, nMonth]);
     const currentOrder = cur.dashboardOrder;
     const newGlobalOrder: string[] = [];
     currentOrder.forEach(id => {
-       newGlobalOrder.push(id);
-       if (oldToNewAccMap.has(id)) newGlobalOrder.push(oldToNewAccMap.get(id)!);
+      newGlobalOrder.push(id);
+      if (oldToNewAccMap.has(id)) newGlobalOrder.push(oldToNewAccMap.get(id)!);
     });
     nAcc.forEach(a => { if (!newGlobalOrder.includes(a.id)) newGlobalOrder.push(a.id); });
     const finalDashboardOrder = Array.from(new Set(newGlobalOrder));
@@ -601,79 +606,88 @@ const App: React.FC = () => {
     setActiveMonthId(nId);
 
     if (currentUserEmail) {
-        await Promise.all([
-            saveCollection(currentUserEmail, "months", updMonths.map(({ count, ...rest }) => rest)), 
-            saveCollection(currentUserEmail, "transactions", [...nTx, ...cur.transactions]), 
-            saveCollection(currentUserEmail, "accounts", [...cur.accounts, ...nAcc]), 
-            saveUserField(currentUserEmail, "dashboardOrder", finalDashboardOrder)
-        ]);
-        lastActionTimeRef.current = Date.now();
+      await Promise.all([
+        saveCollection(currentUserEmail, "months", updMonths.map(({ count, ...rest }) => rest)),
+        saveCollection(currentUserEmail, "transactions", [...nTx, ...cur.transactions]),
+        saveCollection(currentUserEmail, "accounts", [...cur.accounts, ...nAcc]),
+        saveUserField(currentUserEmail, "dashboardOrder", finalDashboardOrder)
+      ]);
+      lastActionTimeRef.current = Date.now();
     }
   }, [activeMonthId, currentUserEmail]);
 
   const handleDeleteMonth = useCallback(async (id: string) => {
-     if (months.length <= 1) return;
-     const target = months.find(m => m.id === id);
-     if (!target) return;
-     lastActionTimeRef.current = Date.now();
-     const updMonths = months.filter(m => m.id !== id);
-     const targetMonthNorm = (target.month || "").toUpperCase().trim();
-     const targetYear = target.year || "";
-     
-     const updTx = currentStateRef.current.transactions.filter(t => !((t.month || getMonthFromDateStr(t.date) || "").toUpperCase().trim() === targetMonthNorm && (t.year || getYearFromDateStr(t.date, targetYear)) === targetYear));
-     const deletedAccIds = new Set(currentStateRef.current.accounts.filter(a => (a.month || "").toUpperCase().trim() === targetMonthNorm && a.year === targetYear).map(a => a.id));
-     const updAcc = currentStateRef.current.accounts.filter(a => !deletedAccIds.has(a.id));
-     const updDashboardOrder = currentStateRef.current.dashboardOrder.filter(oid => oid === BALANCE_CARD_ID || !deletedAccIds.has(oid));
-     
-     setMonths(updMonths);
-     setTransactions(updTx);
-     setAccounts(updAcc);
-     setDashboardOrder(updDashboardOrder);
-     if (activeMonthId === id) { const sorted = sortMonths(updMonths); if (sorted.length > 0) setActiveMonthId(sorted[sorted.length - 1].id); }
-     if (currentUserEmail) { await Promise.all([hardDeleteMonth(id, target.month, targetYear), saveUserField(currentUserEmail, "dashboardOrder", updDashboardOrder)]); lastActionTimeRef.current = Date.now(); }
-  }, [months, activeMonthId, currentUserEmail]);
+    const cur = currentStateRef.current;
+    if (cur.months.length <= 1) return;
+    const target = cur.months.find(m => m.id === id);
+    if (!target) return;
+    lastActionTimeRef.current = Date.now();
+    const updMonths = cur.months.filter(m => m.id !== id);
+    const targetMonthNorm = (target.month || "").toUpperCase().trim();
+    const targetYear = target.year || "";
 
-  const handleSaveTransaction = useCallback((data: any) => { 
-      const act = currentStateRef.current.months.find(m => m.id === activeMonthId);
-      setTransactions(prev => {
-         if (editingTransaction) {
-             const upd = { ...editingTransaction, ...data };
-             if(currentUserEmail) { upsertItem(currentUserEmail, 'transactions', upd); lastActionTimeRef.current = Date.now(); }
-             return prev.map(t => t.id === editingTransaction.id ? upd : t);
-         } else {
-             const nTx = { id: generateUUID(), ...data, month: act?.month, year: act?.year, createdAt: new Date().toISOString() };
-             if(currentUserEmail) { upsertItem(currentUserEmail, 'transactions', nTx); lastActionTimeRef.current = Date.now(); }
-             return [nTx, ...prev];
-         }
-      });
-      setEditingTransaction(null);
-  }, [editingTransaction, activeMonthId, currentUserEmail]);
+    const updTx = cur.transactions.filter(t => !((t.month || getMonthFromDateStr(t.date) || "").toUpperCase().trim() === targetMonthNorm && (t.year || getYearFromDateStr(t.date, targetYear)) === targetYear));
+    const deletedAccIds = new Set(cur.accounts.filter(a => (a.month || "").toUpperCase().trim() === targetMonthNorm && a.year === targetYear).map(a => a.id));
+    const updAcc = cur.accounts.filter(a => !deletedAccIds.has(a.id));
+    const updDashboardOrder = cur.dashboardOrder.filter(oid => oid === BALANCE_CARD_ID || !deletedAccIds.has(oid));
+
+    setMonths(updMonths);
+    setTransactions(updTx);
+    setAccounts(updAcc);
+    setDashboardOrder(updDashboardOrder);
+    setActiveMonthId(prev => prev === id ? (sortMonths(updMonths).length > 0 ? sortMonths(updMonths)[sortMonths(updMonths).length - 1].id : prev) : prev);
+    const email = currentStateRef.current.currentUserEmail;
+    if (email) { await Promise.all([hardDeleteMonth(id, target.month, targetYear), saveUserField(email, "dashboardOrder", updDashboardOrder)]); lastActionTimeRef.current = Date.now(); }
+  }, []);
+
+  const handleSaveTransaction = useCallback((data: any) => {
+    const cur = currentStateRef.current;
+    const act = cur.months.find(m => m.id === cur.activeMonthId);
+    const editingTx = cur.editingTransaction;
+    const email = cur.currentUserEmail;
+    setTransactions(prev => {
+      if (editingTx) {
+        const upd = { ...editingTx, ...data };
+        if (email) { upsertItem(email, 'transactions', upd); lastActionTimeRef.current = Date.now(); }
+        return prev.map(t => t.id === editingTx.id ? upd : t);
+      } else {
+        const nTx = { id: generateUUID(), ...data, month: act?.month, year: act?.year, createdAt: new Date().toISOString() };
+        if (email) { upsertItem(email, 'transactions', nTx); lastActionTimeRef.current = Date.now(); }
+        return [nTx, ...prev];
+      }
+    });
+    setEditingTransaction(null);
+  }, []);
 
   const handleSaveAccount = useCallback((name: string, balance: number, theme: CardTheme) => {
-    const act = currentStateRef.current.months.find(m => m.id === activeMonthId);
-    if (editingAccount) {
-      const upd = { ...editingAccount, name, balance, colorTheme: theme };
-      setAccounts(prev => prev.map(a => a.id === editingAccount.id ? upd : a));
-      if (currentUserEmail) { upsertItem(currentUserEmail, 'accounts', upd); lastActionTimeRef.current = Date.now(); }
+    const cur = currentStateRef.current;
+    const act = cur.months.find(m => m.id === cur.activeMonthId);
+    const email = cur.currentUserEmail;
+    if (cur.editingAccount) {
+      const upd = { ...cur.editingAccount, name, balance, colorTheme: theme };
+      setAccounts(prev => prev.map(a => a.id === cur.editingAccount!.id ? upd : a));
+      if (email) { upsertItem(email, 'accounts', upd); lastActionTimeRef.current = Date.now(); }
       setEditingAccount(null);
     } else {
       const nAcc = { id: generateUUID(), name, balance, colorTheme: theme, month: act?.month, year: act?.year };
-      const newOrder = [...dashboardOrder, nAcc.id];
+      const newOrder = [...cur.dashboardOrder, nAcc.id];
       setAccounts(prev => [...prev, nAcc]);
-      setDashboardOrder(newOrder); 
-      if (currentUserEmail) { upsertItem(currentUserEmail, 'accounts', nAcc); saveUserField(currentUserEmail, 'dashboardOrder', newOrder); lastActionTimeRef.current = Date.now(); }
+      setDashboardOrder(newOrder);
+      if (email) { upsertItem(email, 'accounts', nAcc); saveUserField(email, 'dashboardOrder', newOrder); lastActionTimeRef.current = Date.now(); }
     }
-  }, [editingAccount, activeMonthId, currentUserEmail, dashboardOrder]);
+  }, []);
 
   const handleDeleteAccount = useCallback((id: string) => {
-    const newOrder = dashboardOrder.filter(o => o !== id);
+    const cur = currentStateRef.current;
+    const newOrder = cur.dashboardOrder.filter(o => o !== id);
     setAccounts(p => p.filter(a => a.id !== id));
     setDashboardOrder(newOrder);
-    if (currentUserEmail) { deleteItem(currentUserEmail, 'accounts', id); saveUserField(currentUserEmail, 'dashboardOrder', newOrder); lastActionTimeRef.current = Date.now(); }
-  }, [currentUserEmail, dashboardOrder]);
+    const email = cur.currentUserEmail;
+    if (email) { deleteItem(email, 'accounts', id); saveUserField(email, 'dashboardOrder', newOrder); lastActionTimeRef.current = Date.now(); }
+  }, []);
 
-  const handleDeleteTransaction = useCallback((id: string) => { 
-    setTransactions(p => p.filter(t => t.id !== id)); 
+  const handleDeleteTransaction = useCallback((id: string) => {
+    setTransactions(p => p.filter(t => t.id !== id));
     if (currentUserEmail) { deleteItem(currentUserEmail, 'transactions', id); lastActionTimeRef.current = Date.now(); }
   }, [currentUserEmail]);
 
@@ -698,7 +712,7 @@ const App: React.FC = () => {
   const handleOpenCalculator = useCallback(() => setIsCalculatorOpen(true), []);
   const handleOpenAddAccount = useCallback(() => setIsAddAccountOpen(true), []);
   const handleOpenProfile = useCallback(() => setIsProfileModalOpen(true), []);
-  
+
   const handleEditAccount = useCallback((acc: Account) => {
     setEditingAccount(acc);
     setIsAddAccountOpen(true);
@@ -713,47 +727,47 @@ const App: React.FC = () => {
     if (c.id === '1') setIsNotepadOpen(true);
     else if (c.id === '2') setIsCalendarOpen(true);
     else if (c.id === '3') {
-       if (!currentStateRef.current.userProfile.isPro) setIsProModalOpen(true);
-       else setIsAnalyticsOpen(true);
+      if (!currentStateRef.current.userProfile.isPro) setIsProModalOpen(true);
+      else setIsAnalyticsOpen(true);
     }
   }, []);
 
   // --- VIEW HANDLERS ---
   const handleInvestmentAdd = useCallback((i: Omit<Investment, 'id'>) => {
-     const n = { ...i, id: generateUUID() };
-     setInvestments(p => [...p, n]);
-     if (currentUserEmail) { upsertItem(currentUserEmail, 'investments', n); lastActionTimeRef.current = Date.now(); }
+    const n = { ...i, id: generateUUID() };
+    setInvestments(p => [...p, n]);
+    if (currentUserEmail) { upsertItem(currentUserEmail, 'investments', n); lastActionTimeRef.current = Date.now(); }
   }, [currentUserEmail]);
 
   const handleInvestmentEdit = useCallback((i: Investment) => {
-     setInvestments(p => p.map(o => o.id === i.id ? i : o));
-     if (currentUserEmail) { upsertItem(currentUserEmail, 'investments', i); lastActionTimeRef.current = Date.now(); }
+    setInvestments(p => p.map(o => o.id === i.id ? i : o));
+    if (currentUserEmail) { upsertItem(currentUserEmail, 'investments', i); lastActionTimeRef.current = Date.now(); }
   }, [currentUserEmail]);
 
   const handleInvestmentDelete = useCallback((id: string) => {
-     setInvestments(p => p.filter(i => i.id !== id));
-     if (currentUserEmail) { deleteItem(currentUserEmail, 'investments', id); lastActionTimeRef.current = Date.now(); }
+    setInvestments(p => p.filter(i => i.id !== id));
+    if (currentUserEmail) { deleteItem(currentUserEmail, 'investments', id); lastActionTimeRef.current = Date.now(); }
   }, [currentUserEmail]);
 
   const handleInvestmentUpdateRate = useCallback((r: number) => {
-     setCdiRate(r);
-     if (currentUserEmail) { saveUserField(currentUserEmail, 'cdiRate', r); lastActionTimeRef.current = Date.now(); }
+    setCdiRate(r);
+    if (currentUserEmail) { saveUserField(currentUserEmail, 'cdiRate', r); lastActionTimeRef.current = Date.now(); }
   }, [currentUserEmail]);
 
   const handleLongTermAdd = useCallback((i: Omit<LongTermTransaction, 'id' | 'installmentsPaid'>) => {
-     const n = { ...i, id: generateUUID(), installmentsPaid: 0 };
-     setLongTermTransactions(p => [...p, n]);
-     if (currentUserEmail) { upsertItem(currentUserEmail, 'longTerm', n); lastActionTimeRef.current = Date.now(); }
+    const n = { ...i, id: generateUUID(), installmentsPaid: 0 };
+    setLongTermTransactions(p => [...p, n]);
+    if (currentUserEmail) { upsertItem(currentUserEmail, 'longTerm', n); lastActionTimeRef.current = Date.now(); }
   }, [currentUserEmail]);
 
   const handleLongTermEdit = useCallback((i: LongTermTransaction) => {
-     setLongTermTransactions(p => p.map(o => o.id === i.id ? i : o));
-     if (currentUserEmail) { upsertItem(currentUserEmail, 'longTerm', i); lastActionTimeRef.current = Date.now(); }
+    setLongTermTransactions(p => p.map(o => o.id === i.id ? i : o));
+    if (currentUserEmail) { upsertItem(currentUserEmail, 'longTerm', i); lastActionTimeRef.current = Date.now(); }
   }, [currentUserEmail]);
 
   const handleLongTermDelete = useCallback((id: string) => {
-     setLongTermTransactions(p => p.filter(i => i.id !== id));
-     if (currentUserEmail) { deleteItem(currentUserEmail, 'longTerm', id); lastActionTimeRef.current = Date.now(); }
+    setLongTermTransactions(p => p.filter(i => i.id !== id));
+    if (currentUserEmail) { deleteItem(currentUserEmail, 'longTerm', id); lastActionTimeRef.current = Date.now(); }
   }, [currentUserEmail]);
 
   const handleGoHome = useCallback(() => setCurrentView('home'), []);
@@ -782,10 +796,10 @@ const App: React.FC = () => {
     } else {
       await loginUser(email);
     }
-    
+
     setCurrentUserEmail(email);
     saveData(STORAGE_KEYS.USER_SESSION, email);
-    
+
     setIsProfileModalOpen(false);
     setCurrentView('home');
 
@@ -795,28 +809,29 @@ const App: React.FC = () => {
         Notification.requestPermission();
       }
     }, 1000);
-    
+
   }, [appLanguage]);
 
   const handleDragStart = useCallback((id: string) => { dragItem.current = id; }, []);
   const handleDragEnd = useCallback(() => { dragItem.current = null; }, []);
-  
+
   const handleDragEnter = useCallback((tId: string) => {
-      if (dragItem.current && dragItem.current !== tId) {
-          const nO = [...currentStateRef.current.dashboardOrder];
-          const dI = nO.indexOf(dragItem.current);
-          const tI = nO.indexOf(tId);
-          if (dI !== -1 && tI !== -1) {
-              nO.splice(dI, 1);
-              nO.splice(tI, 0, dragItem.current);
-              setDashboardOrder(nO);
-              if (currentUserEmail) {
-                  saveUserField(currentUserEmail, 'dashboardOrder', nO);
-                  lastActionTimeRef.current = Date.now();
-              }
-          }
+    if (dragItem.current && dragItem.current !== tId) {
+      const nO = [...currentStateRef.current.dashboardOrder];
+      const dI = nO.indexOf(dragItem.current);
+      const tI = nO.indexOf(tId);
+      if (dI !== -1 && tI !== -1) {
+        nO.splice(dI, 1);
+        nO.splice(tI, 0, dragItem.current);
+        setDashboardOrder(nO);
+        const email = currentStateRef.current.currentUserEmail;
+        if (email) {
+          saveUserField(email, 'dashboardOrder', nO);
+          lastActionTimeRef.current = Date.now();
+        }
       }
-  }, [currentUserEmail]);
+    }
+  }, []);
 
   const filteredAcc = useMemo(() => {
     if (!activeMonth) return [];
@@ -834,6 +849,93 @@ const App: React.FC = () => {
     return Array.from(new Set(items));
   }, [dashboardOrder, filteredAcc]);
 
+  // --- STABLE COMPUTED VALUES ---
+  const unreadNotifCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
+
+  const tutorialLabels = useMemo(() => ({
+    next: t.tutorial.next,
+    prev: t.tutorial.prev,
+    finish: t.tutorial.finish,
+    skip: t.tutorial.skip,
+  }), [t.tutorial.next, t.tutorial.prev, t.tutorial.finish, t.tutorial.skip]);
+
+  const activeMonthContext = useMemo(() => ({
+    monthIndex: MONTH_NAMES.indexOf((activeMonth.month || '').toUpperCase()),
+    year: parseInt(activeMonth.year),
+  }), [activeMonth.month, activeMonth.year]);
+
+  // --- STABLE MODAL CALLBACKS ---
+  const handleCloseAddTransaction = useCallback(() => { setIsAddTransactionOpen(false); setEditingTransaction(null); }, []);
+  const handleCloseAddAccount = useCallback(() => { setIsAddAccountOpen(false); setEditingAccount(null); }, []);
+  const handleCloseCalculator = useCallback(() => setIsCalculatorOpen(false), []);
+  const handleCloseProfileModal = useCallback(() => setIsProfileModalOpen(false), []);
+  const handleCloseNotepad = useCallback(() => setIsNotepadOpen(false), []);
+  const handleCloseCalendar = useCallback(() => setIsCalendarOpen(false), []);
+  const handleCloseNotification = useCallback(() => setIsNotificationOpen(false), []);
+  const handleCloseAnalytics = useCallback(() => setIsAnalyticsOpen(false), []);
+  const handleCloseProModal = useCallback(() => setIsProModalOpen(false), []);
+  const handleCloseDonation = useCallback(() => setIsDonationModalOpen(false), []);
+  const handleOpenDonation = useCallback(() => setIsDonationModalOpen(true), []);
+  const handleOpenNotification = useCallback(() => setIsNotificationOpen(true), []);
+  const noop = useCallback(() => { }, []);
+
+  const handleSaveTheme = useCallback((theme: AppTheme) => {
+    setAppTheme(theme);
+    saveData(STORAGE_KEYS.APP_THEME, theme);
+    const email = currentStateRef.current.currentUserEmail;
+    if (email) { saveUserField(email, 'theme', theme); lastActionTimeRef.current = Date.now(); }
+    setCurrentView('home');
+  }, []);
+
+  const handleSaveProfile = useCallback((p: UserProfile) => {
+    setUserProfile(p);
+    const email = currentStateRef.current.currentUserEmail;
+    if (email) { saveUserField(email, 'profile', p); lastActionTimeRef.current = Date.now(); }
+  }, []);
+
+  const handleProUpgrade = useCallback(() => {
+    setUserProfile(p => ({ ...p, isPro: true }));
+    setIsProModalOpen(false);
+    const cur = currentStateRef.current;
+    const email = cur.currentUserEmail;
+    if (email) { saveUserField(email, 'profile', { ...cur.userProfile, isPro: true }); lastActionTimeRef.current = Date.now(); }
+  }, []);
+
+  const handleSaveNotepad = useCallback((c: string, d: any) => {
+    const cur = currentStateRef.current;
+    setMonths(prev => {
+      const updatedMonths = prev.map(m =>
+        m.id === cur.activeMonthId ? { ...m, notepadContent: c, notepadDrawing: d } : m
+      );
+      const email = cur.currentUserEmail;
+      if (email) {
+        const monthToSave = updatedMonths.find(m => m.id === cur.activeMonthId);
+        if (monthToSave) {
+          const { count, ...restOfMonth } = monthToSave as any;
+          upsertItem(email, 'months', restOfMonth);
+          lastActionTimeRef.current = Date.now();
+        }
+      }
+      return updatedMonths;
+    });
+  }, []);
+
+  const handleMarkAllRead = useCallback(() => {
+    const cur = currentStateRef.current;
+    const idsToDismiss = cur.notifications.map(n => n.id);
+    setDismissedNotifIds(prev => [...new Set([...prev, ...idsToDismiss])]);
+    setNotifications([]);
+    const email = cur.currentUserEmail;
+    if (email) { saveCollection(email, 'notifications', []); lastActionTimeRef.current = Date.now(); }
+  }, []);
+
+  const handleDeleteNotification = useCallback((id: string) => {
+    setDismissedNotifIds(prev => [...new Set([...prev, id])]);
+    setNotifications(p => p.filter(n => n.id !== id));
+    const email = currentStateRef.current.currentUserEmail;
+    if (email) { deleteItem(email, 'notifications', id); lastActionTimeRef.current = Date.now(); }
+  }, []);
+
   const fakeTransactionForTutorial: Transaction = useMemo(() => ({
     id: 'tutorial-fake-tx',
     name: 'CAFÉ DA MANHÃ',
@@ -849,12 +951,12 @@ const App: React.FC = () => {
   const transactionListStepIndex = 8;
   let transactionsForList = filteredTx;
   if (isTutorialActive && tutorialStep === transactionListStepIndex && filteredTx.length === 0) {
-      transactionsForList = [fakeTransactionForTutorial];
+    transactionsForList = [fakeTransactionForTutorial];
   }
 
   // LOGIN SCREEN
   if (!currentUserEmail) {
-     return <LoginScreen onLogin={handleLoginSuccess} currentLang={appLanguage} onLanguageChange={handleChangeLanguage} />;
+    return <LoginScreen onLogin={handleLoginSuccess} currentLang={appLanguage} onLanguageChange={handleChangeLanguage} />;
   }
 
   if (isLoadingData && !userProfile.name) return <SplashScreen />;
@@ -862,230 +964,185 @@ const App: React.FC = () => {
   return (
     <div key={currentUserEmail} ref={mainScrollRef} className={`h-full overflow-y-auto bg-[#0a0a0b] text-white px-2 pt-4 pb-32 font-sans selection:bg-accent selection:text-black no-scrollbar ${isAnyModalOpen ? 'overflow-hidden' : ''}`} style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
       {currentView === 'home' ? (
-          <>
-            <div className="flex justify-between items-center mb-6 pl-1">
-              <div className="flex items-center gap-3 cursor-pointer group" onClick={handleOpenProfile} data-tour-id="profile-header">
-                <div className="relative">
-                  <div className={`w-12 h-12 rounded-full border-2 overflow-hidden shadow-lg ${userProfile.isPro ? 'border-yellow-500' : 'border-transparent group-hover:border-accent'}`}><img src={userProfile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" /></div>
-                  {userProfile.isPro && <div className="absolute -bottom-1 -right-1 bg-yellow-500 rounded-full p-0.5 border-2 border-[#0a0a0b]"><Crown className="w-3 h-3 text-black fill-black" /></div>}
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">{t.welcome},</span>
-                  <div className="flex items-center gap-1"><h1 className="text-white text-xl font-bold leading-none">{userProfile.name || t.common?.defaultUser || 'User'}</h1>{userProfile.isPro && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />}</div>
-                </div>
+        <>
+          <div className="flex justify-between items-center mb-6 pl-1">
+            <div className="flex items-center gap-3 cursor-pointer group" onClick={handleOpenProfile} data-tour-id="profile-header">
+              <div className="relative">
+                <div className={`w-12 h-12 rounded-full border-2 overflow-hidden shadow-lg ${userProfile.isPro ? 'border-yellow-500' : 'border-transparent group-hover:border-accent'}`}><img src={userProfile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" /></div>
+                {userProfile.isPro && <div className="absolute -bottom-1 -right-1 bg-yellow-500 rounded-full p-0.5 border-2 border-[#0a0a0b]"><Crown className="w-3 h-3 text-black fill-black" /></div>}
               </div>
-              <div className="flex items-center gap-2" data-tour-id="header-actions">
-                
-                <div className="relative" data-tour-id="language-selector">
-                   <button 
-                     onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-                     className="p-3 bg-surface rounded-2xl hover:bg-surfaceLight transition-colors cursor-pointer active:scale-95 text-gray-400"
-                   >
-                      <Languages className="w-6 h-6" />
-                   </button>
-                   {isLangMenuOpen && (
-                      <div className="absolute top-full right-0 mt-2 bg-[#1c1c1e] border border-white/5 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 z-50 w-28 animate-in fade-in zoom-in duration-200">
-                         <button onClick={() => handleChangeLanguage('pt')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${appLanguage === 'pt' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
-                            Português
-                         </button>
-                         <button onClick={() => handleChangeLanguage('en')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${appLanguage === 'en' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
-                            English
-                         </button>
-                         <button onClick={() => handleChangeLanguage('es')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${appLanguage === 'es' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
-                            Español
-                         </button>
-                      </div>
-                   )}
-                </div>
+              <div className="flex flex-col">
+                <span className="text-gray-400 text-xs font-bold uppercase tracking-wider">{t.welcome},</span>
+                <div className="flex items-center gap-1"><h1 className="text-white text-xl font-bold leading-none">{userProfile.name || t.common?.defaultUser || 'User'}</h1>{userProfile.isPro && <Crown className="w-4 h-4 text-yellow-500 fill-yellow-500" />}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2" data-tour-id="header-actions">
 
-                <button 
-                  onClick={handleRestartTutorials}
+              <div className="relative" data-tour-id="language-selector">
+                <button
+                  onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
                   className="p-3 bg-surface rounded-2xl hover:bg-surfaceLight transition-colors cursor-pointer active:scale-95 text-gray-400"
-                  title={t.common.restartTutorial}
                 >
-                   <HelpCircle className="w-6 h-6" />
+                  <Languages className="w-6 h-6" />
                 </button>
-
-                <IconBell count={notifications.filter(n => !n.read).length} onClick={() => setIsNotificationOpen(true)} data-tour-id="notification-bell" />
+                {isLangMenuOpen && (
+                  <div className="absolute top-full right-0 mt-2 bg-[#1c1c1e] border border-white/5 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 z-50 w-28 animate-in fade-in zoom-in duration-200">
+                    <button onClick={() => handleChangeLanguage('pt')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${appLanguage === 'pt' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
+                      Português
+                    </button>
+                    <button onClick={() => handleChangeLanguage('en')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${appLanguage === 'en' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
+                      English
+                    </button>
+                    <button onClick={() => handleChangeLanguage('es')} className={`p-2 rounded-xl text-sm font-bold text-left transition-colors ${appLanguage === 'es' ? 'bg-white/10 text-white' : 'text-gray-400 hover:text-white'}`}>
+                      Español
+                    </button>
+                  </div>
+                )}
               </div>
+
+              <button
+                onClick={handleRestartTutorials}
+                className="p-3 bg-surface rounded-2xl hover:bg-surfaceLight transition-colors cursor-pointer active:scale-95 text-gray-400"
+                title={t.common.restartTutorial}
+              >
+                <HelpCircle className="w-6 h-6" />
+              </button>
+
+              <IconBell count={unreadNotifCount} onClick={handleOpenNotification} data-tour-id="notification-bell" />
             </div>
-            <div className="flex flex-col gap-2 mb-6">
-               {dItems.map(id => {
-                  if (id === BALANCE_CARD_ID) return (
-                    <BalanceCard key={id} id={id} data-tour-id="balance-card" balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} label={t.balanceLabel} addButtonLabel={t.addBtn} onAddClick={handleOpenAddTransaction} onDuplicateClick={handleDuplicateMonth} onCalculatorClick={handleOpenCalculator} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />
-                  );
-                  const a = filteredAcc.find(x => x.id === id);
-                  if (a) return <SecondaryCard key={a.id} account={a} onDelete={handleDeleteAccount} onEdit={handleEditAccount} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />;
-                  return null;
-               })}
-            </div>
-            <ContactsRow contacts={mockContacts} onAddClick={handleOpenAddAccount} onContactClick={handleContactClick} isPro={!!userProfile.isPro} title={t.quickAccessTitle} appLanguage={appLanguage} />
-            <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} appLanguage={appLanguage} />
-            <TransactionList 
-              transactions={transactionsForList} 
-              onDelete={handleDeleteTransaction} 
-              onEdit={handleEditTransaction} 
-              onToggleStatus={handleToggleStatus} 
-              onTogglePaymentMethod={handleTogglePaymentMethod} 
-              title={t.billsTitle}
-              appLanguage={appLanguage}
-            />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 mb-6">
+            {dItems.map(id => {
+              if (id === BALANCE_CARD_ID) return (
+                <BalanceCard key={id} id={id} data-tour-id="balance-card" balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} label={t.balanceLabel} addButtonLabel={t.addBtn} onAddClick={handleOpenAddTransaction} onDuplicateClick={handleDuplicateMonth} onCalculatorClick={handleOpenCalculator} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />
+              );
+              const a = filteredAcc.find(x => x.id === id);
+              if (a) return <SecondaryCard key={a.id} account={a} onDelete={handleDeleteAccount} onEdit={handleEditAccount} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />;
+              return null;
+            })}
+          </div>
+          <ContactsRow contacts={mockContacts} onAddClick={handleOpenAddAccount} onContactClick={handleContactClick} isPro={!!userProfile.isPro} title={t.quickAccessTitle} appLanguage={appLanguage} />
+          <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} appLanguage={appLanguage} />
+          <TransactionList
+            transactions={transactionsForList}
+            onDelete={handleDeleteTransaction}
+            onEdit={handleEditTransaction}
+            onToggleStatus={handleToggleStatus}
+            onTogglePaymentMethod={handleTogglePaymentMethod}
+            title={t.billsTitle}
+            appLanguage={appLanguage}
+          />
 
-            {!userProfile.isPro && (
-              <div className="px-1 mt-6">
-                
-                <div
-                  onClick={() => setIsDonationModalOpen(true)}
-                  className="mb-4 block w-full bg-[#1c1c1e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all cursor-pointer"
-                >
-                  <div className="absolute -top-[1px] -right-[1px] bg-emerald-500/20 px-3 py-1 rounded-bl-xl border-l border-b border-emerald-500/10 z-10">
-                     <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">{t.home?.support?.tag || "Apoie"}</span>
-                  </div>
+          {!userProfile.isPro && (
+            <div className="px-1 mt-6">
 
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-[1.2rem] bg-[#2c2c2e] flex items-center justify-center shrink-0">
-                       <Heart className="w-6 h-6 text-emerald-500 fill-emerald-500/20" />
-                    </div>
-
-                    <div className="flex-1">
-                       <h3 className="text-white font-bold text-sm">{t.home?.support?.title || "Apoie o Projeto"}</h3>
-                       <p className="text-gray-400 text-xs mt-0.5">{t.home?.support?.subtitle || "Doe qualquer valor via Pix."}</p>
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
-                  </div>
+              <div
+                onClick={handleOpenDonation}
+                className="mb-4 block w-full bg-[#1c1c1e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all cursor-pointer"
+              >
+                <div className="absolute -top-[1px] -right-[1px] bg-emerald-500/20 px-3 py-1 rounded-bl-xl border-l border-b border-emerald-500/10 z-10">
+                  <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">{t.home?.support?.tag || "Apoie"}</span>
                 </div>
 
-                <a 
-                  href="https://jeitto.onelink.me/QMGg/mcgv9w9n" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="block w-full bg-[#1c1c1e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all mb-4"
-                >
-                  <div className="absolute -top-[1px] -right-[1px] bg-[#552d36] px-3 py-1 rounded-bl-xl border-l border-b border-[#f82f58]/20 z-10">
-                     <span className="text-[10px] font-bold text-[#f82f58] uppercase tracking-wider">{t.home?.jeitto?.tag || "Indicação"}</span>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-[1.2rem] bg-[#2c2c2e] flex items-center justify-center shrink-0">
+                    <Heart className="w-6 h-6 text-emerald-500 fill-emerald-500/20" />
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <JeittoLogo />
-                    <div className="flex-1">
-                       <h3 className="text-white font-bold text-sm">{t.home?.jeitto?.title || "Limite Extra Disponível?"}</h3>
-                       <p className="text-gray-400 text-xs mt-0.5">{t.home?.jeitto?.subtitle || "Baixe o Jeitto e confira sua aprovação."}</p>
-                    </div>
-                    <ExternalLink className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
+                  <div className="flex-1">
+                    <h3 className="text-white font-bold text-sm">{t.home?.support?.title || "Apoie o Projeto"}</h3>
+                    <p className="text-gray-400 text-xs mt-0.5">{t.home?.support?.subtitle || "Doe qualquer valor via Pix."}</p>
                   </div>
-                </a>
+                  <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
+                </div>
               </div>
-            )}
-          </>
+
+              <a
+                href="https://jeitto.onelink.me/QMGg/mcgv9w9n"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full bg-[#1c1c1e] border border-white/5 rounded-[1.5rem] p-4 relative overflow-hidden group active:scale-95 transition-all mb-4"
+              >
+                <div className="absolute -top-[1px] -right-[1px] bg-[#552d36] px-3 py-1 rounded-bl-xl border-l border-b border-[#f82f58]/20 z-10">
+                  <span className="text-[10px] font-bold text-[#f82f58] uppercase tracking-wider">{t.home?.jeitto?.tag || "Indicação"}</span>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <JeittoLogo />
+                  <div className="flex-1">
+                    <h3 className="text-white font-bold text-sm">{t.home?.jeitto?.title || "Limite Extra Disponível?"}</h3>
+                    <p className="text-gray-400 text-xs mt-0.5">{t.home?.jeitto?.subtitle || "Baixe o Jeitto e confira sua aprovação."}</p>
+                  </div>
+                  <ExternalLink className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
+                </div>
+              </a>
+            </div>
+          )}
+        </>
       ) : currentView === 'settings' ? (
-          <SettingsView currentThemeId={appTheme.id} onSaveTheme={t => { setAppTheme(t); saveData(STORAGE_KEYS.APP_THEME, t); if(currentUserEmail) { saveUserField(currentUserEmail, 'theme', t); lastActionTimeRef.current = Date.now(); } setCurrentView('home'); }} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
+        <SettingsView currentThemeId={appTheme.id} onSaveTheme={handleSaveTheme} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
       ) : currentView === 'long-term' ? (
-          <LongTermView items={longTermTransactions} onAdd={handleLongTermAdd} onEdit={handleLongTermEdit} onDelete={handleLongTermDelete} appLanguage={appLanguage} isPro={!!userProfile.isPro} />
+        <LongTermView items={longTermTransactions} onAdd={handleLongTermAdd} onEdit={handleLongTermEdit} onDelete={handleLongTermDelete} appLanguage={appLanguage} isPro={!!userProfile.isPro} />
       ) : (
-          <InvestmentsView investments={investments} onAdd={handleInvestmentAdd} onEdit={handleInvestmentEdit} onDelete={handleInvestmentDelete} onBack={handleGoHome} cdiRate={cdiRate} onUpdateCdiRate={handleInvestmentUpdateRate} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
+        <InvestmentsView investments={investments} onAdd={handleInvestmentAdd} onEdit={handleInvestmentEdit} onDelete={handleInvestmentDelete} onBack={handleGoHome} cdiRate={cdiRate} onUpdateCdiRate={handleInvestmentUpdateRate} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
       )}
       <BottomNav currentView={currentView} onChangeView={setCurrentView} labels={t.nav || { home: 'INÍCIO', invest: 'INVEST', wallet: 'CARTEIRA', config: 'CONFIG' }} />
-      <AddTransactionModal isOpen={isAddTransactionOpen} onClose={() => { setIsAddTransactionOpen(false); setEditingTransaction(null); }} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} activeMonthContext={{ monthIndex: MONTH_NAMES.indexOf((activeMonth.month || "").toUpperCase()), year: parseInt(activeMonth.year) }} appLanguage={appLanguage} />
-      <AddAccountModal isOpen={isAddAccountOpen} onClose={() => { setIsAddAccountOpen(false); setEditingAccount(null); }} onSave={handleSaveAccount} accountToEdit={editingAccount} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
-      <CalculatorModal isOpen={isCalculatorOpen} onClose={() => setIsCalculatorOpen(false)} appLanguage={appLanguage} />
-      <EditProfileModal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} onSave={p => { setUserProfile(p); if(currentUserEmail) { saveUserField(currentUserEmail, 'profile', p); lastActionTimeRef.current = Date.now(); } }} onLogout={handleLogout} onDeleteAccount={() => {}} currentProfile={userProfile} appLanguage={appLanguage} onOpenProModal={handleOpenPro} />
-      <NotepadModal 
-        isOpen={isNotepadOpen} 
-        onClose={() => setIsNotepadOpen(false)} 
-        initialContent={activeMonth?.notepadContent || ''} 
-        initialDrawing={activeMonth?.notepadDrawing || null} 
-        onSave={(c, d) => { 
-            const updatedMonths = months.map(m => 
-                m.id === activeMonthId 
-                    ? { ...m, notepadContent: c, notepadDrawing: d } 
-                    : m
-            );
-            setMonths(updatedMonths);
-            if(currentUserEmail) {
-                const monthToSave = updatedMonths.find(m => m.id === activeMonthId);
-                if (monthToSave) {
-                    // Don't save client-side 'count' field to DB
-                    const { count, ...restOfMonth } = monthToSave;
-                    upsertItem(currentUserEmail, 'months', restOfMonth);
-                    lastActionTimeRef.current = Date.now();
-                }
-            } 
-        }} 
-        appLanguage={appLanguage} 
+      <AddTransactionModal isOpen={isAddTransactionOpen} onClose={handleCloseAddTransaction} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} activeMonthContext={activeMonthContext} appLanguage={appLanguage} />
+      <AddAccountModal isOpen={isAddAccountOpen} onClose={handleCloseAddAccount} onSave={handleSaveAccount} accountToEdit={editingAccount} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
+      <CalculatorModal isOpen={isCalculatorOpen} onClose={handleCloseCalculator} appLanguage={appLanguage} />
+      <EditProfileModal isOpen={isProfileModalOpen} onClose={handleCloseProfileModal} onSave={handleSaveProfile} onLogout={handleLogout} onDeleteAccount={noop} currentProfile={userProfile} appLanguage={appLanguage} onOpenProModal={handleOpenPro} />
+      <NotepadModal
+        isOpen={isNotepadOpen}
+        onClose={handleCloseNotepad}
+        initialContent={activeMonth?.notepadContent || ''}
+        initialDrawing={activeMonth?.notepadDrawing || null}
+        onSave={handleSaveNotepad}
+        appLanguage={appLanguage}
       />
-      <CalendarModal isOpen={isCalendarOpen} onClose={() => setIsCalendarOpen(false)} transactions={transactions} activeMonthContext={{ monthIndex: MONTH_NAMES.indexOf((activeMonth.month || "").toUpperCase()), year: parseInt(activeMonth.year) }} appLanguage={appLanguage} />
-      <NotificationModal 
-        isOpen={isNotificationOpen} 
-        onClose={() => setIsNotificationOpen(false)} 
-        notifications={notifications} 
-        onMarkAllRead={() => { 
-            const idsToDismiss = notifications.map(n => n.id);
-            setDismissedNotifIds(prev => [...new Set([...prev, ...idsToDismiss])]);
-            setNotifications([]); 
-            if(currentUserEmail) { 
-                saveCollection(currentUserEmail, 'notifications', []); 
-                lastActionTimeRef.current = Date.now(); 
-            } 
-        }} 
-        onDelete={id => { 
-            setDismissedNotifIds(prev => [...new Set([...prev, id])]);
-            setNotifications(p => p.filter(n => n.id !== id)); 
-            if(currentUserEmail) { 
-                deleteItem(currentUserEmail, 'notifications', id); 
-                lastActionTimeRef.current = Date.now(); 
-            } 
-        }} 
-        currentUserEmail={currentUserEmail} 
+      <CalendarModal isOpen={isCalendarOpen} onClose={handleCloseCalendar} transactions={transactions} activeMonthContext={activeMonthContext} appLanguage={appLanguage} />
+      <NotificationModal
+        isOpen={isNotificationOpen}
+        onClose={handleCloseNotification}
+        notifications={notifications}
+        onMarkAllRead={handleMarkAllRead}
+        onDelete={handleDeleteNotification}
+        currentUserEmail={currentUserEmail}
         appLanguage={appLanguage}
         isSubscribedOnBackend={!!userProfile.pushSubscription}
       />
-      <Suspense fallback={null}>{isAnalyticsOpen && <AnalyticsModal isOpen={isAnalyticsOpen} onClose={() => setIsAnalyticsOpen(false)} transactions={transactions} months={months} appLanguage={appLanguage} />}</Suspense>
-      <ProModal 
-        isOpen={isProModalOpen} 
-        onClose={() => setIsProModalOpen(false)} 
-        onUpgrade={() => { 
-           setUserProfile(p => ({...p, isPro: true})); 
-           setIsProModalOpen(false); 
-           if(currentUserEmail) { saveUserField(currentUserEmail, 'profile', { ...userProfile, isPro: true }); lastActionTimeRef.current = Date.now(); } 
-        }}
+      <Suspense fallback={null}>{isAnalyticsOpen && <AnalyticsModal isOpen={isAnalyticsOpen} onClose={handleCloseAnalytics} transactions={transactions} months={months} appLanguage={appLanguage} />}</Suspense>
+      <ProModal
+        isOpen={isProModalOpen}
+        onClose={handleCloseProModal}
+        onUpgrade={handleProUpgrade}
         userEmail={currentUserEmail || undefined}
         userName={userProfile.name}
         appLanguage={appLanguage}
       />
       <DonationModal
         isOpen={isDonationModalOpen}
-        onClose={() => setIsDonationModalOpen(false)}
+        onClose={handleCloseDonation}
         userEmail={currentUserEmail || undefined}
         userName={userProfile.name}
         appLanguage={appLanguage}
       />
-      <Tutorial 
+      <Tutorial
         isOpen={isTutorialActive && currentView === 'home'}
         currentStep={tutorialStep}
         onClose={handleCloseTutorial}
         onNext={handleTutorialNext}
         onPrev={handleTutorialPrev}
         steps={TUTORIAL_STEPS}
-        labels={{
-            next: t.tutorial.next,
-            prev: t.tutorial.prev,
-            finish: t.tutorial.finish,
-            skip: t.tutorial.skip
-        }}
+        labels={tutorialLabels}
       />
-      <Tutorial 
+      <Tutorial
         isOpen={isInvestmentsTutorialOpen && currentView === 'investments'}
-        currentStep={0} // Simplified for now, can be expanded if needed
+        currentStep={0}
         onClose={handleCloseInvestmentsTutorial}
-        onNext={handleCloseInvestmentsTutorial} // Simple next = finish
-        onPrev={() => {}} // No prev
+        onNext={handleCloseInvestmentsTutorial}
+        onPrev={noop}
         steps={INVESTMENTS_TUTORIAL_STEPS}
-        labels={{
-            next: t.tutorial.next,
-            prev: t.tutorial.prev,
-            finish: t.tutorial.finish,
-            skip: t.tutorial.skip
-        }}
+        labels={tutorialLabels}
       />
     </div>
   );

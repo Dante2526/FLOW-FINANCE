@@ -34,11 +34,11 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
-const NotificationModal: React.FC<Props> = ({ 
-  isOpen, 
-  onClose, 
-  notifications, 
-  onMarkAllRead, 
+const NotificationModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  notifications,
+  onMarkAllRead,
   onDelete,
   currentUserEmail,
   appLanguage,
@@ -49,9 +49,9 @@ const NotificationModal: React.FC<Props> = ({
     'Notification' in window ? Notification.permission : 'default'
   );
   // State to track if we have a valid browser subscription
-  const [hasBrowserSubscription, setHasBrowserSubscription] = useState(false); 
+  const [hasBrowserSubscription, setHasBrowserSubscription] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
-  
+
   const t = TRANSLATIONS[appLanguage].notifications;
   const locale = getLocale(appLanguage);
   const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
@@ -62,7 +62,7 @@ const NotificationModal: React.FC<Props> = ({
       if ('Notification' in window) {
         setNotificationPermission(Notification.permission);
       }
-      
+
       // Check for existing Push Subscription in the browser
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready.then(registration => {
@@ -77,40 +77,40 @@ const NotificationModal: React.FC<Props> = ({
   const handleRequestPermission = async () => {
     if (!('Notification' in window)) return;
     setIsSubscribing(true);
-    
+
     try {
       // 1. Request Permission (or verify if already granted)
       const permission = await Notification.requestPermission();
       setNotificationPermission(permission);
-      
+
       if (permission === 'granted') {
         // 2. Try to Subscribe to Push Service
         if ('serviceWorker' in navigator && currentUserEmail) {
           try {
-             const registration = await navigator.serviceWorker.ready;
-             
-             let subscription = await registration.pushManager.getSubscription();
-             
-             if (!subscription) {
-                subscription = await registration.pushManager.subscribe({
-                    userVisibleOnly: true,
-                    applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
-                });
-             }
+            const registration = await navigator.serviceWorker.ready;
 
-             // Save to Supabase (backend)
-             if (subscription) {
-                const subscriptionJson = JSON.parse(JSON.stringify(subscription));
-                await saveUserField(currentUserEmail, 'pushSubscription', subscriptionJson);
-                
-                // Although this updates the backend, the prop won't refresh until next open.
-                // The button will disappear on next open, which is acceptable UX.
-                onClose(); // Close modal on success for a cleaner flow.
-             }
+            let subscription = await registration.pushManager.getSubscription();
+
+            if (!subscription) {
+              subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+              });
+            }
+
+            // Save to Supabase (backend)
+            if (subscription) {
+              const subscriptionJson = JSON.parse(JSON.stringify(subscription));
+              await saveUserField(currentUserEmail, 'pushSubscription', subscriptionJson);
+
+              // Although this updates the backend, the prop won't refresh until next open.
+              // The button will disappear on next open, which is acceptable UX.
+              onClose(); // Close modal on success for a cleaner flow.
+            }
 
           } catch (pushError) {
-             console.warn("Falha ao registrar Push Notification:", pushError);
-             alert(t.alerts.errorPush);
+            console.warn("Falha ao registrar Push Notification:", pushError);
+            alert(t.alerts.errorPush);
           }
         }
       }
@@ -177,21 +177,21 @@ const NotificationModal: React.FC<Props> = ({
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-[#1c1c1e] w-full max-w-sm rounded-[2rem] shadow-2xl border border-white/5 relative flex flex-col h-[85dvh] max-h-[700px] overflow-hidden">
-        
+
         {/* HEADER SECTION (Fixed) */}
         <div className="flex-shrink-0 p-5 pb-0 bg-[#1c1c1e] z-10">
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center gap-3">
               <div className="relative">
-                  <Bell className="w-6 h-6 text-accent" />
-                  {unreadCount > 0 && activeTab === 'inbox' && (
-                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-[#1c1c1e]" />
-                  )}
+                <Bell className="w-6 h-6 text-accent" />
+                {unreadCount > 0 && activeTab === 'inbox' && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border border-[#1c1c1e]" />
+                )}
               </div>
               <h2 className="text-xl font-bold text-white">{t.title}</h2>
             </div>
-            <button 
-              onClick={onClose} 
+            <button
+              onClick={onClose}
               className="w-10 h-10 rounded-full bg-[#2c2c2e] flex items-center justify-center hover:bg-white/10 transition-colors"
             >
               <X className="w-5 h-5 text-gray-400" />
@@ -200,32 +200,30 @@ const NotificationModal: React.FC<Props> = ({
 
           {/* Tabs */}
           <div className="flex p-1 bg-[#2c2c2e] rounded-xl mb-2">
-              <button
-                onClick={() => setActiveTab('inbox')}
-                className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-                  activeTab === 'inbox' ? 'bg-[#3a3a3c] text-white shadow-md' : 'text-gray-500 hover:text-gray-300'
+            <button
+              onClick={() => setActiveTab('inbox')}
+              className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'inbox' ? 'bg-[#3a3a3c] text-white shadow-md' : 'text-gray-500 hover:text-gray-300'
                 }`}
-              >
-                {t.inbox}
-                {unreadCount > 0 && (
-                  <span className="bg-red-500 text-white text-[10px] px-1.5 rounded-full">{unreadCount}</span>
-                )}
-              </button>
-              <button
-                onClick={() => setActiveTab('send')}
-                className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${
-                  activeTab === 'send' ? 'bg-[#3a3a3c] text-white shadow-md' : 'text-gray-500 hover:text-gray-300'
+            >
+              {t.inbox}
+              {unreadCount > 0 && (
+                <span className="bg-red-500 text-white text-[10px] px-1.5 rounded-full">{unreadCount}</span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('send')}
+              className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 ${activeTab === 'send' ? 'bg-[#3a3a3c] text-white shadow-md' : 'text-gray-500 hover:text-gray-300'
                 }`}
-              >
-                {t.send}
-                <Send className="w-3 h-3" />
-              </button>
+            >
+              {t.send}
+              <Send className="w-3 h-3" />
+            </button>
           </div>
         </div>
 
         {/* CONTENT AREA - Always scrollable */}
         <div className="flex-1 p-5 pt-2 flex flex-col gap-3 overflow-y-auto no-scrollbar">
-          
+
           {/* --- TAB: INBOX --- */}
           {activeTab === 'inbox' && (
             <>
@@ -236,16 +234,15 @@ const NotificationModal: React.FC<Props> = ({
                 </div>
               ) : (
                 notifications.map((notif) => (
-                  <div 
-                    key={notif.id} 
-                    className={`p-4 rounded-2xl flex items-start gap-4 border transition-all flex-shrink-0 ${
-                      notif.read 
-                        ? 'bg-[#2c2c2e]/50 border-transparent opacity-70' 
+                  <div
+                    key={notif.id}
+                    className={`p-4 rounded-2xl flex items-start gap-4 border transition-all flex-shrink-0 ${notif.read
+                        ? 'bg-[#2c2c2e]/50 border-transparent opacity-70'
                         : 'bg-[#2c2c2e] border-accent/20'
-                    }`}
+                      }`}
                   >
                     <div className={`mt-1 w-2 h-2 rounded-full flex-shrink-0 ${notif.read ? 'bg-gray-600' : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]'}`} />
-                    
+
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start">
                         <h3 className={`text-sm font-bold mb-1 truncate ${notif.read ? 'text-gray-400' : 'text-white'}`}>
@@ -258,7 +255,7 @@ const NotificationModal: React.FC<Props> = ({
                       </p>
                     </div>
 
-                    <button 
+                    <button
                       onClick={() => onDelete(notif.id)}
                       className="text-gray-600 hover:text-red-500 transition-colors p-1"
                     >
@@ -273,7 +270,7 @@ const NotificationModal: React.FC<Props> = ({
           {/* --- TAB: SEND --- */}
           {activeTab === 'send' && (
             <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-right-4 duration-300 pb-2">
-              
+
               <div className="bg-[#2c2c2e]/50 p-3 rounded-2xl border border-white/5 flex-shrink-0">
                 <p className="text-[10px] text-gray-400 mb-1 font-bold uppercase">{t.howTo}</p>
                 <p className="text-xs text-gray-300 leading-relaxed">
@@ -284,11 +281,11 @@ const NotificationModal: React.FC<Props> = ({
               {/* Recipient */}
               <div className="flex flex-col gap-1 flex-shrink-0">
                 <label className="text-[10px] text-gray-400 ml-2 font-bold uppercase">{t.recipientLabel}</label>
-                <input 
+                <input
                   type="text"
                   name="notification_recipient_hidden"
                   value={recipientName}
-                  onChange={(e) => setRecipientName(e.target.value)} 
+                  onChange={(e) => setRecipientName(e.target.value)}
                   placeholder={t.recipientPlaceholder}
                   className="w-full bg-[#2c2c2e] text-white p-3 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium text-sm"
                   autoComplete="off"
@@ -300,22 +297,20 @@ const NotificationModal: React.FC<Props> = ({
 
               {/* Type Toggle */}
               <div className="flex gap-3 flex-shrink-0">
-                 <button 
-                   onClick={() => setMessageType('aviso')}
-                   className={`flex-1 h-10 rounded-xl border border-white/10 flex items-center justify-center gap-2 text-[10px] font-bold transition-all ${
-                     messageType === 'aviso' ? 'bg-blue-600 text-white border-blue-500' : 'bg-[#2c2c2e] text-gray-400'
-                   }`}
-                 >
-                   <MessageSquare className="w-3 h-3" /> {t.typeWarning}
-                 </button>
-                 <button 
-                   onClick={() => setMessageType('cobranca')}
-                   className={`flex-1 h-10 rounded-xl border border-white/10 flex items-center justify-center gap-2 text-[10px] font-bold transition-all ${
-                     messageType === 'cobranca' ? 'bg-orange-600 text-white border-orange-500' : 'bg-[#2c2c2e] text-gray-400'
-                   }`}
-                 >
-                   <DollarSign className="w-3 h-3" /> {t.typeCharge}
-                 </button>
+                <button
+                  onClick={() => setMessageType('aviso')}
+                  className={`flex-1 h-10 rounded-xl border border-white/10 flex items-center justify-center gap-2 text-[10px] font-bold transition-all ${messageType === 'aviso' ? 'bg-blue-600 text-white border-blue-500' : 'bg-[#2c2c2e] text-gray-400'
+                    }`}
+                >
+                  <MessageSquare className="w-3 h-3" /> {t.typeWarning}
+                </button>
+                <button
+                  onClick={() => setMessageType('cobranca')}
+                  className={`flex-1 h-10 rounded-xl border border-white/10 flex items-center justify-center gap-2 text-[10px] font-bold transition-all ${messageType === 'cobranca' ? 'bg-orange-600 text-white border-orange-500' : 'bg-[#2c2c2e] text-gray-400'
+                    }`}
+                >
+                  <DollarSign className="w-3 h-3" /> {t.typeCharge}
+                </button>
               </div>
 
               {/* Amount (Only if Cobranca) */}
@@ -324,12 +319,12 @@ const NotificationModal: React.FC<Props> = ({
                   <label className="text-[10px] text-gray-400 ml-2 font-bold uppercase">{t.amountLabel}</label>
                   <div className="relative">
                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-orange-500 font-bold text-sm">{currencySymbol}</span>
-                    <input 
+                    <input
                       type="text"
                       inputMode="numeric"
                       name="notification_amount_hidden"
                       value={amount}
-                      onChange={handleAmountChange} 
+                      onChange={handleAmountChange}
                       placeholder="0,00"
                       className="w-full bg-[#2c2c2e] text-white p-3 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 font-bold text-base"
                       autoComplete="off"
@@ -342,10 +337,10 @@ const NotificationModal: React.FC<Props> = ({
               {/* Message */}
               <div className="flex flex-col gap-1 flex-shrink-0">
                 <label className="text-[10px] text-gray-400 ml-2 font-bold uppercase">{t.messageLabel}</label>
-                <textarea 
+                <textarea
                   name="notification_message_hidden"
                   value={customMessage}
-                  onChange={(e) => setCustomMessage(e.target.value)} 
+                  onChange={(e) => setCustomMessage(e.target.value)}
                   placeholder={messageType === 'cobranca' ? t.messagePlaceholderCharge : t.messagePlaceholderWarning}
                   className="w-full h-32 bg-[#2c2c2e] text-white p-3 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium resize-none text-sm"
                   autoComplete="off"
@@ -362,69 +357,69 @@ const NotificationModal: React.FC<Props> = ({
 
         {/* FOOTER ACTIONS (Fixed) */}
         <div className="flex-shrink-0 p-5 pt-3 border-t border-white/5 bg-[#1c1c1e] z-10">
-           {activeTab === 'inbox' ? (
-             <div className="flex flex-col gap-3">
-                
-                {isSubscribedOnBackend ? (
-                   <div className="flex items-center justify-center gap-2 p-3 bg-green-500/10 rounded-2xl border border-green-500/20">
-                      <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                         <Check className="w-3 h-3 text-black font-bold" />
-                      </div>
-                      <span className="text-green-500 text-xs font-bold">{t.activeStatus}</span>
-                   </div>
-                ) : (
-                  notificationPermission !== 'denied' && (
-                     <div className="flex flex-col gap-2">
-                       <button 
-                         onClick={handleRequestPermission}
-                         disabled={isSubscribing}
-                         className="w-full h-14 rounded-[1.5rem] bg-blue-600 text-white font-bold flex items-center justify-center gap-2 hover:bg-blue-500 disabled:opacity-70 disabled:cursor-not-allowed transition-colors shadow-lg"
-                       >
-                         {isSubscribing ? (
-                           <>
-                             <Loader2 className="w-5 h-5 animate-spin shrink-0" />
-                             <span>{t.registering}</span>
-                           </>
-                         ) : (
-                           <>
-                             {notificationPermission === 'granted' ? (
-                                <CloudLightning className="w-5 h-5 shrink-0" />
-                             ) : (
-                                <Bell className="w-5 h-5 shrink-0" />
-                             )}
-                             <span className="truncate">
-                               {notificationPermission === 'granted' ? t.enableBtn : t.permissionBtn}
-                             </span>
-                           </>
-                         )}
-                       </button>
-                       <p className="text-[10px] text-gray-500 text-center leading-tight px-4">
-                         {t.permissionHint}
-                       </p>
-                     </div>
-                  )
-                )}
-                
-                {notifications.length > 0 && (
-                  <button 
-                    onClick={onMarkAllRead}
-                    className="w-full h-14 rounded-[1.5rem] bg-red-600 text-white font-bold flex items-center justify-center gap-2 hover:bg-red-500 transition-colors shadow-lg"
-                  >
-                    <Trash2 className="w-5 h-5 text-white" />
-                    {t.markAllRead}
-                  </button>
-                )}
-             </div>
-           ) : (
-             <button 
-               onClick={handleShare}
-               disabled={!recipientName}
-               className="w-full h-14 rounded-[1.5rem] bg-green-600 text-white font-bold flex items-center justify-center gap-2 hover:bg-green-500 disabled:bg-[#2c2c2e] disabled:text-gray-500 transition-colors shadow-lg"
-             >
-               <Share2 className="w-5 h-5" />
-               {t.sendWhatsApp}
-             </button>
-           )}
+          {activeTab === 'inbox' ? (
+            <div className="flex flex-col gap-3">
+
+              {isSubscribedOnBackend ? (
+                <div className="flex items-center justify-center gap-2 p-3 bg-green-500/10 rounded-2xl border border-green-500/20">
+                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-black font-bold" />
+                  </div>
+                  <span className="text-green-500 text-xs font-bold">{t.activeStatus}</span>
+                </div>
+              ) : (
+                notificationPermission !== 'denied' && (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={handleRequestPermission}
+                      disabled={isSubscribing}
+                      className="w-full h-14 rounded-[1.5rem] bg-blue-600 text-white font-bold flex items-center justify-center gap-2 hover:bg-blue-500 disabled:opacity-70 disabled:cursor-not-allowed transition-colors shadow-lg"
+                    >
+                      {isSubscribing ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin shrink-0" />
+                          <span>{t.registering}</span>
+                        </>
+                      ) : (
+                        <>
+                          {notificationPermission === 'granted' ? (
+                            <CloudLightning className="w-5 h-5 shrink-0" />
+                          ) : (
+                            <Bell className="w-5 h-5 shrink-0" />
+                          )}
+                          <span className="truncate">
+                            {notificationPermission === 'granted' ? t.enableBtn : t.permissionBtn}
+                          </span>
+                        </>
+                      )}
+                    </button>
+                    <p className="text-[10px] text-gray-500 text-center leading-tight px-4">
+                      {t.permissionHint}
+                    </p>
+                  </div>
+                )
+              )}
+
+              {notifications.length > 0 && (
+                <button
+                  onClick={onMarkAllRead}
+                  className="w-full h-14 rounded-[1.5rem] bg-red-600 text-white font-bold flex items-center justify-center gap-2 hover:bg-red-500 transition-colors shadow-lg"
+                >
+                  <Trash2 className="w-5 h-5 text-white" />
+                  {t.markAllRead}
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={handleShare}
+              disabled={!recipientName}
+              className="w-full h-14 rounded-[1.5rem] bg-green-600 text-white font-bold flex items-center justify-center gap-2 hover:bg-green-500 disabled:bg-[#2c2c2e] disabled:text-gray-500 transition-colors shadow-lg"
+            >
+              <Share2 className="w-5 h-5" />
+              {t.sendWhatsApp}
+            </button>
+          )}
         </div>
 
       </div>
@@ -432,4 +427,4 @@ const NotificationModal: React.FC<Props> = ({
   );
 };
 
-export default NotificationModal;
+export default React.memo(NotificationModal);

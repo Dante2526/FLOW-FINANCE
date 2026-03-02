@@ -66,10 +66,10 @@ const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPre
         };
 
         if (currentStep === 8) {
-            newHighlightStyle.transform = 'scale(1.03)';
-            newHighlightStyle.boxShadow = '0 0 0 2px white, 0 0 20px rgba(255, 255, 255, 0.15), 0 0 0 9999px rgba(0, 0, 0, 0.7)';
+          newHighlightStyle.transform = 'scale(1.03)';
+          newHighlightStyle.boxShadow = '0 0 0 2px white, 0 0 20px rgba(255, 255, 255, 0.15), 0 0 0 9999px rgba(0, 0, 0, 0.7)';
         }
-        
+
         setHighlightStyle(newHighlightStyle);
 
         if (dialogRef.current) {
@@ -77,7 +77,7 @@ const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPre
           const gap = 16;
           const pos = activeStep.position || 'bottom';
           let top = 0, left = 0;
-          
+
           const DIALOG_WIDTH = 320; // Use a fixed, safer width for calculations
 
           switch (pos) {
@@ -102,7 +102,7 @@ const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPre
               left = rect.left + (rect.width / 2) - (DIALOG_WIDTH / 2);
               break;
           }
-          
+
           const clampedLeft = Math.max(16, Math.min(left, window.innerWidth - DIALOG_WIDTH - 16));
           const clampedTop = Math.max(16, Math.min(top, window.innerHeight - dialogRect.height - 16));
 
@@ -129,17 +129,17 @@ const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPre
       setDialogStyle(prev => ({ ...prev, opacity: 0, transition: 'none' }));
 
       const stableUpdate = async () => {
-          try {
-            if (document.fonts) await document.fonts.ready;
-          } catch (e) {
-            console.warn("Could not wait for document.fonts.ready", e);
-          }
-          updatePositions(); 
+        try {
+          if (document.fonts) await document.fonts.ready;
+        } catch (e) {
+          console.warn("Could not wait for document.fonts.ready", e);
+        }
+        updatePositions();
       };
 
       stableUpdate();
       window.addEventListener('resize', updatePositions);
-      
+
       return () => {
         window.removeEventListener('resize', updatePositions);
       };
@@ -161,17 +161,17 @@ const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPre
       onPrev();
     }
   };
-  
+
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-      if (e.target === e.currentTarget) {
-          onClose();
-      }
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
   };
 
   return (
     <div className="fixed inset-0 z-[100] animate-in fade-in duration-300" onClick={handleBackdropClick}>
       <div style={highlightStyle} />
-      
+
       <div ref={dialogRef} style={dialogStyle}>
         <div className="bg-[#2c2c2e] p-5 rounded-3xl border border-white/10 shadow-2xl relative flex flex-col gap-4">
           <div className="flex justify-between items-start">
@@ -218,4 +218,4 @@ const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPre
   );
 };
 
-export default Tutorial;
+export default React.memo(Tutorial);
