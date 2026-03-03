@@ -8,6 +8,20 @@
     "productivity",
     "utilities"
   ],
+  "screenshots": [
+    {
+      "src": "/screenshot1_1772569725223.png",
+      "sizes": "1264x625",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshot2_1772569731672.png",
+      "sizes": "500x645",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
   "start_url": ".",
   "display": "standalone",
   "background_color": "#0a0a0b",
