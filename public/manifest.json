@@ -1,6 +1,13 @@
 {
   "name": "Flow Finance",
   "short_name": "Flow",
+  "description": "Controle financeiro inteligente e moderno para o seu dia a dia.",
+  "id": "/flow-finance-app",
+  "categories": [
+    "finance",
+    "productivity",
+    "utilities"
+  ],
   "start_url": ".",
   "display": "standalone",
   "background_color": "#0a0a0b",
