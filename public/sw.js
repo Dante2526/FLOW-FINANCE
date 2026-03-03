@@ -1,16 +1,69 @@
 
 
+const CACHE_NAME = 'flow-finance-cache-v1';
+const ASSETS_TO_CACHE = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/favicon.svg',
+  '/icon-192x192.png'
+];
+
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.addAll(ASSETS_TO_CACHE);
+    }).then(() => {
+      return self.skipWaiting();
+    })
+  );
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheName !== CACHE_NAME) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    }).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch', (event) => {
+  // Network First strategy with Cache fallback
+  event.respondWith(
+    fetch(event.request)
+      .then((networkResponse) => {
+        // Cache the new response
+        if (event.request.method === 'GET') {
+          const clonedResponse = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, clonedResponse);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        return caches.match(event.request);
+      })
+  );
+});
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-transactions') {
+    console.log('Sincronização em segundo plano iniciada para transações.');
+    // Logic to sync transactions would go here
+    event.waitUntil(Promise.resolve());
+  }
 });
 
 self.addEventListener('push', (event) => {
   const data = event.data ? event.data.json() : {};
-  
+
   const title = data.title || 'Flow Finance';
   const options = {
     body: data.body || 'Você tem uma nova notificação.',
