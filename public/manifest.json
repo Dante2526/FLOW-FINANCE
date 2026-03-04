@@ -3,6 +3,8 @@
   "short_name": "Flow",
   "description": "Controle financeiro inteligente e moderno para o seu dia a dia.",
   "id": "/flow-finance-app",
+  "iarc_rating_id": "YOUR_IARC_RATING_ID",
+  "prefer_related_applications": false,
   "categories": [
     "finance",
     "productivity",
@@ -38,13 +40,13 @@
       "src": "/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ]
 }
