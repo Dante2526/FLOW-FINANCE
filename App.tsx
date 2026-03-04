@@ -962,7 +962,7 @@ const App: React.FC = () => {
   if (isLoadingData && !userProfile.name) return <SplashScreen />;
 
   return (
-    <div key={currentUserEmail} ref={mainScrollRef} className={`h-full overflow-y-auto bg-[#0a0a0b] text-white px-2 pt-4 pb-32 font-sans selection:bg-accent selection:text-black no-scrollbar ${isAnyModalOpen ? 'overflow-hidden' : ''}`} style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+    <div key={currentUserEmail} ref={mainScrollRef} className={`h-full overflow-y-auto bg-[#0a0a0b] text-white px-2 pb-32 font-sans selection:bg-accent selection:text-black no-scrollbar ${isAnyModalOpen ? 'overflow-hidden' : ''}`} style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' }}>
       {currentView === 'home' ? (
         <>
           <div className="flex justify-between items-center mb-6 pl-1">
