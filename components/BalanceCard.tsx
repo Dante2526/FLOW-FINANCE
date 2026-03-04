@@ -112,15 +112,17 @@ const BalanceCard: React.FC<Props> = ({
         {/* Lado Esquerdo (Desktop) / Topo (Mobile) - Header & Valor */}
         <div className="flex flex-col gap-2 md:gap-0 md:justify-center h-full">
           {/* Header of Card */}
-          <div className="flex justify-between md:justify-start items-center gap-3">
-            <span className="text-lg font-extrabold text-white drop-shadow-sm tracking-wide md:mb-1">{label}</span>
-            <button
-              onClick={toggleVisibility}
-              className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors active:scale-95 flex items-center justify-center backdrop-blur-sm md:-mt-1"
-              title={isVisible ? tCommon.hideBalance : tCommon.showBalance}
-            >
-              {isVisible ? <Eye className="w-4 h-4 text-white" /> : <EyeOff className="w-4 h-4 text-white" />}
-            </button>
+          <div className="flex justify-between md:justify-start items-center w-full md:w-auto">
+            <div className="flex items-center gap-3">
+              <span className="text-lg font-extrabold text-white drop-shadow-sm tracking-wide md:mb-1">{label}</span>
+              <button
+                onClick={toggleVisibility}
+                className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors active:scale-95 flex items-center justify-center backdrop-blur-sm md:-mt-1"
+                title={isVisible ? tCommon.hideBalance : tCommon.showBalance}
+              >
+                {isVisible ? <Eye className="w-4 h-4 text-white" /> : <EyeOff className="w-4 h-4 text-white" />}
+              </button>
+            </div>
 
             {/* Drag Handle (Mobile Only) */}
             {draggable && (
