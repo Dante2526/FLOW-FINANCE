@@ -1,0 +1,14 @@
+[
+    {
+        "relation": [
+            "delegate_permission/common.handle_all_urls"
+        ],
+        "target": {
+            "namespace": "android_app",
+            "package_name": "app.vercel.flow_finance_alpha.twa",
+            "sha256_cert_fingerprints": [
+                "3D:A6:0F:5A:2D:79:5D:89:9E:37:07:22:DC:E5:D5:A8:47:43:D0:9D:AD:40:A9:48:FB:D7:ED:79:C9:96:D7:C6"
+            ]
+        }
+    }
+]
