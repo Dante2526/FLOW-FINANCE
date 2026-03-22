@@ -222,10 +222,10 @@ const CalendarModalBase: React.FC<Props> = ({ isOpen, onClose, transactions = []
               const isToday = isCurrentMonth && day === currentDay;
 
               return (
-                <div key={i} className="flex justify-center flex-col items-center relative h-9">
+                <div key={i} className="flex justify-center flex-col items-center relative h-10 w-10 mx-auto">
                   <button
                     onClick={() => handleDayClick(day)}
-                    className={`w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold transition-all relative z-10 ${isSelected
+                    className={`w-10 h-10 flex items-center justify-center rounded-full text-sm font-bold transition-all relative z-10 pb-0.5 ${isSelected
                       ? 'bg-red-600 text-white shadow-lg shadow-red-900/50 scale-105'
                       : isToday
                         ? 'bg-white/10 text-white border border-white/20'
@@ -237,9 +237,9 @@ const CalendarModalBase: React.FC<Props> = ({ isOpen, onClose, transactions = []
 
                   {/* Transaction Indicator Dots - Positioned absolutely relative to the cell container */}
                   {status && !isSelected && (
-                    <div className="absolute bottom-0 flex gap-1">
-                      <div className={`w-1 h-1 rounded-full ${status.hasSubscription ? 'bg-purple-500' : 'bg-cyan-400'}`} />
-                      {status.count > 1 && <div className="w-1 h-1 rounded-full bg-gray-500" />}
+                    <div className="absolute bottom-1.5 flex gap-1 z-20 pointer-events-none">
+                      <div className={`w-1.5 h-1.5 rounded-full ${status.hasSubscription ? 'bg-purple-500' : 'bg-cyan-400'}`} />
+                      {status.count > 1 && <div className="w-1.5 h-1.5 rounded-full bg-gray-500" />}
                     </div>
                   )}
                 </div>
