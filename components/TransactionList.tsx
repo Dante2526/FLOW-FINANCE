@@ -308,9 +308,18 @@ const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onTo
   const locale = getLocale(appLanguage);
   const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
+  const unpaidCount = transactions.filter(tx => !tx.paid).length;
+
   return (
     <div className="mt-6 flex flex-col" data-tour-id="transaction-list">
-      <h2 className="text-xl font-medium text-gray-400 mb-4 pl-1">{title || t.billsTitle}</h2>
+      <div className="flex items-center gap-3 mb-4 pl-1">
+        <h2 className="text-xl font-medium text-gray-400">{title || t.billsTitle}</h2>
+        {transactions.length > 0 && (
+          <span className={`text-sm font-bold px-2.5 py-0.5 rounded-full transition-colors ${unpaidCount > 0 ? 'bg-white/10 text-gray-300' : 'bg-green-500/10 text-green-500'}`}>
+            {unpaidCount}
+          </span>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
         {transactions.map((tx, index) => (
