@@ -90,8 +90,6 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
 
     const parsedYield = yieldRate ? parseFloat(yieldRate.replace(',', '.')) : 0;
     const parsedQuantity = quantity ? parseInt(quantity) : undefined;
-    
-    alert("TESTE DE DIAGNÓSTICO DO ASSISTENTE! O tipo sendo salvo é: " + type + ". Se você viu isso, o código novo está rodando!");
 
     onSave({
       name: name.toUpperCase(),
