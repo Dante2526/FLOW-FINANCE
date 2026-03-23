@@ -5,27 +5,52 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-async function testInsert() {
-  // We cannot bypass RLS for UPSERT unless authenticated.
-  // Wait, let's login using an existing user?
-  // I don't know the user's email or OTP.
-  // Can we just try to insert and see the error?
-  // If it's a CHECK constraint violation, postgres sometimes throws it before RLS.
-  // If it's RLS, it will throw 401 or 403 or 404.
-  const n = { 
-    id: 'f872c057-0105-4bce-97a7-dbda2c050011',
-    user_id: '20f70869-e47a-4019-87eb-91f16d013fa0', // The user ID from the image
-    name: 'TEST_INVESTMENT',
-    institution: 'TEST',
-    type: 'fixed',
-    amount: 1000,
-    yield_rate: 10
-  };
+async function runTest() {
+  const email = `test-${Date.now()}@example.com`;
+  
+  // 1. Sign up a new user via Supabase Auth
+  const { data: authData, error: authErr } = await supabase.auth.signUp({
+    email,
+    password: 'Password123!',
+  });
+  
+  if (authErr && !authErr.message.includes('already registered')) {
+    console.error("Auth error:", authErr.message);
+    // Might need email confirmation turned off, but often it returns a session anyway 
+    // or we can test if it works.
+  }
+  
+  let userId = authData?.user?.id;
+  
+  if (!userId) {
+     console.log("Failed to get user id, auth returned:", authData);
+     return;
+  }
+  
+  console.log("Got user ID:", userId);
 
-  const { data, error } = await supabase.from('investments').insert(n);
-  console.log("Insert result:");
-  console.log("Error:", error);
-  console.log("Data:", data);
+  // Array of types to test
+  const typesToTest = ['fii', 'cdi', 'fixed', 'renda_fixa'];
+  
+  for (const t of typesToTest) {
+    const inv = {
+      user_id: userId,
+      name: 'TEST_' + t,
+      type: t,
+      amount: 100,
+      yield_rate: 10
+    };
+    
+    console.log(`\nTesting type: '${t}'`);
+    const { data: resData, error: resErr } = await supabase.from('investments').insert(inv);
+    
+    if (resErr) {
+       console.log(`❌ Failed:`, resErr.message || resErr.details || resErr.hint);
+       if (resErr.code) console.log(`   Code:`, resErr.code);
+    } else {
+       console.log(`✅ Success! '${t}' is valid.`);
+    }
+  }
 }
 
-testInsert().catch(console.error);
+runTest().catch(console.error);
