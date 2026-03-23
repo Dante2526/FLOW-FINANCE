@@ -785,7 +785,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
       {/* Floating Add Button */}
       <button 
         onClick={() => setIsAddModalOpen(true)}
-        className="fixed bottom-28 right-6 w-14 h-14 bg-accent rounded-full flex items-center justify-center shadow-2xl hover:bg-accentDark transition-colors z-40"
+        className="fixed bottom-32 right-6 w-14 h-14 bg-accent rounded-full flex items-center justify-center shadow-2xl hover:bg-accentDark transition-colors z-[60]"
       >
         <Plus className="w-6 h-6 text-black" />
       </button>
