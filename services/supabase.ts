@@ -196,6 +196,7 @@ export const upsertItem = async (email: string, collection: string, item: any) =
     const { error } = await supabase.from(table).upsert({ ...snake, user_id: userId }, { onConflict: 'id' });
     if (error) {
        console.error(`[Supabase Upsert Error] on table '${table}':`, error);
+       alert(`OCORREU UM ERRO AO SALVAR NO BD: ` + JSON.stringify(error));
     }
     return !error;
   } catch (e) { 
