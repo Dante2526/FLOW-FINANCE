@@ -18,8 +18,9 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 // --- HELPERS DE CONVERSÃO ---
 
 const toCamelCase = (obj: any): any => {
+  if (obj === null || obj === undefined) return obj;
   if (Array.isArray(obj)) return obj.map(v => toCamelCase(v));
-  if (obj !== null && obj.constructor === Object) {
+  if (obj.constructor === Object) {
     return Object.keys(obj).reduce((result, key) => {
       const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
       result[camelKey] = toCamelCase(obj[key]);
@@ -30,8 +31,9 @@ const toCamelCase = (obj: any): any => {
 };
 
 const toSnakeCase = (obj: any): any => {
+  if (obj === null || obj === undefined) return obj;
   if (Array.isArray(obj)) return obj.map(v => toSnakeCase(v));
-  if (obj !== null && obj.constructor === Object) {
+  if (obj.constructor === Object) {
     return Object.keys(obj).reduce((result, key) => {
       const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
       result[snakeKey] = toSnakeCase(obj[key]);
