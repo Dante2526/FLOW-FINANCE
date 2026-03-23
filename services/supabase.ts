@@ -199,8 +199,9 @@ export const upsertItem = async (email: string, collection: string, item: any) =
        alert(`OCORREU UM ERRO AO SALVAR NO BD: ` + JSON.stringify(error));
     }
     return !error;
-  } catch (e) { 
+  } catch (e: any) { 
     console.error(`[JS Upsert Error] on table '${collection}':`, e);
+    alert(`ERRO FRONTEND AO SALVAR: ` + (e?.message || JSON.stringify(e)));
     return false; 
   }
 };
