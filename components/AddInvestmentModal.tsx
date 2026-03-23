@@ -17,7 +17,7 @@ interface Props {
 const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investmentToEdit, isPro = false, onOpenProModal, appLanguage }) => {
   const [name, setName] = useState('');
   const [institution, setInstitution] = useState('');
-  const [type, setType] = useState<InvestmentType>('cdi');
+  const [type, setType] = useState<InvestmentType>('fixed');
   const [amount, setAmount] = useState('');
   const [quantity, setQuantity] = useState('');
   const [yieldRate, setYieldRate] = useState('');
@@ -38,7 +38,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
       // Reset fields
       setName('');
       setInstitution('');
-      setType('cdi');
+      setType('fixed');
       setAmount('');
       setQuantity('');
       setYieldRate('');
@@ -128,9 +128,9 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
            <div className="grid grid-cols-2 gap-3 p-1 bg-[#2c2c2e] rounded-2xl">
               <button 
                 type="button"
-                onClick={() => handleTypeSelect('cdi')}
+                onClick={() => handleTypeSelect('fixed')}
                 className={`flex flex-col items-center justify-center p-3 rounded-xl transition-all ${
-                  type === 'cdi' 
+                  type === 'fixed' 
                     ? 'bg-[#3a3a3c] text-emerald-500 ring-emerald-500 ring-1 shadow-lg' 
                     : 'text-gray-500 hover:bg-[#3a3a3c]/50'
                 }`}
@@ -165,7 +165,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
                 type="text" 
                 value={institution}
                 onChange={(e) => setInstitution(e.target.value)}
-                placeholder={type === 'cdi' ? t.placeholders.institutionCdi : t.placeholders.institutionFii}
+                placeholder={type === 'fixed' ? t.placeholders.institutionCdi : t.placeholders.institutionFii}
                 className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium uppercase text-sm"
                 autoComplete="off"
                 spellCheck="false"
@@ -179,7 +179,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
                  type="text" 
                  value={name}
                  onChange={(e) => setName(e.target.value)}
-                 placeholder={type === 'cdi' ? t.placeholders.nameCdi : t.placeholders.nameFii}
+                 placeholder={type === 'fixed' ? t.placeholders.nameCdi : t.placeholders.nameFii}
                  className="w-full bg-[#2c2c2e] text-white p-4 rounded-xl outline-none focus:ring-2 focus:ring-accent font-medium uppercase text-sm"
                  autoComplete="off"
                  spellCheck="false"
@@ -227,20 +227,20 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
            {/* Yield */}
            <div className="flex flex-col gap-2">
               <label className="text-gray-400 text-xs ml-2 font-bold uppercase">
-                 {type === 'cdi' ? t.yieldLabel : t.yieldLabelFii}
+                 {type === 'fixed' ? t.yieldLabel : t.yieldLabelFii}
               </label>
               <div className="relative flex items-center">
                  <input 
                    type="number" 
                    value={yieldRate}
                    onChange={(e) => setYieldRate(e.target.value)}
-                   placeholder={type === 'cdi' ? t.placeholders.yieldCdi : t.placeholders.yieldFii}
+                   placeholder={type === 'fixed' ? t.placeholders.yieldCdi : t.placeholders.yieldFii}
                    className="w-full bg-[#2c2c2e] text-white p-4 pr-24 rounded-xl outline-none focus:ring-2 focus:ring-accent font-bold text-sm"
                    autoComplete="off"
                  />
 
                  {/* Search Button for FIIs/Stocks */}
-                 {type !== 'cdi' && name.length > 0 && (
+                 {type !== 'fixed' && name.length > 0 && (
                      <button
                          type="button"
                          onClick={handleSearchYield}
@@ -259,7 +259,7 @@ const AddInvestmentModal: React.FC<Props> = ({ isOpen, onClose, onSave, investme
              type="submit"
              disabled={!isFormValid}
              className={`w-full h-14 rounded-[1.5rem] font-bold text-lg flex items-center justify-center gap-2 transition-colors shadow-lg mt-2 ${
-               type === 'cdi' 
+               type === 'fixed' 
                   ? 'bg-emerald-500 text-emerald-950 hover:bg-emerald-400 disabled:bg-[#2c2c2e] disabled:text-gray-500' 
                   : 'bg-accent text-emerald-950 hover:bg-accentDark disabled:bg-[#2c2c2e] disabled:text-gray-500'
              }`}
