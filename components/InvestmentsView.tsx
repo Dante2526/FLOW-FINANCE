@@ -189,7 +189,7 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
             <div className="bg-black/20 p-4 rounded-2xl backdrop-blur-sm"><span className="text-white/70 text-[10px] font-bold uppercase block mb-1">{t.yieldYear}</span><p className="text-white font-bold text-lg">+ {currencySymbol} {estimatedYearlyReturn.toLocaleString(locale, { minimumFractionDigits: 2 })}</p></div>
           </div>
       </div>
-      <div className="flex-1 flex flex-col gap-2 pb-44" data-tour-id="investments-list">
+      <div className="flex-1 flex flex-col gap-2 pb-[11.5rem]" data-tour-id="investments-list">
           <div className="flex justify-between items-center px-1 mb-2"><h3 className="text-sm font-bold text-gray-400 uppercase">{t.yourAssets}</h3></div>
           {(investments || []).length === 0 ? <div className="flex flex-col items-center justify-center py-10 opacity-50"><Building className="w-12 h-12 text-gray-500 mb-2" /><p className="text-xs text-gray-400">{t.emptyList}</p></div> : (investments || []).map(inv => <SwipeableInvestmentItem key={inv.id} inv={inv} onEdit={(i) => { setEditingInvestment(i); setIsAddModalOpen(true); }} onDelete={onDelete} getYieldLabel={getYieldLabel} locale={locale} currencySymbol={currencySymbol} sharesLabel={t.shares} />)}
       </div>
