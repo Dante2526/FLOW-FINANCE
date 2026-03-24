@@ -709,7 +709,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar pb-32">
+      <div className="flex-1 overflow-y-auto no-scrollbar pb-44">
         {items.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-gray-500">
             <Wallet className="w-12 h-12 mb-4 opacity-20" />
