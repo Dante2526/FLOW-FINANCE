@@ -1,14 +1,8 @@
-[
-    {
-        "relation": [
-            "delegate_permission/common.handle_all_urls"
-        ],
-        "target": {
-            "namespace": "android_app",
-            "package_name": "app.vercel.flow_finance_alpha.twa",
-            "sha256_cert_fingerprints": [
-                "3D:A6:0F:5A:2D:79:5D:89:9E:37:07:22:DC:E5:D5:A8:47:43:D0:9D:AD:40:A9:48:FB:D7:ED:79:C9:96:D7:C6"
-            ]
-        }
-    }
-]
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.vercel.flow_finance_alpha.twa",
+    "sha256_cert_fingerprints": ["7E:97:05:21:84:D7:B9:7B:6E:B1:C1:0E:EF:AA:14:2D:A4:AE:97:39:54:BD:FA:F4:7D:78:F1:AC:27:B1:F9:20"]
+  }
+}]
