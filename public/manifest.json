@@ -3,8 +3,15 @@
   "short_name": "Flow",
   "description": "Controle financeiro inteligente e moderno para o seu dia a dia.",
   "id": "/flow-finance-app",
-  "iarc_rating_id": "YOUR_IARC_RATING_ID",
+  "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
   "prefer_related_applications": false,
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=br.com.flowfinance.app",
+      "id": "br.com.flowfinance.app"
+    }
+  ],
   "categories": [
     "finance",
     "productivity",
@@ -24,8 +31,20 @@
       "form_factor": "narrow"
     }
   ],
+  "scope": "/",
+  "scope_extensions": [
+    {
+      "origin": "*.flowfinance.app"
+    }
+  ],
+  "lang": "pt-BR",
   "start_url": ".",
   "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#0a0a0b",
   "theme_color": "#0a0a0b",
   "orientation": "portrait",
