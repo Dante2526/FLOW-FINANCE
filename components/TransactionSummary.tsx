@@ -171,35 +171,39 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
   return (
     <div 
       data-month-id={item.id}
-      className={`relative flex-shrink-0 w-36 h-24 rounded-[2rem] shadow-lg shadow-accent/20 transition-all duration-300 isolate cursor-pointer snap-center ${
-        isActive 
-          ? 'opacity-100 scale-100 ring-2 ring-white ring-offset-2 ring-offset-[#0a0a0b]' 
-          : 'opacity-50 scale-95'
+      className={`relative flex-shrink-0 w-36 h-24 rounded-[2rem] transition-all duration-300 isolate cursor-pointer snap-center ${
+        isActive ? 'opacity-100 scale-100' : 'opacity-50 scale-95'
       }`}
       style={{ overflow: 'visible' }}
     >
         {/* Duplicate Action (revealed on swipe) */}
         {isActive && onDuplicate && (
-          <button
-            onClick={handleDuplicateClick}
-            data-tour-id="duplicate-button"
-            className="absolute right-0 top-0 bottom-0 w-20 -mr-2 flex items-center justify-center rounded-r-[2rem] bg-accent/20 backdrop-blur-sm transition-opacity duration-200 z-0"
-            style={{ opacity: swipeX < -10 ? 1 : 0, pointerEvents: swipeX < -30 ? 'auto' : 'none' }}
-            title={tCommon.duplicateMonth}
-          >
-            <div className="flex flex-col items-center gap-1">
-              <Copy className="w-5 h-5 text-accent" />
-              <span className="text-[9px] font-bold text-accent uppercase">Duplicar</span>
-            </div>
-          </button>
+          <div className="absolute inset-y-0 right-0 w-24 -mr-2 z-0 flex items-center justify-end pr-2">
+             <button
+               onClick={handleDuplicateClick}
+               data-tour-id="duplicate-button"
+               className="w-16 h-16 rounded-[1.2rem] bg-[#1a1a1d] flex flex-col items-center justify-center gap-1 shadow-inner border border-white/[0.03] transition-all duration-300 hover:bg-[#2c2c2e] active:scale-95"
+               style={{ 
+                 opacity: swipeX < -20 ? 1 : 0, 
+                 transform: `rotate(${swipeX < -40 ? 0 : 15}deg) scale(${swipeX < -40 ? 1 : 0.8})`,
+                 pointerEvents: swipeX < -30 ? 'auto' : 'none' 
+               }}
+               title={tCommon.duplicateMonth}
+             >
+               <Copy className="w-5 h-5 text-accent" strokeWidth={2.5} />
+               <span className="text-[8px] font-bold text-accent uppercase tracking-wider">Duplicar</span>
+             </button>
+          </div>
         )}
 
         {/* Content Container (Foreground - slides) */}
         <div 
-          className={`absolute inset-0 rounded-[2rem] overflow-hidden transition-colors duration-300 z-10 ${isConfirming ? 'bg-red-600' : 'bg-accent'}`}
+          className={`absolute inset-0 rounded-[2rem] overflow-hidden z-10 ${
+            isConfirming ? 'bg-red-600' : 'bg-accent'
+          } ${isActive ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0a0a0b] shadow-lg shadow-accent/20' : ''}`}
           style={{ 
             transform: `translateX(${swipeX}px)`,
-            transition: isDragging.current ? 'none' : 'transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)'
+            transition: isDragging.current ? 'none' : 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.3s'
           }}
           onClick={() => {
             if (swipeX !== 0) {
