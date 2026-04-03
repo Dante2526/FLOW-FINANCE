@@ -24,7 +24,7 @@ import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, Ap
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { TRANSLATIONS, getBrowserLanguage, getLocale } from './i18n';
 import { IconBell, JeittoLogo } from './components/Icons';
-import { Crown, Languages, ExternalLink, Zap, Heart, Copy, Check, ChevronRight, HelpCircle } from 'lucide-react';
+import { Crown, Languages, ExternalLink, Zap, Heart, Copy, Check, ChevronRight, HelpCircle, CalendarClock, X, Plus } from 'lucide-react';
 
 // Supabase Services
 import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, upsertItem, deleteItem, hardDeleteMonth } from './services/supabase';
@@ -171,6 +171,7 @@ const App: React.FC = () => {
   const [activeMonthId, setActiveMonthId] = useState<string>(SYSTEM_INITIAL_MONTH.id);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [autoCreatedMonthName, setAutoCreatedMonthName] = useState<string | null>(null);
 
   // Persistent dismissed notifications
   const [dismissedNotifIds, setDismissedNotifIds] = useState<string[]>(() => {
@@ -185,6 +186,7 @@ const App: React.FC = () => {
   const dragItem = useRef<string | null>(null);
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const lastActionTimeRef = useRef<number>(0);
+  const hasAutoCheckedMonthRef = useRef<boolean>(false);
 
   // Robust translation retrieval with fallback
   const t = TRANSLATIONS[appLanguage] || TRANSLATIONS['pt'];
@@ -407,11 +409,9 @@ const App: React.FC = () => {
     if (!isLoadingData && currentUserEmail) {
       const tutorialCompleted = loadData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_${currentUserEmail}`, false);
       if (!tutorialCompleted) {
-        setTimeout(() => {
-          if (currentStateRef.current.currentView === 'home') {
-            handleStartTutorial();
-          }
-        }, 500);
+        if (currentStateRef.current.currentView === 'home') {
+          handleStartTutorial();
+        }
       }
     }
   }, [isLoadingData, currentUserEmail, handleStartTutorial]);
@@ -464,11 +464,9 @@ const App: React.FC = () => {
     if (currentView === 'investments' && !isLoadingData && currentUserEmail) {
       const tutorialCompleted = loadData(`${STORAGE_KEYS.TUTORIAL_COMPLETED}_investments_${currentUserEmail}`, false);
       if (!tutorialCompleted) {
-        setTimeout(() => {
-          if (currentStateRef.current.currentView === 'investments') {
-            setIsInvestmentsTutorialOpen(true);
-          }
-        }, 500);
+        if (currentStateRef.current.currentView === 'investments') {
+          setIsInvestmentsTutorialOpen(true);
+        }
       }
     }
   }, [currentView, isLoadingData, currentUserEmail]);
@@ -526,9 +524,18 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleDuplicateMonth = useCallback(async () => {
+  const handleToggleAutoCreateMonth = useCallback((val: boolean) => {
+    setUserProfile(prev => ({ ...prev, autoCreateMonth: val }));
+    const email = currentStateRef.current.currentUserEmail;
+    if (email) {
+      saveUserField(email, 'profile', { ...currentStateRef.current.userProfile, autoCreateMonth: val });
+    }
+  }, []);
+
+  const handleDuplicateMonth = useCallback(async (targetId?: string, isAutoRun?: boolean) => {
     const cur = currentStateRef.current;
-    const act = cur.months.find(m => m.id === activeMonthId) || cur.months[0];
+    if (isAutoRun && typeof targetId !== 'string') return;
+    const act = cur.months.find(m => m.id === (typeof targetId === 'string' ? targetId : activeMonthId)) || cur.months[0];
     if (!act) return;
 
     const actMonthNorm = (act.month || "").trim().toUpperCase();
@@ -546,6 +553,7 @@ const App: React.FC = () => {
     const nYrS = nYr.toString();
 
     if (cur.months.find(m => (m.month || "").toUpperCase().trim() === nName && m.year === nYrS)) {
+      if (isAutoRun) return; // Silent abort if already exists
       const currentLang = cur.appLanguage;
       const tCommon = (TRANSLATIONS[currentLang] || TRANSLATIONS['pt']).common;
       alert(tCommon.monthExists.replace('{month}', nName).replace('{year}', nYrS));
@@ -630,7 +638,44 @@ const App: React.FC = () => {
       ]);
       lastActionTimeRef.current = Date.now();
     }
+    
+    if (isAutoRun) {
+      setAutoCreatedMonthName(`${nName} ${nYrS}`);
+    }
   }, [activeMonthId, currentUserEmail]);
+
+  // AUTO CREATE MONTH EFFECT
+  useEffect(() => {
+    const cur = currentStateRef.current;
+    if (isLoadingData || !cur.userProfile.autoCreateMonth || !cur.userProfile.isPro || hasAutoCheckedMonthRef.current || cur.months.length === 0) return;
+
+    hasAutoCheckedMonthRef.current = true; // Só roda uma vez por boot do app
+
+    let maxYear = 0;
+    let maxMonthIdx = -1;
+    let latestMonthObj: MonthSummary | null = null;
+
+    cur.months.forEach(m => {
+        const y = parseInt(m.year || "0");
+        const idx = MONTH_NAMES.indexOf((m.month || "").trim().toUpperCase());
+        if (y > maxYear || (y === maxYear && idx > maxMonthIdx)) {
+            maxYear = y;
+            maxMonthIdx = idx;
+            latestMonthObj = m;
+        }
+    });
+
+    if (!latestMonthObj) return;
+
+    const today = new Date();
+    const currYear = today.getFullYear();
+    const currMonthIdx = today.getMonth();
+
+    if (maxYear < currYear || (maxYear === currYear && maxMonthIdx < currMonthIdx)) {
+        // Automaticamente gera a partir do MÊS MAIS RECENTE da conta
+        handleDuplicateMonth(latestMonthObj.id, true);
+    }
+  }, [isLoadingData, handleDuplicateMonth]);
 
   const handleDeleteMonth = useCallback(async (id: string) => {
     const cur = currentStateRef.current;
@@ -830,11 +875,9 @@ const App: React.FC = () => {
     setCurrentView('home');
 
     // UX: Request permission after UI settles on home screen
-    setTimeout(() => {
-      if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-      }
-    }, 1000);
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
 
   }, [appLanguage]);
 
@@ -989,6 +1032,30 @@ const App: React.FC = () => {
 
   return (
     <div key={currentUserEmail} ref={mainScrollRef} className={`h-full overflow-y-auto bg-[#0a0a0b] text-white px-2 pt-4 pb-[11.5rem] font-sans selection:bg-accent selection:text-black no-scrollbar ${isAnyModalOpen ? 'overflow-hidden' : ''}`} style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+      {autoCreatedMonthName && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-top-10 fade-in duration-500 w-[90%] max-w-sm">
+          <div className="bg-[#1c1c1e]/95 backdrop-blur-md border border-accent/30 text-white px-5 py-4 rounded-3xl shadow-2xl flex items-center gap-4 relative overflow-hidden group">
+            {/* Background Accent Glow */}
+            <div className="absolute -right-4 -top-4 w-20 h-20 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
+            
+            <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center shrink-0">
+               <CalendarClock className="w-6 h-6 text-accent" />
+            </div>
+            <div className="flex-1 pr-6">
+              <p className="text-sm font-bold leading-tight">{t.settings?.autoMonthCreatedToast || '💳 Mês Criado Automaticamente!'}</p>
+              <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">{t.settings?.autoMonthCreatedExplain}</p>
+              <p className="text-[10px] text-accent font-bold mt-1 uppercase tracking-wider">{autoCreatedMonthName}</p>
+            </div>
+            
+            <button 
+              onClick={() => setAutoCreatedMonthName(null)}
+              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors pointer-events-auto"
+            >
+              <X className="w-4 h-4 text-gray-400" />
+            </button>
+          </div>
+        </div>
+      )}
       {currentView === 'home' ? (
         <>
           <div className="flex justify-between items-center mb-6 pl-1">
@@ -1040,15 +1107,27 @@ const App: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 mb-6">
             {dItems.map(id => {
               if (id === BALANCE_CARD_ID) return (
-                <BalanceCard key={id} id={id} data-tour-id="balance-card" balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} label={t.balanceLabel} onCalculatorClick={handleOpenCalculator} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />
+                <BalanceCard key={id} id={id} data-tour-id="balance-card" balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} label={t.balanceLabel} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />
               );
               const a = filteredAcc.find(x => x.id === id);
               if (a) return <SecondaryCard key={a.id} account={a} onDelete={handleDeleteAccount} onEdit={handleEditAccount} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />;
               return null;
             })}
+
+            {/* Novo Cartão de Nova Fonte de Renda */}
+            <div className="bg-[#161618] rounded-[2rem] p-4 flex items-center justify-between shadow-lg h-auto min-h-[5rem]">
+              <span className="text-[11px] font-bold text-gray-400 tracking-wider uppercase ml-2">{t.common?.addSource || "Nova Fonte de Renda"}</span>
+              <button
+                onClick={handleOpenAddAccount}
+                className="w-12 h-12 rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-sm active:scale-95 transition-transform"
+                data-tour-id="add-income-source"
+              >
+                <Plus className="w-5 h-5 text-white" />
+              </button>
+            </div>
           </div>
-          <ContactsRow contacts={mockContacts} onAddClick={handleOpenAddAccount} onContactClick={handleContactClick} isPro={!!userProfile.isPro} title={t.quickAccessTitle} appLanguage={appLanguage} />
-          <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} onDuplicateMonth={handleDuplicateMonth} appLanguage={appLanguage} />
+          <ContactsRow contacts={mockContacts} onCalculatorClick={handleOpenCalculator} onContactClick={handleContactClick} isPro={!!userProfile.isPro} title={t.quickAccessTitle} appLanguage={appLanguage} />
+          <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} onDuplicateMonth={() => handleDuplicateMonth()} appLanguage={appLanguage} />
           <TransactionList
             transactions={transactionsForList}
             onDelete={handleDeleteTransaction}
@@ -1107,7 +1186,7 @@ const App: React.FC = () => {
           )}
         </>
       ) : currentView === 'settings' ? (
-        <SettingsView currentThemeId={appTheme.id} onSaveTheme={handleSaveTheme} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
+        <SettingsView currentThemeId={appTheme.id} onSaveTheme={handleSaveTheme} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} autoCreateMonth={userProfile.autoCreateMonth} onToggleAutoCreateMonth={handleToggleAutoCreateMonth} />
       ) : currentView === 'long-term' ? (
         <LongTermView items={longTermTransactions} onAdd={handleLongTermAdd} onEdit={handleLongTermEdit} onDelete={handleLongTermDelete} appLanguage={appLanguage} isPro={!!userProfile.isPro} />
       ) : (

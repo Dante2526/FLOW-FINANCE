@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Palette, Check, Lock, Crown, Shield, ChevronRight, MessageSquareWarning } from 'lucide-react';
+import { Palette, Check, Lock, Crown, Shield, ChevronRight, MessageSquareWarning, CalendarClock, Info, X } from 'lucide-react';
 import { AppTheme, AppLanguage } from '../types';
 import { TRANSLATIONS } from '../i18n';
 import PrivacyPolicyModal from './PrivacyPolicyModal';
@@ -10,6 +10,8 @@ interface Props {
   isPro: boolean;
   onOpenProModal: () => void;
   appLanguage: AppLanguage;
+  autoCreateMonth?: boolean;
+  onToggleAutoCreateMonth?: (val: boolean) => void;
 }
 
 // Extended interface internally to handle UI logic
@@ -34,9 +36,10 @@ export const AVAILABLE_THEMES: ThemeOption[] = [
   { id: 'aqua', name: 'Aqua', primary: '#22d3ee', secondary: '#0891b2', isPro: true },
 ];
 
-const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onOpenProModal, appLanguage }) => {
+const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onOpenProModal, appLanguage, autoCreateMonth, onToggleAutoCreateMonth }) => {
   const [selectedThemeId, setSelectedThemeId] = useState(currentThemeId);
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [showAutoMonthHelp, setShowAutoMonthHelp] = useState(false);
 
   const t = TRANSLATIONS[appLanguage].settings;
 
@@ -153,6 +156,65 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
             </div>
             <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
           </button>
+
+          {onToggleAutoCreateMonth && (
+            <div className="flex flex-col gap-2">
+              <div
+                className="w-full bg-[#1c1c1e] border border-white/5 rounded-2xl p-4 flex items-center justify-between transition-colors overflow-hidden"
+              >
+                <div 
+                  className="cursor-pointer flex items-center gap-3 flex-1"
+                  onClick={() => {
+                    if (!isPro) {
+                      onOpenProModal();
+                      return;
+                    }
+                    onToggleAutoCreateMonth(!autoCreateMonth);
+                  }}
+                >
+                  <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center pointer-events-none">
+                    <CalendarClock className="w-4 h-4 text-accent" />
+                  </div>
+                  <div className="text-left flex flex-col pointer-events-none">
+                    <span className="text-white font-bold text-sm flex items-center gap-2">
+                      {t.autoCreateMonthTitle || 'Criar Mês Automaticamente'}
+                      {!isPro && <Crown className="w-3 h-3 text-yellow-500" />}
+                    </span>
+                    <span className="text-gray-500 text-xs line-clamp-1">{t.autoCreateMonthDesc}</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setShowAutoMonthHelp(!showAutoMonthHelp); }}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${showAutoMonthHelp ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-white'}`}
+                  >
+                    <Info className="w-4 h-4" />
+                  </button>
+                  <div 
+                    onClick={() => {
+                      if (!isPro) {
+                        onOpenProModal();
+                        return;
+                      }
+                      onToggleAutoCreateMonth(!autoCreateMonth);
+                    }}
+                    className={`w-12 h-6 rounded-full flex items-center cursor-pointer transition-colors ${!isPro ? 'bg-gray-800' : autoCreateMonth ? 'bg-accent' : 'bg-gray-600'}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${autoCreateMonth && isPro ? 'translate-x-7' : 'translate-x-1'}`} />
+                  </div>
+                </div>
+              </div>
+
+              {showAutoMonthHelp && (
+                <div className="mx-2 p-4 bg-accent/5 border border-accent/10 rounded-2xl animate-in slide-in-from-top-2 fade-in duration-300">
+                  <p className="text-xs text-gray-300 leading-relaxed">
+                    {t.autoCreateMonthHelp}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Privacy Policy Link */}
           <button

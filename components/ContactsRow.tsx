@@ -1,33 +1,39 @@
 import React from 'react';
-import { NotebookPen, Landmark, Calendar, BarChart3, Lock } from 'lucide-react';
+import { NotebookPen, Calculator, Calendar, BarChart3, Lock } from 'lucide-react';
 import { Contact, AppLanguage } from '../types';
 import { TRANSLATIONS } from '../i18n';
 
 interface Props {
   contacts: Contact[];
-  onAddClick: () => void;
+  onCalculatorClick: () => void;
   onContactClick: (contact: Contact) => void;
   isPro?: boolean;
   title?: string;
   appLanguage?: AppLanguage;
 }
 
-const ContactsRow: React.FC<Props> = ({ contacts, onAddClick, onContactClick, isPro = false, title = 'ACESSO RÁPIDO', appLanguage = 'pt' }) => {
+const ContactsRow: React.FC<Props> = ({ contacts, onCalculatorClick, onContactClick, isPro = false, title = 'ACESSO RÁPIDO', appLanguage = 'pt' }) => {
   const tCommon = TRANSLATIONS[appLanguage].common;
 
   return (
     <div className="mt-8" data-tour-id="quick-access">
-      <h2 className="text-xl font-medium text-gray-400 mb-4 pl-1">{title}</h2>
+      <div className="flex items-center mb-6">
+        <div className="bg-[#161618] px-4 py-2 rounded-2xl border border-white/5 shadow-inner">
+          <h2 className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.15em] shrink-0">
+            {title}
+          </h2>
+        </div>
+      </div>
       <div className="grid grid-cols-4 gap-2">
         
-        {/* Add Button - Bank/Finance */}
+        {/* Calculator Button (formerly Add Source) */}
         <button 
-          onClick={onAddClick}
-          className="w-full aspect-[5/4] rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-lg shadow-black/20 hover:brightness-110 transition-all group border-2 border-transparent hover:border-purple-500/50"
-          title={tCommon.addSource}
-          data-tour-id="add-income-source"
+          onClick={onCalculatorClick}
+          className="w-full aspect-[5/4] rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-lg shadow-black/20 hover:brightness-110 transition-all group border-2 border-transparent hover:border-blue-500/50"
+          title={tCommon.calculator || "Calculadora"}
+          data-tour-id="calculator-button"
         >
-          <Landmark className="w-7 h-7 text-purple-500 group-hover:text-purple-400 transition-colors" />
+          <Calculator className="w-7 h-7 text-blue-500 group-hover:text-blue-400 transition-colors" />
         </button>
 
         {/* Contact Avatars / Action Buttons */}

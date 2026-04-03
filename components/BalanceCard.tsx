@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { Calculator, GripVertical, Eye, EyeOff } from 'lucide-react';
+import { GripVertical, Eye, EyeOff } from 'lucide-react';
 import { AppLanguage } from '../types';
 import { TRANSLATIONS, getLocale } from '../i18n';
 
 interface Props {
   balance: number;
-  label?: string;
-  onCalculatorClick: () => void;
-  // DnD Props
+  label: string;
   id?: string;
   draggable?: boolean;
   onDragStart?: (id: string) => void;
@@ -19,8 +17,7 @@ interface Props {
 
 const BalanceCard: React.FC<Props> = ({
   balance,
-  label = 'LUCRO',
-  onCalculatorClick,
+  label,
   id = 'balance-card',
   draggable,
   onDragStart,
@@ -40,7 +37,6 @@ const BalanceCard: React.FC<Props> = ({
   });
 
   const tCommon = TRANSLATIONS[appLanguage].common;
-  const tCalc = TRANSLATIONS[appLanguage].calculator;
 
   const toggleVisibility = () => {
     const newState = !isVisible;
@@ -155,18 +151,8 @@ const BalanceCard: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Lado Direito (Desktop) / Base (Mobile) - Botões e Drag Desk */}
-        <div className="flex items-center gap-3 w-full md:w-auto mt-auto md:mt-0">
-
-          {/* Calculator Button */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onCalculatorClick(); }}
-            data-tour-id="calculator-button"
-            className="w-16 h-16 bg-[#121214] text-white rounded-[1.5rem] flex items-center justify-center hover:bg-black transition-colors shadow-lg shrink-0"
-            title={tCalc.title}
-          >
-            <Calculator className="w-6 h-6" />
-          </button>
+        {/* Lado Direito (Desktop) / Base (Mobile) - Drag Desk */}
+        <div className="flex items-center gap-3 w-full md:w-auto mt-auto md:mt-0 justify-end">
 
           {/* Drag Handle (Desktop Only) */}
           {draggable && (

@@ -88,6 +88,7 @@ export interface UserProfile {
   isPro?: boolean; // New PRO status flag
   subscriptionExpiry?: string; // ISO Date string for subscription expiration
   pushSubscription?: any; // For cloud notifications status
+  autoCreateMonth?: boolean; // Formato automático de mês
 }
 
 export interface AppTheme {
