@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, Copy, Calculator, GripVertical, Eye, EyeOff } from 'lucide-react';
+import { Copy, Calculator, GripVertical, Eye, EyeOff } from 'lucide-react';
 import { AppLanguage } from '../types';
 import { TRANSLATIONS, getLocale } from '../i18n';
 
 interface Props {
   balance: number;
   label?: string;
-  addButtonLabel?: string;
-  onAddClick: () => void;
   onDuplicateClick: () => void;
   onCalculatorClick: () => void;
   // DnD Props
@@ -23,8 +21,6 @@ interface Props {
 const BalanceCard: React.FC<Props> = ({
   balance,
   label = 'LUCRO',
-  addButtonLabel = 'Adicionar',
-  onAddClick,
   onDuplicateClick,
   onCalculatorClick,
   id = 'balance-card',
@@ -163,15 +159,6 @@ const BalanceCard: React.FC<Props> = ({
 
         {/* Lado Direito (Desktop) / Base (Mobile) - Botões e Drag Desk */}
         <div className="flex items-center gap-3 w-full md:w-auto mt-auto md:mt-0">
-          {/* Add Button */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onAddClick(); }}
-            data-tour-id="add-button"
-            className="flex-1 md:flex-none md:w-48 bg-[#121214] text-white h-16 rounded-[1.5rem] flex items-center justify-center gap-2 hover:bg-black transition-colors shadow-lg px-2"
-          >
-            <span className="text-sm font-medium">{addButtonLabel}</span>
-            <Plus className="w-5 h-5" />
-          </button>
 
           {/* Duplicate Button (Copy Icon) */}
           <button
