@@ -12,6 +12,7 @@ interface Props {
   onTogglePaymentMethod: (id: string) => void;
   title?: string;
   appLanguage: AppLanguage;
+  onAddClick?: () => void;
 }
 
 // Helper to get today's date string in YYYY-MM-DD format, timezone-safe.
@@ -303,7 +304,7 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
   );
 });
 
-const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onToggleStatus, onTogglePaymentMethod, title, appLanguage }) => {
+const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onToggleStatus, onTogglePaymentMethod, title, appLanguage, onAddClick }) => {
   const t = TRANSLATIONS[appLanguage].transactionList;
   const locale = getLocale(appLanguage);
   const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
@@ -312,12 +313,23 @@ const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onTo
 
   return (
     <div className="mt-6 flex flex-col" data-tour-id="transaction-list">
-      <div className="flex items-center gap-3 mb-4 pl-1">
-        <h2 className="text-xl font-medium text-gray-400">{title || t.billsTitle}</h2>
-        {transactions.length > 0 && (
-          <span className={`text-sm font-bold px-2.5 py-0.5 rounded-full transition-colors ${unpaidCount > 0 ? 'bg-white/10 text-gray-300' : 'bg-green-500/10 text-green-500'}`}>
-            {unpaidCount}
-          </span>
+      <div className="bg-[#1c1c1e] rounded-2xl px-4 py-3 mb-4 flex items-center justify-between border border-white/5 shadow-lg shadow-black/20">
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-medium text-gray-400">{title || t.billsTitle}</h2>
+          {transactions.length > 0 && (
+            <span className={`text-sm font-bold px-2.5 py-0.5 rounded-full transition-colors ${unpaidCount > 0 ? 'bg-white/10 text-gray-300' : 'bg-green-500/10 text-green-500'}`}>
+              {unpaidCount}
+            </span>
+          )}
+        </div>
+        {onAddClick && (
+          <button
+            onClick={onAddClick}
+            className="w-9 h-9 rounded-xl bg-[#2c2c2e] flex items-center justify-center hover:bg-accent/20 hover:text-accent transition-all active:scale-90 text-gray-400 border border-white/5"
+            title={t.billsTitle}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
         )}
       </div>
 

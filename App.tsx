@@ -1057,6 +1057,7 @@ const App: React.FC = () => {
             onTogglePaymentMethod={handleTogglePaymentMethod}
             title={t.billsTitle}
             appLanguage={appLanguage}
+            onAddClick={handleOpenAddTransaction}
           />
 
           {!userProfile.isPro && (
