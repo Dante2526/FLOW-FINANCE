@@ -24,7 +24,7 @@ import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, Ap
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { TRANSLATIONS, getBrowserLanguage, getLocale } from './i18n';
 import { IconBell, JeittoLogo } from './components/Icons';
-import { Crown, Languages, ExternalLink, Zap, Heart, Copy, Check, ChevronRight, HelpCircle, CalendarClock, X, Plus } from 'lucide-react';
+import { Crown, Languages, ExternalLink, Zap, Heart, Copy, Check, ChevronRight, HelpCircle, CalendarClock, X, Plus, Landmark } from 'lucide-react';
 
 // Supabase Services
 import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, upsertItem, deleteItem, hardDeleteMonth } from './services/supabase';
@@ -1119,10 +1119,10 @@ const App: React.FC = () => {
               <span className="text-[11px] font-bold text-gray-400 tracking-wider uppercase ml-2">{t.common?.addSource || "Nova Fonte de Renda"}</span>
               <button
                 onClick={handleOpenAddAccount}
-                className="w-12 h-12 rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-sm active:scale-95 transition-transform"
+                className="w-12 h-12 rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-sm active:scale-95 transition-transform group"
                 data-tour-id="add-income-source"
               >
-                <Plus className="w-5 h-5 text-white" />
+                <Landmark className="w-6 h-6 text-purple-500 group-hover:text-purple-400 transition-colors" />
               </button>
             </div>
           </div>

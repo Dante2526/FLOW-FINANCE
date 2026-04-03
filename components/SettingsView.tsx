@@ -207,10 +207,14 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
               </div>
 
               {showAutoMonthHelp && (
-                <div className="mx-2 p-4 bg-accent/5 border border-accent/10 rounded-2xl animate-in slide-in-from-top-2 fade-in duration-300">
-                  <p className="text-xs text-gray-300 leading-relaxed">
-                    {t.autoCreateMonthHelp}
-                  </p>
+                <div className="mx-2 mt-1 p-5 bg-[#1c1c1e] border-l-4 border-accent rounded-r-2xl rounded-l-md shadow-lg animate-in slide-in-from-top-2 fade-in duration-300 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl" />
+                  <div className="flex items-start gap-3 relative z-10">
+                     <Info className="w-5 h-5 text-accent shrink-0 mt-0.5" />
+                     <p className="text-[13px] text-gray-300 leading-relaxed font-medium">
+                       {t.autoCreateMonthHelp}
+                     </p>
+                  </div>
                 </div>
               )}
             </div>

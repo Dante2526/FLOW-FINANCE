@@ -18,10 +18,10 @@ const ContactsRow: React.FC<Props> = ({ contacts, onCalculatorClick, onContactCl
   return (
     <div className="mt-8" data-tour-id="quick-access">
       <div className="flex items-center mb-6">
-        <div className="bg-[#161618] px-4 py-2 rounded-2xl border border-white/5 shadow-inner">
-          <h2 className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.15em] shrink-0">
+        <div className="bg-[#161618] rounded-[1.5rem] p-4 flex items-center shadow-inner">
+          <span className="text-[11px] font-bold text-gray-400 tracking-[0.15em] shrink-0 uppercase">
             {title}
-          </h2>
+          </span>
         </div>
       </div>
       <div className="grid grid-cols-4 gap-2">
@@ -29,11 +29,11 @@ const ContactsRow: React.FC<Props> = ({ contacts, onCalculatorClick, onContactCl
         {/* Calculator Button (formerly Add Source) */}
         <button 
           onClick={onCalculatorClick}
-          className="w-full aspect-[5/4] rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-lg shadow-black/20 hover:brightness-110 transition-all group border-2 border-transparent hover:border-blue-500/50"
+          className="w-full aspect-[5/4] rounded-2xl bg-[#2c2c2e] flex items-center justify-center shadow-lg shadow-black/20 hover:brightness-110 transition-all group border-2 border-transparent hover:border-purple-500/50"
           title={tCommon.calculator || "Calculadora"}
           data-tour-id="calculator-button"
         >
-          <Calculator className="w-7 h-7 text-blue-500 group-hover:text-blue-400 transition-colors" />
+          <Calculator className="w-7 h-7 text-purple-500 group-hover:text-purple-400 transition-colors" />
         </button>
 
         {/* Contact Avatars / Action Buttons */}
