@@ -1115,7 +1115,7 @@ const App: React.FC = () => {
             })}
 
             {/* Novo Cartão de Nova Fonte de Renda */}
-            <div className="bg-[#161618] rounded-[2rem] p-4 flex items-center justify-between shadow-lg h-auto min-h-[5rem]">
+            <div className="md:col-span-2 md:max-w-2xl md:mx-auto w-full bg-[#161618] rounded-[2rem] p-4 flex items-center justify-between shadow-lg h-auto min-h-[5rem]">
               <span className="text-[11px] font-bold text-gray-400 tracking-wider uppercase ml-2">{t.common?.addSource || "Nova Fonte de Renda"}</span>
               <button
                 onClick={handleOpenAddAccount}

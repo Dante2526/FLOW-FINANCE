@@ -162,20 +162,11 @@ const SettingsView: React.FC<Props> = ({ currentThemeId, onSaveTheme, isPro, onO
               <div
                 className="w-full bg-[#1c1c1e] border border-white/5 rounded-2xl p-4 flex items-center justify-between transition-colors overflow-hidden"
               >
-                <div 
-                  className="cursor-pointer flex items-center gap-3 flex-1"
-                  onClick={() => {
-                    if (!isPro) {
-                      onOpenProModal();
-                      return;
-                    }
-                    onToggleAutoCreateMonth(!autoCreateMonth);
-                  }}
-                >
-                  <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center pointer-events-none">
+                <div className="flex items-center gap-3 flex-1">
+                  <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
                     <CalendarClock className="w-4 h-4 text-accent" />
                   </div>
-                  <div className="text-left flex flex-col pointer-events-none">
+                  <div className="text-left flex flex-col">
                     <span className="text-white font-bold text-sm flex items-center gap-2">
                       {t.autoCreateMonthTitle || 'Criar Mês Automaticamente'}
                       {!isPro && <Crown className="w-3 h-3 text-yellow-500" />}

@@ -89,84 +89,65 @@ const BalanceCard: React.FC<Props> = ({
   return (
     <div
       data-card-id={id}
-      className="relative w-full md:col-span-2 bg-accent rounded-[2.5rem] p-6 text-white flex flex-col justify-between min-h-[220px] md:min-h-0 md:h-40 shadow-lg shadow-accent/20"
+      className="relative w-full md:col-span-2 md:max-w-2xl md:mx-auto bg-accent rounded-[2.5rem] p-6 text-white h-40 shadow-lg shadow-accent/20 select-none"
       onDragEnter={handleDragEnter}
       onDragOver={(e) => e.preventDefault()}
       onDragEnd={onDragEnd}
       {...props}
     >
-
-      {/* Wrapper Interno Flex para Desktop */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between h-full gap-6 md:gap-4">
-
-        {/* Lado Esquerdo (Desktop) / Topo (Mobile) - Header & Valor */}
-        <div className="flex flex-col gap-2 md:gap-0 md:justify-center h-full">
-          {/* Header of Card */}
-          <div className="flex justify-between md:justify-start items-center w-full md:w-auto">
-            <div className="flex items-center gap-3">
-              <span className="text-lg font-extrabold text-white drop-shadow-sm tracking-wide md:mb-1">{label}</span>
-              <button
-                onClick={toggleVisibility}
-                className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors active:scale-95 flex items-center justify-center backdrop-blur-sm md:-mt-1"
-                title={isVisible ? tCommon.hideBalance : tCommon.showBalance}
-              >
-                {isVisible ? <Eye className="w-4 h-4 text-white" /> : <EyeOff className="w-4 h-4 text-white" />}
-              </button>
-            </div>
-
-            {/* Drag Handle (Mobile Only) */}
-            {draggable && (
-              <div
-                className="md:hidden p-2 -mr-2 cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100 transition-opacity touch-none"
-                style={{ touchAction: 'none' }}
-                draggable={true}
-                onDragStart={handleDragStart}
-                onDragEnd={onDragEnd}
-                onTouchStart={(e) => {
-                  e.stopPropagation();
-                  if (onDragStart && id) onDragStart(id);
-                }}
-                onTouchMove={handleTouchMove}
-                onTouchEnd={(e) => {
-                  e.stopPropagation();
-                  if (onDragEnd) onDragEnd();
-                }}
-              >
-                <GripVertical className="w-6 h-6 text-white" />
-              </div>
-            )}
+      <div className="flex h-full items-center justify-between">
+        
+        {/* Left Side - Header & Main Balance */}
+        <div className="flex flex-col justify-center">
+          <div className="flex items-center gap-3 mb-2">
+            <span className="text-lg font-extrabold text-white drop-shadow-sm tracking-wide uppercase">{label}</span>
+            <button
+              onClick={toggleVisibility}
+              className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors active:scale-95 flex items-center justify-center backdrop-blur-sm"
+              title={isVisible ? tCommon.hideBalance : tCommon.showBalance}
+            >
+              {isVisible ? <Eye className="w-4 h-4 text-white" /> : <EyeOff className="w-4 h-4 text-white" />}
+            </button>
           </div>
 
-          {/* Main Balance */}
-          <div className="mt-1 md:mt-0">
+          <div>
             {isVisible ? (
-              <h1 className="text-4xl font-bold tracking-tight drop-shadow-md truncate md:leading-tight">
+              <h1 className="text-4xl font-bold tracking-tight drop-shadow-md truncate leading-tight">
                 {currencySymbol} {integerPart}<span className="text-3xl text-white">{separator}{decimalPart}</span>
               </h1>
             ) : (
-              <h1 className="text-4xl font-bold tracking-tight drop-shadow-md opacity-80 md:leading-tight">
+              <h1 className="text-4xl font-bold tracking-tight drop-shadow-md opacity-80 leading-tight">
                 {currencySymbol} ••••
               </h1>
             )}
           </div>
         </div>
 
-        {/* Lado Direito (Desktop) / Base (Mobile) - Drag Desk */}
-        <div className="flex items-center gap-3 w-full md:w-auto mt-auto md:mt-0 justify-end">
-
-          {/* Drag Handle (Desktop Only) */}
-          {draggable && (
-            <div
-              className="hidden md:flex p-2 cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100 transition-opacity"
-              draggable={true}
-              onDragStart={handleDragStart}
-              onDragEnd={onDragEnd}
-            >
-              <GripVertical className="w-6 h-6 text-white" />
-            </div>
-          )}
-        </div>
-
+        {/* Right Side - Drag Handle */}
+        {draggable && (
+          <div
+            className="drag-handle p-4 -mr-4 cursor-grab active:cursor-grabbing opacity-50 hover:opacity-100 transition-opacity touch-none"
+            style={{ touchAction: 'none' }}
+            draggable={true}
+            onDragStart={handleDragStart}
+            onDragEnd={onDragEnd}
+            onMouseDown={(e) => e.stopPropagation()} 
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              if (onDragStart && id) onDragStart(id);
+            }}
+            onTouchMove={(e) => {
+              e.stopPropagation();
+              handleTouchMove(e);
+            }}
+            onTouchEnd={(e) => {
+              e.stopPropagation();
+              if (onDragEnd) onDragEnd();
+            }}
+          >
+            <GripVertical className="w-6 h-6 text-white" />
+          </div>
+        )}
       </div>
     </div>
   );
