@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Copy, Calculator, GripVertical, Eye, EyeOff } from 'lucide-react';
+import { Calculator, GripVertical, Eye, EyeOff } from 'lucide-react';
 import { AppLanguage } from '../types';
 import { TRANSLATIONS, getLocale } from '../i18n';
 
 interface Props {
   balance: number;
   label?: string;
-  onDuplicateClick: () => void;
   onCalculatorClick: () => void;
   // DnD Props
   id?: string;
@@ -21,7 +20,6 @@ interface Props {
 const BalanceCard: React.FC<Props> = ({
   balance,
   label = 'LUCRO',
-  onDuplicateClick,
   onCalculatorClick,
   id = 'balance-card',
   draggable,
@@ -159,16 +157,6 @@ const BalanceCard: React.FC<Props> = ({
 
         {/* Lado Direito (Desktop) / Base (Mobile) - Botões e Drag Desk */}
         <div className="flex items-center gap-3 w-full md:w-auto mt-auto md:mt-0">
-
-          {/* Duplicate Button (Copy Icon) */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onDuplicateClick(); }}
-            data-tour-id="duplicate-button"
-            className="w-16 h-16 bg-[#121214] text-white rounded-[1.5rem] flex items-center justify-center hover:bg-black transition-colors shadow-lg shrink-0"
-            title={tCommon.duplicateMonth}
-          >
-            <Copy className="w-6 h-6" />
-          </button>
 
           {/* Calculator Button */}
           <button

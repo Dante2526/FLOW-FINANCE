@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { ArrowUpRight, Trash2, X, Check } from 'lucide-react';
+import { ArrowUpRight, Trash2, X, Check, Copy } from 'lucide-react';
 import { MonthSummary, AppLanguage } from '../types';
 import { TRANSLATIONS, getLocale } from '../i18n';
 
@@ -8,6 +8,7 @@ interface Props {
   activeMonthId: string;
   onSelectMonth: (id: string) => void;
   onDeleteMonth: (id: string) => void;
+  onDuplicateMonth?: () => void;
   appLanguage: AppLanguage;
 }
 
@@ -17,6 +18,7 @@ interface MonthCardProps {
   canDelete: boolean;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
+  onDuplicate?: () => void;
   appLanguage: AppLanguage;
 }
 
@@ -38,14 +40,22 @@ const getMonthDisplayName = (dbName: string, lang: AppLanguage): string => {
 };
 
 // MEMOIZED ATOMIC COMPONENT
-const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSelect, onDelete, appLanguage }) => {
+const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSelect, onDelete, onDuplicate, appLanguage }) => {
   const [isConfirming, setIsConfirming] = useState(false);
+  const [swipeX, setSwipeX] = useState(0);
+  const startX = useRef<number | null>(null);
+  const startY = useRef<number | null>(null);
+  const isDragging = useRef(false);
+  const directionLocked = useRef<'horizontal' | 'vertical' | null>(null);
 
   const tCommon = TRANSLATIONS[appLanguage].common;
 
   // Reset confirmation state if active month changes
   useEffect(() => {
-    if (!isActive) setIsConfirming(false);
+    if (!isActive) {
+      setIsConfirming(false);
+      setSwipeX(0);
+    }
   }, [isActive]);
 
   const handleDeleteClick = (e: React.MouseEvent) => {
@@ -63,6 +73,97 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
     setIsConfirming(false);
   };
 
+  // Swipe handlers for duplicate action
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isActive || isConfirming || !onDuplicate) return;
+    startX.current = e.touches[0].clientX;
+    startY.current = e.touches[0].clientY;
+    isDragging.current = true;
+    directionLocked.current = null;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging.current || startX.current === null || startY.current === null) return;
+
+    const diffX = e.touches[0].clientX - startX.current;
+    const diffY = e.touches[0].clientY - startY.current;
+
+    // Lock direction on first significant movement
+    if (directionLocked.current === null) {
+      if (Math.abs(diffX) < 8 && Math.abs(diffY) < 8) return;
+      directionLocked.current = Math.abs(diffX) > Math.abs(diffY) ? 'horizontal' : 'vertical';
+    }
+
+    if (directionLocked.current === 'vertical') return;
+
+    // Only allow swiping left (negative)
+    const clampedX = Math.min(0, Math.max(-80, diffX));
+    setSwipeX(clampedX);
+  };
+
+  const handleTouchEnd = () => {
+    isDragging.current = false;
+    startX.current = null;
+    startY.current = null;
+    directionLocked.current = null;
+
+    // Snap: if swiped far enough, lock open; otherwise snap back
+    if (swipeX < -40) {
+      setSwipeX(-80);
+    } else {
+      setSwipeX(0);
+    }
+  };
+
+  // Mouse handlers for desktop
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!isActive || isConfirming || !onDuplicate) return;
+    startX.current = e.clientX;
+    startY.current = e.clientY;
+    isDragging.current = true;
+    directionLocked.current = null;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current || startX.current === null) return;
+    
+    const diffX = e.clientX - startX.current;
+    const diffY = e.clientY - (startY.current || 0);
+
+    if (directionLocked.current === null) {
+      if (Math.abs(diffX) < 5 && Math.abs(diffY) < 5) return;
+      directionLocked.current = Math.abs(diffX) > Math.abs(diffY) ? 'horizontal' : 'vertical';
+    }
+
+    if (directionLocked.current === 'vertical') return;
+
+    e.preventDefault();
+    const clampedX = Math.min(0, Math.max(-80, diffX));
+    setSwipeX(clampedX);
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+    startX.current = null;
+    startY.current = null;
+    directionLocked.current = null;
+
+    if (swipeX < -40) {
+      setSwipeX(-80);
+    } else {
+      setSwipeX(0);
+    }
+  };
+
+  const handleDuplicateClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDuplicate) {
+      onDuplicate();
+      setSwipeX(0);
+    }
+  };
+
   const displayName = getMonthDisplayName(item.month, appLanguage);
   const locale = getLocale(appLanguage);
   const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
@@ -70,15 +171,51 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
   return (
     <div 
       data-month-id={item.id}
-      onClick={() => !isConfirming && onSelect(item.id)}
-      className={`relative flex-shrink-0 w-36 h-24 rounded-[2rem] shadow-lg shadow-accent/20 transition-all duration-300 isolate cursor-pointer overflow-hidden snap-center ${
+      className={`relative flex-shrink-0 w-36 h-24 rounded-[2rem] shadow-lg shadow-accent/20 transition-all duration-300 isolate cursor-pointer snap-center ${
         isActive 
           ? 'opacity-100 scale-100 ring-2 ring-white ring-offset-2 ring-offset-[#0a0a0b]' 
           : 'opacity-50 scale-95'
       }`}
+      style={{ overflow: 'visible' }}
     >
-        {/* Content Container (Background) */}
-        <div className={`absolute inset-0 transition-colors duration-300 z-0 ${isConfirming ? 'bg-red-600' : 'bg-accent'}`}>
+        {/* Duplicate Action (revealed on swipe) */}
+        {isActive && onDuplicate && (
+          <button
+            onClick={handleDuplicateClick}
+            data-tour-id="duplicate-button"
+            className="absolute right-0 top-0 bottom-0 w-20 -mr-2 flex items-center justify-center rounded-r-[2rem] bg-accent/20 backdrop-blur-sm transition-opacity duration-200 z-0"
+            style={{ opacity: swipeX < -10 ? 1 : 0, pointerEvents: swipeX < -30 ? 'auto' : 'none' }}
+            title={tCommon.duplicateMonth}
+          >
+            <div className="flex flex-col items-center gap-1">
+              <Copy className="w-5 h-5 text-accent" />
+              <span className="text-[9px] font-bold text-accent uppercase">Duplicar</span>
+            </div>
+          </button>
+        )}
+
+        {/* Content Container (Foreground - slides) */}
+        <div 
+          className={`absolute inset-0 rounded-[2rem] overflow-hidden transition-colors duration-300 z-10 ${isConfirming ? 'bg-red-600' : 'bg-accent'}`}
+          style={{ 
+            transform: `translateX(${swipeX}px)`,
+            transition: isDragging.current ? 'none' : 'transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)'
+          }}
+          onClick={() => {
+            if (swipeX !== 0) {
+              setSwipeX(0);
+              return;
+            }
+            if (!isConfirming) onSelect(item.id);
+          }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
           
           {isConfirming ? (
              // --- CONFIRMATION STATE ---
@@ -133,7 +270,7 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
         </div>
 
         {/* Delete/Action Button - Explicitly on top */}
-        {!isConfirming && isActive && canDelete ? (
+        {!isConfirming && isActive && swipeX === 0 && canDelete ? (
           <button 
             type="button"
             onClick={handleDeleteClick}
@@ -144,7 +281,7 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
               <Trash2 className="w-4 h-4 text-white" />
             </div>
           </button>
-        ) : !isConfirming && (
+        ) : !isConfirming && swipeX === 0 && (
           <div className="absolute top-2 right-2 w-10 h-10 flex items-center justify-center pointer-events-none z-10">
             <div className={`w-6 h-6 rounded-full flex items-center justify-center ${isActive ? 'bg-white text-accent' : 'bg-white/20 text-white'}`}>
               <ArrowUpRight className="w-3 h-3" />
@@ -155,7 +292,7 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
   );
 });
 
-const TransactionSummary: React.FC<Props> = ({ months, activeMonthId, onSelectMonth, onDeleteMonth, appLanguage }) => {
+const TransactionSummary: React.FC<Props> = ({ months, activeMonthId, onSelectMonth, onDeleteMonth, onDuplicateMonth, appLanguage }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to active month
@@ -188,6 +325,7 @@ const TransactionSummary: React.FC<Props> = ({ months, activeMonthId, onSelectMo
             canDelete={months.length > 1}
             onSelect={onSelectMonth}
             onDelete={onDeleteMonth}
+            onDuplicate={onDuplicateMonth}
             appLanguage={appLanguage}
           />
         ))}

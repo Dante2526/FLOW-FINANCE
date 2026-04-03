@@ -1040,7 +1040,7 @@ const App: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 mb-6">
             {dItems.map(id => {
               if (id === BALANCE_CARD_ID) return (
-                <BalanceCard key={id} id={id} data-tour-id="balance-card" balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} label={t.balanceLabel} onDuplicateClick={handleDuplicateMonth} onCalculatorClick={handleOpenCalculator} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />
+                <BalanceCard key={id} id={id} data-tour-id="balance-card" balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} label={t.balanceLabel} onCalculatorClick={handleOpenCalculator} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />
               );
               const a = filteredAcc.find(x => x.id === id);
               if (a) return <SecondaryCard key={a.id} account={a} onDelete={handleDeleteAccount} onEdit={handleEditAccount} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />;
@@ -1048,7 +1048,7 @@ const App: React.FC = () => {
             })}
           </div>
           <ContactsRow contacts={mockContacts} onAddClick={handleOpenAddAccount} onContactClick={handleContactClick} isPro={!!userProfile.isPro} title={t.quickAccessTitle} appLanguage={appLanguage} />
-          <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} appLanguage={appLanguage} />
+          <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} onDuplicateMonth={handleDuplicateMonth} appLanguage={appLanguage} />
           <TransactionList
             transactions={transactionsForList}
             onDelete={handleDeleteTransaction}
