@@ -28,6 +28,7 @@ import { Crown, Languages, ExternalLink, Zap, Heart, Copy, Check, ChevronRight, 
 
 // Supabase Services
 import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, upsertItem, deleteItem, hardDeleteMonth } from './services/supabase';
+import { applyYieldToAll } from './services/investmentYield';
 
 const AnalyticsModal = React.lazy(() => import('./components/AnalyticsModal'));
 
@@ -477,7 +478,22 @@ const App: React.FC = () => {
     if (data.profile) setUserProfile(data.profile);
     if (data.transactions) setTransactions(data.transactions);
     if (data.accounts) setAccounts(data.accounts);
-    if (data.investments) setInvestments(data.investments);
+    if (data.investments) {
+      // Apply pending yield to investments on load
+      const rate = data.cdiRate !== undefined ? data.cdiRate : currentStateRef.current.cdiRate;
+      const { investments: yieldedInvestments, hasChanges } = applyYieldToAll(data.investments, rate);
+      setInvestments(yieldedInvestments);
+      // Persist updated amounts to Supabase if yield was applied
+      if (hasChanges) {
+        const email = currentStateRef.current.currentUserEmail;
+        if (email) {
+          Promise.all(yieldedInvestments
+            .filter((inv: any, i: number) => inv !== data.investments[i])
+            .map((inv: any) => upsertItem(email, 'investments', inv))
+          ).then(() => { lastActionTimeRef.current = Date.now(); });
+        }
+      }
+    }
     if (data.longTerm) setLongTermTransactions(data.longTerm);
     if (data.notifications) setNotifications(data.notifications);
     if (data.theme) { setAppTheme(data.theme); saveData(STORAGE_KEYS.APP_THEME, data.theme); }
@@ -734,14 +750,24 @@ const App: React.FC = () => {
 
   // --- VIEW HANDLERS ---
   const handleInvestmentAdd = useCallback((i: Omit<Investment, 'id'>) => {
-    const n = { ...i, id: generateUUID() };
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const n = { ...i, id: generateUUID(), lastYieldDate: todayStr };
     setInvestments(p => [...p, n]);
     if (currentUserEmail) { upsertItem(currentUserEmail, 'investments', n); lastActionTimeRef.current = Date.now(); }
   }, [currentUserEmail]);
 
   const handleInvestmentEdit = useCallback((i: Investment) => {
-    setInvestments(p => p.map(o => o.id === i.id ? i : o));
-    if (currentUserEmail) { upsertItem(currentUserEmail, 'investments', i); lastActionTimeRef.current = Date.now(); }
+    // If the amount was manually changed, reset lastYieldDate to prevent double-yield
+    const oldInv = currentStateRef.current.investments.find(o => o.id === i.id);
+    let updated = i;
+    if (oldInv && oldInv.amount !== i.amount) {
+      const today = new Date();
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      updated = { ...i, lastYieldDate: todayStr };
+    }
+    setInvestments(p => p.map(o => o.id === updated.id ? updated : o));
+    if (currentUserEmail) { upsertItem(currentUserEmail, 'investments', updated); lastActionTimeRef.current = Date.now(); }
   }, [currentUserEmail]);
 
   const handleInvestmentDelete = useCallback((id: string) => {

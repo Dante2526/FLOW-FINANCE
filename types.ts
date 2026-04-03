@@ -131,7 +131,8 @@ export interface Investment {
   quantity?: number; // Number of shares/units (mainly for FII/Stocks)
   // For CDI: Percentage of CDI (e.g., 100, 110)
   // For others: Estimated Annual Yield % (optional)
-  yieldRate: number; 
+  yieldRate: number;
+  lastYieldDate?: string; // ISO date string (YYYY-MM-DD) of the last yield application
 }
 
 export type AppView = 'home' | 'settings' | 'long-term' | 'investments';
