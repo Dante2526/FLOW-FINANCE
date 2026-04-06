@@ -318,6 +318,8 @@ const App: React.FC = () => {
   }, [currentUserEmail, isSessionReady]);
 
   // SYSTEM: Check for bills due today and generate notifications
+  const systemNotifiedRef = useRef<Set<string>>(new Set());
+
   useEffect(() => {
     if (isLoadingData) return;
 
@@ -345,22 +347,43 @@ const App: React.FC = () => {
         if (!exists && !isDismissed) {
           const formattedValue = t.amount.toLocaleString(locale, { minimumFractionDigits: 2 });
 
-          const systemT = TRANSLATIONS[appLanguage]?.notifications?.system || TRANSLATIONS['pt'].notifications.system;
+          const systemTranslations = TRANSLATIONS[appLanguage]?.notifications?.system || TRANSLATIONS['pt'].notifications.system;
 
-          const title = systemT.billDueTitle;
-          const message = systemT.billDueMessage
+          const title = systemTranslations.billDueTitle;
+          const message = systemTranslations.billDueMessage
             .replace('{name}', t.name)
             .replace('{value}', `${currencySymbol} ${formattedValue}`);
-          const dateStr = systemT.todayAt.replace('{time}', nowTime);
+          const dateStr = systemTranslations.todayAt.replace('{time}', nowTime);
 
-          missingNotifs.push({
+          const newNotif: AppNotification = {
             id: notifId,
             title: title,
             message: message,
             date: dateStr,
             read: false,
             type: 'alert'
-          });
+          };
+
+          missingNotifs.push(newNotif);
+
+          // TRIGGER SYSTEM NOTIFICATION
+          if (Notification.permission === 'granted' && !systemNotifiedRef.current.has(notifId)) {
+            systemNotifiedRef.current.add(notifId);
+
+            if ('serviceWorker' in navigator) {
+              navigator.serviceWorker.ready.then(registration => {
+                registration.showNotification(title, {
+                  body: message,
+                  icon: '/favicon.svg',
+                  badge: '/favicon.svg', 
+                  vibrate: [100, 50, 100],
+                  data: { url: '/' }
+                } as any);
+              });
+            } else {
+              new Notification(title, { body: message });
+            }
+          }
         }
       }
     });

@@ -11,7 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     
     env:
-      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      SUPABASE_URL: ${{ vars.SUPABASE_URL || 'https://xfsmdidfccgptfzjhhui.supabase.co' }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       VAPID_PUBLIC_KEY: 'BOabgmhdqm_B03NgjZgZUG4tT6whqH_sfr9-ZmMt1XY-lbI_ADbOzze9pRDU3tnj7oXttv01ZXcNKLhzeXlifC8'
       VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
       VAPID_SUBJECT: 'mailto:naylanmoreira350@gmail.com'

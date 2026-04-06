@@ -105,7 +105,7 @@ const NotificationModal: React.FC<Props> = ({
 
               // Although this updates the backend, the prop won't refresh until next open.
               // The button will disappear on next open, which is acceptable UX.
-              onClose(); // Close modal on success for a cleaner flow.
+              // onClose(); // Removing automatic close to let user see status
             }
 
           } catch (pushError) {
@@ -119,6 +119,38 @@ const NotificationModal: React.FC<Props> = ({
       alert(t.alerts.errorPermission);
     } finally {
       setIsSubscribing(false);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    if (!('Notification' in window)) {
+      alert("Navegador não suporta notificações.");
+      return;
+    }
+
+    if (Notification.permission !== 'granted') {
+      const permission = await Notification.requestPermission();
+      setNotificationPermission(permission);
+      if (permission !== 'granted') return;
+    }
+
+    // Success Toast/Alert
+    alert(t.testSuccess);
+
+    const title = t.testTitle;
+    const options = {
+      body: t.testMessage,
+      icon: '/favicon.svg',
+      badge: '/favicon.svg',
+      vibrate: [100, 50, 100],
+      data: { url: '/' }
+    } as any;
+
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.ready;
+      registration.showNotification(title, options);
+    } else {
+      new Notification(title, options);
     }
   };
 
@@ -361,14 +393,33 @@ const NotificationModal: React.FC<Props> = ({
             <div className="flex flex-col gap-3">
 
               {isSubscribedOnBackend ? (
-                <div className="flex items-center justify-center gap-2 p-3 bg-green-500/10 rounded-2xl border border-green-500/20">
-                  <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                    <Check className="w-3 h-3 text-black font-bold" />
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center justify-center gap-2 p-3 bg-green-500/10 rounded-2xl border border-green-500/20">
+                    <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                      <Check className="w-3 h-3 text-black font-bold" />
+                    </div>
+                    <span className="text-green-500 text-xs font-bold">{t.activeStatus}</span>
                   </div>
-                  <span className="text-green-500 text-xs font-bold">{t.activeStatus}</span>
+                  
+                  <button
+                    onClick={handleTestNotification}
+                    className="w-full h-12 rounded-xl bg-[#2c2c2e] text-white text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#3a3a3c] transition-colors border border-white/5"
+                  >
+                    <Send className="w-3.5 h-3.5 text-accent" />
+                    {t.testBtn}
+                  </button>
                 </div>
               ) : (
-                notificationPermission !== 'denied' && (
+                notificationPermission === 'denied' ? (
+                  <div className="p-4 bg-red-500/10 rounded-2xl border border-red-500/20 text-center">
+                    <p className="text-red-500 text-xs font-bold mb-1">{t.alerts.errorPermission}</p>
+                    <p className="text-[10px] text-gray-500 leading-tight">
+                      {appLanguage === 'pt' ? 'Você negou as permissões. Vá nas configurações do navegador/site para liberar as notificações.' : 
+                       appLanguage === 'en' ? 'You denied permissions. Go to browser/site settings to enable notifications.' :
+                       'Has denegado los permisos. Ve a la configuración del navegador/sitio para habilitar las notificaciones.'}
+                    </p>
+                  </div>
+                ) : (
                   <div className="flex flex-col gap-2">
                     <button
                       onClick={handleRequestPermission}
@@ -393,6 +444,15 @@ const NotificationModal: React.FC<Props> = ({
                         </>
                       )}
                     </button>
+                    {notificationPermission === 'granted' && (
+                        <button
+                          onClick={handleTestNotification}
+                          className="w-full h-12 rounded-xl bg-[#2c2c2e] text-white text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#3a3a3c] transition-colors border border-white/5"
+                        >
+                          <Send className="w-3.5 h-3.5 text-accent" />
+                          {t.testBtn}
+                        </button>
+                    )}
                     <p className="text-[10px] text-gray-500 text-center leading-tight px-4">
                       {t.permissionHint}
                     </p>

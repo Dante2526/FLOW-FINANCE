@@ -231,6 +231,10 @@ export const TRANSLATIONS = {
         errorPush: "Erro ao conectar com servidor de notificações. Tente novamente.",
         errorPermission: "Não foi possível ativar as notificações. Verifique as configurações do navegador."
       },
+      testBtn: "Testar Notificação",
+      testSuccess: "Notificação de teste enviada!",
+      testTitle: "Teste do Sistema 🔔",
+      testMessage: "Se você está vendo isso, as notificações estão funcionando corretamente no seu celular!",
       system: {
         billDueTitle: "Conta Vencendo Hoje",
         billDueMessage: "A conta \"{name}\" no valor de {value} vence hoje.",
@@ -736,6 +740,10 @@ export const TRANSLATIONS = {
         errorPush: "Error connecting to notification server. Please try again.",
         errorPermission: "Could not enable notifications. Please check browser settings."
       },
+      testBtn: "Test Notification",
+      testSuccess: "Test notification sent!",
+      testTitle: "System Test 🔔",
+      testMessage: "If you see this, notifications are working correctly on your device!",
       system: {
         billDueTitle: "Bill Due Today",
         billDueMessage: "The bill \"{name}\" of {value} is due today.",
@@ -1241,6 +1249,10 @@ export const TRANSLATIONS = {
         errorPush: "Error al conectar con servidor de notificaciones. Intente nuevamente.",
         errorPermission: "No se pudieron activar las notificaciones. Verifique la configuración del navegador."
       },
+      testBtn: "Probar Notificación",
+      testSuccess: "¡Notificación de prueba enviada!",
+      testTitle: "Prueba del Sistema 🔔",
+      testMessage: "¡Si ves esto, las funciones de notificación están operando adecuadamente en tu dispositivo!",
       system: {
         billDueTitle: "Cuenta Vence Hoy",
         billDueMessage: "La cuenta \"{name}\" por valor de {value} vence hoy.",
