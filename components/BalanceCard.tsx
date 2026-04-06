@@ -89,7 +89,7 @@ const BalanceCard: React.FC<Props> = ({
   return (
     <div
       data-card-id={id}
-      className="relative w-full md:col-span-2 bg-accent rounded-[2.5rem] p-6 text-white flex flex-col justify-between min-h-[220px] md:min-h-0 md:h-40 shadow-lg shadow-accent/20"
+      className="relative w-full md:col-span-2 bg-accent rounded-[2.5rem] p-6 text-white flex flex-col justify-between h-40 shadow-lg shadow-accent/20"
       onDragEnter={handleDragEnter}
       onDragOver={(e) => e.preventDefault()}
       onDragEnd={onDragEnd}
