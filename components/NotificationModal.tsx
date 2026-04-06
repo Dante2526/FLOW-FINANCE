@@ -122,38 +122,6 @@ const NotificationModal: React.FC<Props> = ({
     }
   };
 
-  const handleTestNotification = async () => {
-    if (!('Notification' in window)) {
-      alert("Navegador não suporta notificações.");
-      return;
-    }
-
-    if (Notification.permission !== 'granted') {
-      const permission = await Notification.requestPermission();
-      setNotificationPermission(permission);
-      if (permission !== 'granted') return;
-    }
-
-    // Success Toast/Alert
-    alert(t.testSuccess);
-
-    const title = t.testTitle;
-    const options = {
-      body: t.testMessage,
-      icon: '/favicon.svg',
-      badge: '/favicon.svg',
-      vibrate: [100, 50, 100],
-      data: { url: '/' }
-    } as any;
-
-    if ('serviceWorker' in navigator) {
-      const registration = await navigator.serviceWorker.ready;
-      registration.showNotification(title, options);
-    } else {
-      new Notification(title, options);
-    }
-  };
-
   // Form States for Sending
   const [recipientName, setRecipientName] = useState('');
   const [messageType, setMessageType] = useState<'cobranca' | 'aviso'>('aviso');
@@ -400,14 +368,6 @@ const NotificationModal: React.FC<Props> = ({
                     </div>
                     <span className="text-green-500 text-xs font-bold">{t.activeStatus}</span>
                   </div>
-                  
-                  <button
-                    onClick={handleTestNotification}
-                    className="w-full h-12 rounded-xl bg-[#2c2c2e] text-white text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#3a3a3c] transition-colors border border-white/5"
-                  >
-                    <Send className="w-3.5 h-3.5 text-accent" />
-                    {t.testBtn}
-                  </button>
                 </div>
               ) : (
                 notificationPermission === 'denied' ? (
@@ -444,15 +404,6 @@ const NotificationModal: React.FC<Props> = ({
                         </>
                       )}
                     </button>
-                    {notificationPermission === 'granted' && (
-                        <button
-                          onClick={handleTestNotification}
-                          className="w-full h-12 rounded-xl bg-[#2c2c2e] text-white text-xs font-bold flex items-center justify-center gap-2 hover:bg-[#3a3a3c] transition-colors border border-white/5"
-                        >
-                          <Send className="w-3.5 h-3.5 text-accent" />
-                          {t.testBtn}
-                        </button>
-                    )}
                     <p className="text-[10px] text-gray-500 text-center leading-tight px-4">
                       {t.permissionHint}
                     </p>
