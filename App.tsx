@@ -886,7 +886,18 @@ const App: React.FC = () => {
 
   const handleDragEnter = useCallback((tId: string) => {
     if (dragItem.current && dragItem.current !== tId) {
-      const nO = [...currentStateRef.current.dashboardOrder];
+      let nO = [...currentStateRef.current.dashboardOrder];
+      // FIX: Ensure BALANCE_CARD_ID is in the order list before attempting to swap
+      if (!nO.includes(BALANCE_CARD_ID)) { nO.unshift(BALANCE_CARD_ID); }
+
+      const act = currentStateRef.current.months.find(m => m.id === currentStateRef.current.activeMonthId);
+      if (act) {
+        const mName = (act.month || "").toUpperCase().trim();
+        const mYear = act.year || "";
+        const fAcc = currentStateRef.current.accounts.filter(a => (a.month || "").toUpperCase().trim() === mName && (a.year || "") === mYear);
+        fAcc.forEach(a => { if (!nO.includes(a.id)) nO.push(a.id); });
+      }
+
       const dI = nO.indexOf(dragItem.current);
       const tI = nO.indexOf(tId);
       if (dI !== -1 && tI !== -1) {
