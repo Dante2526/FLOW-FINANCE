@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     
     env:
-      SUPABASE_URL: ${{ vars.SUPABASE_URL || 'https://xfsmdidfccgptfzjhhui.supabase.co' }}
+      SUPABASE_URL: 'https://xfsmdidfccgptfzjhhui.supabase.co'
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       VAPID_PUBLIC_KEY: 'BOabgmhdqm_B03NgjZgZUG4tT6whqH_sfr9-ZmMt1XY-lbI_ADbOzze9pRDU3tnj7oXttv01ZXcNKLhzeXlifC8'
       VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
@@ -19,15 +19,16 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
 
       - name: Install Dependencies
-        run: npm install firebase-admin web-push
+        run: npm install @supabase/supabase-js web-push
 
       - name: Run Check Script
         run: node scripts/check_bills.cjs
+

@@ -49,11 +49,15 @@ async function checkAndNotify() {
         console.log(`Processando ${users.length} usuários...`);
 
         for (const user of users) {
+            // O user_id nas tabelas de dados (transactions, etc.) é o UUID do auth.
+            // Na tabela 'users', o campo 'id' já é esse UUID.
+            const userId = user.id;
+
             // Buscar transações não pagas que vencem hoje para este usuário
             const { data: transactions, error: txError } = await supabase
                 .from('transactions')
                 .select('id, name, amount')
-                .eq('user_id', user.id)
+                .eq('user_id', userId)
                 .eq('date', todayStr)
                 .eq('paid', false);
 
