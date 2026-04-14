@@ -158,10 +158,19 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
 
   const { totalInvested, estimatedYearlyReturn, portfolioYield } = useMemo(() => {
     const total = (investments || []).reduce((acc, curr) => acc + (curr.amount || 0), 0);
+    const IR_TAX_RATE = 0.225; // Sincronizado com services/investmentYield.ts
+
     const totalYearlyProfit = (investments || []).reduce((acc, curr) => {
       let yearlyProfit = 0;
-      if (curr.type === 'cdi' || curr.type === 'fixed') yearlyProfit = (curr.amount || 0) * (cdiRate / 100) * ((curr.yieldRate || 0) / 100);
-      else if (curr.type === 'fii') yearlyProfit = (curr.amount || 0) * ((curr.yieldRate || 0) / 100);
+      if (curr.type === 'cdi' || curr.type === 'fixed') {
+        // Rendimento Bruto
+        const grossProfit = (curr.amount || 0) * (cdiRate / 100) * ((curr.yieldRate || 0) / 100);
+        // Rendimento Líquido (com IR)
+        yearlyProfit = grossProfit * (1 - IR_TAX_RATE);
+      }
+      else if (curr.type === 'fii') {
+        yearlyProfit = (curr.amount || 0) * ((curr.yieldRate || 0) / 100);
+      }
       return acc + yearlyProfit;
     }, 0);
     return { totalInvested: total, estimatedYearlyReturn: totalYearlyProfit, portfolioYield: total > 0 ? (totalYearlyProfit / total) * 100 : 0 };
@@ -182,7 +191,13 @@ const InvestmentsView: React.FC<Props> = ({ investments, onAdd, onEdit, onDelete
       </div>
       <div className="bg-accent rounded-[2.5rem] p-6 flex flex-col gap-4 relative overflow-hidden flex-shrink-0 shadow-xl shadow-black/40 mb-8" data-tour-id="investments-main-card">
           <div className="absolute -top-8 -right-8 opacity-20 pointer-events-none rotate-12"><PieChart className="w-48 h-48 text-black" /></div>
-          <div className="relative z-10"><span className="text-white/80 text-xs font-bold uppercase tracking-wider block mb-1">{t.totalEquity}</span><h3 className="text-4xl font-bold text-white tracking-tight">{currencySymbol} {totalInvested.toLocaleString(locale, { minimumFractionDigits: 2 })}</h3></div>
+          <div className="relative z-10">
+            <div className="flex justify-between items-start mb-1">
+              <span className="text-white/80 text-xs font-bold uppercase tracking-wider block">{t.totalEquity}</span>
+              <span className="text-[9px] bg-black/30 text-white/60 px-2 py-0.5 rounded-full font-bold uppercase border border-white/10">Líquido (IR 22.5%)</span>
+            </div>
+            <h3 className="text-4xl font-bold text-white tracking-tight">{currencySymbol} {totalInvested.toLocaleString(locale, { minimumFractionDigits: 2 })}</h3>
+          </div>
           <div className="h-px bg-white/20 w-full relative z-10" />
           <div className="grid grid-cols-2 gap-3 relative z-10">
             <div className="bg-black/20 p-4 rounded-2xl backdrop-blur-sm"><span className="text-white/70 text-[10px] font-bold uppercase block mb-1">{t.yieldMonth}</span><p className="text-white font-bold text-lg">+ {currencySymbol} {(estimatedYearlyReturn / 12).toLocaleString(locale, { minimumFractionDigits: 2 })}</p></div>

@@ -90,39 +90,45 @@ const countBusinessDaysBetween = (start: Date, end: Date): number => {
 };
 
 /**
+ * Taxa de Imposto de Renda (IR) fixa em 22,5% (alíquota regressiva inicial para CDB/CDI)
+ */
+const IR_TAX_RATE = 0.225;
+
+/**
  * Aplica o rendimento diário a um investimento individual
  * 
  * Para CDI/Fixed:
  *   Taxa diária = (1 + CDI_anual/100)^(1/252) - 1
- *   Rendimento = taxa_diária × (yieldRate/100)
- *   Novo amount = amount × (1 + rendimento)^dias_uteis
+ *   Rendimento Bruto = taxa_diária × (yieldRate/100)
+ *   Rendimento Líquido = Rendimento Bruto × (1 - 0.225)  <-- NOVO: Dedução de IR
+ *   Novo amount = amount × (1 + rendimento_líquido)^dias_uteis
  * 
  * Para FII:
  *   Taxa diária proporcional = (yieldRate/100) / 252
  *   Novo amount = amount × (1 + taxa_diária)^dias_uteis
  */
-const applyDailyYield = (investment: Investment, cdiRate: number, today: Date): Investment => {
+const applyDailyYield = (investment: Investment, cdiRate: number, referenceDate: Date): Investment => {
   // Only apply to CDI, fixed, and FII types
   if (!['cdi', 'fixed', 'fii'].includes(investment.type)) return investment;
   if (!investment.yieldRate || investment.yieldRate <= 0) return investment;
   if (!investment.amount || investment.amount <= 0) return investment;
 
-  const todayStr = toLocalISODate(today);
+  const refDateStr = toLocalISODate(referenceDate);
 
-  // Se não tem lastYieldDate, define como hoje (primeira vez) e não aplica rendimento
+  // Se não tem lastYieldDate, define como a data de referência e não aplica rendimento
   if (!investment.lastYieldDate) {
-    return { ...investment, lastYieldDate: todayStr };
+    return { ...investment, lastYieldDate: refDateStr };
   }
 
-  // Se já foi atualizado hoje, não faz nada
-  if (investment.lastYieldDate === todayStr) return investment;
+  // Se já foi atualizado para esta data de referência, não faz nada
+  if (investment.lastYieldDate === refDateStr) return investment;
 
   // Calcular data do último rendimento
   const [y, m, d] = investment.lastYieldDate.split('-').map(Number);
   const lastDate = new Date(y, m - 1, d);
 
-  // Contar dias úteis entre último rendimento e hoje
-  const businessDays = countBusinessDaysBetween(lastDate, today);
+  // Contar dias úteis entre último rendimento e a data de referência (ontem)
+  const businessDays = countBusinessDaysBetween(lastDate, referenceDate);
 
   if (businessDays <= 0) return investment;
 
@@ -131,9 +137,12 @@ const applyDailyYield = (investment: Investment, cdiRate: number, today: Date): 
   if (investment.type === 'cdi' || investment.type === 'fixed') {
     // CDI: Taxa diária base do CDI × percentual do CDI do investimento
     const cdiDailyRate = Math.pow(1 + cdiRate / 100, 1 / 252) - 1;
-    dailyRate = cdiDailyRate * (investment.yieldRate / 100);
+    const grossDailyRate = cdiDailyRate * (investment.yieldRate / 100);
+    
+    // Aplicar dedução de IR sobre o rendimento
+    dailyRate = grossDailyRate * (1 - IR_TAX_RATE);
   } else {
-    // FII: Dividend Yield anual distribuído proporcionalmente por dia útil
+    // FII: Dividend Yield anual distribuído proporcionalmente por dia útil (Geralmente isento de IR para pessoa física)
     dailyRate = (investment.yieldRate / 100) / 252;
   }
 
@@ -146,7 +155,7 @@ const applyDailyYield = (investment: Investment, cdiRate: number, today: Date): 
   return {
     ...investment,
     amount: roundedAmount,
-    lastYieldDate: todayStr,
+    lastYieldDate: refDateStr,
   };
 };
 
@@ -162,13 +171,15 @@ export const applyYieldToAll = (
     return { investments: [], hasChanges: false };
   }
 
-  const today = new Date();
+  // AJUSTE: Usar data de "ontem" para evitar antecipação de rendimento que ainda não foi creditado pelo banco
+  const referenceDate = new Date();
+  referenceDate.setDate(referenceDate.getDate() - 1);
   // Normalizar para meia-noite local
-  today.setHours(0, 0, 0, 0);
+  referenceDate.setHours(0, 0, 0, 0);
 
   let hasChanges = false;
   const updatedInvestments = investments.map(inv => {
-    const updated = applyDailyYield(inv, cdiRate, today);
+    const updated = applyDailyYield(inv, cdiRate, referenceDate);
     if (updated !== inv) {
       hasChanges = true;
     }
