@@ -18,7 +18,7 @@ export const TRANSLATIONS = {
     balanceLabel: 'LUCRO',
     quickAccessTitle: 'ACESSO RÁPIDO',
     billsTitle: 'CONTAS',
-    addBtn: 'Adicionar',
+    addBtn: 'ADICIONAR',
     meta: {
       title: "Flow Finance",
       description: "Controle financeiro inteligente e moderno."
@@ -131,7 +131,7 @@ export const TRANSLATIONS = {
       descPlaceholder: "DO QUE SE TRATA?",
       dateLabel: "Data de Vencimento",
       iconLabel: "Ícone",
-      submitAdd: "Adicionar Conta",
+      submitAdd: "ADICIONAR CONTA",
       submitEdit: "Salvar Alterações",
       types: {
         purchase: "Compra",
@@ -523,7 +523,7 @@ export const TRANSLATIONS = {
     balanceLabel: 'PROFIT',
     quickAccessTitle: 'QUICK ACCESS',
     billsTitle: 'BILLS',
-    addBtn: 'Add',
+    addBtn: 'ADD',
     meta: {
       title: "Flow Finance",
       description: "Smart and modern financial control."
@@ -636,7 +636,7 @@ export const TRANSLATIONS = {
       descPlaceholder: "WHAT IS IT?",
       dateLabel: "Due Date",
       iconLabel: "Icon",
-      submitAdd: "Add Bill",
+      submitAdd: "ADD BILL",
       submitEdit: "Save Changes",
       types: {
         purchase: "Purchase",
@@ -1028,7 +1028,7 @@ export const TRANSLATIONS = {
     balanceLabel: 'LUCRO',
     quickAccessTitle: 'ACCESO RÁPIDO',
     billsTitle: 'CUENTAS',
-    addBtn: 'Añadir',
+    addBtn: 'AÑADIR',
     meta: {
       title: "Flow Finance",
       description: "Control financiero inteligente y moderno."
@@ -1141,7 +1141,7 @@ export const TRANSLATIONS = {
       descPlaceholder: "¿DE QUÉ SE TRATA?",
       dateLabel: "Fecha Vencimiento",
       iconLabel: "Icono",
-      submitAdd: "Añadir Cuenta",
+      submitAdd: "AÑADIR CUENTA",
       submitEdit: "Guardar Cambios",
       types: {
         purchase: "Compra",

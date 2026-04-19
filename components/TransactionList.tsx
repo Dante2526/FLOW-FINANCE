@@ -330,7 +330,7 @@ const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onTo
             data-tour-id="add-button"
           >
             <span className="bg-[#2c2c2e] rounded-xl px-2 py-1 flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
-            <span className="text-gray-400 font-medium text-sm group-hover:text-white transition-colors">{tRoot.addBtn}</span>
+            <span className="text-gray-400 font-bold text-[10px] tracking-wider uppercase group-hover:text-white transition-colors">{tRoot.addBtn}</span>
           </button>
         )}
       </div>
