@@ -36,7 +36,7 @@ export const TRANSLATIONS = {
       addSource: "Adicionar Nova Fonte de Renda",
       monthExists: "O mês de {month}/{year} já existe.",
       restartTutorial: "Reiniciar Tutorial",
-      splashVersion: "Flow Finance v1.5"
+      splashVersion: "Flow Finance v1.5.1"
     },
     nav: {
       home: 'INÍCIO',
@@ -345,7 +345,7 @@ export const TRANSLATIONS = {
       feedbackBody: "Olá Naylan,\n\nEncontrei um problema/tenho uma sugestão:\n\n[Descreva aqui o que aconteceu]\n\nImportante: Anexei prints ou um vídeo da tela para ajudar na correção.",
       confirmColor: "Confirmar Cor",
       performanceLabel: "Performance 100%",
-      appVersion: "Flow Finance v1.5.0",
+      appVersion: "Flow Finance v1.5.1",
       themes: {
         'sunset-orange': 'Sunset',
         'cyber-yellow': 'Cyber',
@@ -541,7 +541,7 @@ export const TRANSLATIONS = {
       addSource: "Add New Income Source",
       monthExists: "The month of {month}/{year} already exists.",
       restartTutorial: "Restart Tutorial",
-      splashVersion: "Flow Finance v1.5"
+      splashVersion: "Flow Finance v1.5.1"
     },
     nav: {
       home: 'HOME',
@@ -850,7 +850,7 @@ export const TRANSLATIONS = {
       feedbackBody: "Hello Naylan,\n\nI found an issue/have a suggestion:\n\n[Describe what happened here]\n\nImportant: I've attached screenshots or a screen recording to help with the fix.",
       confirmColor: "Confirm Color",
       performanceLabel: "Performance 100%",
-      appVersion: "Flow Finance v1.5.0",
+      appVersion: "Flow Finance v1.5.1",
       themes: {
         'sunset-orange': 'Sunset',
         'cyber-yellow': 'Cyber',
@@ -1046,7 +1046,7 @@ export const TRANSLATIONS = {
       addSource: "Añadir Nueva Fuente de Ingresos",
       monthExists: "El mes de {month}/{year} ya existe.",
       restartTutorial: "Reiniciar Tutorial",
-      splashVersion: "Flow Finance v1.5"
+      splashVersion: "Flow Finance v1.5.1"
     },
     nav: {
       home: 'INICIO',
@@ -1355,7 +1355,7 @@ export const TRANSLATIONS = {
       feedbackBody: "Hola Naylan,\n\nEncontré un problema/tengo una sugerencia:\n\n[Describe qué pasó aquí]\n\nImportante: He adjuntado capturas de pantalla o un video para ayudar con la corrección.",
       confirmColor: "Confirmar Color",
       performanceLabel: "Rendimiento 100%",
-      appVersion: "Flow Finance v1.5.0",
+      appVersion: "Flow Finance v1.5.1",
       themes: {
         'sunset-orange': 'Sunset',
         'cyber-yellow': 'Cyber',
