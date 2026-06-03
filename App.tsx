@@ -63,11 +63,13 @@ const getLocalISODateString = () => {
   return `${year}-${month}-${day}`;
 };
 
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}/;
+
 const getMonthFromDateStr = (dateStr: string): string => {
   if (!dateStr) return '';
 
   // Primary path for 'YYYY-MM-DD'
-  if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+  if (ISO_DATE_REGEX.test(dateStr)) {
     const monthIndex = parseInt(dateStr.split('-')[1], 10) - 1;
     return MONTH_NAMES[monthIndex];
   }
@@ -91,7 +93,7 @@ const getYearFromDateStr = (dateStr: string, activeYearContext?: string): string
   if (!dateStr) return activeYearContext || new Date().getFullYear().toString();
 
   // Primary path for 'YYYY-MM-DD'
-  if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
+  if (ISO_DATE_REGEX.test(dateStr)) {
     return dateStr.split('-')[0];
   }
 
@@ -198,6 +200,20 @@ const App: React.FC = () => {
     { id: '3', name: t.analytics?.title || 'Analytics', imageUrl: '' }
   ], [t]);
 
+  // Memoized months with updated total/count to avoid double-renders from state-synced useEffect
+  const enrichedMonths = useMemo(() => {
+    return months.map(m => {
+      const mName = (m.month || "").toUpperCase().trim();
+      const mYear = m.year || "";
+      const mTx = transactions.filter(t =>
+        (t.month || getMonthFromDateStr(t.date) || "").toUpperCase().trim() === mName &&
+        (t.year || getYearFromDateStr(t.date, mYear)) === mYear
+      );
+      const total = roundMoney(mTx.reduce((s, t) => s + t.amount, 0)), count = mTx.length;
+      return { ...m, total, count };
+    });
+  }, [months, transactions]);
+
   const currentStateRef = useRef({ transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, cdiRate, dashboardOrder, appLanguage, currentView, currentUserEmail, activeMonthId, editingAccount, editingTransaction });
   useEffect(() => { currentStateRef.current = { transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, cdiRate, dashboardOrder, appLanguage, currentView, currentUserEmail, activeMonthId, editingAccount, editingTransaction }; });
 
@@ -233,24 +249,6 @@ const App: React.FC = () => {
     const todayStr = getLocalISODateString();
     saveData(STORAGE_KEYS.DISMISSED_NOTIFICATIONS, { date: todayStr, ids: dismissedNotifIds });
   }, [dismissedNotifIds]);
-
-  useEffect(() => {
-    setMonths(prev => {
-      let changed = false;
-      const updated = prev.map(m => {
-        const mName = (m.month || "").toUpperCase().trim();
-        const mYear = m.year || "";
-        const mTx = transactions.filter(t =>
-          (t.month || getMonthFromDateStr(t.date) || "").toUpperCase().trim() === mName &&
-          (t.year || getYearFromDateStr(t.date, mYear)) === mYear
-        );
-        const total = roundMoney(mTx.reduce((s, t) => s + t.amount, 0)), count = mTx.length;
-        if (m.total !== total || m.count !== count) { changed = true; return { ...m, total, count }; }
-        return m;
-      });
-      return changed ? updated : prev;
-    });
-  }, [transactions]);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -953,6 +951,10 @@ const App: React.FC = () => {
   }, [dashboardOrder, filteredAcc]);
 
   // --- STABLE COMPUTED VALUES ---
+  const currentBalance = useMemo(() => {
+    return filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0);
+  }, [filteredAcc, filteredTx]);
+
   const unreadNotifCount = useMemo(() => notifications.filter(n => !n.read).length, [notifications]);
 
   const tutorialLabels = useMemo(() => ({
@@ -1067,25 +1069,34 @@ const App: React.FC = () => {
   return (
     <div key={currentUserEmail} ref={mainScrollRef} className={`h-full overflow-y-auto bg-[#0a0a0b] text-white px-2 pt-4 pb-[11.5rem] font-sans selection:bg-accent selection:text-black no-scrollbar ${isAnyModalOpen ? 'overflow-hidden' : ''}`} style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
       {autoCreatedMonthName && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-top-10 fade-in duration-500 w-[90%] max-w-sm">
-          <div className="bg-[#1c1c1e]/95 backdrop-blur-md border border-accent/30 text-white px-5 py-4 rounded-3xl shadow-2xl flex items-center gap-4 relative overflow-hidden group">
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-top-5 fade-in duration-300 w-[92%] max-w-sm">
+          <div className="bg-[#0f0f11]/85 backdrop-blur-xl border border-white/[0.08] text-white px-5 py-4 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center gap-4 relative overflow-hidden group before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-gradient-to-b before:from-accent before:to-accent/30 before:rounded-l-3xl">
             {/* Background Accent Glow */}
-            <div className="absolute -right-4 -top-4 w-20 h-20 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -left-6 -bottom-6 w-20 h-20 bg-accent/5 rounded-full blur-2xl pointer-events-none" />
             
-            <div className="w-12 h-12 rounded-2xl bg-accent/20 flex items-center justify-center shrink-0">
-               <CalendarClock className="w-6 h-6 text-accent" />
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-accent/25 to-accent/5 border border-accent/25 flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(0,0,0,0.25)]">
+               <CalendarClock className="w-[22px] h-[22px] text-accent animate-pulse" />
             </div>
             <div className="flex-1 pr-6">
-              <p className="text-sm font-bold leading-tight">{t.settings?.autoMonthCreatedToast || '💳 Mês Criado Automaticamente!'}</p>
-              <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-2">{t.settings?.autoMonthCreatedExplain}</p>
-              <p className="text-[10px] text-accent font-bold mt-1 uppercase tracking-wider">{autoCreatedMonthName}</p>
+              <p className="text-sm font-semibold tracking-wide text-white/95 leading-tight">{t.settings?.autoMonthCreatedToast || '💳 Mês Criado Automaticamente!'}</p>
+              <p className="text-[11px] text-white/60 mt-1 line-clamp-2 leading-relaxed">{t.settings?.autoMonthCreatedExplain}</p>
+              <div className="mt-2.5 flex">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase bg-accent/15 text-accent border border-accent/20 shadow-sm">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-accent"></span>
+                  </span>
+                  {autoCreatedMonthName}
+                </span>
+              </div>
             </div>
             
             <button 
               onClick={() => setAutoCreatedMonthName(null)}
-              className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors pointer-events-auto"
+              className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:scale-105 active:scale-95 transition-all flex items-center justify-center pointer-events-auto cursor-pointer text-white/60 hover:text-white"
             >
-              <X className="w-4 h-4 text-gray-400" />
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -1141,7 +1152,7 @@ const App: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 mb-6">
             {dItems.map(id => {
               if (id === BALANCE_CARD_ID) return (
-                <BalanceCard key={id} id={id} data-tour-id="balance-card" balance={(filteredAcc.reduce((a, b) => a + b.balance, 0) - filteredTx.reduce((a, b) => a + b.amount, 0))} label={t.balanceLabel} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />
+                <BalanceCard key={id} id={id} data-tour-id="balance-card" balance={currentBalance} label={t.balanceLabel} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />
               );
               const a = filteredAcc.find(x => x.id === id);
               if (a) return <SecondaryCard key={a.id} account={a} onDelete={handleDeleteAccount} onEdit={handleEditAccount} draggable onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd} appLanguage={appLanguage} />;
@@ -1161,7 +1172,7 @@ const App: React.FC = () => {
             </div>
           </div>
           <ContactsRow contacts={mockContacts} onCalculatorClick={handleOpenCalculator} onContactClick={handleContactClick} isPro={!!userProfile.isPro} title={t.quickAccessTitle} appLanguage={appLanguage} />
-          <TransactionSummary months={months} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} onDuplicateMonth={() => handleDuplicateMonth()} appLanguage={appLanguage} />
+          <TransactionSummary months={enrichedMonths} activeMonthId={activeMonthId} onSelectMonth={setActiveMonthId} onDeleteMonth={handleDeleteMonth} onDuplicateMonth={() => handleDuplicateMonth()} appLanguage={appLanguage} />
           <TransactionList
             transactions={transactionsForList}
             onDelete={handleDeleteTransaction}
@@ -1227,63 +1238,75 @@ const App: React.FC = () => {
         <InvestmentsView investments={investments} onAdd={handleInvestmentAdd} onEdit={handleInvestmentEdit} onDelete={handleInvestmentDelete} onBack={handleGoHome} cdiRate={cdiRate} onUpdateCdiRate={handleInvestmentUpdateRate} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
       )}
       <BottomNav currentView={currentView} onChangeView={setCurrentView} labels={t.nav || { home: 'INÍCIO', invest: 'INVEST', wallet: 'CARTEIRA', config: 'CONFIG' }} />
-      <AddTransactionModal isOpen={isAddTransactionOpen} onClose={handleCloseAddTransaction} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} activeMonthContext={activeMonthContext} appLanguage={appLanguage} />
-      <AddAccountModal isOpen={isAddAccountOpen} onClose={handleCloseAddAccount} onSave={handleSaveAccount} accountToEdit={editingAccount} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
-      <CalculatorModal isOpen={isCalculatorOpen} onClose={handleCloseCalculator} appLanguage={appLanguage} />
-      <EditProfileModal isOpen={isProfileModalOpen} onClose={handleCloseProfileModal} onSave={handleSaveProfile} onLogout={handleLogout} onDeleteAccount={noop} currentProfile={userProfile} appLanguage={appLanguage} onOpenProModal={handleOpenPro} />
-      <NotepadModal
-        isOpen={isNotepadOpen}
-        onClose={handleCloseNotepad}
-        initialContent={activeMonth?.notepadContent || ''}
-        initialDrawing={activeMonth?.notepadDrawing || null}
-        onSave={handleSaveNotepad}
-        appLanguage={appLanguage}
-      />
-      <CalendarModal isOpen={isCalendarOpen} onClose={handleCloseCalendar} transactions={transactions} activeMonthContext={activeMonthContext} appLanguage={appLanguage} />
-      <NotificationModal
-        isOpen={isNotificationOpen}
-        onClose={handleCloseNotification}
-        notifications={notifications}
-        onMarkAllRead={handleMarkAllRead}
-        onDelete={handleDeleteNotification}
-        currentUserEmail={currentUserEmail}
-        appLanguage={appLanguage}
-        isSubscribedOnBackend={!!userProfile.pushSubscription}
-      />
-      <Suspense fallback={null}>{isAnalyticsOpen && <AnalyticsModal isOpen={isAnalyticsOpen} onClose={handleCloseAnalytics} transactions={transactions} months={months} appLanguage={appLanguage} />}</Suspense>
-      <ProModal
-        isOpen={isProModalOpen}
-        onClose={handleCloseProModal}
-        onUpgrade={handleProUpgrade}
-        userEmail={currentUserEmail || undefined}
-        userName={userProfile.name}
-        appLanguage={appLanguage}
-      />
-      <DonationModal
-        isOpen={isDonationModalOpen}
-        onClose={handleCloseDonation}
-        userEmail={currentUserEmail || undefined}
-        userName={userProfile.name}
-        appLanguage={appLanguage}
-      />
-      <Tutorial
-        isOpen={isTutorialActive && currentView === 'home'}
-        currentStep={tutorialStep}
-        onClose={handleCloseTutorial}
-        onNext={handleTutorialNext}
-        onPrev={handleTutorialPrev}
-        steps={TUTORIAL_STEPS}
-        labels={tutorialLabels}
-      />
-      <Tutorial
-        isOpen={isInvestmentsTutorialOpen && currentView === 'investments'}
-        currentStep={0}
-        onClose={handleCloseInvestmentsTutorial}
-        onNext={handleCloseInvestmentsTutorial}
-        onPrev={noop}
-        steps={INVESTMENTS_TUTORIAL_STEPS}
-        labels={tutorialLabels}
-      />
+      {isAddTransactionOpen && <AddTransactionModal isOpen={isAddTransactionOpen} onClose={handleCloseAddTransaction} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} activeMonthContext={activeMonthContext} appLanguage={appLanguage} />}
+      {isAddAccountOpen && <AddAccountModal isOpen={isAddAccountOpen} onClose={handleCloseAddAccount} onSave={handleSaveAccount} accountToEdit={editingAccount} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />}
+      {isCalculatorOpen && <CalculatorModal isOpen={isCalculatorOpen} onClose={handleCloseCalculator} appLanguage={appLanguage} />}
+      {isProfileModalOpen && <EditProfileModal isOpen={isProfileModalOpen} onClose={handleCloseProfileModal} onSave={handleSaveProfile} onLogout={handleLogout} onDeleteAccount={noop} currentProfile={userProfile} appLanguage={appLanguage} onOpenProModal={handleOpenPro} />}
+      {isNotepadOpen && (
+        <NotepadModal
+          isOpen={isNotepadOpen}
+          onClose={handleCloseNotepad}
+          initialContent={activeMonth?.notepadContent || ''}
+          initialDrawing={activeMonth?.notepadDrawing || null}
+          onSave={handleSaveNotepad}
+          appLanguage={appLanguage}
+        />
+      )}
+      {isCalendarOpen && <CalendarModal isOpen={isCalendarOpen} onClose={handleCloseCalendar} transactions={transactions} activeMonthContext={activeMonthContext} appLanguage={appLanguage} />}
+      {isNotificationOpen && (
+        <NotificationModal
+          isOpen={isNotificationOpen}
+          onClose={handleCloseNotification}
+          notifications={notifications}
+          onMarkAllRead={handleMarkAllRead}
+          onDelete={handleDeleteNotification}
+          currentUserEmail={currentUserEmail}
+          appLanguage={appLanguage}
+          isSubscribedOnBackend={!!userProfile.pushSubscription}
+        />
+      )}
+      <Suspense fallback={null}>{isAnalyticsOpen && <AnalyticsModal isOpen={isAnalyticsOpen} onClose={handleCloseAnalytics} transactions={transactions} months={enrichedMonths} appLanguage={appLanguage} />}</Suspense>
+      {isProModalOpen && (
+        <ProModal
+          isOpen={isProModalOpen}
+          onClose={handleCloseProModal}
+          onUpgrade={handleProUpgrade}
+          userEmail={currentUserEmail || undefined}
+          userName={userProfile.name}
+          appLanguage={appLanguage}
+        />
+      )}
+      {isDonationModalOpen && (
+        <DonationModal
+          isOpen={isDonationModalOpen}
+          onClose={handleCloseDonation}
+          userEmail={currentUserEmail || undefined}
+          userName={userProfile.name}
+          appLanguage={appLanguage}
+        />
+      )}
+      {isTutorialActive && currentView === 'home' && (
+        <Tutorial
+          isOpen={isTutorialActive && currentView === 'home'}
+          currentStep={tutorialStep}
+          onClose={handleCloseTutorial}
+          onNext={handleTutorialNext}
+          onPrev={handleTutorialPrev}
+          steps={TUTORIAL_STEPS}
+          labels={tutorialLabels}
+        />
+      )}
+      {isInvestmentsTutorialOpen && currentView === 'investments' && (
+        <Tutorial
+          isOpen={isInvestmentsTutorialOpen && currentView === 'investments'}
+          currentStep={0}
+          onClose={handleCloseInvestmentsTutorial}
+          onNext={handleCloseInvestmentsTutorial}
+          onPrev={noop}
+          steps={INVESTMENTS_TUTORIAL_STEPS}
+          labels={tutorialLabels}
+        />
+      )}
     </div>
   );
 };

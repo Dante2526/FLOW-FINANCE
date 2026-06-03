@@ -1,10 +1,11 @@
 
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   optimizeDeps: {
     // Exclude dependencies served via CDN to prevent "failed to resolve" errors in Dev
     exclude: [
@@ -13,10 +14,7 @@ export default defineConfig({
       'react-dom/client',
       'lucide-react',
       'recharts',
-      '@supabase/supabase-js',
-      'firebase/app',
-      'firebase/auth',
-      'firebase/firestore'
+      '@supabase/supabase-js'
     ]
   },
   build: {
@@ -29,10 +27,7 @@ export default defineConfig({
         'react-dom/client',
         'lucide-react',
         'recharts',
-        '@supabase/supabase-js',
-        'firebase/app',
-        'firebase/auth',
-        'firebase/firestore'
+        '@supabase/supabase-js'
       ],
       output: {
         globals: {
@@ -40,10 +35,7 @@ export default defineConfig({
           'react-dom': 'ReactDOM',
           'lucide-react': 'LucideReact',
           'recharts': 'Recharts',
-          '@supabase/supabase-js': 'Supabase',
-          'firebase/app': 'firebase',
-          'firebase/auth': 'firebaseAuth',
-          'firebase/firestore': 'firebaseFirestore'
+          '@supabase/supabase-js': 'Supabase'
         }
       }
     }

@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0a0a0b;
+  --color-surface: #1c1c1e;
+  --color-surfaceLight: #2c2c2e;
+  --color-accent: var(--color-accent);
+  --color-accentDark: var(--color-accent-dark);
+  --font-sans: 'Inter', sans-serif;
+}
+
+:root {
+  /* Default Theme (Orange) */
+  --color-accent: #f97316;
+  --color-accent-dark: #ea580c;
+}
+
+/* LOCK MAIN WINDOW SCROLL - CRITICAL FOR SAMSUNG INTERNET */
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden; /* Disables native browser scrollbar */
+  background-color: #0a0a0b;
+  color: white;
+  font-family: 'Inter', sans-serif;
+  overscroll-behavior-y: none;
+  position: fixed; /* Fixes elastic scrolling on iOS/Android */
+}
+
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* HIDE SCROLLBARS ON INTERNAL ELEMENTS */
+* {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important; /* IE 10+ */
+  /* Disable default touch actions for better gesture control */
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Chrome, Safari, Samsung Internet, Edge */
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
+  background: transparent !important;
+  -webkit-appearance: none !important;
+}
+
+::-webkit-scrollbar-track,
+*::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+
+::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  background: transparent !important;
+}
+
+/* Disable text selection for app-like feel */
+.select-none {
+  -webkit-user-select: none;
+  user-select: none;
+}

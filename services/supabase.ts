@@ -296,11 +296,34 @@ export const saveUserField = async (email: string, field: string, data: any): Pr
 };
 
 export const subscribeToUserChanges = (email: string, onUpdate: () => void) => {
-  const tables = ['users', 'transactions', 'accounts', 'months', 'investments', 'long_term', 'notifications'];
-  const channel = supabase.channel('db-changes');
-  tables.forEach(table => {
-    channel.on('postgres_changes', { event: '*', schema: 'public', table }, () => onUpdate());
+  const sanitizedEmail = email.toLowerCase().trim().replace(/[^a-zA-Z0-9]/g, '-');
+  const channel = supabase.channel(`db-changes-${sanitizedEmail}`);
+  
+  getAuthUserId().then(userId => {
+    const userTables = ['transactions', 'accounts', 'months', 'investments', 'long_term', 'notifications'];
+    
+    // Inscrever apenas em linhas que pertencem a este usuário específico
+    userTables.forEach(table => {
+      channel.on(
+        'postgres_changes', 
+        { event: '*', schema: 'public', table, filter: `user_id=eq.${userId}` }, 
+        () => onUpdate()
+      );
+    });
+    
+    // Inscrever apenas na linha do perfil deste usuário específico
+    channel.on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'users', filter: `email=eq.${email.toLowerCase().trim()}` },
+      () => onUpdate()
+    );
+    
+    channel.subscribe();
+  }).catch(err => {
+    console.error("Failed to subscribe to user real-time changes:", err);
   });
-  channel.subscribe();
-  return () => { supabase.removeChannel(channel); };
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
 };
