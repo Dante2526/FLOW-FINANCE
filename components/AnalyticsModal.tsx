@@ -96,9 +96,7 @@ const AnalyticsModal: React.FC<Props> = ({ isOpen, onClose, transactions, months
         
         if (idx !== undefined) {
             const key = monthKeys[idx];
-            // Access translation dynamically
-            // @ts-ignore
-            const translated = TRANSLATIONS[appLanguage]?.months?.[key];
+            const translated = (TRANSLATIONS[appLanguage]?.months as Record<string, string>)?.[key];
             if (translated) {
                 const short = translated.substring(0, 3).toUpperCase();
                 return showYear ? `${short}/${year.slice(2)}` : short;

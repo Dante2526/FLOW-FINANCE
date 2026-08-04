@@ -1,0 +1,9 @@
+C:\Users\nayla\.antigravity\FLOW-FINANCE\.github\workflows\notification.yml
+C:\Users\nayla\.antigravity\FLOW-FINANCE\git-log-types.txt
+C:\Users\nayla\.antigravity\FLOW-FINANCE\index.html
+C:\Users\nayla\.antigravity\FLOW-FINANCE\public\favicon.svg
+C:\Users\nayla\.antigravity\FLOW-FINANCE\public\icon-192x192.png
+C:\Users\nayla\.antigravity\FLOW-FINANCE\public\icon-512x512.png
+C:\Users\nayla\.antigravity\FLOW-FINANCE\public\notification-icon.svg
+C:\Users\nayla\.antigravity\FLOW-FINANCE\public\screenshot1_1772569725223.png
+C:\Users\nayla\.antigravity\FLOW-FINANCE\public\screenshot2_1772569731672.png

@@ -26,8 +26,7 @@ import { TRANSLATIONS, getBrowserLanguage, getLocale } from './i18n';
 import { IconBell, JeittoLogo } from './components/Icons';
 import { Crown, Languages, ExternalLink, Zap, Heart, Copy, Check, ChevronRight, HelpCircle, CalendarClock, X, Plus, Landmark } from 'lucide-react';
 
-// Supabase Services
-import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, upsertItem, deleteItem, hardDeleteMonth } from './services/supabase';
+import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, upsertItem, upsertBatch, deleteItem, hardDeleteMonth } from './services/supabase';
 import { applyYieldToAll } from './services/investmentYield';
 
 const AnalyticsModal = React.lazy(() => import('./components/AnalyticsModal'));
@@ -41,7 +40,7 @@ const SHORT_CODE_TO_FULL: Record<string, string> = {
   'Jan': 'JANEIRO', 'Fev': 'FEVEREIRO', 'Mar': 'MARÇO', 'Abr': 'ABRIL', 'Mai': 'MAIO', 'Jun': 'JUNHO',
   'Jul': 'JULHO', 'Ago': 'AGOSTO', 'Set': 'SETEMBRO', 'Out': 'OUTUBRO', 'Nov': 'NOVEMBRO', 'Dez': 'DEZEMBRO',
   // EN
-  'Feb': 'FEVEREIRO', 'Apr': 'ABRIL', 'May': 'MAIO', 'Aug': 'AGOSTO', 'Sep': 'SETEMBRO', 'Oct': 'OCTUBRE', 'Dec': 'DEZEMBRO',
+  'Feb': 'FEVEREIRO', 'Apr': 'ABRIL', 'May': 'MAIO', 'Aug': 'AGOSTO', 'Sep': 'SETEMBRO', 'Oct': 'OUTUBRO', 'Dec': 'DEZEMBRO',
   // ES
   'Ene': 'JANEIRO', 'Dic': 'DEZEMBRO'
 };
@@ -189,6 +188,9 @@ const App: React.FC = () => {
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const lastActionTimeRef = useRef<number>(0);
   const hasAutoCheckedMonthRef = useRef<boolean>(false);
+  const syncDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isSyncingRef = useRef<boolean>(false);
+  const lastFocusSyncTimeRef = useRef<number>(0);
 
   // Robust translation retrieval with fallback
   const t = TRANSLATIONS[appLanguage] || TRANSLATIONS['pt'];
@@ -292,27 +294,74 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (!currentUserEmail || !isSessionReady) return;
-    const handleSync = () => {
+
+    const executeSync = () => {
       const syncStartTime = Date.now();
       // Block sync if a user action happened recently to prevent race conditions.
       if (syncStartTime - lastActionTimeRef.current < 5000) {
         return;
       }
 
-      loadUserData(currentUserEmail).then(data => {
-        if (data) {
-          // After fetching, check again. If an action happened DURING the fetch, discard stale data.
-          if (lastActionTimeRef.current > syncStartTime) {
-            console.warn("Stale sync data detected after user action. Discarding.");
-            return;
+      // Mutex: prevent concurrent sync executions
+      if (isSyncingRef.current) {
+        return;
+      }
+      isSyncingRef.current = true;
+
+      loadUserData(currentUserEmail)
+        .then(data => {
+          if (data) {
+            // After fetching, check again. If an action happened DURING the fetch, discard stale data.
+            if (lastActionTimeRef.current > syncStartTime) {
+              console.warn("Stale sync data detected after user action. Discarding.");
+              return;
+            }
+            applyData(data);
           }
-          applyData(data);
-        }
-      });
+        })
+        .catch(err => {
+          console.error("Erro durante a sincronização de dados:", err);
+        })
+        .finally(() => {
+          isSyncingRef.current = false;
+        });
     };
-    const unsubscribe = subscribeToUserChanges(currentUserEmail, handleSync);
-    window.addEventListener('focus', handleSync);
-    return () => { unsubscribe(); window.removeEventListener('focus', handleSync); };
+
+    // Debounce de 800ms para eventos Realtime (consolida rajadas de alterações)
+    const handleRealtimeUpdate = () => {
+      if (syncDebounceTimerRef.current) {
+        clearTimeout(syncDebounceTimerRef.current);
+      }
+      syncDebounceTimerRef.current = setTimeout(() => {
+        syncDebounceTimerRef.current = null;
+        executeSync();
+      }, 800);
+    };
+
+    // Throttle de 60s para o evento focus da janela (evita recargas ao trocar de aba)
+    const handleWindowFocus = () => {
+      const now = Date.now();
+      const FOCUS_COOLDOWN_MS = 60 * 1000;
+
+      if (now - lastFocusSyncTimeRef.current < FOCUS_COOLDOWN_MS) {
+        return;
+      }
+
+      lastFocusSyncTimeRef.current = now;
+      executeSync();
+    };
+
+    const unsubscribe = subscribeToUserChanges(currentUserEmail, handleRealtimeUpdate);
+    window.addEventListener('focus', handleWindowFocus);
+
+    return () => {
+      if (syncDebounceTimerRef.current) {
+        clearTimeout(syncDebounceTimerRef.current);
+        syncDebounceTimerRef.current = null;
+      }
+      unsubscribe();
+      window.removeEventListener('focus', handleWindowFocus);
+    };
   }, [currentUserEmail, isSessionReady]);
 
   // SYSTEM: Check for bills due today and generate notifications
@@ -325,22 +374,19 @@ const App: React.FC = () => {
     const now = new Date();
     const nowTime = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-    const missingNotifs: AppNotification[] = [];
-
     const locale = getLocale(appLanguage);
     const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
-    transactions.forEach(t => {
-      if (t.paid) return;
+    const dueTodayTransactions = transactions.filter(t => !t.paid && t.date === todayStr);
+    if (dueTodayTransactions.length === 0) return;
 
-      // The check is now a simple and reliable string comparison.
-      // t.date is 'YYYY-MM-DD', and so is todayStr.
-      const isToday = t.date === todayStr;
+    setNotifications(prevNotifications => {
+      const missingNotifs: AppNotification[] = [];
 
-      if (isToday) {
+      dueTodayTransactions.forEach(t => {
         const notifId = t.id;
-        const exists = notifications.some(n => n.id === notifId);
-        const isDismissed = dismissedNotifIds.includes(notifId);
+        const exists = prevNotifications.some(n => n.id === notifId || n.id === `bill-due-${t.id}`);
+        const isDismissed = dismissedNotifIds.includes(notifId) || dismissedNotifIds.includes(`bill-due-${t.id}`);
 
         if (!exists && !isDismissed) {
           const formattedValue = t.amount.toLocaleString(locale, { minimumFractionDigits: 2 });
@@ -365,8 +411,9 @@ const App: React.FC = () => {
           missingNotifs.push(newNotif);
 
           // TRIGGER SYSTEM NOTIFICATION
-          if (Notification.permission === 'granted' && !systemNotifiedRef.current.has(notifId)) {
+          if (Notification.permission === 'granted' && !systemNotifiedRef.current.has(notifId) && !systemNotifiedRef.current.has(`bill-due-${t.id}`)) {
             systemNotifiedRef.current.add(notifId);
+            systemNotifiedRef.current.add(`bill-due-${t.id}`);
 
             if ('serviceWorker' in navigator) {
               navigator.serviceWorker.ready.then(registration => {
@@ -375,27 +422,27 @@ const App: React.FC = () => {
                   icon: '/favicon.svg',
                   badge: '/favicon.svg', 
                   vibrate: [100, 50, 100],
+                  tag: `bill-due-${t.id}`,
                   data: { url: '/' }
                 } as any);
               });
             } else {
-              new Notification(title, { body: message });
+              new Notification(title, { body: message, tag: `bill-due-${t.id}` } as any);
             }
           }
         }
-      }
-    });
+      });
 
-    if (missingNotifs.length > 0) {
-      const updatedNotifications = [...missingNotifs, ...notifications];
-      setNotifications(updatedNotifications);
+      if (missingNotifs.length === 0) return prevNotifications;
 
       if (currentUserEmail) {
         Promise.all(missingNotifs.map(n => upsertItem(currentUserEmail!, 'notifications', n)))
           .then(() => lastActionTimeRef.current = Date.now());
       }
-    }
-  }, [transactions, notifications, isLoadingData, currentUserEmail, appLanguage, dismissedNotifIds]);
+
+      return [...missingNotifs, ...prevNotifications];
+    });
+  }, [transactions, isLoadingData, currentUserEmail, appLanguage, dismissedNotifIds]);
 
   const activeMonth = useMemo(() => months.find(m => m.id === activeMonthId) || months[0], [months, activeMonthId]);
 
@@ -514,7 +561,15 @@ const App: React.FC = () => {
       }
     }
     if (data.longTerm) setLongTermTransactions(data.longTerm);
-    if (data.notifications) setNotifications(data.notifications);
+    if (data.notifications) {
+      const dedupedMap = new Map<string, AppNotification>();
+      (data.notifications as AppNotification[]).forEach(n => {
+        if (!dedupedMap.has(n.id)) {
+          dedupedMap.set(n.id, n);
+        }
+      });
+      setNotifications(Array.from(dedupedMap.values()));
+    }
     if (data.theme) { setAppTheme(data.theme); saveData(STORAGE_KEYS.APP_THEME, data.theme); }
     if (data.months && data.months.length > 0) {
       const sorted = sortMonths(data.months);
@@ -651,12 +706,18 @@ const App: React.FC = () => {
     setActiveMonthId(nId);
 
     if (currentUserEmail) {
-      await Promise.all([
-        saveCollection(currentUserEmail, "months", updMonths.map(({ count, ...rest }) => rest)),
-        saveCollection(currentUserEmail, "transactions", [...nTx, ...cur.transactions]),
-        saveCollection(currentUserEmail, "accounts", [...cur.accounts, ...nAcc]),
+      const { count, total, ...nMonthData } = nMonth;
+      const savePromises: Promise<any>[] = [
+        upsertItem(currentUserEmail, "months", nMonthData),
         saveUserField(currentUserEmail, "dashboardOrder", finalDashboardOrder)
-      ]);
+      ];
+      if (nTx.length > 0) {
+        savePromises.push(upsertBatch(currentUserEmail, "transactions", nTx));
+      }
+      if (nAcc.length > 0) {
+        savePromises.push(upsertBatch(currentUserEmail, "accounts", nAcc));
+      }
+      await Promise.all(savePromises);
       lastActionTimeRef.current = Date.now();
     }
     
@@ -907,7 +968,7 @@ const App: React.FC = () => {
 
   const handleDragEnter = useCallback((tId: string) => {
     if (dragItem.current && dragItem.current !== tId) {
-      let nO = [...currentStateRef.current.dashboardOrder];
+      const nO = [...currentStateRef.current.dashboardOrder];
       // FIX: Ensure BALANCE_CARD_ID is in the order list before attempting to swap
       if (!nO.includes(BALANCE_CARD_ID)) { nO.unshift(BALANCE_CARD_ID); }
 

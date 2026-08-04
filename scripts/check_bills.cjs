@@ -48,23 +48,31 @@ async function checkAndNotify() {
 
         console.log(`Processando ${users.length} usuários...`);
 
-        for (const user of users) {
-            // O user_id nas tabelas de dados (transactions, etc.) é o UUID do auth.
-            // Na tabela 'users', o campo 'id' já é esse UUID.
-            const userId = user.id;
+        // Busca em lote de todas as transações vencendo hoje para os usuários com push ativo (Eliminação de query N+1)
+        const userIds = users.map(u => u.id);
+        const { data: allTransactions, error: txError } = await supabase
+            .from('transactions')
+            .select('id, user_id, name, amount')
+            .in('user_id', userIds)
+            .eq('date', todayStr)
+            .eq('paid', false);
 
-            // Buscar transações não pagas que vencem hoje para este usuário
-            const { data: transactions, error: txError } = await supabase
-                .from('transactions')
-                .select('id, name, amount')
-                .eq('user_id', userId)
-                .eq('date', todayStr)
-                .eq('paid', false);
+        if (txError) {
+            console.error("Erro ao buscar transações em lote:", txError);
+            return;
+        }
 
-            if (txError) {
-                console.error(`Erro ao buscar transações para ${user.email}:`, txError);
-                continue;
+        // Agrupar transações por user_id em memória
+        const txByUser = new Map();
+        for (const tx of allTransactions || []) {
+            if (!txByUser.has(tx.user_id)) {
+                txByUser.set(tx.user_id, []);
             }
+            txByUser.get(tx.user_id).push(tx);
+        }
+
+        for (const user of users) {
+            const transactions = txByUser.get(user.id);
 
             if (!transactions || transactions.length === 0) {
                 console.log(`Sem contas vencendo hoje para ${user.email}`);
@@ -99,15 +107,16 @@ async function checkAndNotify() {
                     await webpush.sendNotification(user.push_subscription, payload);
                     console.log(`Notificação enviada com sucesso para ${user.email} (Conta: ${tx.name})`);
                     
-                    // Opcional: Registrar a notificação no banco do usuário para que apareça na Central de notificações
-                    await supabase.from('notifications').insert({
+                    // Registrar a notificação no banco do usuário com ID determinístico para deduplicação com o client
+                    await supabase.from('notifications').upsert({
+                        id: `bill-due-${tx.id}`,
                         user_id: user.id,
                         title: title,
                         message: body,
                         date: `Hoje, ${today.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}`,
                         read: false,
                         type: 'alert'
-                    });
+                    }, { onConflict: 'id' });
 
                 } catch (pushError) {
                     if (pushError.statusCode === 410 || pushError.statusCode === 404) {

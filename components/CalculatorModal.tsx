@@ -141,12 +141,13 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
       // Otherwise (waiting for operand OR display is 0), clear everything (AC)
       return INITIAL_STATE;
 
-    case 'SIGN':
+    case 'SIGN': {
       const val = parseFloat(state.display);
       if (val === 0) return state;
       return { ...state, display: String(val * -1) };
+    }
 
-    case 'PERCENT':
+    case 'PERCENT': {
       const currentVal = parseFloat(state.display);
       
       // Smart Percentage Logic for Finance (e.g. 100 + 10% = 110)
@@ -160,12 +161,20 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
                  display: String(pctValue)
              };
          }
+         // For multiplication/division, normal percentage (e.g. 200 * 50% = 100)
+         return {
+             ...state,
+             display: String(currentVal / 100)
+         };
       }
-      
-      // Default behavior (conversion to decimal) for mult/div
-      return { ...state, display: String(currentVal / 100) };
+      // Simple percentage (e.g. 50% = 0.5)
+      return {
+        ...state,
+        display: String(currentVal / 100)
+      };
+    }
 
-    case 'OP':
+    case 'OP': {
       if (action.payload) {
         const nextOp = action.payload;
         const inputValue = parseFloat(state.display);
@@ -196,20 +205,12 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
             waitingForOperand: true,
             operator: nextOp
           };
-        } else {
-           // Fallback edge case
-           return {
-             ...state,
-             previousValue: inputValue,
-             history: `${formatDisplay(String(inputValue), locale, errorLabel)} ${opSym}`,
-             waitingForOperand: true,
-             operator: nextOp
-           };
         }
       }
       return state;
+    }
 
-    case 'EXEC':
+    case 'EXEC': {
       if (!state.operator || state.previousValue === null) return state;
       const finalInput = parseFloat(state.display);
       const finalResult = calculate(state.previousValue, finalInput, state.operator);
@@ -223,6 +224,7 @@ const calculatorReducer = (state: CalculatorState, action: CalculatorAction): Ca
         operator: null,
         waitingForOperand: true
       };
+    }
       
     default:
       return state;

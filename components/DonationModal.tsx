@@ -96,6 +96,7 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           paymentType: 'pix',
+          chargeType: 'donation',
           user: { email: userEmail, name: userName },
           billingInfo: {
             name: userName || 'Apoiador do Projeto',

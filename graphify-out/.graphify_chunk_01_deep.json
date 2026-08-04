@@ -1,0 +1,594 @@
+{
+  "nodes": [
+    {
+      "id": "github_workflows_notification_yml",
+      "label": "Daily Bill Check GitHub Actions Workflow",
+      "file_type": "code",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\.github\\workflows\\notification.yml",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "github_workflows_notification_yml_notify_job",
+      "label": "notify job",
+      "file_type": "code",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\.github\\workflows\\notification.yml",
+      "source_location": "line:9",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "github_workflows_notification_yml_supabase_config",
+      "label": "Supabase environment configuration in workflow",
+      "file_type": "code",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\.github\\workflows\\notification.yml",
+      "source_location": "line:14",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "github_workflows_notification_yml_vapid_config",
+      "label": "VAPID key configuration for web push",
+      "file_type": "code",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\.github\\workflows\\notification.yml",
+      "source_location": "line:16",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "git_log_types_txt",
+      "label": "Git log showing types.ts evolution across commits",
+      "file_type": "document",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Dante2526",
+      "contributor": null
+    },
+    {
+      "id": "git_log_types_txt_monthsummary_type",
+      "label": "MonthSummary interface evolution",
+      "file_type": "document",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Dante2526",
+      "contributor": null
+    },
+    {
+      "id": "git_log_types_txt_transaction_type",
+      "label": "Transaction interface evolution",
+      "file_type": "document",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Dante2526",
+      "contributor": null
+    },
+    {
+      "id": "git_log_types_txt_userprofile_type",
+      "label": "UserProfile interface evolution",
+      "file_type": "document",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Dante2526",
+      "contributor": null
+    },
+    {
+      "id": "git_log_types_txt_longtermtransaction_type",
+      "label": "LongTermTransaction interface evolution",
+      "file_type": "document",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Dante2526",
+      "contributor": null
+    },
+    {
+      "id": "git_log_types_txt_investment_type",
+      "label": "Investment interface and InvestmentType union",
+      "file_type": "document",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Dante2526",
+      "contributor": null
+    },
+    {
+      "id": "git_log_types_txt_logotype_type",
+      "label": "LogoType union type evolution",
+      "file_type": "document",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Dante2526",
+      "contributor": null
+    },
+    {
+      "id": "git_log_types_txt_appview_type",
+      "label": "AppView union type",
+      "file_type": "document",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Dante2526",
+      "contributor": null
+    },
+    {
+      "id": "git_log_types_txt_applanguage_type",
+      "label": "AppLanguage union type (pt/en/es)",
+      "file_type": "document",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "Dante2526",
+      "contributor": null
+    },
+    {
+      "id": "index_html",
+      "label": "Flow Finance PWA HTML entry point",
+      "file_type": "code",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\index.html",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "index_html_pwa_meta",
+      "label": "PWA meta configuration (theme-color, apple-mobile-web-app, viewport)",
+      "file_type": "code",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\index.html",
+      "source_location": "line:5",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "index_html_cdn_importmap",
+      "label": "CDN import map for React, Recharts, Supabase, Vite via esm.sh",
+      "file_type": "code",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\index.html",
+      "source_location": "line:24",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "public_favicon_svg",
+      "label": "Flow Finance app logo - orange F mark on dark rounded rectangle",
+      "file_type": "image",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\public\\favicon.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "public_icon_192x192_png",
+      "label": "PWA icon 192x192",
+      "file_type": "image",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\public\\icon-192x192.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "public_icon_512x512_png",
+      "label": "PWA icon 512x512",
+      "file_type": "image",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\public\\icon-512x512.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "public_notification_icon_svg",
+      "label": "Notification push icon - white F mark on transparent background",
+      "file_type": "image",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\public\\notification-icon.svg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "public_screenshot1_1772569725223_png",
+      "label": "App screenshot 1",
+      "file_type": "image",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\public\\screenshot1_1772569725223.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "public_screenshot2_1772569731672_png",
+      "label": "App screenshot 2",
+      "file_type": "image",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\public\\screenshot2_1772569731672.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "github_workflows_notification_yml_cron_schedule",
+      "label": "Cron schedule 0 12 * * * (daily at 09:00 BRT)",
+      "file_type": "code",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\.github\\workflows\\notification.yml",
+      "source_location": "line:6",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "github_workflows_notification_yml_node18",
+      "label": "Node.js 18 setup step",
+      "file_type": "code",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\.github\\workflows\\notification.yml",
+      "source_location": "line:25",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "github_workflows_notification_yml_dependencies",
+      "label": "npm install @supabase/supabase-js web-push",
+      "file_type": "code",
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\.github\\workflows\\notification.yml",
+      "source_location": "line:30",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "github_workflows_notification_yml",
+      "target": "github_workflows_notification_yml_notify_job",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\.github\\workflows\\notification.yml",
+      "source_location": "line:9",
+      "weight": 1.0
+    },
+    {
+      "source": "github_workflows_notification_yml",
+      "target": "github_workflows_notification_yml_cron_schedule",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\.github\\workflows\\notification.yml",
+      "source_location": "line:6",
+      "weight": 1.0
+    },
+    {
+      "source": "github_workflows_notification_yml_notify_job",
+      "target": "github_workflows_notification_yml_supabase_config",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\.github\\workflows\\notification.yml",
+      "source_location": "line:14",
+      "weight": 1.0
+    },
+    {
+      "source": "github_workflows_notification_yml_notify_job",
+      "target": "github_workflows_notification_yml_vapid_config",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\.github\\workflows\\notification.yml",
+      "source_location": "line:16",
+      "weight": 1.0
+    },
+    {
+      "source": "github_workflows_notification_yml_notify_job",
+      "target": "github_workflows_notification_yml_node18",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\.github\\workflows\\notification.yml",
+      "source_location": "line:25",
+      "weight": 1.0
+    },
+    {
+      "source": "github_workflows_notification_yml_notify_job",
+      "target": "github_workflows_notification_yml_dependencies",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\.github\\workflows\\notification.yml",
+      "source_location": "line:30",
+      "weight": 1.0
+    },
+    {
+      "source": "github_workflows_notification_yml_dependencies",
+      "target": "github_workflows_notification_yml_notify_job",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\.github\\workflows\\notification.yml",
+      "source_location": "line:33",
+      "weight": 1.0
+    },
+    {
+      "source": "index_html",
+      "target": "index_html_pwa_meta",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\index.html",
+      "source_location": "line:5",
+      "weight": 1.0
+    },
+    {
+      "source": "index_html",
+      "target": "index_html_cdn_importmap",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\index.html",
+      "source_location": "line:24",
+      "weight": 1.0
+    },
+    {
+      "source": "index_html",
+      "target": "public_favicon_svg",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\index.html",
+      "source_location": "line:19",
+      "weight": 1.0
+    },
+    {
+      "source": "index_html_cdn_importmap",
+      "target": "index_html",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\index.html",
+      "source_location": "line:24",
+      "weight": 1.0
+    },
+    {
+      "source": "git_log_types_txt",
+      "target": "git_log_types_txt_monthsummary_type",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "git_log_types_txt",
+      "target": "git_log_types_txt_transaction_type",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "git_log_types_txt",
+      "target": "git_log_types_txt_userprofile_type",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "git_log_types_txt",
+      "target": "git_log_types_txt_longtermtransaction_type",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "git_log_types_txt",
+      "target": "git_log_types_txt_investment_type",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "git_log_types_txt",
+      "target": "git_log_types_txt_logotype_type",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "git_log_types_txt",
+      "target": "git_log_types_txt_appview_type",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "git_log_types_txt",
+      "target": "git_log_types_txt_applanguage_type",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "public_favicon_svg",
+      "target": "public_notification_icon_svg",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\public\\favicon.svg",
+      "source_location": null,
+      "weight": 0.85
+    },
+    {
+      "source": "public_favicon_svg",
+      "target": "public_icon_192x192_png",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\public\\favicon.svg",
+      "source_location": null,
+      "weight": 0.75
+    },
+    {
+      "source": "public_favicon_svg",
+      "target": "public_icon_512x512_png",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\public\\favicon.svg",
+      "source_location": null,
+      "weight": 0.75
+    },
+    {
+      "source": "github_workflows_notification_yml",
+      "target": "public_notification_icon_svg",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.65,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\.github\\workflows\\notification.yml",
+      "source_location": null,
+      "weight": 0.65
+    },
+    {
+      "source": "index_html_pwa_meta",
+      "target": "public_favicon_svg",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\index.html",
+      "source_location": "line:19",
+      "weight": 1.0
+    },
+    {
+      "source": "index_html",
+      "target": "git_log_types_txt",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.65,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\index.html",
+      "source_location": null,
+      "weight": 0.65
+    },
+    {
+      "source": "git_log_types_txt_transaction_type",
+      "target": "github_workflows_notification_yml",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "weight": 0.75
+    },
+    {
+      "source": "git_log_types_txt_userprofile_type",
+      "target": "github_workflows_notification_yml",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "weight": 0.75
+    },
+    {
+      "source": "git_log_types_txt_applanguage_type",
+      "target": "github_workflows_notification_yml",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.65,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\git-log-types.txt",
+      "source_location": null,
+      "weight": 0.65
+    },
+    {
+      "source": "public_screenshot1_1772569725223_png",
+      "target": "public_screenshot2_1772569731672_png",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\public\\screenshot1_1772569725223.png",
+      "source_location": null,
+      "weight": 0.95
+    },
+    {
+      "source": "public_screenshot1_1772569725223_png",
+      "target": "index_html",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.65,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\public\\screenshot1_1772569725223.png",
+      "source_location": null,
+      "weight": 0.65
+    },
+    {
+      "source": "public_screenshot2_1772569731672_png",
+      "target": "index_html",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.65,
+      "source_file": "C:\\Users\\nayla\\.antigravity\\FLOW-FINANCE\\public\\screenshot2_1772569731672.png",
+      "source_location": null,
+      "weight": 0.65
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 12847,
+  "output_tokens": 3842
+}

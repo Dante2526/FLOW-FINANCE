@@ -71,6 +71,7 @@ self.addEventListener('push', (event) => {
     icon: '/favicon.svg',
     badge: '/notification-icon.svg',
     vibrate: [100, 50, 100],
+    tag: data.tag,
     data: {
       url: data.url || '/'
     }

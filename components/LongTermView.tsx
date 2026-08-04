@@ -199,7 +199,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
     
     const currentPaid = selectedItem.installmentsPaid;
     const targetPaid = index + 1;
-    let newItem = { ...selectedItem };
+    const newItem = { ...selectedItem };
 
     // If clicking the last paid item, uncheck it (go back one step)
     if (targetPaid === currentPaid) {

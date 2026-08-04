@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Transaction, AppLanguage } from '../types';
 import { TransactionIcon } from './Icons';
 import { Trash2, Edit2, Check, CreditCard, QrCode, RotateCcw } from 'lucide-react';
@@ -133,7 +133,7 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
     // movementX is the exact delta of mouse movement since last frame. Just add it.
     // Let's multiply by 1.5 to keep it fast
     setOffsetX((prev) => {
-      let newOffset = prev + (movementX * 1.5);
+      const newOffset = prev + (movementX * 1.5);
       if (newOffset > 100) return 100;
       if (newOffset < -100) return -100;
       return newOffset;
@@ -310,7 +310,7 @@ const TransactionList: React.FC<Props> = ({ transactions, onDelete, onEdit, onTo
   const locale = getLocale(appLanguage);
   const currencySymbol = appLanguage === 'pt' ? 'R$' : appLanguage === 'en' ? '$' : '€';
 
-  const unpaidCount = transactions.filter(tx => !tx.paid).length;
+  const unpaidCount = useMemo(() => transactions.filter(tx => !tx.paid).length, [transactions]);
 
   return (
     <div className="mt-6 flex flex-col" data-tour-id="transaction-list">

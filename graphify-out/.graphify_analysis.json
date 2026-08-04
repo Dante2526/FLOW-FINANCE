@@ -1,0 +1,526 @@
+{
+  "communities": {
+    "0": [
+      "app",
+      "app_analyticsmodal",
+      "app_app",
+      "app_currentdate",
+      "app_generateuuid",
+      "app_getlocalisodatestring",
+      "app_getmonthfromdatestr",
+      "app_getyearfromdatestr",
+      "app_initial_profile",
+      "app_month_names",
+      "app_roundmoney",
+      "app_short_code_to_full",
+      "app_sortmonths",
+      "app_splashscreen",
+      "app_system_initial_month",
+      "components_loginscreen",
+      "components_loginscreen_flowlogo",
+      "components_loginscreen_loginscreen",
+      "components_loginscreen_props",
+      "components_tutorial",
+      "components_tutorial_props",
+      "components_tutorial_tutorial",
+      "components_tutorial_tutorialstep",
+      "i18n_getbrowserlanguage",
+      "index",
+      "index_root",
+      "index_rootelement",
+      "services_storage",
+      "services_storage_loaddata",
+      "services_storage_savedata",
+      "services_storage_storage_keys",
+      "services_supabase",
+      "services_supabase_checkuserexists",
+      "services_supabase_deleteitem",
+      "services_supabase_deleteuser",
+      "services_supabase_getauthuserid",
+      "services_supabase_harddeletemonth",
+      "services_supabase_loaduserdata",
+      "services_supabase_loginuser",
+      "services_supabase_registeruser",
+      "services_supabase_savecollection",
+      "services_supabase_saveuserfield",
+      "services_supabase_sendauthotp",
+      "services_supabase_subscribetouserchanges",
+      "services_supabase_supabase",
+      "services_supabase_supabase_anon_key",
+      "services_supabase_supabase_url",
+      "services_supabase_tocamelcase",
+      "services_supabase_tosnakecase",
+      "services_supabase_upsertitem",
+      "services_supabase_verifyauthotp"
+    ],
+    "1": [
+      "components_analyticsmodal",
+      "components_analyticsmodal_customtooltip",
+      "components_analyticsmodal_props",
+      "components_calendarmodal",
+      "components_calendarmodal_calendarmodal",
+      "components_calendarmodal_calendarmodalbase",
+      "components_calendarmodal_props",
+      "components_contactsrow",
+      "components_contactsrow_contactsrow",
+      "components_contactsrow_props",
+      "components_donationmodal",
+      "components_donationmodal_donationmodal",
+      "components_donationmodal_props",
+      "components_notepadmodal",
+      "components_notepadmodal_colors",
+      "components_notepadmodal_notepadmodal",
+      "components_notepadmodal_props",
+      "components_notepadmodal_rationale_127",
+      "components_notepadmodal_rationale_155",
+      "components_notepadmodal_tool",
+      "components_privacypolicymodal",
+      "components_privacypolicymodal_privacypolicymodal",
+      "components_privacypolicymodal_props",
+      "components_promodal",
+      "components_promodal_paymenttype",
+      "components_promodal_promodal",
+      "components_promodal_props",
+      "components_promodal_step",
+      "components_settingsview",
+      "components_settingsview_available_themes",
+      "components_settingsview_props",
+      "components_settingsview_settingsview",
+      "components_settingsview_themeoption",
+      "components_transactionsummary",
+      "components_transactionsummary_getmonthdisplayname",
+      "components_transactionsummary_monthcard",
+      "components_transactionsummary_monthcardprops",
+      "components_transactionsummary_props",
+      "components_transactionsummary_pt_to_key_map",
+      "components_transactionsummary_transactionsummary",
+      "i18n",
+      "i18n_translations",
+      "types_applanguage",
+      "types_apptheme",
+      "types_contact",
+      "types_monthsummary"
+    ],
+    "2": [
+      "components_addaccountmodal",
+      "components_addaccountmodal_addaccountmodal",
+      "components_addaccountmodal_props",
+      "components_addaccountmodal_themes_config",
+      "components_addinvestmentmodal",
+      "components_addinvestmentmodal_addinvestmentmodal",
+      "components_addinvestmentmodal_props",
+      "components_analyticsmodal_analyticsmodal",
+      "components_balancecard",
+      "components_balancecard_balancecard",
+      "components_balancecard_props",
+      "components_bottomnav",
+      "components_bottomnav_bottomnav",
+      "components_bottomnav_props",
+      "components_editprofilemodal",
+      "components_editprofilemodal_editprofilemodal",
+      "components_editprofilemodal_preset_avatars",
+      "components_editprofilemodal_props",
+      "components_icons_investmenticon",
+      "components_investmentsview",
+      "components_investmentsview_investmentsview",
+      "components_investmentsview_props",
+      "components_investmentsview_swipeableinvestmentitem",
+      "components_investmentsview_swipeableitemprops",
+      "components_longtermview",
+      "components_longtermview_longtermview",
+      "components_longtermview_props",
+      "components_secondarycard",
+      "components_secondarycard_getlabelstyles",
+      "components_secondarycard_getthemestyles",
+      "components_secondarycard_props",
+      "components_secondarycard_secondarycard",
+      "i18n_getlocale",
+      "types",
+      "types_account",
+      "types_appview",
+      "types_cardtheme",
+      "types_investment",
+      "types_investmenttype",
+      "types_longtermtransaction",
+      "types_userprofile"
+    ],
+    "3": [
+      "components_addtransactionmodal",
+      "components_addtransactionmodal_addtransactionmodal",
+      "components_addtransactionmodal_getlocalisodate",
+      "components_addtransactionmodal_month_map",
+      "components_addtransactionmodal_props",
+      "components_addtransactionmodal_today_keywords",
+      "components_icons",
+      "components_icons_amazonlogo",
+      "components_icons_applelogo",
+      "components_icons_disneylogo",
+      "components_icons_genericicon",
+      "components_icons_globologo",
+      "components_icons_iconarrowright",
+      "components_icons_iconbell",
+      "components_icons_icongrid",
+      "components_icons_iconinvestment",
+      "components_icons_iconmore",
+      "components_icons_iconplus",
+      "components_icons_iconscan",
+      "components_icons_iconsend",
+      "components_icons_jeittologo",
+      "components_icons_maxlogo",
+      "components_icons_mercadolivrelogo",
+      "components_icons_motorcycleicon",
+      "components_icons_netflixlogo",
+      "components_icons_spotifylogo",
+      "components_icons_tnflogo",
+      "components_icons_transactionicon",
+      "components_icons_youtubelogo",
+      "components_transactionlist",
+      "components_transactionlist_formatdatedisplay",
+      "components_transactionlist_getlocalisodatestring",
+      "components_transactionlist_props",
+      "components_transactionlist_swipeabletransactionitem",
+      "components_transactionlist_swipeabletransactionitemprops",
+      "components_transactionlist_transactionlist",
+      "types_logotype",
+      "types_transaction"
+    ],
+    "4": [
+      "lucide_react",
+      "package",
+      "package_dependencies",
+      "package_dependencies_lucide_react",
+      "package_dependencies_react",
+      "package_dependencies_react_dom",
+      "package_dependencies_recharts",
+      "package_dependencies_supabase_supabase_js",
+      "package_devdependencies",
+      "package_devdependencies_tailwindcss",
+      "package_devdependencies_tailwindcss_vite",
+      "package_devdependencies_types_node",
+      "package_devdependencies_typescript",
+      "package_devdependencies_vite",
+      "package_devdependencies_vitejs_plugin_react",
+      "package_name",
+      "package_private",
+      "package_scripts",
+      "package_scripts_build",
+      "package_scripts_dev",
+      "package_scripts_preview",
+      "package_type",
+      "package_version",
+      "react",
+      "react_dom",
+      "recharts",
+      "supabase_supabase_js",
+      "tailwindcss",
+      "tailwindcss_vite",
+      "types_node",
+      "typescript",
+      "vite",
+      "vitejs_plugin_react"
+    ],
+    "5": [
+      "public_manifest",
+      "public_manifest_background_color",
+      "public_manifest_categories",
+      "public_manifest_description",
+      "public_manifest_dir",
+      "public_manifest_display",
+      "public_manifest_display_override",
+      "public_manifest_iarc_rating_id",
+      "public_manifest_icons",
+      "public_manifest_id",
+      "public_manifest_json_ref_minimal_ui",
+      "public_manifest_json_ref_standalone",
+      "public_manifest_json_ref_window_controls_overlay",
+      "public_manifest_lang",
+      "public_manifest_name",
+      "public_manifest_orientation",
+      "public_manifest_prefer_related_applications",
+      "public_manifest_related_applications",
+      "public_manifest_scope",
+      "public_manifest_scope_extensions",
+      "public_manifest_screenshots",
+      "public_manifest_short_name",
+      "public_manifest_start_url",
+      "public_manifest_theme_color",
+      "ref_finance",
+      "ref_productivity",
+      "ref_utilities"
+    ],
+    "6": [
+      "ref_dom",
+      "ref_dom_iterable",
+      "ref_es2022",
+      "ref_node",
+      "tsconfig",
+      "tsconfig_compileroptions",
+      "tsconfig_compileroptions_allowimportingtsextensions",
+      "tsconfig_compileroptions_allowjs",
+      "tsconfig_compileroptions_experimentaldecorators",
+      "tsconfig_compileroptions_isolatedmodules",
+      "tsconfig_compileroptions_jsx",
+      "tsconfig_compileroptions_lib",
+      "tsconfig_compileroptions_module",
+      "tsconfig_compileroptions_moduledetection",
+      "tsconfig_compileroptions_moduleresolution",
+      "tsconfig_compileroptions_noemit",
+      "tsconfig_compileroptions_paths",
+      "tsconfig_compileroptions_skiplibcheck",
+      "tsconfig_compileroptions_target",
+      "tsconfig_compileroptions_types",
+      "tsconfig_compileroptions_usedefineforclassfields"
+    ],
+    "7": [
+      "manifest",
+      "manifest_background_color",
+      "manifest_dir",
+      "manifest_display",
+      "manifest_display_override",
+      "manifest_iarc_rating_id",
+      "manifest_icons",
+      "manifest_json_ref_minimal_ui",
+      "manifest_json_ref_standalone",
+      "manifest_json_ref_window_controls_overlay",
+      "manifest_lang",
+      "manifest_name",
+      "manifest_orientation",
+      "manifest_related_applications",
+      "manifest_scope",
+      "manifest_scope_extensions",
+      "manifest_short_name",
+      "manifest_start_url",
+      "manifest_theme_color"
+    ],
+    "8": [
+      "components_calculatormodal",
+      "components_calculatormodal_buttonprops",
+      "components_calculatormodal_calculate",
+      "components_calculatormodal_calculatoraction",
+      "components_calculatormodal_calculatorbutton",
+      "components_calculatormodal_calculatormodal",
+      "components_calculatormodal_calculatorreducer",
+      "components_calculatormodal_calculatorstate",
+      "components_calculatormodal_deleteicon",
+      "components_calculatormodal_formatdisplay",
+      "components_calculatormodal_initial_state",
+      "components_calculatormodal_props"
+    ],
+    "9": [
+      "services_investmentyield",
+      "services_investmentyield_applydailyyield",
+      "services_investmentyield_applyyieldtoall",
+      "services_investmentyield_countbusinessdaysbetween",
+      "services_investmentyield_fixed_holidays",
+      "services_investmentyield_isbusinessday",
+      "services_investmentyield_isholiday",
+      "services_investmentyield_mobile_holidays",
+      "services_investmentyield_tolocalisodate"
+    ],
+    "10": [
+      "components_notificationmodal",
+      "components_notificationmodal_notificationmodal",
+      "components_notificationmodal_props",
+      "components_notificationmodal_tabtype",
+      "components_notificationmodal_urlbase64touint8array",
+      "types_appnotification"
+    ],
+    "11": [
+      "test_db",
+      "test_db_runtest",
+      "test_db_supabase"
+    ],
+    "12": [
+      "api_check_status",
+      "api_check_status_handler"
+    ],
+    "13": [
+      "api_create_charge",
+      "api_create_charge_handler"
+    ],
+    "14": [
+      "api_webhook",
+      "api_webhook_handler"
+    ],
+    "15": [
+      "public_sw",
+      "public_sw_assets_to_cache"
+    ],
+    "16": [
+      "loginscreen"
+    ],
+    "17": [
+      "scripts_check_bills"
+    ],
+    "18": [
+      "vite_config"
+    ]
+  },
+  "cohesion": {
+    "0": 0.08862745098039215,
+    "1": 0.07922705314009662,
+    "2": 0.09146341463414634,
+    "3": 0.06685633001422475,
+    "4": 0.06060606060606061,
+    "5": 0.07407407407407407,
+    "6": 0.09523809523809523,
+    "7": 0.10526315789473684,
+    "8": 0.22727272727272727,
+    "9": 0.3888888888888889,
+    "10": 0.4666666666666667,
+    "11": 0.6666666666666666,
+    "12": 1.0,
+    "13": 1.0,
+    "14": 1.0,
+    "15": 1.0,
+    "16": 1.0,
+    "17": 1.0,
+    "18": 1.0
+  },
+  "gods": [
+    {
+      "id": "types_applanguage",
+      "label": "AppLanguage",
+      "degree": 47
+    },
+    {
+      "id": "i18n_getlocale",
+      "label": "getLocale()",
+      "degree": 33
+    },
+    {
+      "id": "app_app",
+      "label": "App()",
+      "degree": 22
+    },
+    {
+      "id": "i18n_translations",
+      "label": "TRANSLATIONS",
+      "degree": 22
+    },
+    {
+      "id": "tsconfig_compileroptions",
+      "label": "compilerOptions",
+      "degree": 16
+    },
+    {
+      "id": "types_transaction",
+      "label": "Transaction",
+      "degree": 11
+    },
+    {
+      "id": "services_supabase_getauthuserid",
+      "label": "getAuthUserId()",
+      "degree": 9
+    },
+    {
+      "id": "types_investment",
+      "label": "Investment",
+      "degree": 8
+    },
+    {
+      "id": "types_monthsummary",
+      "label": "MonthSummary",
+      "degree": 7
+    },
+    {
+      "id": "components_loginscreen_loginscreen",
+      "label": "LoginScreen()",
+      "degree": 6
+    }
+  ],
+  "surprises": [
+    {
+      "source": "Props",
+      "target": "AppLanguage",
+      "source_files": [
+        "components/BalanceCard.tsx",
+        "types.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `Props` unexpectedly reaches hub `AppLanguage`"
+    },
+    {
+      "source": "Props",
+      "target": "AppLanguage",
+      "source_files": [
+        "components/CalculatorModal.tsx",
+        "types.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `Props` unexpectedly reaches hub `AppLanguage`"
+    },
+    {
+      "source": "CalendarModalBase()",
+      "target": "getLocale()",
+      "source_files": [
+        "components/CalendarModal.tsx",
+        "i18n.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `CalendarModalBase()` unexpectedly reaches hub `getLocale()`"
+    },
+    {
+      "source": "DonationModal()",
+      "target": "getLocale()",
+      "source_files": [
+        "components/DonationModal.tsx",
+        "i18n.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `DonationModal()` unexpectedly reaches hub `getLocale()`"
+    },
+    {
+      "source": "Props",
+      "target": "AppLanguage",
+      "source_files": [
+        "components/LoginScreen.tsx",
+        "types.ts"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "references",
+      "why": "connects across different repos/directories; bridges separate communities; peripheral node `Props` unexpectedly reaches hub `AppLanguage`"
+    }
+  ],
+  "questions": [
+    {
+      "type": "bridge_node",
+      "question": "Why does `AppLanguage` connect `Community 1` to `Community 0`, `Community 2`, `Community 3`, `Community 8`, `Community 10`?",
+      "why": "High betweenness centrality (0.066) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `getLocale()` connect `Community 2` to `Community 0`, `Community 1`, `Community 3`, `Community 8`, `Community 10`?",
+      "why": "High betweenness centrality (0.039) - this node is a cross-community bridge."
+    },
+    {
+      "type": "bridge_node",
+      "question": "Why does `TRANSLATIONS` connect `Community 1` to `Community 0`, `Community 2`, `Community 3`, `Community 8`, `Community 10`?",
+      "why": "High betweenness centrality (0.008) - this node is a cross-community bridge."
+    },
+    {
+      "type": "isolated_nodes",
+      "question": "What connects `AnalyticsModal`, `SHORT_CODE_TO_FULL`, `currentDate` to the rest of the system?",
+      "why": "107 weakly-connected nodes found - possible documentation gaps or missing edges."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Community 0` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.08862745098039215 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Community 1` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.07922705314009662 - nodes in this community are weakly interconnected."
+    },
+    {
+      "type": "low_cohesion",
+      "question": "Should `Community 2` be split into smaller, more focused modules?",
+      "why": "Cohesion score 0.09146341463414634 - nodes in this community are weakly interconnected."
+    }
+  ]
+}

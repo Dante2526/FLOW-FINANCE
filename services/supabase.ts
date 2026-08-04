@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
 // --- CONFIGURAÇÃO DE SEGURANÇA ---
-const SUPABASE_URL = 'https://xfsmdidfccgptfzjhhui.supabase.co'.trim();
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmc21kaWRmY2NncHRmempoaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3MTQ0NjAsImV4cCI6MjA4MDI5MDQ2MH0.4oFJ_L7fdjw2ttYtTko8EdTVhDpBtM5WWXQM4_N7zTU'.trim();
+const SUPABASE_URL = (import.meta.env?.VITE_SUPABASE_URL || 'https://xfsmdidfccgptfzjhhui.supabase.co').trim();
+const SUPABASE_ANON_KEY = (import.meta.env?.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmc21kaWRmY2NncHRmempoaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3MTQ0NjAsImV4cCI6MjA4MDI5MDQ2MH0.4oFJ_L7fdjw2ttYtTko8EdTVhDpBtM5WWXQM4_N7zTU').trim();
 
-export const VAPID_PUBLIC_KEY = 'BOabgmhdqm_B03NgjZgZUG4tT6whqH_sfr9-ZmMt1XY-lbI_ADbOzze9pRDU3tnj7oXttv01ZXcNKLhzeXlifC8';
+export const VAPID_PUBLIC_KEY = (import.meta.env?.VITE_VAPID_PUBLIC_KEY || 'BOabgmhdqm_B03NgjZgZUG4tT6whqH_sfr9-ZmMt1XY-lbI_ADbOzze9pRDU3tnj7oXttv01ZXcNKLhzeXlifC8').trim();
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
@@ -14,6 +14,21 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     storage: localStorage
   }
 });
+
+// Cache em memória do ID do usuário autenticado para evitar chamadas de rede redundantes a getUser()
+let cachedAuthUserId: string | null = null;
+
+// Listener automático no nível de módulo para manter o cache sempre sincronizado com o ciclo de vida da sessão
+supabase.auth.onAuthStateChange((_event, session) => {
+  if (session?.user?.id) {
+    cachedAuthUserId = session.user.id;
+  } else {
+    cachedAuthUserId = null;
+  }
+});
+
+export const getCachedAuthUserId = (): string | null => cachedAuthUserId;
+export const setCachedAuthUserId = (id: string | null): void => { cachedAuthUserId = id; };
 
 // --- HELPERS DE CONVERSÃO ---
 
@@ -76,10 +91,24 @@ export const verifyAuthOtp = async (email: string, token: string) => {
 // --- USER MANAGEMENT ---
 
 const getAuthUserId = async (): Promise<string> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) return user.id;
+    if (cachedAuthUserId) {
+        return cachedAuthUserId;
+    }
+
+    // 1. Tentar ler da sessão local (síncrona/local storage no Supabase SDK)
     const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) return session.user.id;
+    if (session?.user?.id) {
+        cachedAuthUserId = session.user.id;
+        return cachedAuthUserId;
+    }
+
+    // 2. Fallback de rede caso a sessão local não esteja carregada
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user?.id) {
+        cachedAuthUserId = user.id;
+        return cachedAuthUserId;
+    }
+
     throw new Error("AUTH_REQUIRED");
 };
 
@@ -203,6 +232,27 @@ export const upsertItem = async (email: string, collection: string, item: any) =
   } catch (e: any) { 
     console.error(`[JS Upsert Error] on table '${collection}':`, e);
     return false; 
+  }
+};
+
+export const upsertBatch = async (email: string, collection: string, items: any[]): Promise<boolean> => {
+  if (!items || items.length === 0) return true;
+  try {
+    const userId = await getAuthUserId();
+    const table = collection === 'longTerm' ? 'long_term' : collection;
+    const rows = items.map(item => {
+      const snake = toSnakeCase(item);
+      return { ...snake, user_id: userId };
+    });
+    const { error } = await supabase.from(table).upsert(rows, { onConflict: 'id' });
+    if (error) {
+      console.error(`[Supabase UpsertBatch Error] on table '${table}':`, error);
+      return false;
+    }
+    return true;
+  } catch (e: any) {
+    console.error(`[JS UpsertBatch Error] on table '${collection}':`, e);
+    return false;
   }
 };
 

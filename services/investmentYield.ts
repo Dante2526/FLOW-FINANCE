@@ -17,32 +17,78 @@ const FIXED_HOLIDAYS: [number, number][] = [
   [11, 25], // Natal
 ];
 
-// Feriados móveis pré-calculados (Carnaval segunda, Carnaval terça, Sexta-feira Santa, Corpus Christi)
-// Calculados pela Páscoa de cada ano
-const MOBILE_HOLIDAYS: Record<number, string[]> = {
-  2024: ['2024-02-12', '2024-02-13', '2024-03-29', '2024-05-30'],
-  2025: ['2025-03-03', '2025-03-04', '2025-04-18', '2025-06-19'],
-  2026: ['2026-02-16', '2026-02-17', '2026-04-03', '2026-06-04'],
-  2027: ['2027-02-08', '2027-02-09', '2027-03-26', '2027-05-27'],
-  2028: ['2028-02-28', '2028-02-29', '2028-04-14', '2028-06-15'],
-  2029: ['2029-02-12', '2029-02-13', '2029-03-30', '2029-05-31'],
-  2030: ['2030-03-04', '2030-03-05', '2030-04-19', '2030-06-20'],
+/**
+ * Calcula a data da Páscoa para qualquer ano do calendário Gregoriano
+ * usando o algoritmo de Meeus/Jones/Butcher (Computus)
+ */
+export const getEasterDate = (year: number): Date => {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+};
+
+/**
+ * Adiciona ou subtrai dias de uma data
+ */
+const addDays = (date: Date, days: number): Date => {
+  const result = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  result.setDate(result.getDate() + days);
+  return result;
 };
 
 /**
  * Formata uma data como string ISO (YYYY-MM-DD) em horário local
  */
-const toLocalISODate = (d: Date): string => {
+export const toLocalISODate = (d: Date): string => {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}`;
 };
 
+// Cache em memória para feriados móveis calculados por ano
+const mobileHolidaysCache = new Map<number, Set<string>>();
+
 /**
- * Verifica se uma data é feriado nacional brasileiro
+ * Retorna o conjunto de feriados móveis brasileiros para o ano especificado:
+ * - Segunda-feira de Carnaval (Páscoa - 48 dias)
+ * - Terça-feira de Carnaval (Páscoa - 47 dias)
+ * - Sexta-feira Santa / Paixão de Cristo (Páscoa - 2 dias)
+ * - Corpus Christi (Páscoa + 60 dias)
  */
-const isHoliday = (date: Date): boolean => {
+export const getMobileHolidaysForYear = (year: number): Set<string> => {
+  if (mobileHolidaysCache.has(year)) {
+    return mobileHolidaysCache.get(year)!;
+  }
+
+  const easter = getEasterDate(year);
+
+  const carnavalMon = toLocalISODate(addDays(easter, -48));
+  const carnavalTue = toLocalISODate(addDays(easter, -47));
+  const goodFriday = toLocalISODate(addDays(easter, -2));
+  const corpusChristi = toLocalISODate(addDays(easter, 60));
+
+  const holidays = new Set([carnavalMon, carnavalTue, goodFriday, corpusChristi]);
+  mobileHolidaysCache.set(year, holidays);
+  return holidays;
+};
+
+/**
+ * Verifica se uma data é feriado nacional brasileiro (fixo ou móvel)
+ */
+export const isHoliday = (date: Date): boolean => {
   const month = date.getMonth();
   const day = date.getDate();
   const year = date.getFullYear();
@@ -52,12 +98,10 @@ const isHoliday = (date: Date): boolean => {
     if (month === hMonth && day === hDay) return true;
   }
 
-  // Check mobile holidays
+  // Check dynamic mobile holidays
   const dateStr = toLocalISODate(date);
-  const yearHolidays = MOBILE_HOLIDAYS[year];
-  if (yearHolidays && yearHolidays.includes(dateStr)) return true;
-
-  return false;
+  const yearHolidays = getMobileHolidaysForYear(year);
+  return yearHolidays.has(dateStr);
 };
 
 /**

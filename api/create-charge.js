@@ -4,12 +4,16 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'METHOD_NOT_ALLOWED' });
   }
 
-  const { paymentType, user, billingInfo, value, description } = req.body;
+  const { paymentType, user, billingInfo, value, chargeType } = req.body || {};
   const apiKey = process.env.ASAAS_API_KEY;
   const apiUrl = process.env.ASAAS_API_URL || 'https://www.asaas.com/api/v3';
 
   if (!apiKey) {
     return res.status(500).json({ error: 'SERVER_CONFIG_ERROR' });
+  }
+
+  if (!user || !user.email) {
+    return res.status(400).json({ error: 'USER_EMAIL_REQUIRED' });
   }
 
   // Dados do pagador (Preferência para o preenchido no modal, depois o cadastro do user)
@@ -18,6 +22,37 @@ export default async function handler(req, res) {
 
   if (!payerCpf) {
       return res.status(400).json({ error: 'CPF_REQUIRED' });
+  }
+
+  const billingType = paymentType === 'pix' ? 'PIX' : paymentType === 'credit_card' ? 'CREDIT_CARD' : null;
+  if (!billingType) {
+      return res.status(400).json({ error: 'INVALID_PAYMENT_TYPE' });
+  }
+
+  // Configuração de Preço e Descrição segura no Servidor (nunca confiar no valor do cliente para PRO)
+  const PRO_PRICE = 3.00;
+  const isDonation = chargeType === 'donation';
+
+  let finalValue;
+  let finalDescription;
+  let externalReference;
+
+  if (isDonation) {
+    if (paymentType !== 'pix') {
+      return res.status(400).json({ error: 'DONATION_PIX_ONLY' });
+    }
+    const numValue = Number(value);
+    if (isNaN(numValue) || numValue < 1.00) {
+      return res.status(400).json({ error: 'INVALID_DONATION_AMOUNT' });
+    }
+    finalValue = Math.round(numValue * 100) / 100;
+    finalDescription = `Doação ao Projeto - ${payerName}`;
+    externalReference = `donation:${user.email}`;
+  } else {
+    // Assinatura PRO: Preço fixo no servidor, ignora o valor enviado pelo cliente
+    finalValue = PRO_PRICE;
+    finalDescription = 'Assinatura Flow Finance PRO';
+    externalReference = user.email;
   }
 
   try {
@@ -68,19 +103,13 @@ export default async function handler(req, res) {
     }
 
     // 2. Criar Cobrança
-    const billingType = paymentType === 'pix' ? 'PIX' : 'CREDIT_CARD';
-    
-    // Use dynamic value if provided (Donation), otherwise default to PRO Price (3.00)
-    const finalValue = value || 3.00;
-    const finalDescription = description || 'Assinatura Flow Finance PRO';
-
     const paymentPayload = {
       customer: customerId,
       billingType: billingType,
       value: finalValue,
       dueDate: new Date().toISOString().split('T')[0], // Vence hoje
       description: finalDescription,
-      externalReference: user.email // VINCULO ESSENCIAL PARA O WEBHOOK
+      externalReference: externalReference // VINCULO ESSENCIAL PARA O WEBHOOK
     };
 
     if (paymentType === 'credit_card' && billingInfo) {
