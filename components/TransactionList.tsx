@@ -1,7 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { Transaction, AppLanguage } from '../types';
 import { TransactionIcon } from './Icons';
-import { Trash2, Edit2, Check, CreditCard, QrCode, RotateCcw } from 'lucide-react';
+import { Trash2, Edit2, Check, CreditCard, QrCode } from 'lucide-react';
 import { TRANSLATIONS, getLocale } from '../i18n';
 
 interface Props {
@@ -50,7 +50,7 @@ const formatDateDisplay = (dateStr: string, todayLabel: string, locale: string) 
     if (isNaN(d.getTime())) return dateStr;
     // Force short month format
     return d.toLocaleDateString(locale, { day: '2-digit', month: 'short' }).replace('.', '');
-  } catch (e) {
+  } catch {
     // Fallback for any other legacy format.
     return dateStr;
   }
@@ -81,12 +81,13 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
   currencySymbol
 }) => {
   const [offsetX, setOffsetX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
-  // Refs to track gestures without re-renders
+  // Refs to track gestures without re-renders during drag movement
   const startX = useRef<number | null>(null);
   const startY = useRef<number | null>(null); // Track vertical start
   const startOffset = useRef(0);
-  const isDragging = useRef(false);
+  const isDraggingRef = useRef(false);
   const interactionType = useRef<'scroll' | 'swipe' | null>(null); // Lock direction
 
   // Touch Handlers (Mobile - Uses absolute coordinates X)
@@ -94,12 +95,13 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
     startX.current = clientX;
     startY.current = clientY;
     startOffset.current = offsetX;
-    isDragging.current = true;
+    isDraggingRef.current = true;
+    setIsDragging(true);
     interactionType.current = null;
   };
 
   const handleTouchMove = (clientX: number, clientY: number) => {
-    if (!isDragging.current || startX.current === null || startY.current === null) return;
+    if (!isDraggingRef.current || startX.current === null || startY.current === null) return;
     if (interactionType.current === 'scroll') return;
 
     const diffX = clientX - startX.current;
@@ -124,11 +126,12 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
 
   // Mouse Handlers (Desktop - Uses relative movementX for flawless dragging inside Grid)
   const handleMouseStart = () => {
-    isDragging.current = true;
+    isDraggingRef.current = true;
+    setIsDragging(true);
   };
 
   const handleMouseMove = (movementX: number) => {
-    if (!isDragging.current) return;
+    if (!isDraggingRef.current) return;
 
     // movementX is the exact delta of mouse movement since last frame. Just add it.
     // Let's multiply by 1.5 to keep it fast
@@ -141,8 +144,9 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
   };
 
   const handleEnd = () => {
-    if (!isDragging.current) return;
-    isDragging.current = false;
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    setIsDragging(false);
     startX.current = null;
     startY.current = null;
     interactionType.current = null;
@@ -162,9 +166,9 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
   const onTouchMove = (e: React.TouchEvent) => handleTouchMove(e.touches[0].clientX, e.touches[0].clientY);
   const onTouchEnd = () => handleEnd();
 
-  const onMouseDown = (e: React.MouseEvent) => handleMouseStart();
+  const onMouseDown = (_e: React.MouseEvent) => handleMouseStart();
   const onMouseMove = (e: React.MouseEvent) => {
-    if (isDragging.current) {
+    if (isDraggingRef.current) {
       // Only prevent default if we are SWIPING. If scrolling, allow default.
       if (interactionType.current === 'swipe') {
         e.preventDefault();
@@ -174,7 +178,7 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
   };
   const onMouseUp = () => handleEnd();
   const onMouseLeave = () => {
-    if (isDragging.current) handleEnd();
+    if (isDraggingRef.current) handleEnd();
   };
 
   const handleClick = () => {
@@ -226,7 +230,7 @@ const SwipeableTransactionItem = React.memo<SwipeableTransactionItemProps>(({
 
       {/* Foreground (Card) */}
       <div
-        className={`relative bg-[#1c1c1e] h-full px-4 flex items-center justify-between gap-4 border border-white/5 shadow-lg shadow-black/20 touch-pan-y z-10 rounded-2xl ${!isDragging.current ? 'transition-transform duration-200 ease-out' : ''
+        className={`relative bg-[#1c1c1e] h-full px-4 flex items-center justify-between gap-4 border border-white/5 shadow-lg shadow-black/20 touch-pan-y z-10 rounded-2xl ${!isDragging ? 'transition-transform duration-200 ease-out' : ''
           }`}
         style={{ transform: `translateX(${offsetX}px)` }}
       >

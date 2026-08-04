@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { X, ArrowRight, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ArrowRight, ArrowLeft } from 'lucide-react';
 
 export interface TutorialStep {
   element: string; // CSS selector
@@ -26,11 +26,20 @@ interface Props {
 const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPrev, steps, labels }) => {
   const [highlightStyle, setHighlightStyle] = useState<React.CSSProperties>({ display: 'none' });
   const [dialogStyle, setDialogStyle] = useState<React.CSSProperties>({ display: 'none', opacity: 0 });
+  const [prevStep, setPrevStep] = useState(currentStep);
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+
+  // Reset visual do diálogo durante render ao trocar de passo/abrir (sem setState em useEffect pós-commit)
+  if (prevStep !== currentStep || prevIsOpen !== isOpen) {
+    setPrevStep(currentStep);
+    setPrevIsOpen(isOpen);
+    setDialogStyle(prev => ({ ...prev, opacity: 0, transition: 'none' }));
+  }
 
   const dialogRef = useRef<HTMLDivElement>(null);
   const activeStep = steps[currentStep];
 
-  const updatePositions = () => {
+  const updatePositions = useCallback(() => {
     if (!activeStep) {
       onClose();
       return;
@@ -76,7 +85,8 @@ const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPre
           const dialogRect = dialogRef.current.getBoundingClientRect();
           const gap = 16;
           const pos = activeStep.position || 'bottom';
-          let top = 0, left = 0;
+          let top: number;
+          let left: number;
 
           const DIALOG_WIDTH = 320; // Use a fixed, safer width for calculations
 
@@ -122,12 +132,10 @@ const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPre
       console.warn(`Tutorial element not found: ${activeStep.element}`);
       onClose();
     }
-  };
+  }, [activeStep, currentStep, onClose]);
 
   useEffect(() => {
     if (isOpen) {
-      setDialogStyle(prev => ({ ...prev, opacity: 0, transition: 'none' }));
-
       const stableUpdate = async () => {
         try {
           if (document.fonts) await document.fonts.ready;
@@ -144,7 +152,7 @@ const Tutorial: React.FC<Props> = ({ isOpen, currentStep, onClose, onNext, onPre
         window.removeEventListener('resize', updatePositions);
       };
     }
-  }, [isOpen, currentStep]);
+  }, [isOpen, updatePositions]);
 
   if (!isOpen || !activeStep) return null;
 

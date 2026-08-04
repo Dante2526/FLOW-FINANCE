@@ -43,20 +43,24 @@ const getMonthDisplayName = (dbName: string, lang: AppLanguage): string => {
 const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSelect, onDelete, onDuplicate, appLanguage }) => {
   const [isConfirming, setIsConfirming] = useState(false);
   const [swipeX, setSwipeX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [prevIsActive, setPrevIsActive] = useState(isActive);
+
   const startX = useRef<number | null>(null);
   const startY = useRef<number | null>(null);
-  const isDragging = useRef(false);
+  const isDraggingRef = useRef(false);
   const directionLocked = useRef<'horizontal' | 'vertical' | null>(null);
 
   const tCommon = TRANSLATIONS[appLanguage].common;
 
-  // Reset confirmation state if active month changes
-  useEffect(() => {
+  // Reset confirmation state during render if active month changes (sem useEffect pós-commit)
+  if (prevIsActive !== isActive) {
+    setPrevIsActive(isActive);
     if (!isActive) {
       setIsConfirming(false);
       setSwipeX(0);
     }
-  }, [isActive]);
+  }
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -78,12 +82,13 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
     if (!isActive || isConfirming || !onDuplicate) return;
     startX.current = e.touches[0].clientX;
     startY.current = e.touches[0].clientY;
-    isDragging.current = true;
+    isDraggingRef.current = true;
+    setIsDragging(true);
     directionLocked.current = null;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging.current || startX.current === null || startY.current === null) return;
+    if (!isDraggingRef.current || startX.current === null || startY.current === null) return;
 
     const diffX = e.touches[0].clientX - startX.current;
     const diffY = e.touches[0].clientY - startY.current;
@@ -102,7 +107,8 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
   };
 
   const handleTouchEnd = () => {
-    isDragging.current = false;
+    isDraggingRef.current = false;
+    setIsDragging(false);
     startX.current = null;
     startY.current = null;
     directionLocked.current = null;
@@ -120,12 +126,13 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
     if (!isActive || isConfirming || !onDuplicate) return;
     startX.current = e.clientX;
     startY.current = e.clientY;
-    isDragging.current = true;
+    isDraggingRef.current = true;
+    setIsDragging(true);
     directionLocked.current = null;
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging.current || startX.current === null) return;
+    if (!isDraggingRef.current || startX.current === null) return;
     
     const diffX = e.clientX - startX.current;
     const diffY = e.clientY - (startY.current || 0);
@@ -143,8 +150,9 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
   };
 
   const handleMouseUp = () => {
-    if (!isDragging.current) return;
-    isDragging.current = false;
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    setIsDragging(false);
     startX.current = null;
     startY.current = null;
     directionLocked.current = null;
@@ -203,7 +211,7 @@ const MonthCard = React.memo<MonthCardProps>(({ item, isActive, canDelete, onSel
           } ${isActive ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0a0a0b] shadow-lg shadow-accent/20' : ''}`}
           style={{ 
             transform: `translateX(${swipeX}px)`,
-            transition: isDragging.current ? 'none' : 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.3s'
+            transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), background-color 0.3s'
           }}
           onClick={() => {
             if (swipeX !== 0) {
