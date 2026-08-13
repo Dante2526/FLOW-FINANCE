@@ -24,7 +24,7 @@ import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, Ap
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { TRANSLATIONS, getBrowserLanguage, getLocale } from './i18n';
 import { IconBell, JeittoLogo } from './components/Icons';
-import { Crown, Languages, ExternalLink, Zap, Heart, Copy, Check, ChevronRight, HelpCircle, CalendarClock, X, Plus, Landmark } from 'lucide-react';
+import { Crown, Languages, ExternalLink, Zap, Heart, Copy, Check, ChevronRight, HelpCircle, CalendarClock, X, Plus, Landmark, Bell } from 'lucide-react';
 
 import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, upsertItem, upsertBatch, deleteItem, hardDeleteMonth } from './services/supabase';
 import { applyYieldToAll } from './services/investmentYield';
@@ -1210,6 +1210,30 @@ const App: React.FC = () => {
               <IconBell count={unreadNotifCount} onClick={handleOpenNotification} data-tour-id="notification-bell" />
             </div>
           </div>
+          {!userProfile.pushSubscription && (
+            <div className="mb-4 bg-blue-600/10 border border-blue-500/20 rounded-[2rem] p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg animate-in fade-in slide-in-from-top-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-500/20 p-3 rounded-full shrink-0">
+                  <Bell className="w-6 h-6 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-white font-bold text-sm">
+                    {appLanguage === 'pt' ? 'Ative as Notificações' : appLanguage === 'en' ? 'Enable Notifications' : 'Activar Notificaciones'}
+                  </h3>
+                  <p className="text-gray-400 text-xs">
+                    {appLanguage === 'pt' ? 'Reative os alertas para continuar recebendo avisos.' : appLanguage === 'en' ? 'Re-enable alerts to continue receiving notifications.' : 'Vuelva a activar las alertas para seguir recibiendo notificaciones.'}
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsNotificationOpen(true)} 
+                className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-[1.5rem] text-xs whitespace-nowrap transition-colors w-full sm:w-auto shadow-md"
+              >
+                {appLanguage === 'pt' ? 'Ativar Agora' : appLanguage === 'en' ? 'Enable Now' : 'Activar Ahora'}
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 mb-6">
             {dItems.map(id => {
               if (id === BALANCE_CARD_ID) return (
