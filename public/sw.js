@@ -1,6 +1,6 @@
 
 
-const CACHE_NAME = 'flow-finance-cache-v2';
+const CACHE_NAME = 'flow-finance-cache-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -38,8 +38,8 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
-        // Cache the new response
-        if (event.request.method === 'GET') {
+        // Cache the new response (apenas URLs HTTP nativas, filtrando extensões)
+        if (event.request.method === 'GET' && event.request.url.startsWith('http')) {
           const clonedResponse = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, clonedResponse);
