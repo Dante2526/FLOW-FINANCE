@@ -122,6 +122,27 @@ const NotificationModal: React.FC<Props> = ({
     }
   };
 
+  const handleRevoke = async () => {
+    if (!currentUserEmail) return;
+    setIsSubscribing(true);
+    try {
+        if ('serviceWorker' in navigator) {
+            const registration = await navigator.serviceWorker.ready;
+            const subscription = await registration.pushManager.getSubscription();
+            if (subscription) {
+                await subscription.unsubscribe();
+            }
+            setHasBrowserSubscription(false);
+        }
+        await saveUserField(currentUserEmail, 'pushSubscription', null);
+        alert(appLanguage === 'pt' ? 'Alertas desativados. Ative novamente para atualizar a credencial!' : 'Alerts disabled.');
+    } catch (e) {
+        console.error("Erro ao revogar:", e);
+    } finally {
+        setIsSubscribing(false);
+    }
+  };
+
   // Form States for Sending
   const [recipientName, setRecipientName] = useState('');
   const [messageType, setMessageType] = useState<'cobranca' | 'aviso'>('aviso');
@@ -362,11 +383,16 @@ const NotificationModal: React.FC<Props> = ({
 
               {isSubscribedOnBackend ? (
                 <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-center gap-2 p-3 bg-green-500/10 rounded-2xl border border-green-500/20">
-                    <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-black font-bold" />
+                  <div className="flex items-center justify-between p-3 bg-green-500/10 rounded-2xl border border-green-500/20">
+                    <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
+                          <Check className="w-3 h-3 text-black font-bold" />
+                        </div>
+                        <span className="text-green-500 text-xs font-bold">{t.activeStatus}</span>
                     </div>
-                    <span className="text-green-500 text-xs font-bold">{t.activeStatus}</span>
+                    <button onClick={handleRevoke} disabled={isSubscribing} className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-xl transition-colors disabled:opacity-50">
+                        {isSubscribing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
               ) : (

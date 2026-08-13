@@ -36,6 +36,7 @@ export default async function handler(req, res) {
     
     let processed = 0;
     let sent = 0;
+    const errors = [];
 
     try {
         const isTestMode = req.query?.test === 'true' || req.url?.includes('test=true');
@@ -66,7 +67,7 @@ export default async function handler(req, res) {
         }
 
         if (users.length === 0) {
-            return res.status(200).json({ message: "Nenhum vínculo estrutural encontrado.", processed: 0, sent: 0 });
+            return res.status(200).json({ message: "Nenhum vínculo estrutural encontrado.", processed: 0, sent: 0, errors });
         }
 
         const userIds = users.map(u => u.id);
@@ -121,47 +122,39 @@ export default async function handler(req, res) {
 
             if (!transactions || transactions.length === 0) continue;
 
-            const lang = user.app_language || 'pt';
-            const currency = lang === 'pt' ? 'R$' : lang === 'en' ? '$' : '€';
-            const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-ES';
-
-            const title = lang === 'pt' ? "Conta Vencendo Hoje" : lang === 'en' ? "Bill Due Today" : "Cuenta Vence Hoy";
-            
             for (const tx of transactions) {
-                const formattedVal = tx.amount.toLocaleString(locale, { minimumFractionDigits: 2 });
-                const body = lang === 'pt' 
-                    ? `A conta "${tx.name}" no valor de ${currency} ${formattedVal} vence hoje.` 
-                    : lang === 'en' 
-                    ? `The bill "${tx.name}" of ${currency} ${formattedVal} is due today.`
-                    : `La cuenta "${tx.name}" por valor de ${currency} ${formattedVal} vence hoy.`;
-
+                const title = `⚠️ Conta Vencendo Hoje!`;
+                const body = `${tx.name} no valor de R$ ${(tx.amount || 0).toFixed(2).replace('.', ',')}`;
+                
                 const payload = JSON.stringify({ title, body, url: '/', tag: `bill-due-${tx.id}` });
-
+                
                 try {
                     await webpush.sendNotification(user.push_subscription, payload);
                     sent++;
                     
-                    await supabase.from('notifications').upsert({
-                        id: `bill-due-${tx.id}`,
-                        user_id: user.id,
-                        title: title,
-                        message: body,
-                        date: `Hoje, ${today.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}`,
-                        read: false,
-                        type: 'alert'
-                    }, { onConflict: 'id' });
-
+                    if (!isTestMode) {
+                        await supabase.from('notifications').upsert({
+                            id: `bill-due-${tx.id}`,
+                            user_id: user.id,
+                            title: title,
+                            message: body,
+                            date: todayStr,
+                            read: false,
+                            type: 'alert'
+                        }, { onConflict: 'id' });
+                    }
                 } catch (pushError) {
                     if (pushError.statusCode === 410 || pushError.statusCode === 404) {
                         await supabase.from('users').update({ push_subscription: null }).eq('id', user.id);
+                        errors.push(`Token expirado revogado para ${user.email}`);
                     } else {
-                        console.error(`Erro Push para ${user.email}:`, pushError);
+                        errors.push(`Erro VAPID/Push para ${user.email}: ${pushError.message}`);
                     }
                 }
             }
         }
 
-        return res.status(200).json({ message: "Processamento diário concluído.", processed, sent });
+        return res.status(200).json({ message: "Processamento diário concluído.", processed, sent, errors });
 
     } catch (err) {
         console.error("ERRO CRÍTICO no cron:", err);
