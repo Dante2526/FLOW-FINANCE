@@ -8,18 +8,23 @@ const VAPID_PUBLIC_KEY = 'BOabgmhdqm_B03NgjZgZUG4tT6whqH_sfr9-ZmMt1XY-lbI_ADbOzz
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 const VAPID_SUBJECT = 'mailto:naylanmoreira350@gmail.com';
 
-if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-    webpush.setVapidDetails(
-        VAPID_SUBJECT,
-        VAPID_PUBLIC_KEY,
-        VAPID_PRIVATE_KEY
-    );
-}
-
 export default async function handler(req, res) {
+    const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+
     if (!SUPABASE_SERVICE_ROLE_KEY || !VAPID_PRIVATE_KEY) {
         console.error("ERRO: Variáveis de ambiente SUPABASE_SERVICE_ROLE_KEY ou VAPID_PRIVATE_KEY não configuradas.");
         return res.status(500).json({ error: 'Configurações VAPID ou Supabase ausentes nas variáveis de ambiente da Vercel.' });
+    }
+
+    try {
+        webpush.setVapidDetails(
+            VAPID_SUBJECT,
+            VAPID_PUBLIC_KEY,
+            VAPID_PRIVATE_KEY
+        );
+    } catch (e) {
+        return res.status(500).json({ error: 'Erro ao configurar VAPID', details: e.message });
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -111,6 +116,9 @@ export default async function handler(req, res) {
 
     } catch (err) {
         console.error("ERRO CRÍTICO no cron:", err);
-        return res.status(500).json({ error: 'Erro interno no script de verificação.' });
+        return res.status(500).json({ 
+            error: 'Erro interno no script de verificação.', 
+            details: err?.message || err?.toString() || 'Erro desconhecido' 
+        });
     }
 }
