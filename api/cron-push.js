@@ -38,7 +38,6 @@ export default async function handler(req, res) {
     let sent = 0;
 
     try {
-        // 1. Puxar apenas a tabela pública sem requerer 'id' que não existe
         const { data: publicUsers, error: userError } = await supabase
             .from('users')
             .select('email, profile, push_subscription, app_language')
@@ -48,6 +47,9 @@ export default async function handler(req, res) {
         if (!publicUsers || publicUsers.length === 0) {
             return res.status(200).json({ message: "Nenhum usuário com push encontrado.", processed: 0, sent: 0 });
         }
+
+        const isTestMode = req.query?.test === 'true' || req.url?.includes('test=true');
+        const isDebugMode = req.query?.debug === 'true' || req.url?.includes('debug=true');
 
         // 2. Extrair o UID (user_id) oculto cruzando com o banco interno de Auth (Service Role required)
         const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
@@ -70,9 +72,22 @@ export default async function handler(req, res) {
         }
 
         const userIds = users.map(u => u.id);
+        
+        if (isDebugMode) {
+             const { data: debugTxs } = await supabase.from('transactions').select('id, name, date, paid, user_id').in('user_id', userIds);
+             return res.status(200).json({ 
+                 message: "MODO DEBUG", 
+                 todayStr_gerado: todayStr, 
+                 usuarios_com_push_count: users.length, 
+                 userIds_buscados: userIds,
+                 total_transacoes_desses_users: debugTxs?.length || 0,
+                 primeiras_3_transacoes: debugTxs?.slice(0, 3) || []
+             });
+        }
+
         const { data: allTransactions, error: txError } = await supabase
             .from('transactions')
-            .select('id, user_id, name, amount')
+            .select('id, user_id, name, amount, date')
             .in('user_id', userIds)
             .eq('date', todayStr)
             .eq('paid', false);
@@ -80,11 +95,23 @@ export default async function handler(req, res) {
         if (txError) throw txError;
 
         const txByUser = new Map();
-        for (const tx of allTransactions || []) {
-            if (!txByUser.has(tx.user_id)) {
-                txByUser.set(tx.user_id, []);
-            }
-            txByUser.get(tx.user_id).push(tx);
+        
+        if (isTestMode) {
+             for (const u of users) {
+                 txByUser.set(u.id, [{
+                     id: 'test-id',
+                     user_id: u.id,
+                     name: 'Ping Test (Flow Finance)',
+                     amount: 0
+                 }]);
+             }
+        } else {
+             for (const tx of allTransactions || []) {
+                 if (!txByUser.has(tx.user_id)) {
+                     txByUser.set(tx.user_id, []);
+                 }
+                 txByUser.get(tx.user_id).push(tx);
+             }
         }
 
         for (const user of users) {
