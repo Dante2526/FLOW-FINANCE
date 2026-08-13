@@ -38,14 +38,35 @@ export default async function handler(req, res) {
     let sent = 0;
 
     try {
-        const { data: users, error: userError } = await supabase
+        // 1. Puxar apenas a tabela pública sem requerer 'id' que não existe
+        const { data: publicUsers, error: userError } = await supabase
             .from('users')
-            .select('id, email, profile, push_subscription, app_language')
+            .select('email, profile, push_subscription, app_language')
             .not('push_subscription', 'is', null);
 
         if (userError) throw userError;
-        if (!users || users.length === 0) {
+        if (!publicUsers || publicUsers.length === 0) {
             return res.status(200).json({ message: "Nenhum usuário com push encontrado.", processed: 0, sent: 0 });
+        }
+
+        // 2. Extrair o UID (user_id) oculto cruzando com o banco interno de Auth (Service Role required)
+        const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
+        if (authError) throw authError;
+
+        const authUsers = authData?.users || [];
+        const users = [];
+
+        for (const pub of publicUsers) {
+             const matchedAuth = authUsers.find(a => a.email && a.email.toLowerCase() === pub.email.toLowerCase());
+             if (matchedAuth) {
+                 users.push({ ...pub, id: matchedAuth.id });
+             } else {
+                 console.warn(`Aviso: Usuário ${pub.email} não localizado na tabela Auth original.`);
+             }
+        }
+
+        if (users.length === 0) {
+            return res.status(200).json({ message: "Nenhum vínculo estrutural encontrado.", processed: 0, sent: 0 });
         }
 
         const userIds = users.map(u => u.id);
