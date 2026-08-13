@@ -1,6 +1,6 @@
 
 
-const CACHE_NAME = 'flow-finance-cache-v1';
+const CACHE_NAME = 'flow-finance-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -68,8 +68,8 @@ self.addEventListener('push', (event) => {
   const options = {
     body: data.body || 'Você tem uma nova notificação.',
     // Fix: Use the official branded favicon to look professional
-    icon: '/favicon.svg',
-    badge: '/notification-icon.svg',
+    icon: '/icon-192x192.png',
+    badge: '/notification-icon.png',
     vibrate: [100, 50, 100],
     tag: data.tag,
     data: {

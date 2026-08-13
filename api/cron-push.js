@@ -1,7 +1,6 @@
-const { createClient } = require('@supabase/supabase-js');
-const webpush = require('web-push');
+import { createClient } from '@supabase/supabase-js';
+import webpush from 'web-push';
 
-// 1. CONFIGURAÇÕES
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://xfsmdidfccgptfzjhhui.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -9,32 +8,31 @@ const VAPID_PUBLIC_KEY = 'BOabgmhdqm_B03NgjZgZUG4tT6whqH_sfr9-ZmMt1XY-lbI_ADbOzz
 const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 const VAPID_SUBJECT = 'mailto:naylanmoreira350@gmail.com';
 
-if (!SUPABASE_SERVICE_ROLE_KEY || !VAPID_PRIVATE_KEY) {
-    console.error("ERRO: Variáveis de ambiente SUPABASE_SERVICE_ROLE_KEY ou VAPID_PRIVATE_KEY não configuradas.");
-    process.exit(1);
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(
+        VAPID_SUBJECT,
+        VAPID_PUBLIC_KEY,
+        VAPID_PRIVATE_KEY
+    );
 }
 
-// 2. INICIALIZAR CLIENTES
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+export default async function handler(req, res) {
+    if (!SUPABASE_SERVICE_ROLE_KEY || !VAPID_PRIVATE_KEY) {
+        console.error("ERRO: Variáveis de ambiente SUPABASE_SERVICE_ROLE_KEY ou VAPID_PRIVATE_KEY não configuradas.");
+        return res.status(500).json({ error: 'Configurações VAPID ou Supabase ausentes nas variáveis de ambiente da Vercel.' });
+    }
 
-webpush.setVapidDetails(
-    VAPID_SUBJECT,
-    VAPID_PUBLIC_KEY,
-    VAPID_PRIVATE_KEY
-);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-// 3. LÓGICA PRINCIPAL
-async function checkAndNotify() {
-    console.log("Iniciando verificação diária de contas...");
+    console.log("Iniciando verificação diária de contas (Vercel Cron)...");
 
-    // Data de hoje no formato YYYY-MM-DD
     const today = new Date();
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     
-    console.log(`Buscando contas para a data: ${todayStr}`);
+    let processed = 0;
+    let sent = 0;
 
     try {
-        // Buscar todos os usuários que têm inscrição de Push
         const { data: users, error: userError } = await supabase
             .from('users')
             .select('id, email, profile, push_subscription, app_language')
@@ -42,13 +40,9 @@ async function checkAndNotify() {
 
         if (userError) throw userError;
         if (!users || users.length === 0) {
-            console.log("Nenhum usuário com inscrição de push encontrada.");
-            return;
+            return res.status(200).json({ message: "Nenhum usuário com push encontrado.", processed: 0, sent: 0 });
         }
 
-        console.log(`Processando ${users.length} usuários...`);
-
-        // Busca em lote de todas as transações vencendo hoje para os usuários com push ativo (Eliminação de query N+1)
         const userIds = users.map(u => u.id);
         const { data: allTransactions, error: txError } = await supabase
             .from('transactions')
@@ -57,12 +51,8 @@ async function checkAndNotify() {
             .eq('date', todayStr)
             .eq('paid', false);
 
-        if (txError) {
-            console.error("Erro ao buscar transações em lote:", txError);
-            return;
-        }
+        if (txError) throw txError;
 
-        // Agrupar transações por user_id em memória
         const txByUser = new Map();
         for (const tx of allTransactions || []) {
             if (!txByUser.has(tx.user_id)) {
@@ -72,16 +62,11 @@ async function checkAndNotify() {
         }
 
         for (const user of users) {
+            processed++;
             const transactions = txByUser.get(user.id);
 
-            if (!transactions || transactions.length === 0) {
-                console.log(`Sem contas vencendo hoje para ${user.email}`);
-                continue;
-            }
+            if (!transactions || transactions.length === 0) continue;
 
-            console.log(`Encontradas ${transactions.length} contas para ${user.email}. Enviando push...`);
-
-            // Preparar mensagens (Tradução simplificada baseada no idioma do usuário)
             const lang = user.app_language || 'pt';
             const currency = lang === 'pt' ? 'R$' : lang === 'en' ? '$' : '€';
             const locale = lang === 'pt' ? 'pt-BR' : lang === 'en' ? 'en-US' : 'es-ES';
@@ -96,18 +81,12 @@ async function checkAndNotify() {
                     ? `The bill "${tx.name}" of ${currency} ${formattedVal} is due today.`
                     : `La cuenta "${tx.name}" por valor de ${currency} ${formattedVal} vence hoy.`;
 
-                const payload = JSON.stringify({
-                    title,
-                    body,
-                    url: '/',
-                    tag: `bill-due-${tx.id}`
-                });
+                const payload = JSON.stringify({ title, body, url: '/', tag: `bill-due-${tx.id}` });
 
                 try {
                     await webpush.sendNotification(user.push_subscription, payload);
-                    console.log(`Notificação enviada com sucesso para ${user.email} (Conta: ${tx.name})`);
+                    sent++;
                     
-                    // Registrar a notificação no banco do usuário com ID determinístico para deduplicação com o client
                     await supabase.from('notifications').upsert({
                         id: `bill-due-${tx.id}`,
                         user_id: user.id,
@@ -120,21 +99,18 @@ async function checkAndNotify() {
 
                 } catch (pushError) {
                     if (pushError.statusCode === 410 || pushError.statusCode === 404) {
-                        console.warn(`Inscrição expirada ou inválida para ${user.email}. Removendo...`);
                         await supabase.from('users').update({ push_subscription: null }).eq('id', user.id);
                     } else {
-                        console.error(`Erro ao enviar push para ${user.email}:`, pushError);
+                        console.error(`Erro Push para ${user.email}:`, pushError);
                     }
                 }
             }
         }
 
-        console.log("Verificação concluída com sucesso.");
+        return res.status(200).json({ message: "Processamento diário concluído.", processed, sent });
 
     } catch (err) {
-        console.error("ERRO CRÍTICO no script de verificação:", err);
-        process.exit(1);
+        console.error("ERRO CRÍTICO no cron:", err);
+        return res.status(500).json({ error: 'Erro interno no script de verificação.' });
     }
 }
-
-checkAndNotify();

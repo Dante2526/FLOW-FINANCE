@@ -419,8 +419,8 @@ const App: React.FC = () => {
               navigator.serviceWorker.ready.then(registration => {
                 registration.showNotification(title, {
                   body: message,
-                  icon: '/favicon.svg',
-                  badge: '/favicon.svg', 
+                  icon: '/icon-192x192.png',
+                  badge: '/notification-icon.png', 
                   vibrate: [100, 50, 100],
                   tag: `bill-due-${t.id}`,
                   data: { url: '/' }
