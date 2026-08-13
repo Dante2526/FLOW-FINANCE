@@ -1,28 +1,67 @@
+/**
+ * Script de limpeza das push subscriptions expiradas no Supabase.
+ *
+ * IMPORTANTE: Este script requer a SUPABASE_SERVICE_ROLE_KEY para
+ * conseguir atualizar dados de todos os usuários (bypassa a RLS).
+ * A anon key NÃO funciona para esta operação.
+ *
+ * Como usar:
+ *   $env:SUPABASE_SERVICE_ROLE_KEY="sua_service_role_key_aqui"
+ *   node scripts/clear_push.js
+ */
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'https://xfsmdidfccgptfzjhhui.supabase.co';
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhmc21kaWRmY2NncHRmempoaHVpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ3MTQ0NjAsImV4cCI6MjA4MDI5MDQ2MH0.4oFJ_L7fdjw2ttYtTko8EdTVhDpBtM5WWXQM4_N7zTU';
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+if (!SERVICE_ROLE_KEY) {
+  console.error('\n❌ ERRO: Variável SUPABASE_SERVICE_ROLE_KEY não definida.');
+  console.error('   A anon key NÃO tem permissão para alterar dados de outros usuários (RLS).');
+  console.error('\n   Execute assim (PowerShell):');
+  console.error('   $env:SUPABASE_SERVICE_ROLE_KEY="sua_service_role_key_aqui"');
+  console.error('   node scripts/clear_push.js\n');
+  process.exit(1);
+}
+
+// Usa service role key para bypassar RLS e ter acesso administrativo
+const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+  auth: { persistSession: false }
+});
 
 async function clearSubscriptions() {
-  console.log("Fetching all users to clear their push subscriptions...");
-  
-  // Actually, we can just do an update without matching anything specific if we want to update all,
-  // but let's see if supabase allows update without eq.
-  // Actually, you usually need a filter. Let's just filter by push_subscription not null.
+  console.log('🔍 Buscando usuários com push_subscription ativa...');
+
+  // Primeiro: contar quantos serão afetados
+  const { count, error: countError } = await supabase
+    .from('users')
+    .select('*', { count: 'exact', head: true })
+    .not('push_subscription', 'is', null);
+
+  if (countError) {
+    console.error('❌ Erro ao contar registros:', countError.message);
+    process.exit(1);
+  }
+
+  if (count === 0) {
+    console.log('✅ Nenhum usuário com push_subscription ativa. Banco já está limpo.');
+    return;
+  }
+
+  console.log(`📋 Encontrado(s) ${count} usuário(s) com push_subscription. Limpando...`);
+
   const { data, error } = await supabase
     .from('users')
     .update({ push_subscription: null })
     .not('push_subscription', 'is', null)
-    .select();
+    .select('email');
 
   if (error) {
-    console.error("Error clearing subscriptions:", error);
-    return;
+    console.error('❌ Erro ao limpar subscriptions:', error.message);
+    process.exit(1);
   }
-  
-  console.log(`Successfully cleared push subscriptions for ${data?.length || 0} users.`);
+
+  console.log(`✅ Push subscriptions limpas com sucesso para ${data?.length || 0} usuário(s):`);
+  data?.forEach(u => console.log(`   - ${u.email}`));
 }
 
 clearSubscriptions();
