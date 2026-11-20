@@ -643,21 +643,21 @@ const Interactive3DFZ25Canvas: React.FC<Canvas3DProps> = ({
         onTouchMove={e => handlePointerMove(e.touches[0].clientX, e.touches[0].clientY)}
         onTouchEnd={handlePointerUp}
       />
-      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-1.5">
-          <Rotate3d className="w-3.5 h-3.5 text-accent" />
-          Arraste para girar a FZ 25 em 360°
+      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 bg-black/70 backdrop-blur-md px-2.5 py-1.5 rounded-full border border-white/10 flex items-center gap-1.5 whitespace-nowrap">
+          <Rotate3d className="w-3.5 h-3.5 text-accent shrink-0" />
+          <span>Arraste 360°</span>
         </span>
         <button
           type="button"
           onClick={() => setAutoSpin(s => !s)}
-          className={`pointer-events-auto text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full border transition-all ${
+          className={`pointer-events-auto text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-full border transition-all whitespace-nowrap shrink-0 cursor-pointer ${
             autoSpin
               ? 'bg-accent/20 text-accent border-accent/40'
-              : 'bg-black/60 text-gray-400 border-white/10 hover:text-white'
+              : 'bg-black/70 text-gray-300 border-white/10 hover:text-white'
           }`}
         >
-          {autoSpin ? 'Giro 360° Ativo' : 'Girar Auto'}
+          {autoSpin ? 'Giro Auto: ON' : 'Girar Auto'}
         </button>
       </div>
     </div>
@@ -954,86 +954,88 @@ const MotorcycleView: React.FC<Props> = ({
     `${currencySymbol} ${val.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
-    <div className="flex flex-col h-full animate-in fade-in duration-300 max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto px-1 pb-24 space-y-5 animate-in fade-in duration-300">
       {/* TOP HEADER */}
-      <div className="flex items-center justify-between gap-3 mb-5 px-1">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-[#1c1c1e] flex items-center justify-center border border-white/10 shadow-lg relative overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#1c1c1e] flex items-center justify-center border border-white/10 shadow-lg relative overflow-hidden shrink-0">
             <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/20 to-accent/10 pointer-events-none" />
-            <Fuel className="w-6 h-6 text-accent relative z-10" />
+            <Fuel className="w-5 h-5 sm:w-6 sm:h-6 text-accent relative z-10 shrink-0" />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+              <h1 className="text-lg sm:text-2xl font-extrabold text-white tracking-tight whitespace-nowrap truncate">
                 YAMAHA FAZER FZ 25
               </h1>
-              <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-widest bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full">
+              <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full whitespace-nowrap shrink-0">
                 2026 3D
               </span>
             </div>
-            <p className="text-xs text-gray-400 font-medium flex items-center gap-1.5 mt-0.5">
-              <Bluetooth className="w-3.5 h-3.5 text-blue-400" />
-              <span>ABS Connected • 250cc BlueFlex • Controle de Combustível</span>
+            <p className="text-[11px] sm:text-xs text-gray-400 font-medium flex items-center gap-1.5 mt-0.5 min-w-0">
+              <Bluetooth className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+              <span className="truncate">ABS Connected • 250cc BlueFlex</span>
             </p>
           </div>
         </div>
 
         <button
+          type="button"
           onClick={handleOpenNewForm}
           data-tour-id="moto-add-fuel-btn"
-          className="h-12 px-4 sm:px-5 rounded-2xl bg-accent text-black font-extrabold text-xs sm:text-sm tracking-wide flex items-center gap-2 shadow-lg shadow-accent/20 hover:brightness-110 active:scale-95 transition-all cursor-pointer shrink-0"
+          className="w-full sm:w-auto h-11 sm:h-12 px-5 rounded-2xl bg-accent text-black font-extrabold text-sm tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-accent/20 hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shrink-0 whitespace-nowrap"
         >
-          <Plus className="w-5 h-5 stroke-[2.5]" />
-          <span>Abastecer</span>
+          <Plus className="w-5 h-5 stroke-[2.5] shrink-0" />
+          <span>Registrar Abastecimento</span>
         </button>
       </div>
 
       {/* ==================================================================== */}
       {/* 3D SHOWROOM STAGE: YAMAHA FAZER FZ 25 2026                           */}
       {/* ==================================================================== */}
-      <div className="bg-[#141417] border border-white/10 rounded-[2rem] p-4 sm:p-5 mb-6 relative overflow-hidden shadow-2xl">
+      <div className="bg-[#141417] border border-white/10 rounded-[1.75rem] p-3.5 sm:p-5 relative overflow-hidden shadow-2xl">
         {/* Background Ambient Showroom Glow */}
         <div
           className={`absolute -top-24 left-1/2 -translate-x-1/2 w-[90%] h-56 bg-gradient-to-b ${activeColor.glowClass} rounded-full blur-3xl pointer-events-none transition-all duration-500`}
         />
 
         {/* Top Bar inside 3D Showroom: Telemetry Badges + Mode Switcher */}
-        <div className="relative z-20 flex flex-wrap items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-black/60 text-white border border-white/10 backdrop-blur-md">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Y-CONNECT 3D GARAGE
+        <div className="relative z-20 flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-black/60 text-white border border-white/10 backdrop-blur-md whitespace-nowrap">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span className="sm:hidden">FZ 25 3D</span>
+              <span className="hidden sm:inline">Y-CONNECT 3D GARAGE</span>
             </span>
-            <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-white/5 text-gray-300 border border-white/5">
-              <Gauge className="w-3 h-3 text-accent" />
+            <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-white/5 text-gray-300 border border-white/5 whitespace-nowrap">
+              <Gauge className="w-3 h-3 text-accent shrink-0" />
               Tanque 14,2L • ~{stats.estimatedRangeKm} km
             </span>
           </div>
 
           {/* 3D Mode Switcher: Studio 3D vs 360° Interactive CAD */}
-          <div className="flex items-center gap-1 bg-black/60 p-1 rounded-xl border border-white/10 backdrop-blur-md">
+          <div className="flex items-center gap-1 bg-black/60 p-1 rounded-xl border border-white/10 backdrop-blur-md shrink-0">
             <button
               type="button"
               onClick={() => setViewMode3D('studio')}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
                 viewMode3D === 'studio'
                   ? 'bg-accent text-black shadow-sm'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>3D Studio</span>
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span>Studio</span>
             </button>
             <button
               type="button"
               onClick={() => setViewMode3D('360')}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
                 viewMode3D === '360'
                   ? 'bg-accent text-black shadow-sm'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
-              <Rotate3d className="w-3.5 h-3.5" />
+              <Rotate3d className="w-3.5 h-3.5 shrink-0" />
               <span>360° 3D</span>
             </button>
           </div>
@@ -1041,107 +1043,109 @@ const MotorcycleView: React.FC<Props> = ({
 
         {/* 3D Viewport Area */}
         {viewMode3D === 'studio' ? (
-          <div
-            ref={stageRef}
-            onMouseMove={e => handleStageMove(e.clientX, e.clientY)}
-            onMouseLeave={handleStageReset}
-            onTouchMove={e => {
-              if (e.touches[0]) handleStageMove(e.touches[0].clientX, e.touches[0].clientY);
-            }}
-            onTouchEnd={handleStageReset}
-            className="relative w-full rounded-2xl overflow-hidden bg-[#0a0a0b] border border-white/5 select-none"
-            style={{ perspective: '1200px' }}
-          >
+          <div className="relative z-10">
             <div
-              className="relative w-full transition-transform duration-150 ease-out"
-              style={{
-                transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg) scale(1.02)`,
-                transformStyle: 'preserve-3d'
+              ref={stageRef}
+              onMouseMove={e => handleStageMove(e.clientX, e.clientY)}
+              onMouseLeave={handleStageReset}
+              onTouchMove={e => {
+                if (e.touches[0]) handleStageMove(e.touches[0].clientX, e.touches[0].clientY);
               }}
+              onTouchEnd={handleStageReset}
+              className="relative w-full rounded-2xl overflow-hidden bg-[#0a0a0b] border border-white/5 select-none"
+              style={{ perspective: '1200px' }}
             >
-              {/* 3D Studio Render Image of 2026 Yamaha Fazer FZ25 */}
-              <img
-                src="/fz25-2026-3d.jpg"
-                alt="Yamaha Fazer FZ 25 2026 3D"
-                className="w-full h-[230px] sm:h-[310px] object-cover object-center transition-all duration-500"
-                style={{ filter: activeColor.hueRotate }}
-                draggable={false}
-              />
-
-              {/* Dynamic Specular 3D Light Reflection */}
               <div
-                className="absolute inset-0 pointer-events-none transition-opacity duration-200"
+                className="relative w-full transition-transform duration-150 ease-out"
                 style={{
-                  background: `radial-gradient(circle at ${tilt.glareX}% ${tilt.glareY}%, rgba(255,255,255,0.16), transparent 55%)`
+                  transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg) scale(1.02)`,
+                  transformStyle: 'preserve-3d'
                 }}
-              />
+              >
+                {/* 3D Studio Render Image of 2026 Yamaha Fazer FZ25 */}
+                <img
+                  src="/fz25-2026-3d.jpg"
+                  alt="Yamaha Fazer FZ 25 2026 3D"
+                  className="w-full h-[210px] sm:h-[310px] object-cover object-center block transition-all duration-500"
+                  style={{ filter: activeColor.hueRotate }}
+                  draggable={false}
+                />
 
-              {/* Interactive LED Projector Headlight High-Beam Overlay */}
-              {headlightOn && (
+                {/* Dynamic Specular 3D Light Reflection */}
                 <div
-                  className="absolute pointer-events-none transition-opacity duration-300"
+                  className="absolute inset-0 pointer-events-none transition-opacity duration-200"
                   style={{
-                    left: '66%',
-                    top: '26%',
-                    width: '26%',
-                    height: '26%',
-                    background:
-                      'radial-gradient(circle, rgba(186,230,253,0.75) 0%, rgba(56,189,248,0.28) 40%, transparent 72%)',
-                    filter: 'blur(8px)'
+                    background: `radial-gradient(circle at ${tilt.glareX}% ${tilt.glareY}%, rgba(255,255,255,0.16), transparent 55%)`
                   }}
                 />
-              )}
 
-              {/* X-Ray 14.2L Fuel Tank Overlay */}
-              {xrayTank && (
-                <div
-                  className="absolute pointer-events-none rounded-full border-2 border-emerald-400/80 bg-emerald-500/25 backdrop-blur-[2px] flex items-center justify-center animate-pulse"
-                  style={{
-                    left: '44%',
-                    top: '23%',
-                    width: '17%',
-                    height: '18%'
-                  }}
-                >
-                  <span className="text-[10px] font-black text-emerald-300 drop-shadow">
-                    {(stats.tankRatio * 14.2).toFixed(1)}L / 14,2L
-                  </span>
-                </div>
-              )}
+                {/* Interactive LED Projector Headlight High-Beam Overlay */}
+                {headlightOn && (
+                  <div
+                    className="absolute pointer-events-none transition-opacity duration-300"
+                    style={{
+                      left: '66%',
+                      top: '26%',
+                      width: '26%',
+                      height: '26%',
+                      background:
+                        'radial-gradient(circle, rgba(186,230,253,0.75) 0%, rgba(56,189,248,0.28) 40%, transparent 72%)',
+                      filter: 'blur(8px)'
+                    }}
+                  />
+                )}
 
-              {/* Interactive 3D Hotspots */}
-              {showHotspots &&
-                FZ25_HOTSPOTS.map(spot => {
-                  const isSelected = activeHotspot?.id === spot.id;
-                  return (
-                    <button
-                      key={spot.id}
-                      type="button"
-                      onClick={e => {
-                        e.stopPropagation();
-                        setActiveHotspot(spot);
-                      }}
-                      style={{ left: `${spot.x}%`, top: `${spot.y}%` }}
-                      className={`absolute -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer z-20 ${
-                        isSelected
-                          ? 'bg-accent text-black scale-125 shadow-[0_0_20px_rgba(255,255,255,0.7)] ring-4 ring-accent/30'
-                          : 'bg-black/75 text-white border border-white/40 hover:scale-110'
-                      }`}
-                      title={spot.title}
-                    >
-                      <span className="w-2 h-2 rounded-full bg-current" />
-                    </button>
-                  );
-                })}
+                {/* X-Ray 14.2L Fuel Tank Overlay */}
+                {xrayTank && (
+                  <div
+                    className="absolute pointer-events-none rounded-full border-2 border-emerald-400/80 bg-emerald-500/25 backdrop-blur-[2px] flex items-center justify-center animate-pulse"
+                    style={{
+                      left: '43%',
+                      top: '22%',
+                      width: '20%',
+                      height: '20%'
+                    }}
+                  >
+                    <span className="text-[9px] sm:text-[10px] font-black text-emerald-300 drop-shadow whitespace-nowrap">
+                      {(stats.tankRatio * 14.2).toFixed(1)}L / 14,2L
+                    </span>
+                  </div>
+                )}
+
+                {/* Interactive 3D Hotspots */}
+                {showHotspots &&
+                  FZ25_HOTSPOTS.map(spot => {
+                    const isSelected = activeHotspot?.id === spot.id;
+                    return (
+                      <button
+                        key={spot.id}
+                        type="button"
+                        onClick={e => {
+                          e.stopPropagation();
+                          setActiveHotspot(spot);
+                        }}
+                        style={{ left: `${spot.x}%`, top: `${spot.y}%` }}
+                        className={`absolute -translate-x-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition-all cursor-pointer z-20 ${
+                          isSelected
+                            ? 'bg-accent text-black scale-125 shadow-[0_0_20px_rgba(255,255,255,0.7)] ring-4 ring-accent/30'
+                            : 'bg-black/75 text-white border border-white/40 hover:scale-110'
+                        }`}
+                        title={spot.title}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-current" />
+                      </button>
+                    );
+                  })}
+              </div>
             </div>
 
-            {/* Active Hotspot Telemetry Overlay Card */}
+            {/* Active Hotspot Telemetry Card: stacked cleanly below on mobile, floating on desktop */}
             {activeHotspot && showHotspots && (
-              <div className="absolute bottom-3 left-3 right-3 sm:right-auto sm:max-w-sm bg-black/80 backdrop-blur-xl border border-white/15 rounded-2xl p-3 z-30 flex items-start justify-between gap-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                <div>
-                  <div className="flex items-center gap-2">
+              <div className="mt-3 sm:mt-0 sm:absolute sm:bottom-3 sm:left-3 sm:max-w-sm bg-black/85 backdrop-blur-xl border border-white/15 rounded-2xl p-3 z-30 flex items-start justify-between gap-2.5 animate-in fade-in duration-200">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-xs font-extrabold text-white">{activeHotspot.title}</span>
-                    <span className="text-[10px] font-bold text-accent bg-accent/15 px-2 py-0.5 rounded-full border border-accent/25">
+                    <span className="text-[10px] font-bold text-accent bg-accent/15 px-2 py-0.5 rounded-full border border-accent/25 whitespace-nowrap">
                       {activeHotspot.spec}
                     </span>
                   </div>
@@ -1150,7 +1154,8 @@ const MotorcycleView: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() => setActiveHotspot(null)}
-                  className="text-gray-400 hover:text-white p-1"
+                  className="text-gray-400 hover:text-white p-1 shrink-0 cursor-pointer"
+                  aria-label="Fechar especificação"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1158,7 +1163,7 @@ const MotorcycleView: React.FC<Props> = ({
             )}
           </div>
         ) : (
-          <div className="w-full rounded-2xl overflow-hidden bg-[#0a0a0b] border border-white/5">
+          <div className="w-full rounded-2xl overflow-hidden bg-[#0a0a0b] border border-white/5 relative z-10">
             <Interactive3DFZ25Canvas
               accentHex={activeColor.accentHex}
               headlightOn={headlightOn}
@@ -1169,72 +1174,84 @@ const MotorcycleView: React.FC<Props> = ({
         )}
 
         {/* Showroom Controls Footer: Colors + Interactive Toggles */}
-        <div className="relative z-20 mt-4 flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/5">
+        <div className="relative z-20 mt-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-white/5">
           {/* Color Presets */}
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 mr-1">
-              Cor 2026:
+          <div className="flex items-center justify-between sm:justify-start gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 whitespace-nowrap">
+              Cor 2026: <strong className="text-white sm:hidden">{activeColor.name}</strong>
             </span>
-            {MOTO_COLORS.map(c => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => handleSelectColor(c.id)}
-                className={`px-2.5 py-1 rounded-xl text-[10px] font-bold flex items-center gap-1.5 border transition-all cursor-pointer ${
-                  selectedColorId === c.id
-                    ? 'bg-white/15 text-white border-white/30 shadow-sm'
-                    : 'bg-[#1c1c1e] text-gray-400 border-white/5 hover:text-white'
-                }`}
-              >
-                <span
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{ backgroundColor: c.accentHex }}
-                />
-                <span className="hidden sm:inline">{c.name}</span>
-              </button>
-            ))}
+            <div className="flex items-center gap-1.5">
+              {MOTO_COLORS.map(c => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => handleSelectColor(c.id)}
+                  title={c.name}
+                  className={`h-8 px-2.5 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 border transition-all cursor-pointer whitespace-nowrap ${
+                    selectedColorId === c.id
+                      ? 'bg-white/15 text-white border-white/30 shadow-sm'
+                      : 'bg-[#1c1c1e] text-gray-400 border-white/5 hover:text-white'
+                  }`}
+                >
+                  <span
+                    className="w-3 h-3 rounded-full shrink-0 ring-1 ring-white/20"
+                    style={{ backgroundColor: c.accentHex }}
+                  />
+                  <span className="hidden sm:inline">{c.name}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Interactive 3D Action Toggles */}
-          <div className="flex items-center gap-1.5">
+          <div className="grid grid-cols-3 sm:flex items-center gap-1.5">
             <button
               type="button"
               onClick={() => setHeadlightOn(h => !h)}
-              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold uppercase flex items-center gap-1 border transition-all cursor-pointer ${
+              className={`px-2.5 py-2 sm:py-1.5 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-1.5 border transition-all cursor-pointer whitespace-nowrap ${
                 headlightOn
                   ? 'bg-sky-500/20 text-sky-300 border-sky-400/30'
                   : 'bg-[#1c1c1e] text-gray-400 border-white/5'
               }`}
             >
-              <Lightbulb className="w-3.5 h-3.5" />
+              <Lightbulb className="w-3.5 h-3.5 shrink-0" />
               <span>Farol LED</span>
             </button>
 
             <button
               type="button"
               onClick={() => setXrayTank(x => !x)}
-              className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold uppercase flex items-center gap-1 border transition-all cursor-pointer ${
+              className={`px-2.5 py-2 sm:py-1.5 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-1.5 border transition-all cursor-pointer whitespace-nowrap ${
                 xrayTank
                   ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
                   : 'bg-[#1c1c1e] text-gray-400 border-white/5'
               }`}
             >
-              <Layers className="w-3.5 h-3.5" />
-              <span>Tanque 14,2L</span>
+              <Layers className="w-3.5 h-3.5 shrink-0" />
+              <span>Tanque</span>
             </button>
 
-            {viewMode3D === 'studio' && (
+            {viewMode3D === 'studio' ? (
               <button
                 type="button"
                 onClick={() => setShowHotspots(s => !s)}
-                className={`px-2.5 py-1.5 rounded-xl text-[10px] font-bold uppercase flex items-center gap-1 border transition-all cursor-pointer ${
+                className={`px-2.5 py-2 sm:py-1.5 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-1.5 border transition-all cursor-pointer whitespace-nowrap ${
                   showHotspots
                     ? 'bg-accent/20 text-accent border-accent/30'
                     : 'bg-[#1c1c1e] text-gray-400 border-white/5'
                 }`}
               >
-                <Eye className="w-3.5 h-3.5" />
+                <Eye className="w-3.5 h-3.5 shrink-0" />
                 <span>Specs</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setViewMode3D('studio')}
+                className="px-2.5 py-2 sm:py-1.5 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-1.5 border bg-[#1c1c1e] text-gray-300 border-white/10 transition-all cursor-pointer whitespace-nowrap"
+              >
+                <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                <span>Studio</span>
               </button>
             )}
           </div>
@@ -1244,29 +1261,29 @@ const MotorcycleView: React.FC<Props> = ({
       {/* ==================================================================== */}
       {/* PERIOD SELECTOR (MÊS E ANO)                                          */}
       {/* ==================================================================== */}
-      <div className="bg-[#1c1c1e] border border-white/5 rounded-2xl p-3 mb-4 flex items-center justify-between gap-2 shadow-lg">
+      <div className="bg-[#1c1c1e] border border-white/5 rounded-2xl p-2.5 sm:p-3 flex items-center justify-between gap-2 shadow-lg">
         <button
           type="button"
           onClick={handlePrevMonth}
-          className="w-10 h-10 rounded-xl bg-[#2c2c2e] hover:bg-white/10 flex items-center justify-center text-gray-300 hover:text-white transition-colors cursor-pointer active:scale-95"
+          className="w-10 h-10 rounded-xl bg-[#2c2c2e] hover:bg-white/10 flex items-center justify-center text-gray-300 hover:text-white transition-colors cursor-pointer active:scale-95 shrink-0"
           title="Mês Anterior"
         >
           <ChevronLeft className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-3">
-          <Calendar className="w-4 h-4 text-accent" />
-          <div className="text-center">
+        <div className="flex items-center justify-center gap-2 min-w-0">
+          <Calendar className="w-4 h-4 text-accent shrink-0" />
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
             <span className="text-sm sm:text-base font-extrabold text-white tracking-wider uppercase">
               {MONTH_NAMES_PT[selectedMonthIdx]}
             </span>
-            <span className="text-sm sm:text-base font-extrabold text-accent ml-2">
+            <span className="text-sm sm:text-base font-extrabold text-accent">
               {selectedYear}
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 shrink-0">
           <div className="hidden sm:flex items-center gap-1 mr-1">
             {[selectedYear - 1, selectedYear, selectedYear + 1].map(yr => (
               <button
@@ -1286,7 +1303,7 @@ const MotorcycleView: React.FC<Props> = ({
           <button
             type="button"
             onClick={handleNextMonth}
-            className="w-10 h-10 rounded-xl bg-[#2c2c2e] hover:bg-white/10 flex items-center justify-center text-gray-300 hover:text-white transition-colors cursor-pointer active:scale-95"
+            className="w-10 h-10 rounded-xl bg-[#2c2c2e] hover:bg-white/10 flex items-center justify-center text-gray-300 hover:text-white transition-colors cursor-pointer active:scale-95 shrink-0"
             title="Próximo Mês"
           >
             <ChevronRight className="w-5 h-5" />
@@ -1297,31 +1314,29 @@ const MotorcycleView: React.FC<Props> = ({
       {/* ==================================================================== */}
       {/* MONTHLY & ANNUAL SPENDING KPI CARDS                                  */}
       {/* ==================================================================== */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
         {/* GASTO NO MÊS */}
         <div className="bg-gradient-to-br from-[#1c1c1e] to-[#141416] border border-white/10 rounded-[1.75rem] p-5 relative overflow-hidden shadow-xl">
           <div className="absolute -right-6 -top-6 w-28 h-28 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-              <Fuel className="w-3.5 h-3.5 text-accent" />
-              Gasto no Mês ({MONTH_SHORT_PT[selectedMonthIdx]}/{selectedYear})
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 min-w-0 truncate">
+              <Fuel className="w-3.5 h-3.5 text-accent shrink-0" />
+              <span className="truncate">Gasto no Mês ({MONTH_SHORT_PT[selectedMonthIdx]}/{selectedYear})</span>
             </span>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-accent/15 text-accent border border-accent/25">
-              {monthLogs.length} {monthLogs.length === 1 ? 'abastecimento' : 'abastecimentos'}
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-accent/15 text-accent border border-accent/25 whitespace-nowrap shrink-0">
+              {monthLogs.length} {monthLogs.length === 1 ? 'abast.' : 'abast.'}
             </span>
           </div>
-          <div className="text-3xl sm:text-4xl font-black text-white tracking-tight my-1">
+          <div className="text-3xl sm:text-4xl font-black text-white tracking-tight my-1 whitespace-nowrap">
             {formatMoney(stats.monthTotal)}
           </div>
-          <div className="flex items-center justify-between text-xs text-gray-400 mt-3 pt-3 border-t border-white/5">
-            <span className="flex items-center gap-1">
-              <Droplets className="w-3.5 h-3.5 text-sky-400" />
-              ~{stats.monthLiters.toFixed(1)} Litros no mês
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] sm:text-xs text-gray-400 mt-3 pt-3 border-t border-white/5">
+            <span className="flex items-center gap-1.5 whitespace-nowrap">
+              <Droplets className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+              ~{stats.monthLiters.toFixed(1)} L no mês
             </span>
-            <span className="font-semibold text-gray-300">
-              Média:{' '}
-              {formatMoney(monthLogs.length > 0 ? stats.monthTotal / monthLogs.length : 0)}
-              /abast.
+            <span className="font-semibold text-gray-300 whitespace-nowrap">
+              Média: {formatMoney(monthLogs.length > 0 ? stats.monthTotal / monthLogs.length : 0)}
             </span>
           </div>
         </div>
@@ -1329,24 +1344,24 @@ const MotorcycleView: React.FC<Props> = ({
         {/* GASTO NO ANO */}
         <div className="bg-gradient-to-br from-[#1c1c1e] to-[#141416] border border-white/10 rounded-[1.75rem] p-5 relative overflow-hidden shadow-xl">
           <div className="absolute -right-6 -top-6 w-28 h-28 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-blue-400" />
-              Gasto no Ano ({selectedYear})
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 min-w-0 truncate">
+              <TrendingUp className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+              <span className="truncate">Gasto no Ano ({selectedYear})</span>
             </span>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-400 border border-blue-500/25">
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-400 border border-blue-500/25 whitespace-nowrap shrink-0">
               {yearLogs.length} no ano
             </span>
           </div>
-          <div className="text-3xl sm:text-4xl font-black text-white tracking-tight my-1">
+          <div className="text-3xl sm:text-4xl font-black text-white tracking-tight my-1 whitespace-nowrap">
             {formatMoney(stats.yearTotal)}
           </div>
-          <div className="flex items-center justify-between text-xs text-gray-400 mt-3 pt-3 border-t border-white/5">
-            <span className="flex items-center gap-1">
-              <Navigation className="w-3.5 h-3.5 text-emerald-400" />
-              ~{Math.round(stats.yearLiters * 37).toLocaleString(locale)} km rodados est.
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] sm:text-xs text-gray-400 mt-3 pt-3 border-t border-white/5">
+            <span className="flex items-center gap-1.5 whitespace-nowrap">
+              <Navigation className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              ~{Math.round(stats.yearLiters * 37).toLocaleString(locale)} km est.
             </span>
-            <span className="font-semibold text-gray-300">
+            <span className="font-semibold text-gray-300 whitespace-nowrap">
               Média: {formatMoney(stats.monthlyAverageInYear)}/mês
             </span>
           </div>
@@ -1356,25 +1371,25 @@ const MotorcycleView: React.FC<Props> = ({
       {/* ==================================================================== */}
       {/* PAYMENT METHOD BREAKDOWN: CRÉDITO, DÉBITO, PIX, DINHEIRO             */}
       {/* ==================================================================== */}
-      <div className="bg-[#1c1c1e] border border-white/5 rounded-[1.75rem] p-5 mb-6 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+      <div className="bg-[#1c1c1e] border border-white/5 rounded-[1.75rem] p-4 sm:p-5 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div>
             <h2 className="text-sm font-extrabold uppercase tracking-wider text-white">
               Gastos por Forma de Pagamento
             </h2>
-            <p className="text-xs text-gray-400">
-              Crédito, Débito, Pix e Dinheiro • Toque para filtrar o histórico
+            <p className="text-xs text-gray-400 mt-0.5">
+              Toque em um cartão para filtrar o histórico
             </p>
           </div>
 
-          <div className="flex items-center gap-1 bg-[#0a0a0b] p-1 rounded-xl border border-white/5">
+          <div className="grid grid-cols-2 sm:flex items-center gap-1 bg-[#0a0a0b] p-1 rounded-xl border border-white/5 w-full sm:w-auto shrink-0">
             <button
               type="button"
               onClick={() => {
                 setBreakdownScope('month');
                 setHistoryScope('month');
               }}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap text-center ${
                 breakdownScope === 'month'
                   ? 'bg-accent text-black'
                   : 'text-gray-400 hover:text-white'
@@ -1388,7 +1403,7 @@ const MotorcycleView: React.FC<Props> = ({
                 setBreakdownScope('year');
                 setHistoryScope('year');
               }}
-              className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap text-center ${
                 breakdownScope === 'year'
                   ? 'bg-accent text-black'
                   : 'text-gray-400 hover:text-white'
@@ -1399,7 +1414,7 @@ const MotorcycleView: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
           {(['credit', 'debit', 'pix', 'cash'] as FuelPaymentMethod[]).map(method => {
             const meta = PAYMENT_META[method];
             const data = stats.byPayment[method];
@@ -1419,21 +1434,21 @@ const MotorcycleView: React.FC<Props> = ({
                     : 'bg-[#141416] border-white/5 hover:border-white/15'
                 }`}
               >
-                <div className="flex items-center justify-between mb-2">
-                  <div className={`w-8 h-8 rounded-xl ${meta.bgColor} flex items-center justify-center`}>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className={`w-8 h-8 rounded-xl ${meta.bgColor} flex items-center justify-center shrink-0`}>
                     <Icon className={`w-4 h-4 ${meta.color}`} />
                   </div>
-                  <span className={`text-[10px] font-extrabold uppercase ${meta.color}`}>
+                  <span className={`text-[10px] font-extrabold uppercase whitespace-nowrap ${meta.color}`}>
                     {data.percent}%
                   </span>
                 </div>
-                <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
+                <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">
                   {meta.shortLabel}
                 </div>
                 <div className="text-base sm:text-lg font-extrabold text-white mt-0.5 truncate">
                   {formatMoney(data.amount)}
                 </div>
-                <div className="text-[10px] text-gray-500 mt-0.5">
+                <div className="text-[10px] text-gray-500 mt-0.5 whitespace-nowrap">
                   {data.count} {data.count === 1 ? 'vez' : 'vezes'}
                 </div>
                 <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mt-2.5">
@@ -1451,22 +1466,22 @@ const MotorcycleView: React.FC<Props> = ({
       {/* ==================================================================== */}
       {/* ANNUAL 12-MONTH BAR CHART                                            */}
       {/* ==================================================================== */}
-      <div className="bg-[#1c1c1e] border border-white/5 rounded-[1.75rem] p-5 mb-6 shadow-xl">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-[#1c1c1e] border border-white/5 rounded-[1.75rem] p-4 sm:p-5 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
           <div>
             <h2 className="text-sm font-extrabold uppercase tracking-wider text-white">
               Evolução Mensal em {selectedYear}
             </h2>
-            <p className="text-xs text-gray-400">
-              Toque em qualquer mês para inspecionar os abastecimentos
+            <p className="text-xs text-gray-400 mt-0.5">
+              Toque em um mês para inspecionar os gastos
             </p>
           </div>
-          <span className="text-xs font-extrabold text-accent">
+          <span className="self-start sm:self-auto px-3 py-1 rounded-full bg-accent/15 border border-accent/25 text-[11px] font-extrabold text-accent whitespace-nowrap">
             Total {selectedYear}: {formatMoney(stats.yearTotal)}
           </span>
         </div>
 
-        <div className="grid grid-cols-12 gap-1.5 sm:gap-2 items-end h-32 pt-4 px-1">
+        <div className="grid grid-cols-12 gap-1 sm:gap-2 items-end h-32 pt-4">
           {stats.monthlyChart.map(item => {
             const heightPct =
               item.amount > 0 ? Math.max(14, Math.round((item.amount / stats.maxMonthAmount) * 100)) : 6;
@@ -1476,12 +1491,12 @@ const MotorcycleView: React.FC<Props> = ({
                 key={item.monthIdx}
                 type="button"
                 onClick={() => setSelectedMonthIdx(item.monthIdx)}
-                className="flex flex-col items-center justify-end h-full group cursor-pointer"
+                className="flex flex-col items-center justify-end h-full group cursor-pointer min-w-0"
                 title={`${MONTH_NAMES_PT[item.monthIdx]}: ${formatMoney(item.amount)}`}
               >
                 <div className="w-full flex-1 flex items-end justify-center">
                   <div
-                    className={`w-full max-w-[22px] rounded-t-lg transition-all duration-300 ${
+                    className={`w-full max-w-[20px] rounded-t-lg transition-all duration-300 ${
                       isCurrent
                         ? 'bg-accent shadow-[0_0_12px_rgba(255,255,255,0.25)]'
                         : item.amount > 0
@@ -1492,7 +1507,7 @@ const MotorcycleView: React.FC<Props> = ({
                   />
                 </div>
                 <span
-                  className={`text-[9px] sm:text-[10px] font-bold mt-2 uppercase ${
+                  className={`text-[8px] sm:text-[10px] font-bold mt-2 uppercase tracking-tighter sm:tracking-normal ${
                     isCurrent ? 'text-accent font-extrabold' : 'text-gray-500 group-hover:text-gray-300'
                   }`}
                 >
@@ -1507,60 +1522,60 @@ const MotorcycleView: React.FC<Props> = ({
       {/* ==================================================================== */}
       {/* REFUELING HISTORY LIST                                               */}
       {/* ==================================================================== */}
-      <div className="bg-[#1c1c1e] border border-white/5 rounded-[1.75rem] p-5 mb-6 shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
-          <div>
-            <h2 className="text-sm font-extrabold uppercase tracking-wider text-white">
+      <div className="bg-[#1c1c1e] border border-white/5 rounded-[1.75rem] p-4 sm:p-5 shadow-xl">
+        <div className="flex items-center justify-between gap-2 mb-4">
+          <div className="min-w-0">
+            <h2 className="text-sm font-extrabold uppercase tracking-wider text-white truncate">
               Histórico de Abastecimentos
             </h2>
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-gray-400 mt-0.5 truncate">
               {historyScope === 'month'
                 ? `${MONTH_NAMES_PT[selectedMonthIdx]} de ${selectedYear}`
-                : `Todos os meses de ${selectedYear}`}
+                : `Ano de ${selectedYear}`}
               {historyFilterMethod !== 'all' &&
-                ` • Filtrado por ${PAYMENT_META[historyFilterMethod].shortLabel}`}
+                ` • ${PAYMENT_META[historyFilterMethod].shortLabel}`}
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             {historyFilterMethod !== 'all' && (
               <button
                 type="button"
                 onClick={() => setHistoryFilterMethod('all')}
-                className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer"
+                className="px-2.5 py-1.5 rounded-xl text-[10px] font-bold bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer whitespace-nowrap"
               >
-                Limpar Filtro
+                Limpar
               </button>
             )}
             <button
               type="button"
               onClick={handleOpenNewForm}
-              className="px-3 py-1.5 rounded-xl bg-accent/15 text-accent border border-accent/25 text-xs font-bold flex items-center gap-1 hover:bg-accent/25 transition-colors cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-accent/15 text-accent border border-accent/25 text-xs font-bold flex items-center gap-1 hover:bg-accent/25 transition-colors cursor-pointer whitespace-nowrap"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Novo Registro</span>
+              <Plus className="w-3.5 h-3.5 shrink-0" />
+              <span>Novo</span>
             </button>
           </div>
         </div>
 
         {displayedLogs.length === 0 ? (
-          <div className="bg-[#141416] border border-dashed border-white/10 rounded-2xl p-8 text-center">
+          <div className="bg-[#141416] border border-dashed border-white/10 rounded-2xl p-6 sm:p-8 text-center">
             <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-3">
               <Fuel className="w-6 h-6 text-gray-500" />
             </div>
-            <p className="text-sm font-bold text-gray-300">
-              Nenhum abastecimento registrado neste período
+            <p className="text-sm font-bold text-gray-200">
+              Nenhum abastecimento neste período
             </p>
-            <p className="text-xs text-gray-500 mt-1 mb-4">
-              Registre quanto você abasteceu na sua Yamaha Fazer FZ 25 2026 e escolha se foi Crédito,
+            <p className="text-xs text-gray-400 mt-1 mb-5 max-w-xs mx-auto leading-relaxed">
+              Registre quanto você abasteceu na sua Yamaha Fazer FZ 25 2026 escolhendo Crédito,
               Débito, Pix ou Dinheiro.
             </p>
             <button
               type="button"
               onClick={handleOpenNewForm}
-              className="px-5 py-2.5 rounded-xl bg-accent text-black font-extrabold text-xs uppercase tracking-wider hover:brightness-110 transition-all cursor-pointer inline-flex items-center gap-2"
+              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-accent text-black font-extrabold text-xs uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap"
             >
-              <Plus className="w-4 h-4 stroke-[2.5]" />
+              <Plus className="w-4 h-4 stroke-[2.5] shrink-0" />
               <span>Registrar Abastecimento</span>
             </button>
           </div>
@@ -1577,43 +1592,45 @@ const MotorcycleView: React.FC<Props> = ({
               return (
                 <div
                   key={log.id}
-                  className="bg-[#141416] border border-white/5 hover:border-white/15 rounded-2xl p-4 flex items-center justify-between gap-3 transition-all"
+                  className="bg-[#141416] border border-white/5 hover:border-white/15 rounded-2xl p-3.5 sm:p-4 flex items-center justify-between gap-3 transition-all"
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div
-                      className={`w-11 h-11 rounded-2xl ${pMeta.bgColor} border ${pMeta.borderColor} flex items-center justify-center shrink-0`}
+                      className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl ${pMeta.bgColor} border ${pMeta.borderColor} flex items-center justify-center shrink-0`}
                     >
                       <PIcon className={`w-5 h-5 ${pMeta.color}`} />
                     </div>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="text-base font-black text-white">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="text-sm sm:text-base font-black text-white whitespace-nowrap">
                           {formatMoney(log.amount)}
                         </span>
                         <span
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase border ${pMeta.bgColor} ${pMeta.color} ${pMeta.borderColor}`}
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase border whitespace-nowrap ${pMeta.bgColor} ${pMeta.color} ${pMeta.borderColor}`}
                         >
                           {pMeta.shortLabel}
                         </span>
                         <span
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${fMeta.badgeClass}`}
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold border whitespace-nowrap ${fMeta.badgeClass}`}
                         >
                           {fMeta.label}
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400 mt-1">
-                        <span>{log.date.split('-').reverse().join('/')}</span>
-                        <span>• {liters.toFixed(2)} L</span>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] sm:text-xs text-gray-400 mt-1">
+                        <span className="whitespace-nowrap">{log.date.split('-').reverse().join('/')}</span>
+                        <span className="whitespace-nowrap">• {liters.toFixed(2)} L</span>
                         {log.pricePerLiter && (
-                          <span>• {formatMoney(log.pricePerLiter)}/L</span>
+                          <span className="whitespace-nowrap">• {formatMoney(log.pricePerLiter)}/L</span>
                         )}
-                        {log.odometer && <span>• {log.odometer.toLocaleString(locale)} km</span>}
+                        {log.odometer && (
+                          <span className="whitespace-nowrap">• {log.odometer.toLocaleString(locale)} km</span>
+                        )}
                         {log.station && <span className="truncate">• {log.station}</span>}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
                       type="button"
                       onClick={() => handleOpenEditForm(log)}
@@ -1643,23 +1660,26 @@ const MotorcycleView: React.FC<Props> = ({
       {/* ==================================================================== */}
       {isFormOpen && (
         <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-[#1c1c1e] border border-white/10 w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-6 shadow-2xl max-h-[92vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center">
+          <div
+            className="bg-[#1c1c1e] border border-white/10 w-full max-w-md rounded-t-[2rem] sm:rounded-[2rem] p-5 sm:p-6 shadow-2xl max-h-[92vh] overflow-y-auto"
+            style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom))' }}
+          >
+            <div className="flex items-center justify-between gap-2 mb-5">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0">
                   <Fuel className="w-5 h-5 text-accent" />
                 </div>
-                <div>
-                  <h3 className="text-lg font-extrabold text-white">
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-lg font-extrabold text-white truncate">
                     {editingLog ? 'Editar Abastecimento' : 'Novo Abastecimento'}
                   </h3>
-                  <p className="text-xs text-gray-400">Yamaha Fazer FZ 25 2026 • Tanque 14,2L</p>
+                  <p className="text-xs text-gray-400 truncate">Yamaha Fazer FZ 25 2026 • Tanque 14,2L</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsFormOpen(false)}
-                className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors cursor-pointer"
+                className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5" />
               </button>
