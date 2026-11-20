@@ -62,10 +62,22 @@ const toSnakeCase = (obj: any): any => {
 
 export const checkUserExists = async (email: string): Promise<boolean> => {
   if (!email) return false;
+  const emailNorm = email.toLowerCase().trim();
+
+  // Tenta primeiro a função RPC segura (compatível com RLS restrito em public.users)
+  const { data: rpcData, error: rpcError } = await supabase.rpc('check_user_exists', {
+    p_email: emailNorm
+  });
+
+  if (!rpcError && typeof rpcData === 'boolean') {
+    return rpcData;
+  }
+
+  // Fallback para ambientes onde a RPC ainda não foi criada no Supabase
   const { data, error } = await supabase
     .from('users')
     .select('email')
-    .eq('email', email.toLowerCase().trim())
+    .eq('email', emailNorm)
     .maybeSingle();
 
   if (error) {
@@ -202,8 +214,9 @@ export const loadUserData = async (email: string) => {
         profile: profile,
         cdiRate: user.cdi_rate ?? 11.25,
         appLanguage: user.app_language,
-        theme: user.theme || null,
+        theme: user.theme || user.profile?.theme || null,
         dashboardOrder: user.profile?.dashboardOrder || [], 
+        fuelLogs: user.profile?.fuelLogs || null,
         transactions: toCamelCase(txRes.data || []),
         accounts: toCamelCase(accRes.data || []),
         months: toCamelCase(monRes.data || []),
@@ -309,8 +322,8 @@ export const saveUserField = async (email: string, field: string, data: any): Pr
   try {
     let payload: any = {};
     
-    // CORREÇÃO: Removido 'notepadDrawing' pois pertence a 'months', não a 'users'
-    const profileFields = ['dashboardOrder', 'profile'];
+    // CORREÇÃO: 'theme', 'dashboardOrder' e 'fuelLogs' são armazenados dentro do JSONB users.profile
+    const profileFields = ['dashboardOrder', 'profile', 'fuelLogs', 'theme'];
     
     if (profileFields.includes(field)) {
         const { data: user } = await supabase.from('users').select('profile').eq('email', email.toLowerCase().trim()).maybeSingle();
@@ -322,10 +335,9 @@ export const saveUserField = async (email: string, field: string, data: any): Pr
              payload = { profile: { ...currentProfile, [field]: data } };
         }
     } else {
-        // CORREÇÃO: Removido 'notepadContent' do mapeamento
+        // CORREÇÃO: Apenas colunas reais existentes em public.users
         const map: any = { 
             cdiRate: 'cdi_rate', 
-            theme: 'theme',
             appLanguage: 'app_language',
             pushSubscription: 'push_subscription'
         };

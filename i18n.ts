@@ -42,7 +42,8 @@ export const TRANSLATIONS = {
       home: 'INÍCIO',
       invest: 'INVEST',
       wallet: 'CARTEIRA',
-      config: 'CONFIG'
+      config: 'CONFIG',
+      moto: 'FZ 25'
     },
     home: {
       support: {
@@ -548,7 +549,8 @@ export const TRANSLATIONS = {
       home: 'HOME',
       invest: 'INVEST',
       wallet: 'WALLET',
-      config: 'SETTINGS'
+      config: 'SETTINGS',
+      moto: 'FZ 25'
     },
     home: {
       support: {
@@ -1054,7 +1056,8 @@ export const TRANSLATIONS = {
       home: 'INICIO',
       invest: 'INVERTIR',
       wallet: 'CARTERA',
-      config: 'AJUSTES'
+      config: 'AJUSTES',
+      moto: 'FZ 25'
     },
     home: {
       support: {

@@ -136,4 +136,21 @@ export interface Investment {
   lastYieldDate?: string; // ISO date string (YYYY-MM-DD) of the last yield application
 }
 
-export type AppView = 'home' | 'settings' | 'long-term' | 'investments';
+export type FuelPaymentMethod = 'credit' | 'debit' | 'pix' | 'cash';
+
+export type FuelType = 'gasoline' | 'additive' | 'ethanol';
+
+export interface FuelLog {
+  id: string;
+  amount: number;
+  date: string; // ISO date string YYYY-MM-DD
+  paymentMethod: FuelPaymentMethod;
+  liters?: number;
+  pricePerLiter?: number;
+  fuelType?: FuelType;
+  odometer?: number;
+  station?: string;
+  createdAt?: string;
+}
+
+export type AppView = 'home' | 'settings' | 'long-term' | 'investments' | 'motorcycle';

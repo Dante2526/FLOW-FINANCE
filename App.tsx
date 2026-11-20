@@ -15,12 +15,13 @@ import NotificationModal from './components/NotificationModal';
 import SettingsView, { AVAILABLE_THEMES } from './components/SettingsView';
 import LongTermView from './components/LongTermView';
 import InvestmentsView from './components/InvestmentsView';
+import MotorcycleView from './components/MotorcycleView';
 import LoginScreen, { FlowLogo } from './components/LoginScreen';
 import ProModal from './components/ProModal';
 import DonationModal from './components/DonationModal';
 import Tutorial from './components/Tutorial';
 import { TutorialStep } from './components/Tutorial';
-import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification, AppLanguage } from './types';
+import { Contact, Transaction, Account, CardTheme, MonthSummary, UserProfile, AppTheme, AppView, LongTermTransaction, Investment, AppNotification, AppLanguage, FuelLog } from './types';
 import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { TRANSLATIONS, getBrowserLanguage, getLocale } from './i18n';
 import { IconBell, JeittoLogo } from './components/Icons';
@@ -165,6 +166,7 @@ const App: React.FC = () => {
   const [months, setMonths] = useState<MonthSummary[]>([SYSTEM_INITIAL_MONTH]);
   const [longTermTransactions, setLongTermTransactions] = useState<LongTermTransaction[]>([]);
   const [investments, setInvestments] = useState<Investment[]>([]);
+  const [fuelLogs, setFuelLogs] = useState<FuelLog[]>(() => loadData(STORAGE_KEYS.FUEL_LOGS, []));
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [cdiRate, setCdiRate] = useState<number>(11.25);
   const [dashboardOrder, setDashboardOrder] = useState<string[]>([BALANCE_CARD_ID]);
@@ -581,6 +583,10 @@ const App: React.FC = () => {
     }
     if (data.cdiRate !== undefined) setCdiRate(data.cdiRate);
     if (data.dashboardOrder) setDashboardOrder(data.dashboardOrder);
+    if (Array.isArray(data.fuelLogs) && data.fuelLogs.length > 0) {
+      setFuelLogs(data.fuelLogs);
+      saveData(STORAGE_KEYS.FUEL_LOGS, data.fuelLogs);
+    }
 
     if (data.appLanguage && ['pt', 'en', 'es'].includes(data.appLanguage)) {
       setAppLanguage(data.appLanguage);
@@ -921,6 +927,47 @@ const App: React.FC = () => {
   const handleLongTermDelete = useCallback((id: string) => {
     setLongTermTransactions(p => p.filter(i => i.id !== id));
     if (currentUserEmail) { deleteItem(currentUserEmail, 'longTerm', id); lastActionTimeRef.current = Date.now(); }
+  }, [currentUserEmail]);
+
+  const handleFuelLogAdd = useCallback((logData: Omit<FuelLog, 'id' | 'createdAt'>) => {
+    const newLog: FuelLog = {
+      ...logData,
+      id: generateUUID(),
+      createdAt: new Date().toISOString()
+    };
+    setFuelLogs(prev => {
+      const updated = [newLog, ...prev];
+      saveData(STORAGE_KEYS.FUEL_LOGS, updated);
+      if (currentUserEmail) {
+        saveUserField(currentUserEmail, 'fuelLogs', updated);
+        lastActionTimeRef.current = Date.now();
+      }
+      return updated;
+    });
+  }, [currentUserEmail]);
+
+  const handleFuelLogEdit = useCallback((updatedLog: FuelLog) => {
+    setFuelLogs(prev => {
+      const updated = prev.map(l => l.id === updatedLog.id ? updatedLog : l);
+      saveData(STORAGE_KEYS.FUEL_LOGS, updated);
+      if (currentUserEmail) {
+        saveUserField(currentUserEmail, 'fuelLogs', updated);
+        lastActionTimeRef.current = Date.now();
+      }
+      return updated;
+    });
+  }, [currentUserEmail]);
+
+  const handleFuelLogDelete = useCallback((id: string) => {
+    setFuelLogs(prev => {
+      const updated = prev.filter(l => l.id !== id);
+      saveData(STORAGE_KEYS.FUEL_LOGS, updated);
+      if (currentUserEmail) {
+        saveUserField(currentUserEmail, 'fuelLogs', updated);
+        lastActionTimeRef.current = Date.now();
+      }
+      return updated;
+    });
   }, [currentUserEmail]);
 
   const handleGoHome = useCallback(() => setCurrentView('home'), []);
@@ -1319,10 +1366,12 @@ const App: React.FC = () => {
         <SettingsView currentThemeId={appTheme.id} onSaveTheme={handleSaveTheme} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} autoCreateMonth={userProfile.autoCreateMonth} onToggleAutoCreateMonth={handleToggleAutoCreateMonth} />
       ) : currentView === 'long-term' ? (
         <LongTermView items={longTermTransactions} onAdd={handleLongTermAdd} onEdit={handleLongTermEdit} onDelete={handleLongTermDelete} appLanguage={appLanguage} isPro={!!userProfile.isPro} />
+      ) : currentView === 'motorcycle' ? (
+        <MotorcycleView fuelLogs={fuelLogs} onAddFuelLog={handleFuelLogAdd} onEditFuelLog={handleFuelLogEdit} onDeleteFuelLog={handleFuelLogDelete} appLanguage={appLanguage} />
       ) : (
         <InvestmentsView investments={investments} onAdd={handleInvestmentAdd} onEdit={handleInvestmentEdit} onDelete={handleInvestmentDelete} onBack={handleGoHome} cdiRate={cdiRate} onUpdateCdiRate={handleInvestmentUpdateRate} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
       )}
-      <BottomNav currentView={currentView} onChangeView={setCurrentView} labels={t.nav || { home: 'INÍCIO', invest: 'INVEST', wallet: 'CARTEIRA', config: 'CONFIG' }} />
+      <BottomNav currentView={currentView} onChangeView={setCurrentView} labels={t.nav || { home: 'INÍCIO', invest: 'INVEST', wallet: 'CARTEIRA', config: 'CONFIG', moto: 'FZ 25' }} />
       {isAddTransactionOpen && <AddTransactionModal isOpen={isAddTransactionOpen} onClose={handleCloseAddTransaction} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} activeMonthContext={activeMonthContext} appLanguage={appLanguage} />}
       {isAddAccountOpen && <AddAccountModal isOpen={isAddAccountOpen} onClose={handleCloseAddAccount} onSave={handleSaveAccount} accountToEdit={editingAccount} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />}
       {isCalculatorOpen && <CalculatorModal isOpen={isCalculatorOpen} onClose={handleCloseCalculator} appLanguage={appLanguage} />}

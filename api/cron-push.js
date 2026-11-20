@@ -145,7 +145,7 @@ export default async function handler(req, res) {
                     }
                 } catch (pushError) {
                     if (pushError.statusCode === 410 || pushError.statusCode === 404) {
-                        await supabase.from('users').update({ push_subscription: null }).eq('id', user.id);
+                        await supabase.from('users').update({ push_subscription: null }).eq('email', user.email);
                         errors.push(`Token expirado revogado para ${user.email}`);
                     } else {
                         errors.push(`Erro VAPID/Push para ${user.email}: ${pushError.message}`);

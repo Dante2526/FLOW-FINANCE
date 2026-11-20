@@ -18,6 +18,8 @@ export const STORAGE_KEYS = {
   DISMISSED_NOTIFICATIONS: 'flow_dismissed_notifications', // New Key for persistence
   TUTORIAL_COMPLETED: 'flow_tutorial_completed', // New Key for tutorial
   VISIT_COUNT: 'flow_visit_count', // New key for smart login screen
+  FUEL_LOGS: 'flow_fuel_logs',
+  MOTO_COLOR: 'flow_moto_color',
 };
 
 // Generic load function
