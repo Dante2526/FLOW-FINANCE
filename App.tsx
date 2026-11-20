@@ -1178,7 +1178,7 @@ const App: React.FC = () => {
   if (isLoadingData && !userProfile.name) return <SplashScreen />;
 
   return (
-    <div key={currentUserEmail} ref={mainScrollRef} className={`h-full overflow-y-auto bg-[#0a0a0b] text-white px-2 pt-4 pb-[11.5rem] font-sans selection:bg-accent selection:text-black no-scrollbar ${isAnyModalOpen ? 'overflow-hidden' : ''}`} style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+    <div key={currentUserEmail} ref={mainScrollRef} className={`h-full overflow-y-auto bg-[#0a0a0b] text-white px-2 pt-4 ${currentView === 'motorcycle' ? 'pb-28' : 'pb-[11.5rem]'} font-sans selection:bg-accent selection:text-black no-scrollbar ${isAnyModalOpen ? 'overflow-hidden' : ''}`} style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
       {autoCreatedMonthName && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[60] animate-in slide-in-from-top-5 fade-in duration-300 w-[92%] max-w-sm">
           <div className="bg-[#0f0f11]/85 backdrop-blur-xl border border-white/[0.08] text-white px-5 py-4 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-center gap-4 relative overflow-hidden group before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[4px] before:bg-gradient-to-b before:from-accent before:to-accent/30 before:rounded-l-3xl">

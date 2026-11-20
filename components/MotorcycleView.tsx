@@ -579,13 +579,21 @@ const MotorcycleView: React.FC<Props> = ({
   const [historyScope, setHistoryScope] = useState<'month' | 'year'>('month');
 
   // Selected Vehicle State (Persisted locally & synced to Supabase profile)
-  const [selectedVehicleId, setSelectedVehicleId] = useState<string>(() =>
-    loadData(STORAGE_KEYS.SELECTED_VEHICLE, 'yamaha-fazer-fz25-2026')
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(() =>
+    loadData<string | null>(STORAGE_KEYS.SELECTED_VEHICLE, null)
   );
 
-  // Vehicle Selector Modal State (Carro vs Moto + Search Bar by Brand & Type)
-  const [isVehicleSelectorOpen, setIsVehicleSelectorOpen] = useState<boolean>(false);
-  const [selectorCategory, setSelectorCategory] = useState<VehicleCategory>('motorcycle');
+  // First screen: Choose Vehicle (Moto vs Carro + Search) before showing 3D Studio & Fuel Control
+  const [isVehicleSelectorOpen, setIsVehicleSelectorOpen] = useState<boolean>(() => {
+    const savedVehicle = loadData<string | null>(STORAGE_KEYS.SELECTED_VEHICLE, null);
+    const hasConfirmed = loadData<boolean>('flow_vehicle_picker_confirmed', false);
+    return !savedVehicle || !hasConfirmed;
+  });
+  const [selectorCategory, setSelectorCategory] = useState<VehicleCategory>(() => {
+    const savedVehicle = loadData<string | null>(STORAGE_KEYS.SELECTED_VEHICLE, null);
+    const found = VEHICLE_CATALOG.find(v => v.id === savedVehicle);
+    return found ? found.category : 'motorcycle';
+  });
   const [vehicleSearchQuery, setVehicleSearchQuery] = useState<string>('');
   const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>('ALL');
 
@@ -619,7 +627,7 @@ const MotorcycleView: React.FC<Props> = ({
 
   // Smooth Continuous 3D Studio Animation Loop
   useEffect(() => {
-    if (!is3DAnimActive) return;
+    if (!is3DAnimActive || isVehicleSelectorOpen) return;
     let rafId: number;
     let start: number | null = null;
 
@@ -632,7 +640,7 @@ const MotorcycleView: React.FC<Props> = ({
 
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [is3DAnimActive]);
+  }, [is3DAnimActive, isVehicleSelectorOpen]);
 
   // Computed 3D transform combining continuous 3D studio animation + user touch/mouse tilt
   const computed3D = useMemo(() => {
@@ -680,11 +688,15 @@ const MotorcycleView: React.FC<Props> = ({
   const handleSelectVehicle = (preset: VehiclePreset) => {
     setSelectedVehicleId(preset.id);
     saveData(STORAGE_KEYS.SELECTED_VEHICLE, preset.id);
+    saveData('flow_vehicle_picker_confirmed', true);
     const currentEmail = loadData<string | null>(STORAGE_KEYS.USER_SESSION, null);
     if (currentEmail) {
       saveUserField(currentEmail, 'selectedVehicle', preset.id);
     }
     setIsVehicleSelectorOpen(false);
+    // Scroll parent container back to top when entering 3D studio
+    const scrollParent = document.querySelector('.overflow-y-auto');
+    if (scrollParent) scrollParent.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Interactive 3D tilt on Studio Card
@@ -985,9 +997,264 @@ const MotorcycleView: React.FC<Props> = ({
     `${currencySymbol} ${val.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   const fullTankPresetValue = Math.round(currentVehicle.tankCapacityL * 6.19);
+  const motoCount = useMemo(() => VEHICLE_CATALOG.filter(v => v.category === 'motorcycle').length, []);
+  const carCount = useMemo(() => VEHICLE_CATALOG.filter(v => v.category === 'car').length, []);
+
+  // ============================================================================
+  // FIRST SCREEN: FULL-PAGE VEHICLE SELECTION (MOTO vs CARRO + SEARCH)
+  // ============================================================================
+  if (isVehicleSelectorOpen) {
+    return (
+      <div className="w-full max-w-4xl mx-auto px-1 pb-2 space-y-4 animate-in fade-in duration-300">
+        {/* Top Header */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-2xl bg-[#1c1c1e] border border-white/10 flex items-center justify-center shadow-lg shrink-0">
+              <Box className="w-5 h-5 text-accent" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-2xl font-extrabold text-white tracking-tight truncate">
+                ESCOLHA SEU VEÍCULO
+              </h1>
+              <p className="text-xs text-gray-400 truncate">
+                Selecione Moto ou Carro para abrir o 3D Studio e controlar combustível
+              </p>
+            </div>
+          </div>
+
+          {selectedVehicleId && (
+            <button
+              type="button"
+              onClick={() => setIsVehicleSelectorOpen(false)}
+              className="px-3.5 py-2 rounded-xl bg-[#1c1c1e] hover:bg-white/10 border border-white/10 text-xs font-bold text-gray-300 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 whitespace-nowrap"
+            >
+              <ChevronLeft className="w-4 h-4 shrink-0" />
+              <span>Voltar</span>
+            </button>
+          )}
+        </div>
+
+        {/* Visual Category Selector Cards: MOTO vs CARRO */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectorCategory('motorcycle');
+              setSelectedBrandFilter('ALL');
+            }}
+            className={`group relative rounded-[1.5rem] overflow-hidden border text-left transition-all cursor-pointer ${
+              selectorCategory === 'motorcycle'
+                ? 'border-accent ring-2 ring-accent/30 bg-[#18181c] shadow-xl'
+                : 'border-white/10 bg-[#141417] opacity-75 hover:opacity-100'
+            }`}
+          >
+            <div className="h-24 sm:h-32 w-full bg-[#0a0a0b] relative overflow-hidden">
+              <img
+                src="/fz25-2026-3d.jpg"
+                alt="Motos 3D"
+                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#141417] via-black/30 to-transparent" />
+              {selectorCategory === 'motorcycle' && (
+                <span className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-accent text-black flex items-center justify-center shadow-md">
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                </span>
+              )}
+            </div>
+            <div className="p-3.5 flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <Bike
+                    className={`w-4 h-4 shrink-0 ${
+                      selectorCategory === 'motorcycle' ? 'text-accent' : 'text-gray-400'
+                    }`}
+                  />
+                  <span className="text-sm font-black uppercase tracking-wider text-white">
+                    Motos
+                  </span>
+                </div>
+                <span className="text-[10px] text-gray-400 font-semibold block mt-0.5">
+                  {motoCount} modelos 3D
+                </span>
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSelectorCategory('car');
+              setSelectedBrandFilter('ALL');
+            }}
+            className={`group relative rounded-[1.5rem] overflow-hidden border text-left transition-all cursor-pointer ${
+              selectorCategory === 'car'
+                ? 'border-accent ring-2 ring-accent/30 bg-[#18181c] shadow-xl'
+                : 'border-white/10 bg-[#141417] opacity-75 hover:opacity-100'
+            }`}
+          >
+            <div className="h-24 sm:h-32 w-full bg-[#0a0a0b] relative overflow-hidden">
+              <img
+                src="/car-2026-3d.jpg"
+                alt="Carros 3D"
+                className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#141417] via-black/30 to-transparent" />
+              {selectorCategory === 'car' && (
+                <span className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-accent text-black flex items-center justify-center shadow-md">
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                </span>
+              )}
+            </div>
+            <div className="p-3.5 flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <Car
+                    className={`w-4 h-4 shrink-0 ${
+                      selectorCategory === 'car' ? 'text-accent' : 'text-gray-400'
+                    }`}
+                  />
+                  <span className="text-sm font-black uppercase tracking-wider text-white">
+                    Carros
+                  </span>
+                </div>
+                <span className="text-[10px] text-gray-400 font-semibold block mt-0.5">
+                  {carCount} modelos 3D
+                </span>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        {/* Search Bar + Brand Filters Card */}
+        <div className="bg-[#1c1c1e] border border-white/5 rounded-[1.75rem] p-4 shadow-xl space-y-3">
+          <div className="relative">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              value={vehicleSearchQuery}
+              onChange={e => setVehicleSearchQuery(e.target.value)}
+              placeholder={
+                selectorCategory === 'motorcycle'
+                  ? 'Pesquisar marca, modelo ou tipo (ex: Yamaha, Fazer, Naked, Trail)...'
+                  : 'Pesquisar marca, modelo ou tipo (ex: Toyota, Sedan, SUV, Hatch)...'
+              }
+              className="w-full bg-[#0a0a0b] border border-white/10 focus:border-accent rounded-2xl pl-10 pr-9 py-3 text-xs sm:text-sm font-semibold text-white placeholder:text-gray-500 outline-none transition-colors"
+            />
+            {vehicleSearchQuery && (
+              <button
+                type="button"
+                onClick={() => setVehicleSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Brand Filter Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+            {availableBrands.map(b => (
+              <button
+                key={b}
+                type="button"
+                onClick={() => setSelectedBrandFilter(b)}
+                className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider whitespace-nowrap border transition-all cursor-pointer shrink-0 ${
+                  selectedBrandFilter === b
+                    ? 'bg-accent text-black border-accent'
+                    : 'bg-[#141416] text-gray-400 border-white/5 hover:text-white'
+                }`}
+              >
+                {b === 'ALL' ? 'Todas as Marcas' : b}
+              </button>
+            ))}
+          </div>
+
+          {/* Filtered Vehicles List */}
+          <div className="space-y-2.5 pt-1">
+            {filteredVehicles.length === 0 ? (
+              <div className="bg-[#141416] border border-dashed border-white/10 rounded-2xl p-8 text-center">
+                <p className="text-sm font-bold text-gray-300">Nenhum veículo encontrado</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Tente pesquisar por outra marca ou tipo (ex: Yamaha, Honda, SUV, Sedan, Naked).
+                </p>
+              </div>
+            ) : (
+              filteredVehicles.map(v => {
+                const isCurrent = v.id === selectedVehicleId;
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => handleSelectVehicle(v)}
+                    className={`w-full text-left p-3 rounded-2xl border transition-all flex items-center gap-3.5 cursor-pointer active:scale-[0.99] ${
+                      isCurrent
+                        ? 'bg-accent/15 border-accent/40 ring-1 ring-accent/40'
+                        : 'bg-[#141416] border-white/5 hover:border-white/20'
+                    }`}
+                  >
+                    <div className="w-20 h-14 rounded-xl overflow-hidden bg-[#0a0a0b] border border-white/10 shrink-0 relative">
+                      <img
+                        src={v.imageUrl}
+                        alt={v.model}
+                        className="w-full h-full object-cover object-center"
+                        style={{ filter: v.hueRotate }}
+                      />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/10 text-gray-200 whitespace-nowrap">
+                          {v.brand}
+                        </span>
+                        <span className="text-xs sm:text-sm font-black text-white truncate">
+                          {v.model}
+                        </span>
+                        <span className="text-[10px] font-bold text-accent whitespace-nowrap">
+                          {v.year}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-[11px] text-gray-400 mt-1 truncate">
+                        <span className="font-semibold text-gray-300 whitespace-nowrap">{v.typeLabel}</span>
+                        <span>•</span>
+                        <span className="truncate">{v.engineSpec}</span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-1">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-gray-400 whitespace-nowrap">
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: v.accentHex }}
+                          />
+                          Cor Fixa: {v.colorName}
+                        </span>
+                        <span className="text-[10px] text-gray-500 whitespace-nowrap">
+                          • Tanque {v.tankCapacityL.toString().replace('.', ',')}L
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="shrink-0">
+                      {isCurrent ? (
+                        <div className="w-7 h-7 rounded-full bg-accent text-black flex items-center justify-center">
+                          <Check className="w-4 h-4 stroke-[3]" />
+                        </div>
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-gray-500" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-1 pb-24 space-y-5 animate-in fade-in duration-300">
+    <div className="w-full max-w-4xl mx-auto px-1 pb-2 space-y-5 animate-in fade-in duration-300">
       {/* TOP HEADER — ONLY ONE TOP "REGISTRAR ABASTECIMENTO" BUTTON */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5">
         <div className="flex items-center gap-3 min-w-0">
@@ -1660,200 +1927,6 @@ const MotorcycleView: React.FC<Props> = ({
           </div>
         )}
       </div>
-
-      {/* ==================================================================== */}
-      {/* MODAL: VEHICLE SELECTOR (CARRO vs MOTO + BARRA DE PESQUISA)          */}
-      {/* ==================================================================== */}
-      {isVehicleSelectorOpen && (
-        <div className="fixed inset-0 z-[85] bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div
-            className="bg-[#1c1c1e] border border-white/10 w-full max-w-lg rounded-t-[2rem] sm:rounded-[2rem] p-5 sm:p-6 shadow-2xl max-h-[90vh] flex flex-col"
-            style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between gap-2 mb-4 shrink-0">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0">
-                  <SlidersHorizontal className="w-5 h-5 text-accent" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-base sm:text-lg font-extrabold text-white truncate">
-                    Escolher Veículo 3D
-                  </h3>
-                  <p className="text-xs text-gray-400 truncate">
-                    Selecione entre Moto ou Carro • Cor original fixa por modelo
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsVehicleSelectorOpen(false)}
-                className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors cursor-pointer shrink-0"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Category Tabs: MOTO vs CARRO */}
-            <div className="grid grid-cols-2 gap-2 p-1 bg-[#0a0a0b] rounded-2xl border border-white/5 mb-3.5 shrink-0">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectorCategory('motorcycle');
-                  setSelectedBrandFilter('ALL');
-                }}
-                className={`py-2.5 px-4 rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                  selectorCategory === 'motorcycle'
-                    ? 'bg-accent text-black shadow-md'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <Bike className="w-4 h-4 shrink-0" />
-                <span>Motos</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectorCategory('car');
-                  setSelectedBrandFilter('ALL');
-                }}
-                className={`py-2.5 px-4 rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                  selectorCategory === 'car'
-                    ? 'bg-accent text-black shadow-md'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <Car className="w-4 h-4 shrink-0" />
-                <span>Carros</span>
-              </button>
-            </div>
-
-            {/* Search Bar for Brand, Model, and Vehicle Type */}
-            <div className="relative mb-3 shrink-0">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="text"
-                value={vehicleSearchQuery}
-                onChange={e => setVehicleSearchQuery(e.target.value)}
-                placeholder={
-                  selectorCategory === 'motorcycle'
-                    ? 'Pesquisar marca, modelo ou tipo (ex: Yamaha, Fazer, Naked, Trail)...'
-                    : 'Pesquisar marca, modelo ou tipo (ex: Toyota, Sedan, SUV, Hatch)...'
-                }
-                className="w-full bg-[#0a0a0b] border border-white/10 focus:border-accent rounded-2xl pl-10 pr-9 py-3 text-xs sm:text-sm font-semibold text-white placeholder:text-gray-500 outline-none transition-colors"
-              />
-              {vehicleSearchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setVehicleSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1 cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-            {/* Quick Brand Filter Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-2 mb-3 shrink-0">
-              {availableBrands.map(b => (
-                <button
-                  key={b}
-                  type="button"
-                  onClick={() => setSelectedBrandFilter(b)}
-                  className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider whitespace-nowrap border transition-all cursor-pointer shrink-0 ${
-                    selectedBrandFilter === b
-                      ? 'bg-white/15 text-white border-white/30'
-                      : 'bg-[#141416] text-gray-400 border-white/5 hover:text-white'
-                  }`}
-                >
-                  {b === 'ALL' ? 'Todas as Marcas' : b}
-                </button>
-              ))}
-            </div>
-
-            {/* Vehicle List */}
-            <div className="overflow-y-auto space-y-2.5 pr-1 flex-1 min-h-[220px]">
-              {filteredVehicles.length === 0 ? (
-                <div className="bg-[#141416] border border-dashed border-white/10 rounded-2xl p-8 text-center">
-                  <p className="text-sm font-bold text-gray-300">Nenhum veículo encontrado</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Tente pesquisar por outra marca ou tipo (ex: Yamaha, Honda, SUV, Sedan, Naked).
-                  </p>
-                </div>
-              ) : (
-                filteredVehicles.map(v => {
-                  const isCurrent = v.id === currentVehicle.id;
-                  return (
-                    <button
-                      key={v.id}
-                      type="button"
-                      onClick={() => handleSelectVehicle(v)}
-                      className={`w-full text-left p-3 rounded-2xl border transition-all flex items-center gap-3.5 cursor-pointer ${
-                        isCurrent
-                          ? 'bg-accent/15 border-accent/40 ring-1 ring-accent/40'
-                          : 'bg-[#141416] border-white/5 hover:border-white/20'
-                      }`}
-                    >
-                      {/* Thumbnail with fixed vehicle color */}
-                      <div className="w-20 h-14 rounded-xl overflow-hidden bg-[#0a0a0b] border border-white/10 shrink-0 relative">
-                        <img
-                          src={v.imageUrl}
-                          alt={v.model}
-                          className="w-full h-full object-cover object-center"
-                          style={{ filter: v.hueRotate }}
-                        />
-                      </div>
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/10 text-gray-200">
-                            {v.brand}
-                          </span>
-                          <span className="text-xs sm:text-sm font-black text-white truncate">
-                            {v.model}
-                          </span>
-                          <span className="text-[10px] font-bold text-accent">
-                            {v.year}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2 text-[11px] text-gray-400 mt-1 truncate">
-                          <span className="font-semibold text-gray-300">{v.typeLabel}</span>
-                          <span>•</span>
-                          <span className="truncate">{v.engineSpec}</span>
-                        </div>
-
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-gray-400">
-                            <span
-                              className="w-2 h-2 rounded-full shrink-0"
-                              style={{ backgroundColor: v.accentHex }}
-                            />
-                            Cor Fixa: {v.colorName}
-                          </span>
-                          <span className="text-[10px] text-gray-500">
-                            • Tanque {v.tankCapacityL.toString().replace('.', ',')}L
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="shrink-0">
-                        {isCurrent ? (
-                          <div className="w-7 h-7 rounded-full bg-accent text-black flex items-center justify-center">
-                            <Check className="w-4 h-4 stroke-[3]" />
-                          </div>
-                        ) : (
-                          <ChevronRight className="w-4 h-4 text-gray-500" />
-                        )}
-                      </div>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ==================================================================== */}
       {/* MODAL FORM: ADD / EDIT REFUELING (CUSTOM CALENDAR & FUEL DROPDOWN)   */}
