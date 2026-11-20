@@ -217,6 +217,7 @@ export const loadUserData = async (email: string) => {
         theme: user.theme || user.profile?.theme || null,
         dashboardOrder: user.profile?.dashboardOrder || [], 
         fuelLogs: user.profile?.fuelLogs || null,
+        selectedVehicle: user.profile?.selectedVehicle || null,
         transactions: toCamelCase(txRes.data || []),
         accounts: toCamelCase(accRes.data || []),
         months: toCamelCase(monRes.data || []),
@@ -322,8 +323,8 @@ export const saveUserField = async (email: string, field: string, data: any): Pr
   try {
     let payload: any = {};
     
-    // CORREÇÃO: 'theme', 'dashboardOrder' e 'fuelLogs' são armazenados dentro do JSONB users.profile
-    const profileFields = ['dashboardOrder', 'profile', 'fuelLogs', 'theme'];
+    // CORREÇÃO: 'theme', 'dashboardOrder', 'fuelLogs' e 'selectedVehicle' são armazenados dentro do JSONB users.profile
+    const profileFields = ['dashboardOrder', 'profile', 'fuelLogs', 'theme', 'selectedVehicle'];
     
     if (profileFields.includes(field)) {
         const { data: user } = await supabase.from('users').select('profile').eq('email', email.toLowerCase().trim()).maybeSingle();

@@ -9,26 +9,29 @@ import {
   Calendar,
   TrendingUp,
   Gauge,
-  Zap,
-  ShieldCheck,
   Bluetooth,
   Lightbulb,
-  Rotate3d,
-  Sparkles,
   Trash2,
   Edit2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Check,
   X,
   Droplets,
   Navigation,
   Eye,
-  Layers
+  Layers,
+  Search,
+  Car,
+  Bike,
+  SlidersHorizontal,
+  Box
 } from 'lucide-react';
 import { FuelLog, FuelPaymentMethod, FuelType, AppLanguage } from '../types';
 import { getLocale } from '../i18n';
 import { loadData, saveData, STORAGE_KEYS } from '../services/storage';
+import { saveUserField } from '../services/supabase';
 
 interface Props {
   fuelLogs: FuelLog[];
@@ -44,48 +47,334 @@ const MONTH_NAMES_PT = [
 ];
 
 const MONTH_SHORT_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+const WEEK_DAYS_PT = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
 
-interface MotoColorPreset {
+export type VehicleCategory = 'motorcycle' | 'car';
+
+export interface VehiclePreset {
   id: string;
-  name: string;
-  badge: string;
+  category: VehicleCategory;
+  brand: string;
+  model: string;
+  year: string;
+  typeLabel: string; // e.g. "Naked / Street", "Trail", "Sedan", "SUV", "Hatch"
+  engineSpec: string;
+  tankCapacityL: number;
+  avgKmPerLiter: number;
+  colorName: string;
   hueRotate: string;
   accentHex: string;
   glowClass: string;
+  imageUrl: string;
 }
 
-const MOTO_COLORS: MotoColorPreset[] = [
+export const VEHICLE_CATALOG: VehiclePreset[] = [
+  // ======================== MOTOS ========================
   {
-    id: 'racing-blue',
-    name: 'Racing Blue',
-    badge: 'Azul Metálico 2026',
-    hueRotate: 'hue-rotate(0deg) saturate(1.1)',
+    id: 'yamaha-fazer-fz25-2026',
+    category: 'motorcycle',
+    brand: 'Yamaha',
+    model: 'FAZER FZ 25',
+    year: '2026',
+    typeLabel: 'Naked / Street',
+    engineSpec: 'ABS Connected • 250cc BlueFlex',
+    tankCapacityL: 14.2,
+    avgKmPerLiter: 37,
+    colorName: 'Racing Blue (Azul Metálico)',
+    hueRotate: 'hue-rotate(0deg) saturate(1.12)',
     accentHex: '#2563eb',
-    glowClass: 'from-blue-600/30 via-blue-500/10 to-transparent'
+    glowClass: 'from-blue-600/35 via-blue-500/15 to-transparent',
+    imageUrl: '/fz25-2026-3d.jpg'
   },
   {
-    id: 'magma-red',
-    name: 'Magma Red',
-    badge: 'Vermelho Metálico 2026',
-    hueRotate: 'hue-rotate(135deg) saturate(1.25)',
-    accentHex: '#dc2626',
-    glowClass: 'from-red-600/30 via-red-500/10 to-transparent'
+    id: 'yamaha-mt03-2026',
+    category: 'motorcycle',
+    brand: 'Yamaha',
+    model: 'MT-03 ABS',
+    year: '2026',
+    typeLabel: 'Hyper Naked',
+    engineSpec: 'Connected • 321cc Bicilíndrica',
+    tankCapacityL: 14.0,
+    avgKmPerLiter: 24,
+    colorName: 'Storm Cyan / Racing Blue',
+    hueRotate: 'hue-rotate(340deg) saturate(1.2)',
+    accentHex: '#0284c7',
+    glowClass: 'from-sky-500/35 via-blue-500/15 to-transparent',
+    imageUrl: '/fz25-2026-3d.jpg'
   },
   {
-    id: 'matt-green',
-    name: 'Matt Green',
-    badge: 'Verde Fosco 2026',
-    hueRotate: 'hue-rotate(270deg) saturate(0.95)',
-    accentHex: '#10b981',
-    glowClass: 'from-emerald-600/30 via-emerald-500/10 to-transparent'
-  },
-  {
-    id: 'titanium-black',
-    name: 'Midnight Black',
-    badge: 'Preto Eclipse 2026',
-    hueRotate: 'grayscale(0.85) contrast(1.15)',
+    id: 'yamaha-fazer-fz15-2026',
+    category: 'motorcycle',
+    brand: 'Yamaha',
+    model: 'FAZER FZ 15',
+    year: '2026',
+    typeLabel: 'Street / City',
+    engineSpec: 'ABS Connected • 150cc BlueFlex',
+    tankCapacityL: 11.9,
+    avgKmPerLiter: 42,
+    colorName: 'Midnight Black (Preto)',
+    hueRotate: 'grayscale(0.8) contrast(1.15)',
     accentHex: '#a1a1aa',
-    glowClass: 'from-zinc-500/25 via-zinc-400/10 to-transparent'
+    glowClass: 'from-zinc-500/30 via-zinc-400/10 to-transparent',
+    imageUrl: '/fz25-2026-3d.jpg'
+  },
+  {
+    id: 'yamaha-lander-250-2026',
+    category: 'motorcycle',
+    brand: 'Yamaha',
+    model: 'LANDER 250',
+    year: '2026',
+    typeLabel: 'Trail / Off-Road',
+    engineSpec: 'ABS Connected • 250cc BlueFlex',
+    tankCapacityL: 13.6,
+    avgKmPerLiter: 34,
+    colorName: 'Dakar Sand / Blue',
+    hueRotate: 'hue-rotate(15deg) saturate(1.05)',
+    accentHex: '#3b82f6',
+    glowClass: 'from-blue-500/30 via-indigo-500/10 to-transparent',
+    imageUrl: '/fz25-2026-3d.jpg'
+  },
+  {
+    id: 'honda-cb300f-twister-2026',
+    category: 'motorcycle',
+    brand: 'Honda',
+    model: 'CB 300F TWISTER',
+    year: '2026',
+    typeLabel: 'Naked / Street',
+    engineSpec: 'ABS • 293,5cc FlexOne',
+    tankCapacityL: 14.1,
+    avgKmPerLiter: 35,
+    colorName: 'Red Metallic (Vermelho)',
+    hueRotate: 'hue-rotate(138deg) saturate(1.3)',
+    accentHex: '#dc2626',
+    glowClass: 'from-red-600/35 via-red-500/15 to-transparent',
+    imageUrl: '/fz25-2026-3d.jpg'
+  },
+  {
+    id: 'honda-cg160-titan-2026',
+    category: 'motorcycle',
+    brand: 'Honda',
+    model: 'CG 160 TITAN',
+    year: '2026',
+    typeLabel: 'Street / City',
+    engineSpec: 'CBS/ABS • 162,7cc FlexOne',
+    tankCapacityL: 16.1,
+    avgKmPerLiter: 43,
+    colorName: 'Red Wine (Vermelho)',
+    hueRotate: 'hue-rotate(142deg) saturate(1.25)',
+    accentHex: '#ef4444',
+    glowClass: 'from-red-600/30 via-orange-500/10 to-transparent',
+    imageUrl: '/fz25-2026-3d.jpg'
+  },
+  {
+    id: 'honda-xre300-sahara-2026',
+    category: 'motorcycle',
+    brand: 'Honda',
+    model: 'SAHARA 300',
+    year: '2026',
+    typeLabel: 'Trail / Adventure',
+    engineSpec: 'ABS • 293,5cc FlexOne',
+    tankCapacityL: 13.8,
+    avgKmPerLiter: 32,
+    colorName: 'Rally Gold / Red',
+    hueRotate: 'hue-rotate(155deg) saturate(1.2)',
+    accentHex: '#f97316',
+    glowClass: 'from-orange-500/35 via-amber-500/15 to-transparent',
+    imageUrl: '/fz25-2026-3d.jpg'
+  },
+  {
+    id: 'kawasaki-z400-2026',
+    category: 'motorcycle',
+    brand: 'Kawasaki',
+    model: 'Z500 / Z400 SE',
+    year: '2026',
+    typeLabel: 'Sugomi Naked',
+    engineSpec: 'ABS • 451cc Bicilíndrica',
+    tankCapacityL: 14.0,
+    avgKmPerLiter: 25,
+    colorName: 'Candy Lime Green (Verde)',
+    hueRotate: 'hue-rotate(265deg) saturate(1.25)',
+    accentHex: '#10b981',
+    glowClass: 'from-emerald-500/35 via-lime-500/15 to-transparent',
+    imageUrl: '/fz25-2026-3d.jpg'
+  },
+  {
+    id: 'bmw-g310r-2026',
+    category: 'motorcycle',
+    brand: 'BMW',
+    model: 'G 310 R',
+    year: '2026',
+    typeLabel: 'Roadster / Naked',
+    engineSpec: 'ABS Motorrad • 313cc',
+    tankCapacityL: 11.0,
+    avgKmPerLiter: 30,
+    colorName: 'Motorsport Blue',
+    hueRotate: 'hue-rotate(5deg) saturate(1.15)',
+    accentHex: '#3b82f6',
+    glowClass: 'from-blue-600/35 via-sky-500/15 to-transparent',
+    imageUrl: '/fz25-2026-3d.jpg'
+  },
+  {
+    id: 'bajaj-dominar-400-2026',
+    category: 'motorcycle',
+    brand: 'Bajaj',
+    model: 'DOMINAR 400',
+    year: '2026',
+    typeLabel: 'Sport Touring',
+    engineSpec: 'ABS • 373,3cc DOHC',
+    tankCapacityL: 13.0,
+    avgKmPerLiter: 28,
+    colorName: 'Savanna Green (Verde)',
+    hueRotate: 'hue-rotate(270deg) saturate(1.1)',
+    accentHex: '#22c55e',
+    glowClass: 'from-emerald-600/35 via-green-500/15 to-transparent',
+    imageUrl: '/fz25-2026-3d.jpg'
+  },
+
+  // ======================== CARROS ========================
+  {
+    id: 'toyota-corolla-2026',
+    category: 'car',
+    brand: 'Toyota',
+    model: 'COROLLA GR-S / XEi',
+    year: '2026',
+    typeLabel: 'Sedan Médio',
+    engineSpec: '2.0 Dynamic Force Flex / Hybrid',
+    tankCapacityL: 50.0,
+    avgKmPerLiter: 14.5,
+    colorName: 'Metallic Blue / Eclipse',
+    hueRotate: 'hue-rotate(0deg) saturate(1.08)',
+    accentHex: '#2563eb',
+    glowClass: 'from-blue-600/35 via-blue-500/15 to-transparent',
+    imageUrl: '/car-2026-3d.jpg'
+  },
+  {
+    id: 'honda-civic-2026',
+    category: 'car',
+    brand: 'Honda',
+    model: 'CIVIC TOURING e:HEV',
+    year: '2026',
+    typeLabel: 'Sedan Sport',
+    engineSpec: '2.0 Híbrido / Turbo 184 cv',
+    tankCapacityL: 40.0,
+    avgKmPerLiter: 18.3,
+    colorName: 'Titanium Silver / Black',
+    hueRotate: 'grayscale(0.75) contrast(1.12)',
+    accentHex: '#94a3b8',
+    glowClass: 'from-slate-500/35 via-zinc-400/15 to-transparent',
+    imageUrl: '/car-2026-3d.jpg'
+  },
+  {
+    id: 'vw-polo-gts-2026',
+    category: 'car',
+    brand: 'Volkswagen',
+    model: 'POLO GTS / TRACK',
+    year: '2026',
+    typeLabel: 'Hatch Compacto',
+    engineSpec: '250 TSI / 170 TSI Flex',
+    tankCapacityL: 52.0,
+    avgKmPerLiter: 13.8,
+    colorName: 'Sunset Red (Vermelho)',
+    hueRotate: 'hue-rotate(138deg) saturate(1.25)',
+    accentHex: '#dc2626',
+    glowClass: 'from-red-600/35 via-red-500/15 to-transparent',
+    imageUrl: '/car-2026-3d.jpg'
+  },
+  {
+    id: 'vw-nivus-2026',
+    category: 'car',
+    brand: 'Volkswagen',
+    model: 'NIVUS HIGHLINE',
+    year: '2026',
+    typeLabel: 'SUV Coupé',
+    engineSpec: '200 TSI Total Flex • 128 cv',
+    tankCapacityL: 52.0,
+    avgKmPerLiter: 13.2,
+    colorName: 'Titan Blue (Azul)',
+    hueRotate: 'hue-rotate(350deg) saturate(1.05)',
+    accentHex: '#0284c7',
+    glowClass: 'from-sky-600/35 via-blue-500/15 to-transparent',
+    imageUrl: '/car-2026-3d.jpg'
+  },
+  {
+    id: 'chevrolet-onix-2026',
+    category: 'car',
+    brand: 'Chevrolet',
+    model: 'ONIX PREMIER RS',
+    year: '2026',
+    typeLabel: 'Hatch / Sedan',
+    engineSpec: '1.0 Turbo Flex • 116 cv',
+    tankCapacityL: 44.0,
+    avgKmPerLiter: 14.2,
+    colorName: 'Seeker Red (Vermelho)',
+    hueRotate: 'hue-rotate(142deg) saturate(1.2)',
+    accentHex: '#ef4444',
+    glowClass: 'from-red-600/35 via-orange-500/15 to-transparent',
+    imageUrl: '/car-2026-3d.jpg'
+  },
+  {
+    id: 'fiat-pulse-fastback-2026',
+    category: 'car',
+    brand: 'Fiat',
+    model: 'FASTBACK ABARTH',
+    year: '2026',
+    typeLabel: 'SUV Coupé',
+    engineSpec: 'Turbo 270 Flex • 185 cv',
+    tankCapacityL: 47.0,
+    avgKmPerLiter: 12.6,
+    colorName: 'Abarth Red / Black',
+    hueRotate: 'hue-rotate(135deg) saturate(1.3)',
+    accentHex: '#e11d48',
+    glowClass: 'from-rose-600/35 via-red-500/15 to-transparent',
+    imageUrl: '/car-2026-3d.jpg'
+  },
+  {
+    id: 'hyundai-hb20-creta-2026',
+    category: 'car',
+    brand: 'Hyundai',
+    model: 'HB20 / CRETA N-LINE',
+    year: '2026',
+    typeLabel: 'Hatch / SUV',
+    engineSpec: '1.0 TGDI Turbo Flex • 120 cv',
+    tankCapacityL: 50.0,
+    avgKmPerLiter: 13.5,
+    colorName: 'Sapphire Blue',
+    hueRotate: 'hue-rotate(10deg) saturate(1.1)',
+    accentHex: '#3b82f6',
+    glowClass: 'from-blue-600/35 via-indigo-500/15 to-transparent',
+    imageUrl: '/car-2026-3d.jpg'
+  },
+  {
+    id: 'byd-dolphin-song-2026',
+    category: 'car',
+    brand: 'BYD',
+    model: 'KING / SONG PRO DM-i',
+    year: '2026',
+    typeLabel: 'Híbrido Plug-in',
+    engineSpec: '1.5 DM-i Super Hybrid',
+    tankCapacityL: 52.0,
+    avgKmPerLiter: 22.0,
+    colorName: 'Emerald Cyan',
+    hueRotate: 'hue-rotate(285deg) saturate(1.1)',
+    accentHex: '#10b981',
+    glowClass: 'from-emerald-600/35 via-teal-500/15 to-transparent',
+    imageUrl: '/car-2026-3d.jpg'
+  },
+  {
+    id: 'bmw-320i-2026',
+    category: 'car',
+    brand: 'BMW',
+    model: '320i M SPORT',
+    year: '2026',
+    typeLabel: 'Sport Sedan',
+    engineSpec: '2.0 TwinPower Turbo ActiveFlex',
+    tankCapacityL: 59.0,
+    avgKmPerLiter: 12.2,
+    colorName: 'Portimao Blue (Azul M)',
+    hueRotate: 'hue-rotate(0deg) saturate(1.15)',
+    accentHex: '#2563eb',
+    glowClass: 'from-blue-600/40 via-blue-500/15 to-transparent',
+    imageUrl: '/car-2026-3d.jpg'
   }
 ];
 
@@ -98,48 +387,87 @@ interface HotspotInfo {
   detail: string;
 }
 
-const FZ25_HOTSPOTS: HotspotInfo[] = [
-  {
-    id: 'tank',
-    x: 52,
-    y: 33,
-    title: 'Tanque Muscular 14,2L',
-    spec: 'Autonomia de até 525 km',
-    detail: 'Consumo médio ~37 km/L com tomadas de ar esportivas redesenhadas para 2026.'
-  },
-  {
-    id: 'engine',
-    x: 53,
-    y: 59,
-    title: 'Motor 250cc BlueFlex',
-    spec: '21,3 cv @ 8.000 rpm • 2,1 kgf.m',
-    detail: 'Cilindro com revestimento cerâmico, pistão forjado em alumínio e radiador de óleo.'
-  },
-  {
-    id: 'headlight',
-    x: 71,
-    y: 37,
-    title: 'Projetor Full LED + DRL',
-    spec: 'Iluminação 100% LED 2026',
-    detail: 'Canhão projetor bi-funcional, DRL integrado e novos piscas em LED de alta visibilidade.'
-  },
-  {
-    id: 'abs',
-    x: 75,
-    y: 74,
-    title: 'Freios ABS nas 2 Rodas',
-    spec: 'Discos 282mm (D) / 220mm (T)',
-    detail: 'Sistema antibloqueio de série nas duas rodas com suspensão dianteira dourada.'
-  },
-  {
-    id: 'panel',
-    x: 64,
-    y: 22,
-    title: 'Painel Blackout Y-Connect',
-    spec: 'LCD 100% Digital + Bluetooth',
-    detail: 'Conectividade Yamaha Motor On, indicador ECO, consumo instantâneo e tomada 12V.'
+const getVehicleHotspots = (vehicle: VehiclePreset): HotspotInfo[] => {
+  if (vehicle.category === 'car') {
+    return [
+      {
+        id: 'tank',
+        x: 78,
+        y: 44,
+        title: `Tanque ${vehicle.tankCapacityL}L`,
+        spec: `Autonomia ~${Math.round(vehicle.tankCapacityL * vehicle.avgKmPerLiter)} km`,
+        detail: `Consumo médio estimado de ${vehicle.avgKmPerLiter} km/L para ${vehicle.brand} ${vehicle.model}.`
+      },
+      {
+        id: 'engine',
+        x: 24,
+        y: 52,
+        title: `Motor ${vehicle.model}`,
+        spec: vehicle.engineSpec,
+        detail: `Conjunto mecânico ${vehicle.year} com gerenciamento eletrônico de alta eficiência.`
+      },
+      {
+        id: 'headlight',
+        x: 25,
+        y: 51,
+        title: 'Faróis Full LED + DRL',
+        spec: 'Projetor LED Adaptativo',
+        detail: 'Iluminação diurna em LED de alta definição e assinatura luminosa esportiva.'
+      },
+      {
+        id: 'wheels',
+        x: 41,
+        y: 67,
+        title: 'Freios ABS + Rodas Liga',
+        spec: 'Discos Ventilados + EBD',
+        detail: 'Controle eletrônico de estabilidade e freios a disco nas 4 rodas.'
+      }
+    ];
   }
-];
+
+  return [
+    {
+      id: 'tank',
+      x: 52,
+      y: 33,
+      title: `Tanque Muscular ${vehicle.tankCapacityL.toString().replace('.', ',')}L`,
+      spec: `Autonomia de até ${Math.round(vehicle.tankCapacityL * vehicle.avgKmPerLiter)} km`,
+      detail: `Consumo médio ~${vehicle.avgKmPerLiter} km/L com tomadas de ar esportivas ${vehicle.year}.`
+    },
+    {
+      id: 'engine',
+      x: 53,
+      y: 59,
+      title: `Motor ${vehicle.brand} ${vehicle.year}`,
+      spec: vehicle.engineSpec,
+      detail: 'Cilindro com alta dissipação térmica, injeção eletrônica e máxima confiabilidade.'
+    },
+    {
+      id: 'headlight',
+      x: 71,
+      y: 37,
+      title: 'Projetor Full LED + DRL',
+      spec: 'Iluminação 100% LED 2026',
+      detail: 'Canhão projetor bi-funcional, DRL integrado e piscas em LED de alta visibilidade.'
+    },
+    {
+      id: 'abs',
+      x: 75,
+      y: 74,
+      title: 'Freios a Disco com ABS',
+      spec: 'Segurança Ativa 2026',
+      detail: 'Sistema antibloqueio de alta precisão com suspensão calibrada para asfalto e curvas.'
+    },
+    {
+      id: 'panel',
+      x: 64,
+      y: 22,
+      title: 'Painel Digital Blackout',
+      spec: 'LCD 100% Digital + Conectividade',
+      detail: 'Indicador ECO de pilotagem econômica, computador de bordo e alerta de consumo.'
+    }
+  ];
+};
 
 const PAYMENT_META: Record<
   FuelPaymentMethod,
@@ -191,10 +519,25 @@ const PAYMENT_META: Record<
   }
 };
 
-const FUEL_TYPE_META: Record<FuelType, { label: string; badgeClass: string }> = {
-  gasoline: { label: 'Gasolina Comum', badgeClass: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
-  additive: { label: 'Gasolina Aditivada', badgeClass: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20' },
-  ethanol: { label: 'Etanol BlueFlex', badgeClass: 'text-lime-400 bg-lime-500/10 border-lime-500/20' }
+const FUEL_TYPE_META: Record<FuelType, { label: string; desc: string; badgeClass: string; dotColor: string }> = {
+  gasoline: {
+    label: 'Gasolina Comum',
+    desc: 'Octanagem padrão • Uso diário',
+    badgeClass: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
+    dotColor: 'bg-orange-400'
+  },
+  additive: {
+    label: 'Gasolina Aditivada',
+    desc: 'Detergentes dispersantes • Limpeza de bicos',
+    badgeClass: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
+    dotColor: 'bg-cyan-400'
+  },
+  ethanol: {
+    label: 'Etanol BlueFlex',
+    desc: 'Biocombustível • Maior potência',
+    badgeClass: 'text-lime-400 bg-lime-500/10 border-lime-500/20',
+    dotColor: 'bg-lime-400'
+  }
 };
 
 const getLocalTodayISO = () => {
@@ -205,467 +548,18 @@ const getLocalTodayISO = () => {
   return `${y}-${m}-${d}`;
 };
 
-// ============================================================================
-// 360° INTERACTIVE 3D CANVAS MODEL OF YAMAHA FAZER FZ 25 2026
-// ============================================================================
-interface Canvas3DProps {
-  accentHex: string;
-  headlightOn: boolean;
-  xrayTank: boolean;
-  tankFillRatio: number; // 0 to 1
-}
-
-const Interactive3DFZ25Canvas: React.FC<Canvas3DProps> = ({
-  accentHex,
-  headlightOn,
-  xrayTank,
-  tankFillRatio
-}) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [yaw, setYaw] = useState<number>(-0.48);
-  const [pitch, setPitch] = useState<number>(0.16);
-  const [autoSpin, setAutoSpin] = useState<boolean>(true);
-  const isDraggingRef = useRef(false);
-  const lastPosRef = useRef({ x: 0, y: 0 });
-  const wheelSpinRef = useRef(0);
-
-  useEffect(() => {
-    let animId: number;
-    const animate = () => {
-      wheelSpinRef.current += 0.035;
-      if (autoSpin && !isDraggingRef.current) {
-        setYaw(prev => prev + 0.008);
-      }
-      animId = requestAnimationFrame(animate);
-    };
-    animId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animId);
-  }, [autoSpin]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const width = canvas.clientWidth || 360;
-    const height = canvas.clientHeight || 250;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    ctx.scale(dpr, dpr);
-
-    ctx.clearRect(0, 0, width, height);
-
-    const cx = width / 2;
-    const cy = height * 0.56;
-    const scale = Math.min(width, height) * 0.95;
-
-    const cosY = Math.cos(yaw);
-    const sinY = Math.sin(yaw);
-    const cosP = Math.cos(pitch);
-    const sinP = Math.sin(pitch);
-
-    const project = (x: number, y: number, z: number) => {
-      // Rotate around Y (yaw)
-      const x1 = x * cosY - z * sinY;
-      const z1 = x * sinY + z * cosY;
-      // Rotate around X (pitch)
-      const y2 = y * cosP - z1 * sinP;
-      const z2 = y * sinP + z1 * cosP;
-      const fov = 3.2;
-      const depth = fov / (fov + z2 + 1.2);
-      return {
-        x: cx + x1 * scale * depth,
-        y: cy - y2 * scale * depth,
-        z: z2,
-        d: depth
-      };
-    };
-
-    // Draw 3D Showroom Circular Turntable Platform
-    ctx.save();
-    for (let r = 0.25; r <= 0.85; r += 0.2) {
-      ctx.beginPath();
-      for (let a = 0; a <= Math.PI * 2 + 0.1; a += 0.12) {
-        const p = project(Math.cos(a) * r, -0.34, Math.sin(a) * r);
-        if (a === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
-      }
-      ctx.strokeStyle = r > 0.7 ? `${accentHex}55` : 'rgba(255,255,255,0.07)';
-      ctx.lineWidth = r > 0.7 ? 1.5 : 1;
-      ctx.stroke();
-    }
-    ctx.restore();
-
-    // Helper to draw 3D line segment
-    const drawSegment = (
-      p1: [number, number, number],
-      p2: [number, number, number],
-      color: string,
-      lineWidth: number
-    ) => {
-      const a = project(p1[0], p1[1], p1[2]);
-      const b = project(p2[0], p2[1], p2[2]);
-      ctx.beginPath();
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = lineWidth * ((a.d + b.d) * 0.5);
-      ctx.lineCap = 'round';
-      ctx.stroke();
-    };
-
-    // Helper to draw 3D polygon face
-    const drawPoly = (
-      pts: [number, number, number][],
-      fill: string,
-      stroke?: string,
-      lineWidth = 1.2
-    ) => {
-      const projected = pts.map(p => project(p[0], p[1], p[2]));
-      ctx.beginPath();
-      projected.forEach((p, idx) => {
-        if (idx === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
-      });
-      ctx.closePath();
-      ctx.fillStyle = fill;
-      ctx.fill();
-      if (stroke) {
-        ctx.strokeStyle = stroke;
-        ctx.lineWidth = lineWidth;
-        ctx.stroke();
-      }
-    };
-
-    // Helper to draw 3D wheel (tire + 10-spoke alloy rim + ABS brake disc)
-    const drawWheel = (wx: number, wy: number, radius: number, isFront: boolean) => {
-      const tireWidths = [-0.055, 0.055];
-      // Outer tire rings
-      tireWidths.forEach(zw => {
-        ctx.beginPath();
-        for (let a = 0; a <= Math.PI * 2 + 0.1; a += 0.15) {
-          const p = project(wx + Math.cos(a) * radius, wy + Math.sin(a) * radius, zw);
-          if (a === 0) ctx.moveTo(p.x, p.y);
-          else ctx.lineTo(p.x, p.y);
-        }
-        ctx.strokeStyle = '#18181b';
-        ctx.lineWidth = 11;
-        ctx.stroke();
-
-        ctx.strokeStyle = '#3f3f46';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      });
-
-      // Alloy spokes (spinning)
-      const rimRadius = radius * 0.76;
-      for (let i = 0; i < 5; i++) {
-        const angle = wheelSpinRef.current + (i * Math.PI * 2) / 5;
-        drawSegment(
-          [wx, wy, -0.02],
-          [wx + Math.cos(angle) * rimRadius, wy + Math.sin(angle) * rimRadius, -0.02],
-          '#71717a',
-          2.2
-        );
-        drawSegment(
-          [wx, wy, 0.02],
-          [wx + Math.cos(angle + 0.25) * rimRadius, wy + Math.sin(angle + 0.25) * rimRadius, 0.02],
-          '#52525b',
-          2.2
-        );
-      }
-
-      // Brake Disc (282mm front / 220mm rear) + Gold ABS ring
-      const discR = isFront ? radius * 0.52 : radius * 0.42;
-      ctx.beginPath();
-      for (let a = 0; a <= Math.PI * 2 + 0.1; a += 0.2) {
-        const p = project(wx + Math.cos(a) * discR, wy + Math.sin(a) * discR, 0.062);
-        if (a === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
-      }
-      ctx.strokeStyle = '#d4d4d8';
-      ctx.lineWidth = 3.5;
-      ctx.stroke();
-
-      // ABS Sensor Ring
-      const absR = discR * 0.62;
-      ctx.beginPath();
-      for (let a = 0; a <= Math.PI * 2 + 0.1; a += 0.25) {
-        const p = project(wx + Math.cos(a) * absR, wy + Math.sin(a) * absR, 0.064);
-        if (a === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
-      }
-      ctx.strokeStyle = '#facc15';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    };
-
-    // Draw Rear Wheel (-0.42, -0.14) and Front Wheel (0.44, -0.14)
-    drawWheel(-0.42, -0.14, 0.2, false);
-    drawWheel(0.44, -0.14, 0.2, true);
-
-    // Swingarm & Monocross Rear Suspension
-    drawSegment([-0.42, -0.14, -0.07], [-0.12, -0.1, -0.06], '#52525b', 5);
-    drawSegment([-0.42, -0.14, 0.07], [-0.12, -0.1, 0.06], '#52525b', 5);
-    // Yellow Monocross shock spring
-    drawSegment([-0.22, -0.12, 0], [-0.12, 0.05, 0], '#eab308', 4.5);
-
-    // Mid-ship Stubby Exhaust (Right side z = 0.09)
-    drawPoly(
-      [
-        [-0.08, -0.17, 0.09],
-        [-0.36, -0.05, 0.1],
-        [-0.39, 0.01, 0.1],
-        [-0.1, -0.1, 0.09]
-      ],
-      '#27272a',
-      '#71717a',
-      1.5
-    );
-
-    // 250cc BlueFlex Engine Block & Cooling Fins
-    drawPoly(
-      [
-        [-0.11, -0.17, -0.07],
-        [0.14, -0.17, -0.07],
-        [0.16, 0.06, -0.07],
-        [-0.09, 0.06, -0.07]
-      ],
-      '#18181b',
-      '#3f3f46',
-      1.5
-    );
-    drawPoly(
-      [
-        [-0.11, -0.17, 0.07],
-        [0.14, -0.17, 0.07],
-        [0.16, 0.06, 0.07],
-        [-0.09, 0.06, 0.07]
-      ],
-      '#27272a',
-      '#52525b',
-      1.5
-    );
-
-    // Diamond Frame & Subframe
-    drawSegment([-0.12, -0.1, 0], [0.22, 0.22, 0], '#3f3f46', 5);
-    drawSegment([-0.12, 0.05, 0], [-0.46, 0.22, 0], '#3f3f46', 4);
-
-    // Gold Front Telescopic Forks (signature Yamaha FZ25 gold upside-look tubes)
-    drawSegment([0.44, -0.14, -0.065], [0.24, 0.29, -0.065], '#d97706', 5.5);
-    drawSegment([0.44, -0.14, 0.065], [0.24, 0.29, 0.065], '#f59e0b', 5.5);
-
-    // Front Fender
-    drawPoly(
-      [
-        [0.34, 0.02, -0.06],
-        [0.52, 0.0, -0.06],
-        [0.52, 0.0, 0.06],
-        [0.34, 0.02, 0.06]
-      ],
-      accentHex,
-      '#ffffff33'
-    );
-
-    // Split Two-Level Ergonomic Seat
-    drawPoly(
-      [
-        [-0.05, 0.1, -0.075],
-        [-0.25, 0.12, -0.075],
-        [-0.25, 0.12, 0.075],
-        [-0.05, 0.1, 0.075]
-      ],
-      '#18181b',
-      '#3f3f46'
-    );
-    drawPoly(
-      [
-        [-0.25, 0.15, -0.07],
-        [-0.47, 0.23, -0.06],
-        [-0.47, 0.23, 0.06],
-        [-0.25, 0.15, 0.07]
-      ],
-      '#27272a',
-      '#52525b'
-    );
-
-    // Tail Section & LED Taillight
-    drawPoly(
-      [
-        [-0.22, 0.08, 0.07],
-        [-0.49, 0.22, 0.05],
-        [-0.44, 0.16, 0.05],
-        [-0.18, 0.02, 0.07]
-      ],
-      accentHex,
-      '#ffffff30'
-    );
-    drawSegment([-0.49, 0.22, -0.03], [-0.49, 0.22, 0.03], '#ef4444', 4);
-
-    // Muscular 14.2L Fuel Tank & Side Air Intakes (Shrouds)
-    const tankFillColor = xrayTank ? `${accentHex}33` : accentHex;
-    const tankStrokeColor = xrayTank ? '#38bdf8' : '#ffffff44';
-
-    // Left & Right Tank Shrouds
-    [-0.095, 0.095].forEach(zSide => {
-      drawPoly(
-        [
-          [-0.06, 0.11, zSide],
-          [0.04, 0.29, zSide * 0.9],
-          [0.22, 0.25, zSide],
-          [0.27, 0.09, zSide * 1.05],
-          [0.08, 0.06, zSide]
-        ],
-        tankFillColor,
-        tankStrokeColor,
-        1.5
-      );
-    });
-
-    // Top Sculpted Tank Crown
-    drawPoly(
-      [
-        [-0.06, 0.11, -0.085],
-        [0.04, 0.29, -0.08],
-        [0.22, 0.25, -0.08],
-        [0.22, 0.25, 0.08],
-        [0.04, 0.29, 0.08],
-        [-0.06, 0.11, 0.085]
-      ],
-      xrayTank ? `${accentHex}44` : accentHex,
-      tankStrokeColor,
-      1.6
-    );
-
-    // X-Ray Internal Fuel Level Visualization inside the 14.2L Tank
-    if (xrayTank) {
-      const levelH = 0.11 + Math.max(0.1, Math.min(1, tankFillRatio)) * 0.16;
-      drawPoly(
-        [
-          [-0.03, 0.11, -0.065],
-          [0.03, levelH, -0.065],
-          [0.19, levelH - 0.02, -0.065],
-          [0.19, levelH - 0.02, 0.065],
-          [0.03, levelH, 0.065],
-          [-0.03, 0.11, 0.065]
-        ],
-        'rgba(16, 185, 129, 0.65)',
-        '#34d399',
-        2
-      );
-    }
-
-    // Handlebars, Mirrors & Y-Connect Blackout LCD Cluster
-    drawSegment([0.21, 0.31, -0.18], [0.21, 0.31, 0.18], '#d4d4d8', 3.5);
-    drawSegment([0.21, 0.31, -0.17], [0.19, 0.41, -0.22], '#71717a', 2);
-    drawSegment([0.21, 0.31, 0.17], [0.19, 0.41, 0.22], '#71717a', 2);
-
-    // Digital LCD Dashboard Glow
-    drawPoly(
-      [
-        [0.24, 0.3, -0.04],
-        [0.27, 0.32, -0.04],
-        [0.27, 0.32, 0.04],
-        [0.24, 0.3, 0.04]
-      ],
-      '#0284c7',
-      '#38bdf8'
-    );
-
-    // Aggressive Bi-Functional LED Projector Headlight & DRL
-    drawPoly(
-      [
-        [0.27, 0.17, -0.055],
-        [0.36, 0.21, -0.04],
-        [0.36, 0.21, 0.04],
-        [0.27, 0.17, 0.055]
-      ],
-      accentHex,
-      '#ffffff44'
-    );
-
-    const headCenter = project(0.36, 0.21, 0);
-    if (headlightOn) {
-      const beamEnd = project(0.95, 0.02, 0);
-      const grad = ctx.createLinearGradient(headCenter.x, headCenter.y, beamEnd.x, beamEnd.y);
-      grad.addColorStop(0, 'rgba(186, 230, 253, 0.75)');
-      grad.addColorStop(0.4, 'rgba(56, 189, 248, 0.25)');
-      grad.addColorStop(1, 'rgba(56, 189, 248, 0)');
-      ctx.beginPath();
-      ctx.moveTo(headCenter.x, headCenter.y);
-      ctx.lineTo(beamEnd.x, beamEnd.y - 38);
-      ctx.lineTo(beamEnd.x, beamEnd.y + 38);
-      ctx.closePath();
-      ctx.fillStyle = grad;
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(headCenter.x, headCenter.y, 7, 0, Math.PI * 2);
-      ctx.fillStyle = '#ffffff';
-      ctx.shadowColor = '#38bdf8';
-      ctx.shadowBlur = 18;
-      ctx.fill();
-      ctx.shadowBlur = 0;
-    }
-  }, [yaw, pitch, accentHex, headlightOn, xrayTank, tankFillRatio]);
-
-  const handlePointerDown = (clientX: number, clientY: number) => {
-    isDraggingRef.current = true;
-    setAutoSpin(false);
-    lastPosRef.current = { x: clientX, y: clientY };
-  };
-
-  const handlePointerMove = (clientX: number, clientY: number) => {
-    if (!isDraggingRef.current) return;
-    const dx = clientX - lastPosRef.current.x;
-    const dy = clientY - lastPosRef.current.y;
-    lastPosRef.current = { x: clientX, y: clientY };
-    setYaw(prev => prev + dx * 0.012);
-    setPitch(prev => Math.max(-0.35, Math.min(0.55, prev + dy * 0.008)));
-  };
-
-  const handlePointerUp = () => {
-    isDraggingRef.current = false;
-  };
-
-  return (
-    <div className="relative w-full h-[270px] sm:h-[310px] select-none">
-      <canvas
-        ref={canvasRef}
-        className="w-full h-full cursor-grab active:cursor-grabbing touch-none"
-        onMouseDown={e => handlePointerDown(e.clientX, e.clientY)}
-        onMouseMove={e => handlePointerMove(e.clientX, e.clientY)}
-        onMouseUp={handlePointerUp}
-        onMouseLeave={handlePointerUp}
-        onTouchStart={e => handlePointerDown(e.touches[0].clientX, e.touches[0].clientY)}
-        onTouchMove={e => handlePointerMove(e.touches[0].clientX, e.touches[0].clientY)}
-        onTouchEnd={handlePointerUp}
-      />
-      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none">
-        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300 bg-black/70 backdrop-blur-md px-2.5 py-1.5 rounded-full border border-white/10 flex items-center gap-1.5 whitespace-nowrap">
-          <Rotate3d className="w-3.5 h-3.5 text-accent shrink-0" />
-          <span>Arraste 360°</span>
-        </span>
-        <button
-          type="button"
-          onClick={() => setAutoSpin(s => !s)}
-          className={`pointer-events-auto text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-full border transition-all whitespace-nowrap shrink-0 cursor-pointer ${
-            autoSpin
-              ? 'bg-accent/20 text-accent border-accent/40'
-              : 'bg-black/70 text-gray-300 border-white/10 hover:text-white'
-          }`}
-        >
-          {autoSpin ? 'Giro Auto: ON' : 'Girar Auto'}
-        </button>
-      </div>
-    </div>
-  );
+const formatDisplayDate = (isoDate: string): string => {
+  if (!isoDate) return '';
+  const parts = isoDate.split('-');
+  if (parts.length !== 3) return isoDate;
+  const y = parts[0];
+  const mIdx = (parseInt(parts[1], 10) || 1) - 1;
+  const d = parts[2];
+  return `${d} de ${MONTH_SHORT_PT[mIdx] || 'Jan'}, ${y}`;
 };
 
 // ============================================================================
-// MAIN MOTORCYCLE 3D & FUEL EXPENSE CONTROL VIEW
+// MAIN VEHICLE 3D STUDIO & FUEL EXPENSE CONTROL VIEW
 // ============================================================================
 const MotorcycleView: React.FC<Props> = ({
   fuelLogs,
@@ -684,21 +578,87 @@ const MotorcycleView: React.FC<Props> = ({
   const [historyFilterMethod, setHistoryFilterMethod] = useState<FuelPaymentMethod | 'all'>('all');
   const [historyScope, setHistoryScope] = useState<'month' | 'year'>('month');
 
-  // 3D Stage State
-  const [viewMode3D, setViewMode3D] = useState<'studio' | '360'>('studio');
-  const [selectedColorId, setSelectedColorId] = useState<string>(() =>
-    loadData(STORAGE_KEYS.MOTO_COLOR, 'racing-blue')
+  // Selected Vehicle State (Persisted locally & synced to Supabase profile)
+  const [selectedVehicleId, setSelectedVehicleId] = useState<string>(() =>
+    loadData(STORAGE_KEYS.SELECTED_VEHICLE, 'yamaha-fazer-fz25-2026')
   );
+
+  // Vehicle Selector Modal State (Carro vs Moto + Search Bar by Brand & Type)
+  const [isVehicleSelectorOpen, setIsVehicleSelectorOpen] = useState<boolean>(false);
+  const [selectorCategory, setSelectorCategory] = useState<VehicleCategory>('motorcycle');
+  const [vehicleSearchQuery, setVehicleSearchQuery] = useState<string>('');
+  const [selectedBrandFilter, setSelectedBrandFilter] = useState<string>('ALL');
+
+  const currentVehicle = useMemo(
+    () => VEHICLE_CATALOG.find(v => v.id === selectedVehicleId) || VEHICLE_CATALOG[0],
+    [selectedVehicleId]
+  );
+
+  const vehicleHotspots = useMemo(() => getVehicleHotspots(currentVehicle), [currentVehicle]);
+
+  // 3D Animated Studio State
   const [showHotspots, setShowHotspots] = useState<boolean>(true);
-  const [activeHotspot, setActiveHotspot] = useState<HotspotInfo | null>(FZ25_HOTSPOTS[0]);
+  const [activeHotspot, setActiveHotspot] = useState<HotspotInfo | null>(null);
   const [headlightOn, setHeadlightOn] = useState<boolean>(true);
   const [xrayTank, setXrayTank] = useState<boolean>(false);
-  const [tilt, setTilt] = useState<{ rx: number; ry: number; glareX: number; glareY: number }>({
+  const [is3DAnimActive, setIs3DAnimActive] = useState<boolean>(true);
+  const [animPhase, setAnimPhase] = useState<number>(0);
+  const isUserInteractingRef = useRef<boolean>(false);
+  const [manualTilt, setManualTilt] = useState<{ rx: number; ry: number; glareX: number; glareY: number }>({
     rx: 0,
     ry: 0,
     glareX: 50,
     glareY: 35
   });
+
+  // Reset active hotspot when vehicle changes
+  useEffect(() => {
+    const spots = getVehicleHotspots(currentVehicle);
+    setActiveHotspot(spots[0] || null);
+  }, [currentVehicle]);
+
+  // Smooth Continuous 3D Studio Animation Loop
+  useEffect(() => {
+    if (!is3DAnimActive) return;
+    let rafId: number;
+    let start: number | null = null;
+
+    const tick = (timestamp: number) => {
+      if (start === null) start = timestamp;
+      const elapsed = (timestamp - start) / 1000;
+      setAnimPhase(elapsed);
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [is3DAnimActive]);
+
+  // Computed 3D transform combining continuous 3D studio animation + user touch/mouse tilt
+  const computed3D = useMemo(() => {
+    if (isUserInteractingRef.current) {
+      return {
+        rx: manualTilt.rx,
+        ry: manualTilt.ry,
+        translateY: 0,
+        scale: 1.03,
+        glareX: manualTilt.glareX,
+        glareY: manualTilt.glareY
+      };
+    }
+    if (!is3DAnimActive) {
+      return { rx: 0, ry: 0, translateY: 0, scale: 1.0, glareX: 50, glareY: 35 };
+    }
+    // Smooth 3D breathing & orbital showroom motion
+    const ry = Math.sin(animPhase * 1.15) * 8.5;
+    const rx = Math.cos(animPhase * 0.85) * 4.2;
+    const translateY = Math.sin(animPhase * 1.7) * -5.5;
+    const scale = 1.02 + Math.sin(animPhase * 0.9) * 0.015;
+    const glareX = Math.round(50 + Math.sin(animPhase * 1.15) * 32);
+    const glareY = Math.round(36 + Math.cos(animPhase * 0.85) * 18);
+
+    return { rx, ry, translateY, scale, glareX, glareY };
+  }, [animPhase, is3DAnimActive, manualTilt]);
 
   // Form / Modal State for Adding or Editing Refueling
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
@@ -711,26 +671,33 @@ const MotorcycleView: React.FC<Props> = ({
   const [odometerInput, setOdometerInput] = useState<string>('');
   const [stationInput, setStationInput] = useState<string>('');
 
-  const activeColor = useMemo(
-    () => MOTO_COLORS.find(c => c.id === selectedColorId) || MOTO_COLORS[0],
-    [selectedColorId]
-  );
+  // Custom Expandable Calendar & Fuel Type Dropdown States inside Form Modal
+  const [isCustomCalendarOpen, setIsCustomCalendarOpen] = useState<boolean>(false);
+  const [isFuelDropdownOpen, setIsFuelDropdownOpen] = useState<boolean>(false);
+  const [calendarViewYear, setCalendarViewYear] = useState<number>(now.getFullYear());
+  const [calendarViewMonth, setCalendarViewMonth] = useState<number>(now.getMonth());
 
-  const handleSelectColor = (id: string) => {
-    setSelectedColorId(id);
-    saveData(STORAGE_KEYS.MOTO_COLOR, id);
+  const handleSelectVehicle = (preset: VehiclePreset) => {
+    setSelectedVehicleId(preset.id);
+    saveData(STORAGE_KEYS.SELECTED_VEHICLE, preset.id);
+    const currentEmail = loadData<string | null>(STORAGE_KEYS.USER_SESSION, null);
+    if (currentEmail) {
+      saveUserField(currentEmail, 'selectedVehicle', preset.id);
+    }
+    setIsVehicleSelectorOpen(false);
   };
 
   // Interactive 3D tilt on Studio Card
   const stageRef = useRef<HTMLDivElement | null>(null);
   const handleStageMove = useCallback((clientX: number, clientY: number) => {
     if (!stageRef.current) return;
+    isUserInteractingRef.current = true;
     const rect = stageRef.current.getBoundingClientRect();
     const relX = (clientX - rect.left) / rect.width;
     const relY = (clientY - rect.top) / rect.height;
-    const ry = (relX - 0.5) * 18;
-    const rx = (0.5 - relY) * 12;
-    setTilt({
+    const ry = (relX - 0.5) * 20;
+    const rx = (0.5 - relY) * 13;
+    setManualTilt({
       rx,
       ry,
       glareX: Math.round(relX * 100),
@@ -739,7 +706,8 @@ const MotorcycleView: React.FC<Props> = ({
   }, []);
 
   const handleStageReset = useCallback(() => {
-    setTilt({ rx: 0, ry: 0, glareX: 50, glareY: 35 });
+    isUserInteractingRef.current = false;
+    setManualTilt({ rx: 0, ry: 0, glareX: 50, glareY: 35 });
   }, []);
 
   // Parse Date helper
@@ -820,13 +788,15 @@ const MotorcycleView: React.FC<Props> = ({
     });
     const maxMonthAmount = Math.max(...monthlyChart.map(m => m.amount), 1);
 
-    // Last refueling tank estimate (Yamaha Fazer FZ25 tank = 14.2L, 37 km/L)
+    // Tank estimate based on currentVehicle specs
+    const tankCap = currentVehicle.tankCapacityL;
+    const avgKmL = currentVehicle.avgKmPerLiter;
     const latestLog = fuelLogs[0];
     const latestLiters = latestLog
       ? latestLog.liters || (latestLog.pricePerLiter ? latestLog.amount / latestLog.pricePerLiter : latestLog.amount / 6.19)
-      : 10.5;
-    const tankRatio = Math.min(1, Math.max(0.18, latestLiters / 14.2));
-    const estimatedRangeKm = Math.round(Math.min(14.2, Math.max(latestLiters, 6)) * 37);
+      : tankCap * 0.75;
+    const tankRatio = Math.min(1, Math.max(0.2, latestLiters / tankCap));
+    const estimatedRangeKm = Math.round(Math.min(tankCap, Math.max(latestLiters, tankCap * 0.45)) * avgKmL);
 
     return {
       monthTotal,
@@ -840,7 +810,7 @@ const MotorcycleView: React.FC<Props> = ({
       tankRatio,
       estimatedRangeKm
     };
-  }, [monthLogs, yearLogs, breakdownScope, fuelLogs]);
+  }, [monthLogs, yearLogs, breakdownScope, fuelLogs, currentVehicle]);
 
   // Displayed Logs in History List
   const displayedLogs = useMemo(() => {
@@ -848,6 +818,24 @@ const MotorcycleView: React.FC<Props> = ({
     if (historyFilterMethod === 'all') return base;
     return base.filter(l => l.paymentMethod === historyFilterMethod);
   }, [monthLogs, yearLogs, historyScope, historyFilterMethod]);
+
+  // Vehicle Catalog Filtering (Category + Brand + Search by Brand/Model/Type)
+  const availableBrands = useMemo(() => {
+    const brands = new Set<string>();
+    VEHICLE_CATALOG.filter(v => v.category === selectorCategory).forEach(v => brands.add(v.brand));
+    return ['ALL', ...Array.from(brands)];
+  }, [selectorCategory]);
+
+  const filteredVehicles = useMemo(() => {
+    const q = vehicleSearchQuery.trim().toLowerCase();
+    return VEHICLE_CATALOG.filter(v => {
+      if (v.category !== selectorCategory) return false;
+      if (selectedBrandFilter !== 'ALL' && v.brand !== selectedBrandFilter) return false;
+      if (!q) return true;
+      const haystack = `${v.brand} ${v.model} ${v.typeLabel} ${v.engineSpec} ${v.colorName} ${v.year}`.toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [selectorCategory, selectedBrandFilter, vehicleSearchQuery]);
 
   // Open Form for New Refueling
   const handleOpenNewForm = () => {
@@ -857,16 +845,20 @@ const MotorcycleView: React.FC<Props> = ({
     setFuelType('gasoline');
     const today = getLocalTodayISO();
     const todayParts = today.split('-');
-    // If user is viewing a specific month/year, default the date to that month/year if different
+    let initialDate = today;
     if (
-      parseInt(todayParts[0], 10) === selectedYear &&
-      parseInt(todayParts[1], 10) - 1 === selectedMonthIdx
+      parseInt(todayParts[0], 10) !== selectedYear ||
+      parseInt(todayParts[1], 10) - 1 !== selectedMonthIdx
     ) {
-      setDateInput(today);
-    } else {
       const mStr = String(selectedMonthIdx + 1).padStart(2, '0');
-      setDateInput(`${selectedYear}-${mStr}-15`);
+      initialDate = `${selectedYear}-${mStr}-15`;
     }
+    setDateInput(initialDate);
+    const { year, monthIdx } = parseLogYearMonth(initialDate);
+    setCalendarViewYear(year);
+    setCalendarViewMonth(monthIdx);
+    setIsCustomCalendarOpen(false);
+    setIsFuelDropdownOpen(false);
     setPricePerLiterInput('6.19');
     setOdometerInput('');
     setStationInput('');
@@ -879,10 +871,50 @@ const MotorcycleView: React.FC<Props> = ({
     setPaymentMethod(log.paymentMethod);
     setFuelType(log.fuelType || 'gasoline');
     setDateInput(log.date);
+    const { year, monthIdx } = parseLogYearMonth(log.date);
+    setCalendarViewYear(year);
+    setCalendarViewMonth(monthIdx);
+    setIsCustomCalendarOpen(false);
+    setIsFuelDropdownOpen(false);
     setPricePerLiterInput((log.pricePerLiter || 6.19).toString());
     setOdometerInput(log.odometer ? log.odometer.toString() : '');
     setStationInput(log.station || '');
     setIsFormOpen(true);
+  };
+
+  // Custom Calendar Grid Helper
+  const calendarDays = useMemo(() => {
+    const firstDayOfWeek = new Date(calendarViewYear, calendarViewMonth, 1).getDay();
+    const daysInMonth = new Date(calendarViewYear, calendarViewMonth + 1, 0).getDate();
+    const cells: (number | null)[] = [];
+    for (let i = 0; i < firstDayOfWeek; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    return cells;
+  }, [calendarViewYear, calendarViewMonth]);
+
+  const handleSelectCalendarDay = (day: number) => {
+    const mStr = String(calendarViewMonth + 1).padStart(2, '0');
+    const dStr = String(day).padStart(2, '0');
+    setDateInput(`${calendarViewYear}-${mStr}-${dStr}`);
+    setIsCustomCalendarOpen(false);
+  };
+
+  const handleCalendarPrevMonth = () => {
+    if (calendarViewMonth === 0) {
+      setCalendarViewMonth(11);
+      setCalendarViewYear(y => y - 1);
+    } else {
+      setCalendarViewMonth(m => m - 1);
+    }
+  };
+
+  const handleCalendarNextMonth = () => {
+    if (calendarViewMonth === 11) {
+      setCalendarViewMonth(0);
+      setCalendarViewYear(y => y + 1);
+    } else {
+      setCalendarViewMonth(m => m + 1);
+    }
   };
 
   // Auto-calculated liters preview in form
@@ -924,7 +956,6 @@ const MotorcycleView: React.FC<Props> = ({
       onAddFuelLog(payload);
     }
 
-    // Automatically jump view to the month/year of the logged entry
     const { year, monthIdx } = parseLogYearMonth(payload.date);
     setSelectedYear(year);
     setSelectedMonthIdx(monthIdx);
@@ -953,27 +984,35 @@ const MotorcycleView: React.FC<Props> = ({
   const formatMoney = (val: number) =>
     `${currencySymbol} ${val.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+  const fullTankPresetValue = Math.round(currentVehicle.tankCapacityL * 6.19);
+
   return (
     <div className="w-full max-w-4xl mx-auto px-1 pb-24 space-y-5 animate-in fade-in duration-300">
-      {/* TOP HEADER */}
+      {/* TOP HEADER — ONLY ONE TOP "REGISTRAR ABASTECIMENTO" BUTTON */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3.5">
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-[#1c1c1e] flex items-center justify-center border border-white/10 shadow-lg relative overflow-hidden shrink-0">
             <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/20 to-accent/10 pointer-events-none" />
-            <Fuel className="w-5 h-5 sm:w-6 sm:h-6 text-accent relative z-10 shrink-0" />
+            {currentVehicle.category === 'car' ? (
+              <Car className="w-5 h-5 sm:w-6 sm:h-6 text-accent relative z-10 shrink-0" />
+            ) : (
+              <Bike className="w-5 h-5 sm:w-6 sm:h-6 text-accent relative z-10 shrink-0" />
+            )}
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h1 className="text-lg sm:text-2xl font-extrabold text-white tracking-tight whitespace-nowrap truncate">
-                YAMAHA FAZER FZ 25
+              <h1 className="text-lg sm:text-2xl font-extrabold text-white tracking-tight whitespace-nowrap truncate uppercase">
+                {currentVehicle.brand} {currentVehicle.model}
               </h1>
               <span className="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full whitespace-nowrap shrink-0">
-                2026 3D
+                {currentVehicle.year} 3D
               </span>
             </div>
             <p className="text-[11px] sm:text-xs text-gray-400 font-medium flex items-center gap-1.5 mt-0.5 min-w-0">
               <Bluetooth className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-              <span className="truncate">ABS Connected • 250cc BlueFlex</span>
+              <span className="truncate">
+                {currentVehicle.engineSpec} • {currentVehicle.colorName}
+              </span>
             </p>
           </div>
         </div>
@@ -990,217 +1029,214 @@ const MotorcycleView: React.FC<Props> = ({
       </div>
 
       {/* ==================================================================== */}
-      {/* 3D SHOWROOM STAGE: YAMAHA FAZER FZ 25 2026                           */}
+      {/* 3D ANIMATED STUDIO STAGE (NO 360 MODE, NO AI SPARKLES ICON)          */}
       {/* ==================================================================== */}
       <div className="bg-[#141417] border border-white/10 rounded-[1.75rem] p-3.5 sm:p-5 relative overflow-hidden shadow-2xl">
         {/* Background Ambient Showroom Glow */}
         <div
-          className={`absolute -top-24 left-1/2 -translate-x-1/2 w-[90%] h-56 bg-gradient-to-b ${activeColor.glowClass} rounded-full blur-3xl pointer-events-none transition-all duration-500`}
+          className={`absolute -top-24 left-1/2 -translate-x-1/2 w-[90%] h-56 bg-gradient-to-b ${currentVehicle.glowClass} rounded-full blur-3xl pointer-events-none transition-all duration-500`}
         />
 
-        {/* Top Bar inside 3D Showroom: Telemetry Badges + Mode Switcher */}
+        {/* Top Bar inside 3D Showroom: Studio Badge + Vehicle Selector Trigger */}
         <div className="relative z-20 flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-black/60 text-white border border-white/10 backdrop-blur-md whitespace-nowrap">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              <span className="sm:hidden">FZ 25 3D</span>
-              <span className="hidden sm:inline">Y-CONNECT 3D GARAGE</span>
-            </span>
-            <span className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-white/5 text-gray-300 border border-white/5 whitespace-nowrap">
+            <button
+              type="button"
+              onClick={() => setIs3DAnimActive(a => !a)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider bg-black/70 text-white border border-white/10 backdrop-blur-md whitespace-nowrap cursor-pointer hover:border-accent/40 transition-all"
+              title="Alternar animação 3D"
+            >
+              <Box className="w-3.5 h-3.5 text-accent shrink-0" />
+              <span>3D STUDIO</span>
+              <span
+                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                  is3DAnimActive ? 'bg-emerald-400 animate-ping' : 'bg-gray-500'
+                }`}
+              />
+            </button>
+
+            <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-white/5 text-gray-300 border border-white/5 whitespace-nowrap">
               <Gauge className="w-3 h-3 text-accent shrink-0" />
-              Tanque 14,2L • ~{stats.estimatedRangeKm} km
+              Tanque {currentVehicle.tankCapacityL.toString().replace('.', ',')}L • ~{stats.estimatedRangeKm} km
             </span>
           </div>
 
-          {/* 3D Mode Switcher: Studio 3D vs 360° Interactive CAD */}
-          <div className="flex items-center gap-1 bg-black/60 p-1 rounded-xl border border-white/10 backdrop-blur-md shrink-0">
-            <button
-              type="button"
-              onClick={() => setViewMode3D('studio')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-                viewMode3D === 'studio'
-                  ? 'bg-accent text-black shadow-sm'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5 shrink-0" />
-              <span>Studio</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode3D('360')}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
-                viewMode3D === '360'
-                  ? 'bg-accent text-black shadow-sm'
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              <Rotate3d className="w-3.5 h-3.5 shrink-0" />
-              <span>360° 3D</span>
-            </button>
-          </div>
+          {/* Button to open Vehicle Selector Screen (Carro / Moto + Search) */}
+          <button
+            type="button"
+            onClick={() => {
+              setSelectorCategory(currentVehicle.category);
+              setSelectedBrandFilter('ALL');
+              setVehicleSearchQuery('');
+              setIsVehicleSelectorOpen(true);
+            }}
+            className="px-3 py-1.5 rounded-xl text-[10px] sm:text-xs font-extrabold uppercase tracking-wider bg-white/10 hover:bg-white/15 text-white border border-white/15 flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap shrink-0"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-accent shrink-0" />
+            <span>Trocar Veículo</span>
+          </button>
         </div>
 
-        {/* 3D Viewport Area */}
-        {viewMode3D === 'studio' ? (
-          <div className="relative z-10">
+        {/* 3D Animated Viewport */}
+        <div className="relative z-10">
+          <div
+            ref={stageRef}
+            onMouseMove={e => handleStageMove(e.clientX, e.clientY)}
+            onMouseLeave={handleStageReset}
+            onTouchMove={e => {
+              if (e.touches[0]) handleStageMove(e.touches[0].clientX, e.touches[0].clientY);
+            }}
+            onTouchEnd={handleStageReset}
+            className="relative w-full rounded-2xl overflow-hidden bg-[#0a0a0b] border border-white/5 select-none"
+            style={{ perspective: '1100px' }}
+          >
+            {/* Animated 3D Showroom Floor Reflection Ring */}
             <div
-              ref={stageRef}
-              onMouseMove={e => handleStageMove(e.clientX, e.clientY)}
-              onMouseLeave={handleStageReset}
-              onTouchMove={e => {
-                if (e.touches[0]) handleStageMove(e.touches[0].clientX, e.touches[0].clientY);
+              className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[82%] h-8 rounded-full pointer-events-none transition-transform duration-300"
+              style={{
+                background: `radial-gradient(ellipse at center, ${currentVehicle.accentHex}40 0%, transparent 72%)`,
+                transform: `translate3d(0, ${computed3D.translateY * -0.4}px, 0) scale(${computed3D.scale})`,
+                filter: 'blur(6px)'
               }}
-              onTouchEnd={handleStageReset}
-              className="relative w-full rounded-2xl overflow-hidden bg-[#0a0a0b] border border-white/5 select-none"
-              style={{ perspective: '1200px' }}
-            >
-              <div
-                className="relative w-full transition-transform duration-150 ease-out"
-                style={{
-                  transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg) scale(1.02)`,
-                  transformStyle: 'preserve-3d'
-                }}
-              >
-                {/* 3D Studio Render Image of 2026 Yamaha Fazer FZ25 */}
-                <img
-                  src="/fz25-2026-3d.jpg"
-                  alt="Yamaha Fazer FZ 25 2026 3D"
-                  className="w-full h-[210px] sm:h-[310px] object-cover object-center block transition-all duration-500"
-                  style={{ filter: activeColor.hueRotate }}
-                  draggable={false}
-                />
-
-                {/* Dynamic Specular 3D Light Reflection */}
-                <div
-                  className="absolute inset-0 pointer-events-none transition-opacity duration-200"
-                  style={{
-                    background: `radial-gradient(circle at ${tilt.glareX}% ${tilt.glareY}%, rgba(255,255,255,0.16), transparent 55%)`
-                  }}
-                />
-
-                {/* Interactive LED Projector Headlight High-Beam Overlay */}
-                {headlightOn && (
-                  <div
-                    className="absolute pointer-events-none transition-opacity duration-300"
-                    style={{
-                      left: '66%',
-                      top: '26%',
-                      width: '26%',
-                      height: '26%',
-                      background:
-                        'radial-gradient(circle, rgba(186,230,253,0.75) 0%, rgba(56,189,248,0.28) 40%, transparent 72%)',
-                      filter: 'blur(8px)'
-                    }}
-                  />
-                )}
-
-                {/* X-Ray 14.2L Fuel Tank Overlay */}
-                {xrayTank && (
-                  <div
-                    className="absolute pointer-events-none rounded-full border-2 border-emerald-400/80 bg-emerald-500/25 backdrop-blur-[2px] flex items-center justify-center animate-pulse"
-                    style={{
-                      left: '43%',
-                      top: '22%',
-                      width: '20%',
-                      height: '20%'
-                    }}
-                  >
-                    <span className="text-[9px] sm:text-[10px] font-black text-emerald-300 drop-shadow whitespace-nowrap">
-                      {(stats.tankRatio * 14.2).toFixed(1)}L / 14,2L
-                    </span>
-                  </div>
-                )}
-
-                {/* Interactive 3D Hotspots */}
-                {showHotspots &&
-                  FZ25_HOTSPOTS.map(spot => {
-                    const isSelected = activeHotspot?.id === spot.id;
-                    return (
-                      <button
-                        key={spot.id}
-                        type="button"
-                        onClick={e => {
-                          e.stopPropagation();
-                          setActiveHotspot(spot);
-                        }}
-                        style={{ left: `${spot.x}%`, top: `${spot.y}%` }}
-                        className={`absolute -translate-x-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition-all cursor-pointer z-20 ${
-                          isSelected
-                            ? 'bg-accent text-black scale-125 shadow-[0_0_20px_rgba(255,255,255,0.7)] ring-4 ring-accent/30'
-                            : 'bg-black/75 text-white border border-white/40 hover:scale-110'
-                        }`}
-                        title={spot.title}
-                      >
-                        <span className="w-2 h-2 rounded-full bg-current" />
-                      </button>
-                    );
-                  })}
-              </div>
-            </div>
-
-            {/* Active Hotspot Telemetry Card: stacked cleanly below on mobile, floating on desktop */}
-            {activeHotspot && showHotspots && (
-              <div className="mt-3 sm:mt-0 sm:absolute sm:bottom-3 sm:left-3 sm:max-w-sm bg-black/85 backdrop-blur-xl border border-white/15 rounded-2xl p-3 z-30 flex items-start justify-between gap-2.5 animate-in fade-in duration-200">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-xs font-extrabold text-white">{activeHotspot.title}</span>
-                    <span className="text-[10px] font-bold text-accent bg-accent/15 px-2 py-0.5 rounded-full border border-accent/25 whitespace-nowrap">
-                      {activeHotspot.spec}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-gray-300 mt-1 leading-snug">{activeHotspot.detail}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setActiveHotspot(null)}
-                  className="text-gray-400 hover:text-white p-1 shrink-0 cursor-pointer"
-                  aria-label="Fechar especificação"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="w-full rounded-2xl overflow-hidden bg-[#0a0a0b] border border-white/5 relative z-10">
-            <Interactive3DFZ25Canvas
-              accentHex={activeColor.accentHex}
-              headlightOn={headlightOn}
-              xrayTank={xrayTank}
-              tankFillRatio={stats.tankRatio}
             />
-          </div>
-        )}
 
-        {/* Showroom Controls Footer: Colors + Interactive Toggles */}
-        <div className="relative z-20 mt-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-white/5">
-          {/* Color Presets */}
-          <div className="flex items-center justify-between sm:justify-start gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 whitespace-nowrap">
-              Cor 2026: <strong className="text-white sm:hidden">{activeColor.name}</strong>
-            </span>
-            <div className="flex items-center gap-1.5">
-              {MOTO_COLORS.map(c => (
-                <button
-                  key={c.id}
-                  type="button"
-                  onClick={() => handleSelectColor(c.id)}
-                  title={c.name}
-                  className={`h-8 px-2.5 rounded-xl text-[10px] font-bold flex items-center justify-center gap-1.5 border transition-all cursor-pointer whitespace-nowrap ${
-                    selectedColorId === c.id
-                      ? 'bg-white/15 text-white border-white/30 shadow-sm'
-                      : 'bg-[#1c1c1e] text-gray-400 border-white/5 hover:text-white'
-                  }`}
+            <div
+              className="relative w-full will-change-transform"
+              style={{
+                transform: `translate3d(0, ${computed3D.translateY}px, 0) rotateX(${computed3D.rx}deg) rotateY(${computed3D.ry}deg) scale(${computed3D.scale})`,
+                transformStyle: 'preserve-3d',
+                transition: isUserInteractingRef.current ? 'transform 120ms ease-out' : 'none'
+              }}
+            >
+              {/* 3D Studio Render Image of Vehicle */}
+              <img
+                src={currentVehicle.imageUrl}
+                alt={`${currentVehicle.brand} ${currentVehicle.model} 3D`}
+                className="w-full h-[215px] sm:h-[310px] object-cover object-center block transition-all duration-500"
+                style={{ filter: currentVehicle.hueRotate }}
+                draggable={false}
+              />
+
+              {/* Animated Dynamic Specular 3D Light Reflection */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: `radial-gradient(circle at ${computed3D.glareX}% ${computed3D.glareY}%, rgba(255,255,255,0.18), transparent 55%)`
+                }}
+              />
+
+              {/* Interactive LED Projector Headlight High-Beam Overlay */}
+              {headlightOn && (
+                <div
+                  className="absolute pointer-events-none transition-opacity duration-300 animate-pulse"
+                  style={
+                    currentVehicle.category === 'car'
+                      ? {
+                          left: '14%',
+                          top: '38%',
+                          width: '24%',
+                          height: '24%',
+                          background:
+                            'radial-gradient(circle, rgba(186,230,253,0.8) 0%, rgba(56,189,248,0.3) 42%, transparent 72%)',
+                          filter: 'blur(7px)'
+                        }
+                      : {
+                          left: '66%',
+                          top: '26%',
+                          width: '26%',
+                          height: '26%',
+                          background:
+                            'radial-gradient(circle, rgba(186,230,253,0.8) 0%, rgba(56,189,248,0.3) 42%, transparent 72%)',
+                          filter: 'blur(8px)'
+                        }
+                  }
+                />
+              )}
+
+              {/* X-Ray Fuel Tank Overlay */}
+              {xrayTank && (
+                <div
+                  className="absolute pointer-events-none rounded-full border-2 border-emerald-400/80 bg-emerald-500/25 backdrop-blur-[2px] flex items-center justify-center animate-pulse"
+                  style={
+                    currentVehicle.category === 'car'
+                      ? { left: '66%', top: '34%', width: '22%', height: '20%' }
+                      : { left: '43%', top: '22%', width: '20%', height: '20%' }
+                  }
                 >
-                  <span
-                    className="w-3 h-3 rounded-full shrink-0 ring-1 ring-white/20"
-                    style={{ backgroundColor: c.accentHex }}
-                  />
-                  <span className="hidden sm:inline">{c.name}</span>
-                </button>
-              ))}
+                  <span className="text-[9px] sm:text-[10px] font-black text-emerald-300 drop-shadow whitespace-nowrap">
+                    {(stats.tankRatio * currentVehicle.tankCapacityL).toFixed(1)}L /{' '}
+                    {currentVehicle.tankCapacityL.toString().replace('.', ',')}L
+                  </span>
+                </div>
+              )}
+
+              {/* Interactive 3D Hotspots */}
+              {showHotspots &&
+                vehicleHotspots.map(spot => {
+                  const isSelected = activeHotspot?.id === spot.id;
+                  return (
+                    <button
+                      key={spot.id}
+                      type="button"
+                      onClick={e => {
+                        e.stopPropagation();
+                        setActiveHotspot(spot);
+                      }}
+                      style={{ left: `${spot.x}%`, top: `${spot.y}%` }}
+                      className={`absolute -translate-x-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition-all cursor-pointer z-20 ${
+                        isSelected
+                          ? 'bg-accent text-black scale-125 shadow-[0_0_20px_rgba(255,255,255,0.7)] ring-4 ring-accent/30'
+                          : 'bg-black/75 text-white border border-white/40 hover:scale-110'
+                      }`}
+                      title={spot.title}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-current" />
+                    </button>
+                  );
+                })}
             </div>
+          </div>
+
+          {/* Active Hotspot Telemetry Card */}
+          {activeHotspot && showHotspots && (
+            <div className="mt-3 sm:mt-0 sm:absolute sm:bottom-3 sm:left-3 sm:max-w-sm bg-black/85 backdrop-blur-xl border border-white/15 rounded-2xl p-3 z-30 flex items-start justify-between gap-2.5 animate-in fade-in duration-200">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs font-extrabold text-white">{activeHotspot.title}</span>
+                  <span className="text-[10px] font-bold text-accent bg-accent/15 px-2 py-0.5 rounded-full border border-accent/25 whitespace-nowrap">
+                    {activeHotspot.spec}
+                  </span>
+                </div>
+                <p className="text-[11px] text-gray-300 mt-1 leading-snug">{activeHotspot.detail}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActiveHotspot(null)}
+                className="text-gray-400 hover:text-white p-1 shrink-0 cursor-pointer"
+                aria-label="Fechar especificação"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Showroom Controls Footer: Fixed Vehicle Color Badge + Interactive 3D Toggles */}
+        <div className="relative z-20 mt-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-white/5">
+          {/* Fixed Color Info Badge (Color is fixed per vehicle model) */}
+          <div className="flex items-center justify-between sm:justify-start gap-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#1c1c1e] border border-white/5">
+              <span
+                className="w-3 h-3 rounded-full shrink-0 ring-1 ring-white/25"
+                style={{ backgroundColor: currentVehicle.accentHex }}
+              />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 whitespace-nowrap">
+                Cor Fixa: <strong className="text-white">{currentVehicle.colorName}</strong>
+              </span>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 sm:hidden whitespace-nowrap">
+              {currentVehicle.typeLabel}
+            </span>
           </div>
 
           {/* Interactive 3D Action Toggles */}
@@ -1228,32 +1264,21 @@ const MotorcycleView: React.FC<Props> = ({
               }`}
             >
               <Layers className="w-3.5 h-3.5 shrink-0" />
-              <span>Tanque</span>
+              <span>Tanque {currentVehicle.tankCapacityL.toString().replace('.', ',')}L</span>
             </button>
 
-            {viewMode3D === 'studio' ? (
-              <button
-                type="button"
-                onClick={() => setShowHotspots(s => !s)}
-                className={`px-2.5 py-2 sm:py-1.5 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-1.5 border transition-all cursor-pointer whitespace-nowrap ${
-                  showHotspots
-                    ? 'bg-accent/20 text-accent border-accent/30'
-                    : 'bg-[#1c1c1e] text-gray-400 border-white/5'
-                }`}
-              >
-                <Eye className="w-3.5 h-3.5 shrink-0" />
-                <span>Specs</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setViewMode3D('studio')}
-                className="px-2.5 py-2 sm:py-1.5 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-1.5 border bg-[#1c1c1e] text-gray-300 border-white/10 transition-all cursor-pointer whitespace-nowrap"
-              >
-                <Sparkles className="w-3.5 h-3.5 shrink-0" />
-                <span>Studio</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setShowHotspots(s => !s)}
+              className={`px-2.5 py-2 sm:py-1.5 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-1.5 border transition-all cursor-pointer whitespace-nowrap ${
+                showHotspots
+                  ? 'bg-accent/20 text-accent border-accent/30'
+                  : 'bg-[#1c1c1e] text-gray-400 border-white/5'
+              }`}
+            >
+              <Eye className="w-3.5 h-3.5 shrink-0" />
+              <span>Specs</span>
+            </button>
           </div>
         </div>
       </div>
@@ -1359,7 +1384,7 @@ const MotorcycleView: React.FC<Props> = ({
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] sm:text-xs text-gray-400 mt-3 pt-3 border-t border-white/5">
             <span className="flex items-center gap-1.5 whitespace-nowrap">
               <Navigation className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              ~{Math.round(stats.yearLiters * 37).toLocaleString(locale)} km est.
+              ~{Math.round(stats.yearLiters * currentVehicle.avgKmPerLiter).toLocaleString(locale)} km est.
             </span>
             <span className="font-semibold text-gray-300 whitespace-nowrap">
               Média: {formatMoney(stats.monthlyAverageInYear)}/mês
@@ -1520,7 +1545,7 @@ const MotorcycleView: React.FC<Props> = ({
       </div>
 
       {/* ==================================================================== */}
-      {/* REFUELING HISTORY LIST                                               */}
+      {/* REFUELING HISTORY LIST (NO DUPLICATE BOTTOM REGISTER BUTTON)         */}
       {/* ==================================================================== */}
       <div className="bg-[#1c1c1e] border border-white/5 rounded-[1.75rem] p-4 sm:p-5 shadow-xl">
         <div className="flex items-center justify-between gap-2 mb-4">
@@ -1537,25 +1562,15 @@ const MotorcycleView: React.FC<Props> = ({
             </p>
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
-            {historyFilterMethod !== 'all' && (
-              <button
-                type="button"
-                onClick={() => setHistoryFilterMethod('all')}
-                className="px-2.5 py-1.5 rounded-xl text-[10px] font-bold bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer whitespace-nowrap"
-              >
-                Limpar
-              </button>
-            )}
+          {historyFilterMethod !== 'all' && (
             <button
               type="button"
-              onClick={handleOpenNewForm}
-              className="px-3 py-1.5 rounded-xl bg-accent/15 text-accent border border-accent/25 text-xs font-bold flex items-center gap-1 hover:bg-accent/25 transition-colors cursor-pointer whitespace-nowrap"
+              onClick={() => setHistoryFilterMethod('all')}
+              className="px-3 py-1.5 rounded-xl text-[10px] font-bold bg-white/10 text-white hover:bg-white/20 transition-colors cursor-pointer whitespace-nowrap shrink-0"
             >
-              <Plus className="w-3.5 h-3.5 shrink-0" />
-              <span>Novo</span>
+              Limpar Filtro
             </button>
-          </div>
+          )}
         </div>
 
         {displayedLogs.length === 0 ? (
@@ -1566,18 +1581,9 @@ const MotorcycleView: React.FC<Props> = ({
             <p className="text-sm font-bold text-gray-200">
               Nenhum abastecimento neste período
             </p>
-            <p className="text-xs text-gray-400 mt-1 mb-5 max-w-xs mx-auto leading-relaxed">
-              Registre quanto você abasteceu na sua Yamaha Fazer FZ 25 2026 escolhendo Crédito,
-              Débito, Pix ou Dinheiro.
+            <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto leading-relaxed">
+              Use o botão <strong className="text-accent">Registrar Abastecimento</strong> no topo da tela para lançar seus gastos em Crédito, Débito, Pix ou Dinheiro.
             </p>
-            <button
-              type="button"
-              onClick={handleOpenNewForm}
-              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-accent text-black font-extrabold text-xs uppercase tracking-wider hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap"
-            >
-              <Plus className="w-4 h-4 stroke-[2.5] shrink-0" />
-              <span>Registrar Abastecimento</span>
-            </button>
           </div>
         ) : (
           <div className="space-y-2.5">
@@ -1656,7 +1662,201 @@ const MotorcycleView: React.FC<Props> = ({
       </div>
 
       {/* ==================================================================== */}
-      {/* MODAL FORM: ADD / EDIT REFUELING                                     */}
+      {/* MODAL: VEHICLE SELECTOR (CARRO vs MOTO + BARRA DE PESQUISA)          */}
+      {/* ==================================================================== */}
+      {isVehicleSelectorOpen && (
+        <div className="fixed inset-0 z-[85] bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+          <div
+            className="bg-[#1c1c1e] border border-white/10 w-full max-w-lg rounded-t-[2rem] sm:rounded-[2rem] p-5 sm:p-6 shadow-2xl max-h-[90vh] flex flex-col"
+            style={{ paddingBottom: 'max(1.5rem, env(safe-area-inset-bottom))' }}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between gap-2 mb-4 shrink-0">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0">
+                  <SlidersHorizontal className="w-5 h-5 text-accent" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-base sm:text-lg font-extrabold text-white truncate">
+                    Escolher Veículo 3D
+                  </h3>
+                  <p className="text-xs text-gray-400 truncate">
+                    Selecione entre Moto ou Carro • Cor original fixa por modelo
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsVehicleSelectorOpen(false)}
+                className="w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors cursor-pointer shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Category Tabs: MOTO vs CARRO */}
+            <div className="grid grid-cols-2 gap-2 p-1 bg-[#0a0a0b] rounded-2xl border border-white/5 mb-3.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectorCategory('motorcycle');
+                  setSelectedBrandFilter('ALL');
+                }}
+                className={`py-2.5 px-4 rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  selectorCategory === 'motorcycle'
+                    ? 'bg-accent text-black shadow-md'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <Bike className="w-4 h-4 shrink-0" />
+                <span>Motos</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectorCategory('car');
+                  setSelectedBrandFilter('ALL');
+                }}
+                className={`py-2.5 px-4 rounded-xl text-xs font-extrabold uppercase tracking-wider flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                  selectorCategory === 'car'
+                    ? 'bg-accent text-black shadow-md'
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                <Car className="w-4 h-4 shrink-0" />
+                <span>Carros</span>
+              </button>
+            </div>
+
+            {/* Search Bar for Brand, Model, and Vehicle Type */}
+            <div className="relative mb-3 shrink-0">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                value={vehicleSearchQuery}
+                onChange={e => setVehicleSearchQuery(e.target.value)}
+                placeholder={
+                  selectorCategory === 'motorcycle'
+                    ? 'Pesquisar marca, modelo ou tipo (ex: Yamaha, Fazer, Naked, Trail)...'
+                    : 'Pesquisar marca, modelo ou tipo (ex: Toyota, Sedan, SUV, Hatch)...'
+                }
+                className="w-full bg-[#0a0a0b] border border-white/10 focus:border-accent rounded-2xl pl-10 pr-9 py-3 text-xs sm:text-sm font-semibold text-white placeholder:text-gray-500 outline-none transition-colors"
+              />
+              {vehicleSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setVehicleSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Quick Brand Filter Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-2 mb-3 shrink-0">
+              {availableBrands.map(b => (
+                <button
+                  key={b}
+                  type="button"
+                  onClick={() => setSelectedBrandFilter(b)}
+                  className={`px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider whitespace-nowrap border transition-all cursor-pointer shrink-0 ${
+                    selectedBrandFilter === b
+                      ? 'bg-white/15 text-white border-white/30'
+                      : 'bg-[#141416] text-gray-400 border-white/5 hover:text-white'
+                  }`}
+                >
+                  {b === 'ALL' ? 'Todas as Marcas' : b}
+                </button>
+              ))}
+            </div>
+
+            {/* Vehicle List */}
+            <div className="overflow-y-auto space-y-2.5 pr-1 flex-1 min-h-[220px]">
+              {filteredVehicles.length === 0 ? (
+                <div className="bg-[#141416] border border-dashed border-white/10 rounded-2xl p-8 text-center">
+                  <p className="text-sm font-bold text-gray-300">Nenhum veículo encontrado</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Tente pesquisar por outra marca ou tipo (ex: Yamaha, Honda, SUV, Sedan, Naked).
+                  </p>
+                </div>
+              ) : (
+                filteredVehicles.map(v => {
+                  const isCurrent = v.id === currentVehicle.id;
+                  return (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => handleSelectVehicle(v)}
+                      className={`w-full text-left p-3 rounded-2xl border transition-all flex items-center gap-3.5 cursor-pointer ${
+                        isCurrent
+                          ? 'bg-accent/15 border-accent/40 ring-1 ring-accent/40'
+                          : 'bg-[#141416] border-white/5 hover:border-white/20'
+                      }`}
+                    >
+                      {/* Thumbnail with fixed vehicle color */}
+                      <div className="w-20 h-14 rounded-xl overflow-hidden bg-[#0a0a0b] border border-white/10 shrink-0 relative">
+                        <img
+                          src={v.imageUrl}
+                          alt={v.model}
+                          className="w-full h-full object-cover object-center"
+                          style={{ filter: v.hueRotate }}
+                        />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-white/10 text-gray-200">
+                            {v.brand}
+                          </span>
+                          <span className="text-xs sm:text-sm font-black text-white truncate">
+                            {v.model}
+                          </span>
+                          <span className="text-[10px] font-bold text-accent">
+                            {v.year}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-[11px] text-gray-400 mt-1 truncate">
+                          <span className="font-semibold text-gray-300">{v.typeLabel}</span>
+                          <span>•</span>
+                          <span className="truncate">{v.engineSpec}</span>
+                        </div>
+
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-gray-400">
+                            <span
+                              className="w-2 h-2 rounded-full shrink-0"
+                              style={{ backgroundColor: v.accentHex }}
+                            />
+                            Cor Fixa: {v.colorName}
+                          </span>
+                          <span className="text-[10px] text-gray-500">
+                            • Tanque {v.tankCapacityL.toString().replace('.', ',')}L
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0">
+                        {isCurrent ? (
+                          <div className="w-7 h-7 rounded-full bg-accent text-black flex items-center justify-center">
+                            <Check className="w-4 h-4 stroke-[3]" />
+                          </div>
+                        ) : (
+                          <ChevronRight className="w-4 h-4 text-gray-500" />
+                        )}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* MODAL FORM: ADD / EDIT REFUELING (CUSTOM CALENDAR & FUEL DROPDOWN)   */}
       {/* ==================================================================== */}
       {isFormOpen && (
         <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
@@ -1673,7 +1873,10 @@ const MotorcycleView: React.FC<Props> = ({
                   <h3 className="text-base sm:text-lg font-extrabold text-white truncate">
                     {editingLog ? 'Editar Abastecimento' : 'Novo Abastecimento'}
                   </h3>
-                  <p className="text-xs text-gray-400 truncate">Yamaha Fazer FZ 25 2026 • Tanque 14,2L</p>
+                  <p className="text-xs text-gray-400 truncate">
+                    {currentVehicle.brand} {currentVehicle.model} • Tanque{' '}
+                    {currentVehicle.tankCapacityL.toString().replace('.', ',')}L
+                  </p>
                 </div>
               </div>
               <button
@@ -1709,14 +1912,16 @@ const MotorcycleView: React.FC<Props> = ({
                 </div>
                 {/* Quick Value Presets */}
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {[30, 50, 70, 88].map(preset => (
+                  {[30, 50, 70, fullTankPresetValue].map(preset => (
                     <button
                       key={preset}
                       type="button"
                       onClick={() => setAmountInput(preset.toString())}
                       className="px-3 py-1 rounded-xl bg-[#2c2c2e] hover:bg-white/15 text-xs font-bold text-gray-300 hover:text-white transition-colors cursor-pointer"
                     >
-                      {preset === 88 ? `Tanque Cheio (~${currencySymbol} 88)` : `${currencySymbol} ${preset}`}
+                      {preset === fullTankPresetValue
+                        ? `Tanque Cheio (~${currencySymbol} ${preset})`
+                        : `${currencySymbol} ${preset}`}
                     </button>
                   ))}
                 </div>
@@ -1743,46 +1948,197 @@ const MotorcycleView: React.FC<Props> = ({
                             : 'bg-[#0a0a0b] border-white/5 text-gray-400 hover:text-white'
                         }`}
                       >
-                        <Icon className={`w-5 h-5 ${active ? meta.color : 'text-gray-500'}`} />
-                        <span className="text-xs font-extrabold uppercase tracking-wide">
+                        <Icon className={`w-5 h-5 shrink-0 ${active ? meta.color : 'text-gray-500'}`} />
+                        <span className="text-xs font-extrabold uppercase tracking-wide whitespace-nowrap">
                           {meta.shortLabel}
                         </span>
-                        {active && <Check className="w-4 h-4 ml-auto text-white" />}
+                        {active && <Check className="w-4 h-4 ml-auto text-white shrink-0" />}
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* DATA E TIPO DE COMBUSTÍVEL */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5">
-                    Data do Abastecimento
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={dateInput}
-                    onChange={e => setDateInput(e.target.value)}
-                    className="w-full bg-[#0a0a0b] border border-white/10 focus:border-accent rounded-2xl px-4 py-3 text-sm font-bold text-white outline-none"
+              {/* CUSTOM EXPANDABLE DATE CALENDAR (NO BROWSER DATE PICKER) */}
+              <div>
+                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5">
+                  Data do Abastecimento
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomCalendarOpen(o => !o);
+                    setIsFuelDropdownOpen(false);
+                  }}
+                  className={`w-full bg-[#0a0a0b] border ${
+                    isCustomCalendarOpen ? 'border-accent' : 'border-white/10 hover:border-white/20'
+                  } rounded-2xl px-4 py-3.5 flex items-center justify-between gap-2 text-left transition-all cursor-pointer`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Calendar className="w-4 h-4 text-accent shrink-0" />
+                    <span className="text-sm font-bold text-white truncate">
+                      {formatDisplayDate(dateInput)}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200 ${
+                      isCustomCalendarOpen ? 'rotate-180 text-accent' : ''
+                    }`}
                   />
-                </div>
+                </button>
 
-                <div>
-                  <label className="block text-[11px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5">
-                    Combustível (BlueFlex)
-                  </label>
-                  <select
-                    value={fuelType}
-                    onChange={e => setFuelType(e.target.value as FuelType)}
-                    className="w-full bg-[#0a0a0b] border border-white/10 focus:border-accent rounded-2xl px-4 py-3 text-sm font-bold text-white outline-none"
-                  >
-                    <option value="gasoline">Gasolina Comum</option>
-                    <option value="additive">Gasolina Aditivada</option>
-                    <option value="ethanol">Etanol</option>
-                  </select>
-                </div>
+                {/* Expandable Custom App Calendar */}
+                {isCustomCalendarOpen && (
+                  <div className="mt-2 bg-[#121215] border border-white/10 rounded-2xl p-3.5 shadow-xl animate-in fade-in duration-150">
+                    <div className="flex items-center justify-between mb-3">
+                      <button
+                        type="button"
+                        onClick={handleCalendarPrevMonth}
+                        className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-300 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-white">
+                        {MONTH_NAMES_PT[calendarViewMonth]} {calendarViewYear}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleCalendarNextMonth}
+                        className="w-8 h-8 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-300 hover:text-white transition-colors cursor-pointer"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1 text-center mb-1.5">
+                      {WEEK_DAYS_PT.map(wd => (
+                        <span key={wd} className="text-[9px] font-extrabold text-gray-500 uppercase">
+                          {wd}
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1">
+                      {calendarDays.map((day, idx) => {
+                        if (day === null) {
+                          return <div key={`empty-${idx}`} className="h-8" />;
+                        }
+                        const mStr = String(calendarViewMonth + 1).padStart(2, '0');
+                        const dStr = String(day).padStart(2, '0');
+                        const iso = `${calendarViewYear}-${mStr}-${dStr}`;
+                        const isSelected = iso === dateInput;
+                        const isToday = iso === getLocalTodayISO();
+
+                        return (
+                          <button
+                            key={iso}
+                            type="button"
+                            onClick={() => handleSelectCalendarDay(day)}
+                            className={`h-8 rounded-xl text-xs font-bold flex items-center justify-center transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-accent text-black font-black shadow-md'
+                                : isToday
+                                ? 'bg-white/10 text-accent border border-accent/40'
+                                : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                            }`}
+                          >
+                            {day}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-3 pt-2.5 border-t border-white/5 flex items-center justify-between">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const today = getLocalTodayISO();
+                          setDateInput(today);
+                          const { year, monthIdx } = parseLogYearMonth(today);
+                          setCalendarViewYear(year);
+                          setCalendarViewMonth(monthIdx);
+                          setIsCustomCalendarOpen(false);
+                        }}
+                        className="text-[11px] font-extrabold text-accent hover:underline cursor-pointer"
+                      >
+                        Selecionar Hoje
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsCustomCalendarOpen(false)}
+                        className="text-[11px] font-bold text-gray-400 hover:text-white cursor-pointer"
+                      >
+                        Fechar
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* CUSTOM EXPANDABLE FUEL TYPE SELECTOR (NO NATIVE SELECT) */}
+              <div>
+                <label className="block text-[11px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5">
+                  Tipo de Combustível
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsFuelDropdownOpen(o => !o);
+                    setIsCustomCalendarOpen(false);
+                  }}
+                  className={`w-full bg-[#0a0a0b] border ${
+                    isFuelDropdownOpen ? 'border-accent' : 'border-white/10 hover:border-white/20'
+                  } rounded-2xl px-4 py-3.5 flex items-center justify-between gap-2 text-left transition-all cursor-pointer`}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span
+                      className={`w-2.5 h-2.5 rounded-full shrink-0 ${FUEL_TYPE_META[fuelType].dotColor}`}
+                    />
+                    <span className="text-sm font-bold text-white truncate">
+                      {FUEL_TYPE_META[fuelType].label}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    className={`w-4 h-4 text-gray-400 shrink-0 transition-transform duration-200 ${
+                      isFuelDropdownOpen ? 'rotate-180 text-accent' : ''
+                    }`}
+                  />
+                </button>
+
+                {isFuelDropdownOpen && (
+                  <div className="mt-2 bg-[#121215] border border-white/10 rounded-2xl p-2 space-y-1 shadow-xl animate-in fade-in duration-150">
+                    {(['gasoline', 'additive', 'ethanol'] as FuelType[]).map(ft => {
+                      const meta = FUEL_TYPE_META[ft];
+                      const isSelected = fuelType === ft;
+                      return (
+                        <button
+                          key={ft}
+                          type="button"
+                          onClick={() => {
+                            setFuelType(ft);
+                            setIsFuelDropdownOpen(false);
+                          }}
+                          className={`w-full p-3 rounded-xl flex items-center justify-between gap-3 text-left transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-accent/15 border border-accent/30 text-white'
+                              : 'hover:bg-white/5 text-gray-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${meta.dotColor}`} />
+                            <div className="min-w-0">
+                              <div className="text-xs font-extrabold text-white truncate">
+                                {meta.label}
+                              </div>
+                              <div className="text-[10px] text-gray-400 truncate">{meta.desc}</div>
+                            </div>
+                          </div>
+                          {isSelected && <Check className="w-4 h-4 text-accent shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* PREÇO POR LITRO & ODÔMETRO OPCIONAL */}
@@ -1832,9 +2188,12 @@ const MotorcycleView: React.FC<Props> = ({
               {/* LIVE TELEMETRY PREVIEW */}
               {previewLiters > 0 && (
                 <div className="bg-[#141416] border border-white/5 rounded-2xl p-3 flex items-center justify-between text-xs">
-                  <span className="text-gray-400">Volume estimado no tanque 14,2L:</span>
+                  <span className="text-gray-400">
+                    Volume no tanque ({currentVehicle.tankCapacityL.toString().replace('.', ',')}L):
+                  </span>
                   <span className="font-extrabold text-accent">
-                    ~{previewLiters.toFixed(2)} L (+{Math.round(previewLiters * 37)} km autonomia)
+                    ~{previewLiters.toFixed(2)} L (+
+                    {Math.round(previewLiters * currentVehicle.avgKmPerLiter)} km)
                   </span>
                 </div>
               )}

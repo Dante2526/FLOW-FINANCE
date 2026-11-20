@@ -587,6 +587,9 @@ const App: React.FC = () => {
       setFuelLogs(data.fuelLogs);
       saveData(STORAGE_KEYS.FUEL_LOGS, data.fuelLogs);
     }
+    if (typeof data.selectedVehicle === 'string' && data.selectedVehicle) {
+      saveData(STORAGE_KEYS.SELECTED_VEHICLE, data.selectedVehicle);
+    }
 
     if (data.appLanguage && ['pt', 'en', 'es'].includes(data.appLanguage)) {
       setAppLanguage(data.appLanguage);

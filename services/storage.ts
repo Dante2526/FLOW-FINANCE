@@ -20,6 +20,7 @@ export const STORAGE_KEYS = {
   VISIT_COUNT: 'flow_visit_count', // New key for smart login screen
   FUEL_LOGS: 'flow_fuel_logs',
   MOTO_COLOR: 'flow_moto_color',
+  SELECTED_VEHICLE: 'flow_selected_vehicle',
 };
 
 // Generic load function
