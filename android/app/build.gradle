@@ -6,10 +6,10 @@ def ksPath = System.getenv("ANDROID_KEYSTORE_PATH")
 def hasReleaseKeystore = ksPath != null && !ksPath.trim().isEmpty() && file(ksPath).exists()
 
 android {
-    namespace = "com.flowfinance.app"
+    namespace = "com.nearn.flowfinance"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.flowfinance.app"
+        applicationId "com.nearn.flowfinance"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode ciVersionCode

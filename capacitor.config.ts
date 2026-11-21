@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.flowfinance.app',
+  appId: 'com.nearn.flowfinance',
   appName: 'Flow Finance',
   webDir: 'dist',
   backgroundColor: '#0a0a0b',

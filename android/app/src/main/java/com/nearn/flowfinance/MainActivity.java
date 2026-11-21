@@ -1,4 +1,4 @@
-package com.flowfinance.app;
+package com.nearn.flowfinance;
 
 import com.getcapacitor.BridgeActivity;
 
