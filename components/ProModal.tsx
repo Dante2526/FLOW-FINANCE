@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Crown, CheckCircle2, Copy, Loader2, ArrowRight, ChevronLeft, CreditCard, QrCode, Lock, Building, Palette, CloudLightning, BarChart3, User, ShieldCheck, Clock, AlertCircle, AlertTriangle } from 'lucide-react';
 import { AppLanguage } from '../types';
 import { TRANSLATIONS, getLocale } from '../i18n';
+import { apiUrl } from '../services/api';
 
 interface Props {
    isOpen: boolean;
@@ -84,7 +85,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
       if (isOpen && paymentId) {
          interval = setInterval(async () => {
             try {
-               const res = await fetch(`/api/check-status?id=${paymentId}`);
+               const res = await fetch(apiUrl(`/api/check-status?id=${paymentId}`));
                const data = await res.json();
                if (data.paid) {
                   clearInterval(interval);
@@ -135,7 +136,7 @@ const ProModal: React.FC<Props> = ({ isOpen, onClose, onUpgrade, userEmail, user
       setError('');
 
       try {
-         const res = await fetch('/api/create-charge', {
+         const res = await fetch(apiUrl('/api/create-charge'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

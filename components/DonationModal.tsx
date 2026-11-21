@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Heart, QrCode, Copy, CheckCircle2, Loader2, ShieldCheck } from 'lucide-react';
 import { AppLanguage } from '../types';
 import { TRANSLATIONS, getLocale } from '../i18n';
+import { apiUrl } from '../services/api';
 
 interface Props {
   isOpen: boolean;
@@ -91,7 +92,7 @@ const DonationModal: React.FC<Props> = ({ isOpen, onClose, userEmail, userName, 
     setError('');
 
     try {
-      const res = await fetch('/api/create-charge', {
+      const res = await fetch(apiUrl('/api/create-charge'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
