@@ -1374,7 +1374,7 @@ const App: React.FC = () => {
       ) : (
         <InvestmentsView investments={investments} onAdd={handleInvestmentAdd} onEdit={handleInvestmentEdit} onDelete={handleInvestmentDelete} onBack={handleGoHome} cdiRate={cdiRate} onUpdateCdiRate={handleInvestmentUpdateRate} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />
       )}
-      <BottomNav currentView={currentView} onChangeView={setCurrentView} labels={t.nav || { home: 'INÍCIO', invest: 'INVEST', wallet: 'CARTEIRA', config: 'CONFIG', moto: 'FZ 25' }} />
+      <BottomNav currentView={currentView} onChangeView={setCurrentView} labels={t.nav || { home: 'INÍCIO', invest: 'INVEST', wallet: 'CARTEIRA', config: 'CONFIG', moto: 'GARAGEM' }} />
       {isAddTransactionOpen && <AddTransactionModal isOpen={isAddTransactionOpen} onClose={handleCloseAddTransaction} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} activeMonthContext={activeMonthContext} appLanguage={appLanguage} />}
       {isAddAccountOpen && <AddAccountModal isOpen={isAddAccountOpen} onClose={handleCloseAddAccount} onSave={handleSaveAccount} accountToEdit={editingAccount} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />}
       {isCalculatorOpen && <CalculatorModal isOpen={isCalculatorOpen} onClose={handleCloseCalculator} appLanguage={appLanguage} />}

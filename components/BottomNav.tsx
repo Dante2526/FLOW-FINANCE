@@ -54,19 +54,19 @@ const BottomNav: React.FC<Props> = ({ currentView, onChangeView, labels }) => {
           </button>
         )}
 
-        {/* Motorcycle 3D FZ25 Item (+) */}
+        {/* Garagem Item (+) */}
         {currentView === 'motorcycle' ? (
            <button data-tour-id="nav-motorcycle" className="h-14 px-4 sm:px-5 bg-[#0a0a0b] rounded-2xl flex items-center justify-center gap-2 shadow-lg border border-white/5 transition-all">
              <Plus className="w-6 h-6 text-accent shrink-0" strokeWidth={2.5} />
-             <span className="text-accent font-bold text-sm tracking-wide">{labels.moto || 'FZ 25'}</span>
+             <span className="text-accent font-bold text-sm tracking-wide">{labels.moto || 'GARAGEM'}</span>
           </button>
         ) : (
           <button 
             data-tour-id="nav-motorcycle"
             onClick={() => onChangeView('motorcycle')}
             className="p-2.5 sm:p-3 text-gray-400 hover:text-white transition-all group"
-            title={labels.moto || 'Yamaha Fazer FZ 25 2026'}
-            aria-label="Yamaha Fazer FZ 25 2026"
+            title={labels.moto || 'GARAGEM'}
+            aria-label={labels.moto || 'GARAGEM'}
           >
              <Plus className="w-7 h-7 group-hover:scale-110 transition-transform" strokeWidth={2.5} />
           </button>
