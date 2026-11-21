@@ -2215,9 +2215,9 @@ const MotorcycleView: React.FC<Props> = ({
               </div>
 
               {/* PREÇO POR LITRO & ODÔMETRO OPCIONAL */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5">
+              <div className="grid grid-cols-2 gap-3 items-end">
+                <div className="min-w-0">
+                  <label className="block text-[11px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5 whitespace-nowrap truncate">
                     Preço / Litro ({currencySymbol})
                   </label>
                   <input
@@ -2226,20 +2226,20 @@ const MotorcycleView: React.FC<Props> = ({
                     min="0.1"
                     value={pricePerLiterInput}
                     onChange={e => setPricePerLiterInput(e.target.value)}
-                    className="w-full bg-[#0a0a0b] border border-white/10 focus:border-accent rounded-2xl px-4 py-3 text-sm font-bold text-white outline-none"
+                    className="w-full h-12 bg-[#0a0a0b] border border-white/10 focus:border-accent rounded-2xl px-4 text-sm font-bold text-white outline-none transition-colors"
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5">
-                    Odômetro (km - opcional)
+                <div className="min-w-0">
+                  <label className="block text-[11px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5 whitespace-nowrap truncate">
+                    Odômetro (km)
                   </label>
                   <input
                     type="number"
-                    placeholder="Ex: 4250"
+                    placeholder="Ex: 4250 (opc.)"
                     value={odometerInput}
                     onChange={e => setOdometerInput(e.target.value)}
-                    className="w-full bg-[#0a0a0b] border border-white/10 focus:border-accent rounded-2xl px-4 py-3 text-sm font-bold text-white outline-none"
+                    className="w-full h-12 bg-[#0a0a0b] border border-white/10 focus:border-accent rounded-2xl px-4 text-sm font-bold text-white outline-none transition-colors"
                   />
                 </div>
               </div>
