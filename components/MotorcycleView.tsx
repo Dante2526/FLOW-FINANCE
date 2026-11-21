@@ -24,7 +24,9 @@ import {
   Car,
   Bike,
   SlidersHorizontal,
-  Box
+  Box,
+  Zap,
+  BatteryCharging
 } from 'lucide-react';
 import { FuelLog, FuelPaymentMethod, FuelType, AppLanguage } from '../types';
 import { getLocale } from '../i18n';
@@ -48,17 +50,21 @@ const MONTH_SHORT_PT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 
 const WEEK_DAYS_PT = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB'];
 
 export type VehicleCategory = 'motorcycle' | 'car';
+export type VehiclePowertrain = 'combustion' | 'hybrid' | 'electric';
 
 export interface VehiclePreset {
   id: string;
   category: VehicleCategory;
+  powertrain?: VehiclePowertrain;
   brand: string;
   model: string;
   year: string;
-  typeLabel: string; // e.g. "Naked / Street", "Trail", "Sedan", "SUV", "Hatch"
+  typeLabel: string; // e.g. "Naked / Street", "Trail", "Sedan", "SUV", "Hatch", "100% Elétrico"
   engineSpec: string;
   tankCapacityL: number;
   avgKmPerLiter: number;
+  batteryCapacityKwh?: number;
+  avgKmPerKwh?: number;
   colorName: string;
   hueRotate: string;
   accentHex: string;
@@ -343,15 +349,132 @@ export const VEHICLE_CATALOG: VehiclePreset[] = [
     imageUrl: '/car-2026-3d.jpg'
   },
   {
+    id: 'voltz-evs-2026',
+    category: 'motorcycle',
+    powertrain: 'electric',
+    brand: 'Voltz',
+    model: 'EVS / WATTS W125',
+    year: '2026',
+    typeLabel: '100% Elétrica',
+    engineSpec: 'Motor Elétrico 3000W • Bateria Dupla',
+    tankCapacityL: 0,
+    avgKmPerLiter: 0,
+    batteryCapacityKwh: 4.5,
+    avgKmPerKwh: 28,
+    colorName: 'Electric Cyan (Azul Elétrico)',
+    hueRotate: 'hue-rotate(330deg) saturate(1.2)',
+    accentHex: '#06b6d4',
+    glowClass: 'from-cyan-500/35 via-teal-500/15 to-transparent',
+    imageUrl: '/fz25-2026-3d.jpg'
+  },
+  {
+    id: 'byd-dolphin-mini-2026',
+    category: 'car',
+    powertrain: 'electric',
+    brand: 'BYD',
+    model: 'DOLPHIN MINI / PLUS',
+    year: '2026',
+    typeLabel: '100% Elétrico • Hatch',
+    engineSpec: 'Motor Elétrico • Bateria Blade 44,9 kWh',
+    tankCapacityL: 0,
+    avgKmPerLiter: 0,
+    batteryCapacityKwh: 44.9,
+    avgKmPerKwh: 7.0,
+    colorName: 'Surf Blue (Azul Elétrico)',
+    hueRotate: 'hue-rotate(335deg) saturate(1.18)',
+    accentHex: '#06b6d4',
+    glowClass: 'from-cyan-500/35 via-sky-500/15 to-transparent',
+    imageUrl: '/car-2026-3d.jpg'
+  },
+  {
+    id: 'byd-seal-2026',
+    category: 'car',
+    powertrain: 'electric',
+    brand: 'BYD',
+    model: 'SEAL AWD',
+    year: '2026',
+    typeLabel: '100% Elétrico • Sedan',
+    engineSpec: '531 cv AWD • Bateria Blade 82,5 kWh',
+    tankCapacityL: 0,
+    avgKmPerLiter: 0,
+    batteryCapacityKwh: 82.5,
+    avgKmPerKwh: 6.4,
+    colorName: 'Atlantis Blue',
+    hueRotate: 'hue-rotate(355deg) saturate(1.15)',
+    accentHex: '#0ea5e9',
+    glowClass: 'from-sky-500/40 via-blue-500/15 to-transparent',
+    imageUrl: '/car-2026-3d.jpg'
+  },
+  {
+    id: 'gwm-ora-03-2026',
+    category: 'car',
+    powertrain: 'electric',
+    brand: 'GWM',
+    model: 'ORA 03 GT',
+    year: '2026',
+    typeLabel: '100% Elétrico • Hatch',
+    engineSpec: '171 cv • Bateria 63 kWh',
+    tankCapacityL: 0,
+    avgKmPerLiter: 0,
+    batteryCapacityKwh: 63.0,
+    avgKmPerKwh: 6.3,
+    colorName: 'Mars Red (Vermelho)',
+    hueRotate: 'hue-rotate(138deg) saturate(1.25)',
+    accentHex: '#ef4444',
+    glowClass: 'from-red-600/35 via-rose-500/15 to-transparent',
+    imageUrl: '/car-2026-3d.jpg'
+  },
+  {
+    id: 'volvo-ex30-2026',
+    category: 'car',
+    powertrain: 'electric',
+    brand: 'Volvo',
+    model: 'EX30 ULTRA',
+    year: '2026',
+    typeLabel: '100% Elétrico • SUV',
+    engineSpec: '272 cv • Bateria 69 kWh',
+    tankCapacityL: 0,
+    avgKmPerLiter: 0,
+    batteryCapacityKwh: 69.0,
+    avgKmPerKwh: 6.6,
+    colorName: 'Cloud Blue / Moss',
+    hueRotate: 'hue-rotate(285deg) saturate(1.0)',
+    accentHex: '#10b981',
+    glowClass: 'from-emerald-500/35 via-teal-500/15 to-transparent',
+    imageUrl: '/car-2026-3d.jpg'
+  },
+  {
+    id: 'tesla-model-3-2026',
+    category: 'car',
+    powertrain: 'electric',
+    brand: 'Tesla',
+    model: 'MODEL 3 HIGHLAND',
+    year: '2026',
+    typeLabel: '100% Elétrico • Sedan',
+    engineSpec: 'RWD / Long Range • Bateria 60 kWh',
+    tankCapacityL: 0,
+    avgKmPerLiter: 0,
+    batteryCapacityKwh: 60.0,
+    avgKmPerKwh: 7.5,
+    colorName: 'Stealth Grey (Cinza)',
+    hueRotate: 'grayscale(0.85) contrast(1.15)',
+    accentHex: '#a1a1aa',
+    glowClass: 'from-zinc-500/35 via-slate-400/15 to-transparent',
+    imageUrl: '/car-2026-3d.jpg'
+  },
+  {
     id: 'byd-dolphin-song-2026',
     category: 'car',
+    powertrain: 'hybrid',
     brand: 'BYD',
     model: 'KING / SONG PRO DM-i',
     year: '2026',
     typeLabel: 'Híbrido Plug-in',
-    engineSpec: '1.5 DM-i Super Hybrid',
+    engineSpec: '1.5 DM-i Super Hybrid (Gasolina + Energia)',
     tankCapacityL: 52.0,
     avgKmPerLiter: 22.0,
+    batteryCapacityKwh: 18.3,
+    avgKmPerKwh: 6.5,
     colorName: 'Emerald Cyan',
     hueRotate: 'hue-rotate(285deg) saturate(1.1)',
     accentHex: '#10b981',
@@ -426,24 +549,54 @@ const PAYMENT_META: Record<
   }
 };
 
-const FUEL_TYPE_META: Record<FuelType, { label: string; desc: string; badgeClass: string; dotColor: string }> = {
+const isElectricFuelType = (ft?: FuelType): boolean =>
+  ft === 'electric_home' || ft === 'electric_ac' || ft === 'electric_dc';
+
+const FUEL_TYPE_META: Record<
+  FuelType,
+  { label: string; desc: string; badgeClass: string; dotColor: string; defaultPrice: number }
+> = {
   gasoline: {
     label: 'Gasolina Comum',
     desc: 'Octanagem padrão • Uso diário',
     badgeClass: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
-    dotColor: 'bg-orange-400'
+    dotColor: 'bg-orange-400',
+    defaultPrice: 6.19
   },
   additive: {
     label: 'Gasolina Aditivada',
     desc: 'Detergentes dispersantes • Limpeza de bicos',
     badgeClass: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
-    dotColor: 'bg-cyan-400'
+    dotColor: 'bg-cyan-400',
+    defaultPrice: 6.49
   },
   ethanol: {
     label: 'Etanol BlueFlex',
     desc: 'Biocombustível • Maior potência',
     badgeClass: 'text-lime-400 bg-lime-500/10 border-lime-500/20',
-    dotColor: 'bg-lime-400'
+    dotColor: 'bg-lime-400',
+    defaultPrice: 4.19
+  },
+  electric_home: {
+    label: 'Energia Residencial (Wallbox)',
+    desc: 'Recarga em casa / condomínio • ~R$ 0,85/kWh',
+    badgeClass: 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30',
+    dotColor: 'bg-emerald-400',
+    defaultPrice: 0.85
+  },
+  electric_ac: {
+    label: 'Eletroposto AC (Semi-rápida)',
+    desc: 'Carregador público AC 7-22 kW • ~R$ 1,80/kWh',
+    badgeClass: 'text-sky-300 bg-sky-500/15 border-sky-500/30',
+    dotColor: 'bg-sky-400',
+    defaultPrice: 1.8
+  },
+  electric_dc: {
+    label: 'Eletroposto DC (Carga Rápida)',
+    desc: 'Supercarga DC 50-150 kW • ~R$ 2,40/kWh',
+    badgeClass: 'text-cyan-300 bg-cyan-500/15 border-cyan-500/30',
+    dotColor: 'bg-cyan-400',
+    defaultPrice: 2.4
   }
 };
 
@@ -647,19 +800,44 @@ const MotorcycleView: React.FC<Props> = ({
     });
   }, [fuelLogs, selectedYear]);
 
-  // Monthly & Annual Totals
+  const isElectricVehicle = currentVehicle.powertrain === 'electric';
+  const isHybridVehicle = currentVehicle.powertrain === 'hybrid';
+
+  // Available fuel/energy types based on vehicle powertrain
+  const availableEnergyTypes = useMemo<FuelType[]>(() => {
+    if (isElectricVehicle) return ['electric_home', 'electric_ac', 'electric_dc'];
+    if (isHybridVehicle) {
+      return ['gasoline', 'additive', 'ethanol', 'electric_home', 'electric_ac', 'electric_dc'];
+    }
+    return ['gasoline', 'additive', 'ethanol'];
+  }, [isElectricVehicle, isHybridVehicle]);
+
+  const isSelectedLogElectric = isElectricFuelType(fuelType);
+
+  // Monthly & Annual Totals (supports both Liters and Electric kWh)
   const stats = useMemo(() => {
     const monthTotal = monthLogs.reduce((sum, l) => sum + (l.amount || 0), 0);
     const yearTotal = yearLogs.reduce((sum, l) => sum + (l.amount || 0), 0);
 
-    const monthLiters = monthLogs.reduce(
-      (sum, l) => sum + (l.liters || (l.pricePerLiter ? l.amount / l.pricePerLiter : l.amount / 6.19)),
-      0
-    );
-    const yearLiters = yearLogs.reduce(
-      (sum, l) => sum + (l.liters || (l.pricePerLiter ? l.amount / l.pricePerLiter : l.amount / 6.19)),
-      0
-    );
+    const getLogUnits = (l: FuelLog) => {
+      if (isElectricFuelType(l.fuelType) || (isElectricVehicle && l.kwh !== undefined)) {
+        const unitPrice = l.pricePerKwh || l.pricePerLiter || 1.8;
+        return l.kwh ?? (unitPrice > 0 ? l.amount / unitPrice : 0);
+      }
+      const unitPrice = l.pricePerLiter || 6.19;
+      return l.liters ?? (unitPrice > 0 ? l.amount / unitPrice : 0);
+    };
+
+    const monthUnits = monthLogs.reduce((sum, l) => sum + getLogUnits(l), 0);
+    const yearUnits = yearLogs.reduce((sum, l) => sum + getLogUnits(l), 0);
+
+    const yearEstimatedKm = yearLogs.reduce((sum, l) => {
+      const units = getLogUnits(l);
+      if (isElectricFuelType(l.fuelType) || isElectricVehicle) {
+        return sum + units * (currentVehicle.avgKmPerKwh || 6.5);
+      }
+      return sum + units * (currentVehicle.avgKmPerLiter || 14);
+    }, 0);
 
     const activeMonthsInYear = new Set(yearLogs.map(l => parseLogYearMonth(l.date).monthIdx)).size || 1;
     const monthlyAverageInYear = yearTotal / activeMonthsInYear;
@@ -696,29 +874,28 @@ const MotorcycleView: React.FC<Props> = ({
     });
     const maxMonthAmount = Math.max(...monthlyChart.map(m => m.amount), 1);
 
-    // Tank estimate based on currentVehicle specs
-    const tankCap = currentVehicle.tankCapacityL;
-    const avgKmL = currentVehicle.avgKmPerLiter;
-    const latestLog = fuelLogs[0];
-    const latestLiters = latestLog
-      ? latestLog.liters || (latestLog.pricePerLiter ? latestLog.amount / latestLog.pricePerLiter : latestLog.amount / 6.19)
-      : tankCap * 0.75;
-    const tankRatio = Math.min(1, Math.max(0.2, latestLiters / tankCap));
-    const estimatedRangeKm = Math.round(Math.min(tankCap, Math.max(latestLiters, tankCap * 0.45)) * avgKmL);
+    // Autonomy estimate based on currentVehicle specs (Tank L or Battery kWh)
+    const capacity = isElectricVehicle
+      ? currentVehicle.batteryCapacityKwh || 50
+      : currentVehicle.tankCapacityL || 14.2;
+    const kmPerUnit = isElectricVehicle
+      ? currentVehicle.avgKmPerKwh || 6.5
+      : currentVehicle.avgKmPerLiter || 37;
+    const estimatedRangeKm = Math.round(capacity * kmPerUnit);
 
     return {
       monthTotal,
       yearTotal,
-      monthLiters,
-      yearLiters,
+      monthUnits,
+      yearUnits,
+      yearEstimatedKm,
       monthlyAverageInYear,
       byPayment,
       monthlyChart,
       maxMonthAmount,
-      tankRatio,
       estimatedRangeKm
     };
-  }, [monthLogs, yearLogs, breakdownScope, fuelLogs, currentVehicle]);
+  }, [monthLogs, yearLogs, breakdownScope, currentVehicle, isElectricVehicle]);
 
   // Displayed Logs in History List
   const displayedLogs = useMemo(() => {
@@ -727,7 +904,7 @@ const MotorcycleView: React.FC<Props> = ({
     return base.filter(l => l.paymentMethod === historyFilterMethod);
   }, [monthLogs, yearLogs, historyScope, historyFilterMethod]);
 
-  // Vehicle Catalog Filtering (Category + Brand + Search by Brand/Model/Type)
+  // Vehicle Catalog Filtering (Category + Brand + Search by Brand/Model/Type/Powertrain)
   const availableBrands = useMemo(() => {
     const brands = new Set<string>();
     VEHICLE_CATALOG.filter(v => v.category === selectorCategory).forEach(v => brands.add(v.brand));
@@ -740,17 +917,24 @@ const MotorcycleView: React.FC<Props> = ({
       if (v.category !== selectorCategory) return false;
       if (selectedBrandFilter !== 'ALL' && v.brand !== selectedBrandFilter) return false;
       if (!q) return true;
-      const haystack = `${v.brand} ${v.model} ${v.typeLabel} ${v.engineSpec} ${v.colorName} ${v.year}`.toLowerCase();
+      const powerKeywords =
+        v.powertrain === 'electric'
+          ? 'eletrico elétrico energia bateria kwh ev recarga'
+          : v.powertrain === 'hybrid'
+          ? 'hibrido híbrido plug-in energia gasolina'
+          : 'flex gasolina etanol combustao combustão';
+      const haystack = `${v.brand} ${v.model} ${v.typeLabel} ${v.engineSpec} ${v.colorName} ${v.year} ${powerKeywords}`.toLowerCase();
       return haystack.includes(q);
     });
   }, [selectorCategory, selectedBrandFilter, vehicleSearchQuery]);
 
-  // Open Form for New Refueling
+  // Open Form for New Refueling / Electric Recharging
   const handleOpenNewForm = () => {
     setEditingLog(null);
     setAmountInput('');
     setPaymentMethod('pix');
-    setFuelType('gasoline');
+    const defaultType: FuelType = isElectricVehicle ? 'electric_home' : 'gasoline';
+    setFuelType(defaultType);
     const today = getLocalTodayISO();
     const todayParts = today.split('-');
     let initialDate = today;
@@ -767,7 +951,7 @@ const MotorcycleView: React.FC<Props> = ({
     setCalendarViewMonth(monthIdx);
     setIsCustomCalendarOpen(false);
     setIsFuelDropdownOpen(false);
-    setPricePerLiterInput('6.19');
+    setPricePerLiterInput(FUEL_TYPE_META[defaultType].defaultPrice.toString());
     setOdometerInput('');
     setStationInput('');
     setIsFormOpen(true);
@@ -777,14 +961,18 @@ const MotorcycleView: React.FC<Props> = ({
     setEditingLog(log);
     setAmountInput(log.amount.toString());
     setPaymentMethod(log.paymentMethod);
-    setFuelType(log.fuelType || 'gasoline');
+    const logType: FuelType = log.fuelType || (isElectricVehicle ? 'electric_home' : 'gasoline');
+    setFuelType(logType);
     setDateInput(log.date);
     const { year, monthIdx } = parseLogYearMonth(log.date);
     setCalendarViewYear(year);
     setCalendarViewMonth(monthIdx);
     setIsCustomCalendarOpen(false);
     setIsFuelDropdownOpen(false);
-    setPricePerLiterInput((log.pricePerLiter || 6.19).toString());
+    const existingPrice = isElectricFuelType(logType)
+      ? log.pricePerKwh || log.pricePerLiter || FUEL_TYPE_META[logType].defaultPrice
+      : log.pricePerLiter || FUEL_TYPE_META[logType].defaultPrice;
+    setPricePerLiterInput(existingPrice.toString());
     setOdometerInput(log.odometer ? log.odometer.toString() : '');
     setStationInput(log.station || '');
     setIsFormOpen(true);
@@ -825,12 +1013,12 @@ const MotorcycleView: React.FC<Props> = ({
     }
   };
 
-  // Auto-calculated liters preview in form
-  const previewLiters = useMemo(() => {
+  // Auto-calculated units (Liters or kWh) preview in form
+  const previewUnits = useMemo(() => {
     const val = parseFloat(amountInput.replace(',', '.'));
-    const ppl = parseFloat(pricePerLiterInput.replace(',', '.'));
-    if (!isNaN(val) && val > 0 && !isNaN(ppl) && ppl > 0) {
-      return Math.round((val / ppl) * 100) / 100;
+    const unitPrice = parseFloat(pricePerLiterInput.replace(',', '.'));
+    if (!isNaN(val) && val > 0 && !isNaN(unitPrice) && unitPrice > 0) {
+      return Math.round((val / unitPrice) * 100) / 100;
     }
     return 0;
   }, [amountInput, pricePerLiterInput]);
@@ -840,8 +1028,10 @@ const MotorcycleView: React.FC<Props> = ({
     const cleanAmount = parseFloat(amountInput.replace(',', '.'));
     if (isNaN(cleanAmount) || cleanAmount <= 0) return;
 
-    const cleanPpl = parseFloat(pricePerLiterInput.replace(',', '.')) || 6.19;
-    const calculatedLiters = Math.round((cleanAmount / cleanPpl) * 100) / 100;
+    const isElec = isElectricFuelType(fuelType);
+    const defaultPrice = FUEL_TYPE_META[fuelType]?.defaultPrice || (isElec ? 1.8 : 6.19);
+    const cleanUnitPrice = parseFloat(pricePerLiterInput.replace(',', '.')) || defaultPrice;
+    const calculatedUnits = Math.round((cleanAmount / cleanUnitPrice) * 100) / 100;
     const cleanOdo = odometerInput ? parseInt(odometerInput, 10) : undefined;
 
     const payload = {
@@ -849,8 +1039,10 @@ const MotorcycleView: React.FC<Props> = ({
       date: dateInput || getLocalTodayISO(),
       paymentMethod,
       fuelType,
-      pricePerLiter: cleanPpl,
-      liters: calculatedLiters,
+      pricePerLiter: isElec ? undefined : cleanUnitPrice,
+      liters: isElec ? undefined : calculatedUnits,
+      pricePerKwh: isElec ? cleanUnitPrice : undefined,
+      kwh: isElec ? calculatedUnits : undefined,
       odometer: cleanOdo,
       station: stationInput.trim() || undefined
     };
@@ -892,7 +1084,24 @@ const MotorcycleView: React.FC<Props> = ({
   const formatMoney = (val: number) =>
     `${currencySymbol} ${val.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-  const fullTankPresetValue = Math.round(currentVehicle.tankCapacityL * 6.19);
+  const fullChargePresetValue = useMemo(() => {
+    if (isSelectedLogElectric) {
+      const cap = currentVehicle.batteryCapacityKwh || 50;
+      const rate = parseFloat(pricePerLiterInput.replace(',', '.')) || FUEL_TYPE_META[fuelType].defaultPrice;
+      return Math.max(5, Math.round(cap * rate));
+    }
+    const tankCap = currentVehicle.tankCapacityL || 14.2;
+    const rate = parseFloat(pricePerLiterInput.replace(',', '.')) || 6.19;
+    return Math.max(20, Math.round(tankCap * rate));
+  }, [isSelectedLogElectric, currentVehicle, pricePerLiterInput, fuelType]);
+
+  const quickPresets = useMemo(() => {
+    if (isSelectedLogElectric) {
+      return Array.from(new Set([15, 30, 50, fullChargePresetValue]));
+    }
+    return Array.from(new Set([30, 50, 70, fullChargePresetValue]));
+  }, [isSelectedLogElectric, fullChargePresetValue]);
+
   const motoCount = useMemo(() => VEHICLE_CATALOG.filter(v => v.category === 'motorcycle').length, []);
   const carCount = useMemo(() => VEHICLE_CATALOG.filter(v => v.category === 'car').length, []);
 
@@ -1031,8 +1240,8 @@ const MotorcycleView: React.FC<Props> = ({
               onChange={e => setVehicleSearchQuery(e.target.value)}
               placeholder={
                 selectorCategory === 'motorcycle'
-                  ? 'Pesquisar marca, modelo ou tipo (ex: Yamaha, Fazer, Naked, Trail)...'
-                  : 'Pesquisar marca, modelo ou tipo (ex: Toyota, Sedan, SUV, Hatch)...'
+                  ? 'Pesquisar marca, modelo ou tipo (ex: Yamaha, Fazer, Elétrica, Trail)...'
+                  : 'Pesquisar marca, modelo ou tipo (ex: BYD, Elétrico, Toyota, SUV, Sedan)...'
               }
               className="w-full bg-[#0a0a0b] border border-white/10 focus:border-accent rounded-2xl pl-10 pr-9 py-3 text-xs sm:text-sm font-semibold text-white placeholder:text-gray-500 outline-none transition-colors"
             />
@@ -1071,12 +1280,14 @@ const MotorcycleView: React.FC<Props> = ({
               <div className="bg-[#141416] border border-dashed border-white/10 rounded-2xl p-8 text-center">
                 <p className="text-sm font-bold text-gray-300">Nenhum veículo encontrado</p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Tente pesquisar por outra marca ou tipo (ex: Yamaha, Honda, SUV, Sedan, Naked).
+                  Tente pesquisar por outra marca ou tipo (ex: Yamaha, BYD, Elétrico, SUV, Sedan).
                 </p>
               </div>
             ) : (
               filteredVehicles.map(v => {
                 const isCurrent = v.id === selectedVehicleId;
+                const isEv = v.powertrain === 'electric';
+                const isHyb = v.powertrain === 'hybrid';
                 return (
                   <button
                     key={v.id}
@@ -1095,6 +1306,12 @@ const MotorcycleView: React.FC<Props> = ({
                         className="w-full h-full object-cover object-center"
                         style={{ filter: v.hueRotate }}
                       />
+                      {isEv && (
+                        <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-md bg-emerald-500/90 text-black text-[8px] font-black uppercase flex items-center gap-0.5">
+                          <Zap className="w-2.5 h-2.5 fill-current" />
+                          EV
+                        </span>
+                      )}
                     </div>
 
                     <div className="min-w-0 flex-1">
@@ -1108,6 +1325,18 @@ const MotorcycleView: React.FC<Props> = ({
                         <span className="text-[10px] font-bold text-accent whitespace-nowrap">
                           {v.year}
                         </span>
+                        {isEv && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-[9px] font-extrabold uppercase whitespace-nowrap">
+                            <Zap className="w-2.5 h-2.5" />
+                            Energia
+                          </span>
+                        )}
+                        {isHyb && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-[9px] font-extrabold uppercase whitespace-nowrap">
+                            <Zap className="w-2.5 h-2.5" />
+                            Híbrido
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-1.5 text-[11px] text-gray-400 mt-1 truncate">
@@ -1125,7 +1354,11 @@ const MotorcycleView: React.FC<Props> = ({
                           Cor Fixa: {v.colorName}
                         </span>
                         <span className="text-[10px] text-gray-500 whitespace-nowrap">
-                          • Tanque {v.tankCapacityL.toString().replace('.', ',')}L
+                          {isEv
+                            ? `• Bateria ${(v.batteryCapacityKwh || 50).toString().replace('.', ',')} kWh`
+                            : isHyb
+                            ? `• ${v.tankCapacityL}L + ${v.batteryCapacityKwh} kWh`
+                            : `• Tanque ${v.tankCapacityL.toString().replace('.', ',')}L`}
                         </span>
                       </div>
                     </div>
@@ -1186,8 +1419,22 @@ const MotorcycleView: React.FC<Props> = ({
           data-tour-id="moto-add-fuel-btn"
           className="w-full sm:w-auto h-11 sm:h-12 px-5 rounded-2xl bg-accent text-black font-extrabold text-sm tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-accent/20 hover:brightness-110 active:scale-[0.98] transition-all cursor-pointer shrink-0 whitespace-nowrap"
         >
-          <Plus className="w-5 h-5 stroke-[2.5] shrink-0" />
-          <span>Registrar Abastecimento</span>
+          {isElectricVehicle ? (
+            <>
+              <Zap className="w-5 h-5 stroke-[2.5] shrink-0" />
+              <span>Registrar Recarga</span>
+            </>
+          ) : isHybridVehicle ? (
+            <>
+              <Plus className="w-5 h-5 stroke-[2.5] shrink-0" />
+              <span>Abastecer / Recarregar</span>
+            </>
+          ) : (
+            <>
+              <Plus className="w-5 h-5 stroke-[2.5] shrink-0" />
+              <span>Registrar Abastecimento</span>
+            </>
+          )}
         </button>
       </div>
 
@@ -1219,8 +1466,17 @@ const MotorcycleView: React.FC<Props> = ({
             </button>
 
             <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase bg-white/5 text-gray-300 border border-white/5 whitespace-nowrap">
-              <Gauge className="w-3 h-3 text-accent shrink-0" />
-              Tanque {currentVehicle.tankCapacityL.toString().replace('.', ',')}L • ~{stats.estimatedRangeKm} km
+              {isElectricVehicle ? (
+                <>
+                  <BatteryCharging className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  Bateria {(currentVehicle.batteryCapacityKwh || 50).toString().replace('.', ',')} kWh • ~{stats.estimatedRangeKm} km
+                </>
+              ) : (
+                <>
+                  <Gauge className="w-3 h-3 text-accent shrink-0" />
+                  Tanque {currentVehicle.tankCapacityL.toString().replace('.', ',')}L • ~{stats.estimatedRangeKm} km
+                </>
+              )}
             </span>
           </div>
 
@@ -1408,11 +1664,17 @@ const MotorcycleView: React.FC<Props> = ({
           <div className="absolute -right-6 -top-6 w-28 h-28 bg-accent/10 rounded-full blur-2xl pointer-events-none" />
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 min-w-0 truncate">
-              <Fuel className="w-3.5 h-3.5 text-accent shrink-0" />
-              <span className="truncate">Gasto no Mês ({MONTH_SHORT_PT[selectedMonthIdx]}/{selectedYear})</span>
+              {isElectricVehicle ? (
+                <Zap className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              ) : (
+                <Fuel className="w-3.5 h-3.5 text-accent shrink-0" />
+              )}
+              <span className="truncate">
+                {isElectricVehicle ? 'Energia no Mês' : 'Gasto no Mês'} ({MONTH_SHORT_PT[selectedMonthIdx]}/{selectedYear})
+              </span>
             </span>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-accent/15 text-accent border border-accent/25 whitespace-nowrap shrink-0">
-              {monthLogs.length} {monthLogs.length === 1 ? 'abast.' : 'abast.'}
+              {monthLogs.length} {isElectricVehicle ? (monthLogs.length === 1 ? 'recarga' : 'recargas') : 'abast.'}
             </span>
           </div>
           <div className="text-3xl sm:text-4xl font-black text-white tracking-tight my-1 whitespace-nowrap">
@@ -1420,8 +1682,17 @@ const MotorcycleView: React.FC<Props> = ({
           </div>
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] sm:text-xs text-gray-400 mt-3 pt-3 border-t border-white/5">
             <span className="flex items-center gap-1.5 whitespace-nowrap">
-              <Droplets className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-              ~{stats.monthLiters.toFixed(1)} L no mês
+              {isElectricVehicle ? (
+                <>
+                  <BatteryCharging className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  ~{stats.monthUnits.toFixed(1)} kWh no mês
+                </>
+              ) : (
+                <>
+                  <Droplets className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  ~{stats.monthUnits.toFixed(1)} L no mês
+                </>
+              )}
             </span>
             <span className="font-semibold text-gray-300 whitespace-nowrap">
               Média: {formatMoney(monthLogs.length > 0 ? stats.monthTotal / monthLogs.length : 0)}
@@ -1435,7 +1706,9 @@ const MotorcycleView: React.FC<Props> = ({
           <div className="flex items-center justify-between gap-2 mb-2">
             <span className="text-[11px] font-extrabold uppercase tracking-wider text-gray-400 flex items-center gap-1.5 min-w-0 truncate">
               <TrendingUp className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-              <span className="truncate">Gasto no Ano ({selectedYear})</span>
+              <span className="truncate">
+                {isElectricVehicle ? 'Energia no Ano' : 'Gasto no Ano'} ({selectedYear})
+              </span>
             </span>
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/15 text-blue-400 border border-blue-500/25 whitespace-nowrap shrink-0">
               {yearLogs.length} no ano
@@ -1447,7 +1720,7 @@ const MotorcycleView: React.FC<Props> = ({
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] sm:text-xs text-gray-400 mt-3 pt-3 border-t border-white/5">
             <span className="flex items-center gap-1.5 whitespace-nowrap">
               <Navigation className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              ~{Math.round(stats.yearLiters * currentVehicle.avgKmPerLiter).toLocaleString(locale)} km est.
+              ~{Math.round(stats.yearEstimatedKm).toLocaleString(locale)} km est.
             </span>
             <span className="font-semibold text-gray-300 whitespace-nowrap">
               Média: {formatMoney(stats.monthlyAverageInYear)}/mês
@@ -1608,13 +1881,17 @@ const MotorcycleView: React.FC<Props> = ({
       </div>
 
       {/* ==================================================================== */}
-      {/* REFUELING HISTORY LIST (NO DUPLICATE BOTTOM REGISTER BUTTON)         */}
+      {/* REFUELING / RECHARGING HISTORY LIST                                  */}
       {/* ==================================================================== */}
       <div className="bg-[#1c1c1e] border border-white/5 rounded-[1.75rem] p-4 sm:p-5 shadow-xl">
         <div className="flex items-center justify-between gap-2 mb-4">
           <div className="min-w-0">
             <h2 className="text-sm font-extrabold uppercase tracking-wider text-white truncate">
-              Histórico de Abastecimentos
+              {isElectricVehicle
+                ? 'Histórico de Recargas'
+                : isHybridVehicle
+                ? 'Abastecimentos e Recargas'
+                : 'Histórico de Abastecimentos'}
             </h2>
             <p className="text-xs text-gray-400 mt-0.5 truncate">
               {historyScope === 'month'
@@ -1639,24 +1916,44 @@ const MotorcycleView: React.FC<Props> = ({
         {displayedLogs.length === 0 ? (
           <div className="bg-[#141416] border border-dashed border-white/10 rounded-2xl p-6 sm:p-8 text-center">
             <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-3">
-              <Fuel className="w-6 h-6 text-gray-500" />
+              {isElectricVehicle ? (
+                <Zap className="w-6 h-6 text-emerald-400" />
+              ) : (
+                <Fuel className="w-6 h-6 text-gray-500" />
+              )}
             </div>
             <p className="text-sm font-bold text-gray-200">
-              Nenhum abastecimento neste período
+              {isElectricVehicle
+                ? 'Nenhuma recarga elétrica neste período'
+                : 'Nenhum abastecimento neste período'}
             </p>
             <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto leading-relaxed">
-              Use o botão <strong className="text-accent">Registrar Abastecimento</strong> no topo da tela para lançar seus gastos em Crédito, Débito, Pix ou Dinheiro.
+              Use o botão{' '}
+              <strong className="text-accent">
+                {isElectricVehicle
+                  ? 'Registrar Recarga'
+                  : isHybridVehicle
+                  ? 'Abastecer / Recarregar'
+                  : 'Registrar Abastecimento'}
+              </strong>{' '}
+              no topo da tela para lançar seus gastos em Crédito, Débito, Pix ou Dinheiro.
             </p>
           </div>
         ) : (
           <div className="space-y-2.5">
             {displayedLogs.map(log => {
               const pMeta = PAYMENT_META[log.paymentMethod] || PAYMENT_META.pix;
-              const fMeta = FUEL_TYPE_META[log.fuelType || 'gasoline'] || FUEL_TYPE_META.gasoline;
+              const logIsElec = isElectricFuelType(log.fuelType) || (isElectricVehicle && log.kwh !== undefined);
+              const fMeta =
+                FUEL_TYPE_META[log.fuelType || (logIsElec ? 'electric_home' : 'gasoline')] ||
+                FUEL_TYPE_META.gasoline;
               const PIcon = pMeta.icon;
-              const liters =
-                log.liters ||
-                (log.pricePerLiter ? log.amount / log.pricePerLiter : log.amount / 6.19);
+              const unitPrice = logIsElec
+                ? log.pricePerKwh || log.pricePerLiter || 1.8
+                : log.pricePerLiter || 6.19;
+              const units = logIsElec
+                ? log.kwh ?? (unitPrice > 0 ? log.amount / unitPrice : 0)
+                : log.liters ?? (unitPrice > 0 ? log.amount / unitPrice : 0);
 
               return (
                 <div
@@ -1687,10 +1984,12 @@ const MotorcycleView: React.FC<Props> = ({
                       </div>
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] sm:text-xs text-gray-400 mt-1">
                         <span className="whitespace-nowrap">{log.date.split('-').reverse().join('/')}</span>
-                        <span className="whitespace-nowrap">• {liters.toFixed(2)} L</span>
-                        {log.pricePerLiter && (
-                          <span className="whitespace-nowrap">• {formatMoney(log.pricePerLiter)}/L</span>
-                        )}
+                        <span className="whitespace-nowrap">
+                          • {units.toFixed(2)} {logIsElec ? 'kWh' : 'L'}
+                        </span>
+                        <span className="whitespace-nowrap">
+                          • {formatMoney(unitPrice)}/{logIsElec ? 'kWh' : 'L'}
+                        </span>
                         {log.odometer && (
                           <span className="whitespace-nowrap">• {log.odometer.toLocaleString(locale)} km</span>
                         )}
@@ -1725,7 +2024,7 @@ const MotorcycleView: React.FC<Props> = ({
       </div>
 
       {/* ==================================================================== */}
-      {/* MODAL FORM: ADD / EDIT REFUELING (CUSTOM CALENDAR & FUEL DROPDOWN)   */}
+      {/* MODAL FORM: ADD / EDIT REFUELING OR ELECTRIC RECHARGING              */}
       {/* ==================================================================== */}
       {isFormOpen && (
         <div className="fixed inset-0 z-[80] bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
@@ -1736,15 +2035,27 @@ const MotorcycleView: React.FC<Props> = ({
             <div className="flex items-center justify-between gap-2 mb-5">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-2xl bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0">
-                  <Fuel className="w-5 h-5 text-accent" />
+                  {isSelectedLogElectric ? (
+                    <Zap className="w-5 h-5 text-accent" />
+                  ) : (
+                    <Fuel className="w-5 h-5 text-accent" />
+                  )}
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-base sm:text-lg font-extrabold text-white truncate">
-                    {editingLog ? 'Editar Abastecimento' : 'Novo Abastecimento'}
+                    {editingLog
+                      ? isSelectedLogElectric
+                        ? 'Editar Recarga Elétrica'
+                        : 'Editar Abastecimento'
+                      : isSelectedLogElectric
+                      ? 'Nova Recarga Elétrica'
+                      : 'Novo Abastecimento'}
                   </h3>
                   <p className="text-xs text-gray-400 truncate">
-                    {currentVehicle.brand} {currentVehicle.model} • Tanque{' '}
-                    {currentVehicle.tankCapacityL.toString().replace('.', ',')}L
+                    {currentVehicle.brand} {currentVehicle.model} •{' '}
+                    {isSelectedLogElectric
+                      ? `Bateria ${(currentVehicle.batteryCapacityKwh || 50).toString().replace('.', ',')} kWh`
+                      : `Tanque ${currentVehicle.tankCapacityL.toString().replace('.', ',')}L`}
                   </p>
                 </div>
               </div>
@@ -1758,10 +2069,12 @@ const MotorcycleView: React.FC<Props> = ({
             </div>
 
             <form onSubmit={handleSubmitForm} className="space-y-4">
-              {/* VALOR ABASTECIDO */}
+              {/* VALOR ABASTECIDO / RECARGA */}
               <div>
                 <label className="block text-[11px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5">
-                  Valor que Abasteci ({currencySymbol})
+                  {isSelectedLogElectric
+                    ? `Valor da Recarga (${currencySymbol})`
+                    : `Valor que Abasteci (${currencySymbol})`}
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-accent">
@@ -1781,15 +2094,17 @@ const MotorcycleView: React.FC<Props> = ({
                 </div>
                 {/* Quick Value Presets */}
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {[30, 50, 70, fullTankPresetValue].map(preset => (
+                  {quickPresets.map(preset => (
                     <button
                       key={preset}
                       type="button"
                       onClick={() => setAmountInput(preset.toString())}
                       className="px-3 py-1 rounded-xl bg-[#2c2c2e] hover:bg-white/15 text-xs font-bold text-gray-300 hover:text-white transition-colors cursor-pointer"
                     >
-                      {preset === fullTankPresetValue
-                        ? `Tanque Cheio (~${currencySymbol} ${preset})`
+                      {preset === fullChargePresetValue
+                        ? isSelectedLogElectric
+                          ? `Carga 100% (~${currencySymbol} ${preset})`
+                          : `Tanque Cheio (~${currencySymbol} ${preset})`
                         : `${currencySymbol} ${preset}`}
                     </button>
                   ))}
@@ -1831,7 +2146,7 @@ const MotorcycleView: React.FC<Props> = ({
               {/* CUSTOM EXPANDABLE DATE CALENDAR (NO BROWSER DATE PICKER) */}
               <div>
                 <label className="block text-[11px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5">
-                  Data do Abastecimento
+                  {isSelectedLogElectric ? 'Data da Recarga' : 'Data do Abastecimento'}
                 </label>
                 <button
                   type="button"
@@ -1944,10 +2259,14 @@ const MotorcycleView: React.FC<Props> = ({
                 )}
               </div>
 
-              {/* CUSTOM EXPANDABLE FUEL TYPE SELECTOR (NO NATIVE SELECT) */}
+              {/* CUSTOM EXPANDABLE FUEL / ENERGY TYPE SELECTOR */}
               <div>
                 <label className="block text-[11px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5">
-                  Tipo de Combustível
+                  {isElectricVehicle
+                    ? 'Tipo de Energia / Recarga'
+                    : isHybridVehicle
+                    ? 'Combustível ou Energia'
+                    : 'Tipo de Combustível'}
                 </label>
                 <button
                   type="button"
@@ -1976,7 +2295,7 @@ const MotorcycleView: React.FC<Props> = ({
 
                 {isFuelDropdownOpen && (
                   <div className="mt-2 bg-[#121215] border border-white/10 rounded-2xl p-2 space-y-1 shadow-xl animate-in fade-in duration-150">
-                    {(['gasoline', 'additive', 'ethanol'] as FuelType[]).map(ft => {
+                    {availableEnergyTypes.map(ft => {
                       const meta = FUEL_TYPE_META[ft];
                       const isSelected = fuelType === ft;
                       return (
@@ -1985,6 +2304,7 @@ const MotorcycleView: React.FC<Props> = ({
                           type="button"
                           onClick={() => {
                             setFuelType(ft);
+                            setPricePerLiterInput(meta.defaultPrice.toString());
                             setIsFuelDropdownOpen(false);
                           }}
                           className={`w-full p-3 rounded-xl flex items-center justify-between gap-3 text-left transition-all cursor-pointer ${
@@ -2010,11 +2330,13 @@ const MotorcycleView: React.FC<Props> = ({
                 )}
               </div>
 
-              {/* PREÇO POR LITRO & ODÔMETRO OPCIONAL */}
+              {/* PREÇO POR LITRO / KWH & ODÔMETRO OPCIONAL */}
               <div className="grid grid-cols-2 gap-3 items-end">
                 <div className="min-w-0">
                   <label className="block text-[11px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5 whitespace-nowrap truncate">
-                    Preço / Litro ({currencySymbol})
+                    {isSelectedLogElectric
+                      ? `Preço / kWh (${currencySymbol})`
+                      : `Preço / Litro (${currencySymbol})`}
                   </label>
                   <input
                     type="number"
@@ -2040,14 +2362,20 @@ const MotorcycleView: React.FC<Props> = ({
                 </div>
               </div>
 
-              {/* POSTO / OBSERVAÇÃO */}
+              {/* POSTO / ELETROPOSTO */}
               <div>
                 <label className="block text-[11px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5">
-                  Posto ou Observação (opcional)
+                  {isSelectedLogElectric
+                    ? 'Eletroposto ou Local (opcional)'
+                    : 'Posto ou Observação (opcional)'}
                 </label>
                 <input
                   type="text"
-                  placeholder="Ex: Shell V-Power / Viagem"
+                  placeholder={
+                    isSelectedLogElectric
+                      ? 'Ex: Wallbox Casa / Shopping / Eletroposto'
+                      : 'Ex: Shell V-Power / Viagem'
+                  }
                   value={stationInput}
                   onChange={e => setStationInput(e.target.value)}
                   className="w-full bg-[#0a0a0b] border border-white/10 focus:border-accent rounded-2xl px-4 py-3 text-sm font-bold text-white outline-none"
@@ -2055,14 +2383,22 @@ const MotorcycleView: React.FC<Props> = ({
               </div>
 
               {/* LIVE TELEMETRY PREVIEW */}
-              {previewLiters > 0 && (
-                <div className="bg-[#141416] border border-white/5 rounded-2xl p-3 flex items-center justify-between text-xs">
-                  <span className="text-gray-400">
-                    Volume no tanque ({currentVehicle.tankCapacityL.toString().replace('.', ',')}L):
+              {previewUnits > 0 && (
+                <div className="bg-[#141416] border border-white/5 rounded-2xl p-3 flex items-center justify-between gap-2 text-xs">
+                  <span className="text-gray-400 truncate">
+                    {isSelectedLogElectric
+                      ? `Energia (${(currentVehicle.batteryCapacityKwh || 50).toString().replace('.', ',')} kWh):`
+                      : `Tanque (${currentVehicle.tankCapacityL.toString().replace('.', ',')}L):`}
                   </span>
-                  <span className="font-extrabold text-accent">
-                    ~{previewLiters.toFixed(2)} L (+
-                    {Math.round(previewLiters * currentVehicle.avgKmPerLiter)} km)
+                  <span className="font-extrabold text-accent whitespace-nowrap shrink-0">
+                    ~{previewUnits.toFixed(2)} {isSelectedLogElectric ? 'kWh' : 'L'} (+
+                    {Math.round(
+                      previewUnits *
+                        (isSelectedLogElectric
+                          ? currentVehicle.avgKmPerKwh || 6.5
+                          : currentVehicle.avgKmPerLiter || 14)
+                    )}{' '}
+                    km)
                   </span>
                 </div>
               )}
@@ -2072,7 +2408,13 @@ const MotorcycleView: React.FC<Props> = ({
                 className="w-full py-4 rounded-2xl bg-accent text-black font-black text-sm uppercase tracking-wider shadow-lg shadow-accent/20 hover:brightness-110 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <Check className="w-5 h-5 stroke-[2.5]" />
-                <span>{editingLog ? 'Salvar Alterações' : 'Confirmar Abastecimento'}</span>
+                <span>
+                  {editingLog
+                    ? 'Salvar Alterações'
+                    : isSelectedLogElectric
+                    ? 'Confirmar Recarga'
+                    : 'Confirmar Abastecimento'}
+                </span>
               </button>
             </form>
           </div>

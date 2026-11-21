@@ -138,7 +138,13 @@ export interface Investment {
 
 export type FuelPaymentMethod = 'credit' | 'debit' | 'pix' | 'cash';
 
-export type FuelType = 'gasoline' | 'additive' | 'ethanol';
+export type FuelType =
+  | 'gasoline'
+  | 'additive'
+  | 'ethanol'
+  | 'electric_home'
+  | 'electric_ac'
+  | 'electric_dc';
 
 export interface FuelLog {
   id: string;
@@ -147,6 +153,8 @@ export interface FuelLog {
   paymentMethod: FuelPaymentMethod;
   liters?: number;
   pricePerLiter?: number;
+  kwh?: number;
+  pricePerKwh?: number;
   fuelType?: FuelType;
   odometer?: number;
   station?: string;
