@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, Suspense } from 'react';
 import {
   Fuel,
   Plus,
@@ -32,6 +32,8 @@ import { FuelLog, FuelPaymentMethod, FuelType, AppLanguage } from '../types';
 import { getLocale } from '../i18n';
 import { loadData, saveData, STORAGE_KEYS } from '../services/storage';
 import { saveUserField } from '../services/supabase';
+
+const Vehicle3DStage = React.lazy(() => import('./Vehicle3DStage'));
 
 interface Props {
   fuelLogs: FuelLog[];
@@ -662,60 +664,9 @@ const MotorcycleView: React.FC<Props> = ({
     [selectedVehicleId]
   );
 
-  // 3D Animated Studio State
+  // Real-time Three.js WebGL 3D Studio State
   const [headlightOn, setHeadlightOn] = useState<boolean>(true);
   const [is3DAnimActive, setIs3DAnimActive] = useState<boolean>(true);
-  const [animPhase, setAnimPhase] = useState<number>(0);
-  const isUserInteractingRef = useRef<boolean>(false);
-  const [manualTilt, setManualTilt] = useState<{ rx: number; ry: number; glareX: number; glareY: number }>({
-    rx: 0,
-    ry: 0,
-    glareX: 50,
-    glareY: 35
-  });
-
-  // Smooth Continuous 3D Studio Animation Loop
-  useEffect(() => {
-    if (!is3DAnimActive || isVehicleSelectorOpen) return;
-    let rafId: number;
-    let start: number | null = null;
-
-    const tick = (timestamp: number) => {
-      if (start === null) start = timestamp;
-      const elapsed = (timestamp - start) / 1000;
-      setAnimPhase(elapsed);
-      rafId = requestAnimationFrame(tick);
-    };
-
-    rafId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafId);
-  }, [is3DAnimActive, isVehicleSelectorOpen]);
-
-  // Computed 3D transform combining continuous 3D studio animation + user touch/mouse tilt
-  const computed3D = useMemo(() => {
-    if (isUserInteractingRef.current) {
-      return {
-        rx: manualTilt.rx,
-        ry: manualTilt.ry,
-        translateY: 0,
-        scale: 1.03,
-        glareX: manualTilt.glareX,
-        glareY: manualTilt.glareY
-      };
-    }
-    if (!is3DAnimActive) {
-      return { rx: 0, ry: 0, translateY: 0, scale: 1.0, glareX: 50, glareY: 35 };
-    }
-    // Smooth 3D breathing & orbital showroom motion
-    const ry = Math.sin(animPhase * 1.15) * 8.5;
-    const rx = Math.cos(animPhase * 0.85) * 4.2;
-    const translateY = Math.sin(animPhase * 1.7) * -5.5;
-    const scale = 1.02 + Math.sin(animPhase * 0.9) * 0.015;
-    const glareX = Math.round(50 + Math.sin(animPhase * 1.15) * 32);
-    const glareY = Math.round(36 + Math.cos(animPhase * 0.85) * 18);
-
-    return { rx, ry, translateY, scale, glareX, glareY };
-  }, [animPhase, is3DAnimActive, manualTilt]);
 
   // Form / Modal State for Adding or Editing Refueling
   const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
@@ -747,29 +698,6 @@ const MotorcycleView: React.FC<Props> = ({
     const scrollParent = document.querySelector('.overflow-y-auto');
     if (scrollParent) scrollParent.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  // Interactive 3D tilt on Studio Card
-  const stageRef = useRef<HTMLDivElement | null>(null);
-  const handleStageMove = useCallback((clientX: number, clientY: number) => {
-    if (!stageRef.current) return;
-    isUserInteractingRef.current = true;
-    const rect = stageRef.current.getBoundingClientRect();
-    const relX = (clientX - rect.left) / rect.width;
-    const relY = (clientY - rect.top) / rect.height;
-    const ry = (relX - 0.5) * 20;
-    const rx = (0.5 - relY) * 13;
-    setManualTilt({
-      rx,
-      ry,
-      glareX: Math.round(relX * 100),
-      glareY: Math.round(relY * 100)
-    });
-  }, []);
-
-  const handleStageReset = useCallback(() => {
-    isUserInteractingRef.current = false;
-    setManualTilt({ rx: 0, ry: 0, glareX: 50, glareY: 35 });
-  }, []);
 
   // Parse Date helper
   const parseLogYearMonth = (dateStr: string) => {
@@ -1496,83 +1424,26 @@ const MotorcycleView: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* 3D Animated Viewport */}
+        {/* Real-Time Three.js WebGL 3D Viewport */}
         <div className="relative z-10">
-          <div
-            ref={stageRef}
-            onMouseMove={e => handleStageMove(e.clientX, e.clientY)}
-            onMouseLeave={handleStageReset}
-            onTouchMove={e => {
-              if (e.touches[0]) handleStageMove(e.touches[0].clientX, e.touches[0].clientY);
-            }}
-            onTouchEnd={handleStageReset}
-            className="relative w-full rounded-2xl overflow-hidden bg-[#0a0a0b] border border-white/5 select-none"
-            style={{ perspective: '1100px' }}
+          <Suspense
+            fallback={
+              <div className="w-full h-[235px] sm:h-[320px] rounded-2xl bg-[#0a0a0d] border border-white/5 flex flex-col items-center justify-center gap-2">
+                <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                  Carregando 3D Studio...
+                </span>
+              </div>
+            }
           >
-            {/* Animated 3D Showroom Floor Reflection Ring */}
-            <div
-              className="absolute bottom-2 left-1/2 -translate-x-1/2 w-[82%] h-8 rounded-full pointer-events-none transition-transform duration-300"
-              style={{
-                background: `radial-gradient(ellipse at center, ${currentVehicle.accentHex}40 0%, transparent 72%)`,
-                transform: `translate3d(0, ${computed3D.translateY * -0.4}px, 0) scale(${computed3D.scale})`,
-                filter: 'blur(6px)'
-              }}
+            <Vehicle3DStage
+              category={currentVehicle.category}
+              powertrain={currentVehicle.powertrain}
+              accentHex={currentVehicle.accentHex}
+              headlightOn={headlightOn}
+              isAnimating={is3DAnimActive}
             />
-
-            <div
-              className="relative w-full will-change-transform"
-              style={{
-                transform: `translate3d(0, ${computed3D.translateY}px, 0) rotateX(${computed3D.rx}deg) rotateY(${computed3D.ry}deg) scale(${computed3D.scale})`,
-                transformStyle: 'preserve-3d',
-                transition: isUserInteractingRef.current ? 'transform 120ms ease-out' : 'none'
-              }}
-            >
-              {/* 3D Studio Render Image of Vehicle */}
-              <img
-                src={currentVehicle.imageUrl}
-                alt={`${currentVehicle.brand} ${currentVehicle.model} 3D`}
-                className="w-full h-[215px] sm:h-[310px] object-cover object-center block transition-all duration-500"
-                style={{ filter: currentVehicle.hueRotate }}
-                draggable={false}
-              />
-
-              {/* Animated Dynamic Specular 3D Light Reflection */}
-              <div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: `radial-gradient(circle at ${computed3D.glareX}% ${computed3D.glareY}%, rgba(255,255,255,0.18), transparent 55%)`
-                }}
-              />
-
-              {/* Interactive LED Projector Headlight High-Beam Overlay */}
-              {headlightOn && (
-                <div
-                  className="absolute pointer-events-none transition-opacity duration-300 animate-pulse"
-                  style={
-                    currentVehicle.category === 'car'
-                      ? {
-                          left: '14%',
-                          top: '38%',
-                          width: '24%',
-                          height: '24%',
-                          background:
-                            'radial-gradient(circle, rgba(186,230,253,0.8) 0%, rgba(56,189,248,0.3) 42%, transparent 72%)',
-                          filter: 'blur(7px)'
-                        }
-                      : {
-                          left: '66%',
-                          top: '26%',
-                          width: '26%',
-                          height: '26%',
-                          background:
-                            'radial-gradient(circle, rgba(186,230,253,0.8) 0%, rgba(56,189,248,0.3) 42%, transparent 72%)',
-                          filter: 'blur(8px)'
-                        }
-                  }
-                />
-              )}
-            </div>
-          </div>
+          </Suspense>
         </div>
 
         {/* Showroom Controls Footer: Fixed Vehicle Color Badge + Farol LED Toggle */}
