@@ -63,13 +63,22 @@ const NotificationModal: React.FC<Props> = ({
         setNotificationPermission(Notification.permission);
       }
 
-      // Check for existing Push Subscription in the browser
+      // Check for existing Push Subscription in the browser without hanging if SW is not registered
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(registration => {
-          registration.pushManager.getSubscription().then(subscription => {
+        navigator.serviceWorker
+          .getRegistration()
+          .then(registration => {
+            if (registration?.pushManager) {
+              return registration.pushManager.getSubscription();
+            }
+            return null;
+          })
+          .then(subscription => {
             setHasBrowserSubscription(!!subscription);
+          })
+          .catch(() => {
+            setHasBrowserSubscription(false);
           });
-        });
       }
     }
   }, [isOpen]);
@@ -84,10 +93,14 @@ const NotificationModal: React.FC<Props> = ({
       setNotificationPermission(permission);
 
       if (permission === 'granted') {
-        // 2. Try to Subscribe to Push Service
+        // 2. Try to Subscribe to Push Service (if an active Service Worker registration exists)
         if ('serviceWorker' in navigator && currentUserEmail) {
           try {
-            const registration = await navigator.serviceWorker.ready;
+            const registration = await navigator.serviceWorker.getRegistration();
+            if (!registration || !registration.pushManager) {
+              alert(t.alerts.errorPush);
+              return;
+            }
 
             let subscription = await registration.pushManager.getSubscription();
 
@@ -102,10 +115,7 @@ const NotificationModal: React.FC<Props> = ({
             if (subscription) {
               const subscriptionJson = JSON.parse(JSON.stringify(subscription));
               await saveUserField(currentUserEmail, 'pushSubscription', subscriptionJson);
-
-              // Although this updates the backend, the prop won't refresh until next open.
-              // The button will disappear on next open, which is acceptable UX.
-              // onClose(); // Removing automatic close to let user see status
+              setHasBrowserSubscription(true);
             }
 
           } catch (pushError) {
@@ -127,8 +137,8 @@ const NotificationModal: React.FC<Props> = ({
     setIsSubscribing(true);
     try {
         if ('serviceWorker' in navigator) {
-            const registration = await navigator.serviceWorker.ready;
-            const subscription = await registration.pushManager.getSubscription();
+            const registration = await navigator.serviceWorker.getRegistration();
+            const subscription = await registration?.pushManager?.getSubscription();
             if (subscription) {
                 await subscription.unsubscribe();
             }

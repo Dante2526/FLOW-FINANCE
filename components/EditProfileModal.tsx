@@ -59,11 +59,10 @@ const EditProfileModal: React.FC<Props> = ({ isOpen, onClose, onSave, onLogout, 
     if (!name) return;
 
     onSave({
+      ...currentProfile,
       name: name.toUpperCase(), // Converte para maiúsculo apenas ao salvar
       subtitle: '',
-      avatarUrl: avatarUrl,
-      isPro: currentProfile.isPro, // Mantém o status atual (gerenciado pelo App)
-      subscriptionExpiry: currentProfile.subscriptionExpiry // Mantém a data de expiração
+      avatarUrl: avatarUrl
     });
     onClose();
   };

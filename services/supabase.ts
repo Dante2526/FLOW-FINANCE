@@ -210,13 +210,21 @@ export const loadUserData = async (email: string) => {
         }
     }
 
+    const {
+      fuelLogs: _fl,
+      selectedVehicle: _sv,
+      dashboardOrder: _do,
+      theme: _th,
+      ...cleanProfile
+    } = profile;
+
     return {
-        profile: profile,
+        profile: cleanProfile,
         cdiRate: user.cdi_rate ?? 11.25,
         appLanguage: user.app_language,
         theme: user.theme || user.profile?.theme || null,
         dashboardOrder: user.profile?.dashboardOrder || [], 
-        fuelLogs: user.profile?.fuelLogs || null,
+        fuelLogs: Array.isArray(user.profile?.fuelLogs) ? user.profile.fuelLogs : null,
         selectedVehicle: user.profile?.selectedVehicle || null,
         transactions: toCamelCase(txRes.data || []),
         accounts: toCamelCase(accRes.data || []),
@@ -319,43 +327,60 @@ export const saveCollection = async (email: string, collection: string, data: an
   } catch (error) { return false; }
 };
 
-export const saveUserField = async (email: string, field: string, data: any): Promise<boolean> => {
-  try {
-    let payload: any = {};
-    
-    // CORREÇÃO: 'theme', 'dashboardOrder', 'fuelLogs' e 'selectedVehicle' são armazenados dentro do JSONB users.profile
-    const profileFields = ['dashboardOrder', 'profile', 'fuelLogs', 'theme', 'selectedVehicle'];
-    
-    if (profileFields.includes(field)) {
-        const { data: user } = await supabase.from('users').select('profile').eq('email', email.toLowerCase().trim()).maybeSingle();
+let saveUserFieldQueue: Promise<any> = Promise.resolve();
+
+export const saveUserField = (email: string, field: string, data: any): Promise<boolean> => {
+  const nextOp = saveUserFieldQueue.then(async () => {
+    try {
+      let payload: any = {};
+      const emailNorm = email.toLowerCase().trim();
+
+      // 'theme', 'dashboardOrder', 'fuelLogs' e 'selectedVehicle' são armazenados dentro do JSONB users.profile
+      const profileFields = ['dashboardOrder', 'profile', 'fuelLogs', 'theme', 'selectedVehicle'];
+
+      if (profileFields.includes(field)) {
+        const { data: user } = await supabase.from('users').select('profile').eq('email', emailNorm).maybeSingle();
         const currentProfile = user?.profile || {};
 
         if (field === 'profile') {
-             payload = { profile: { ...currentProfile, ...data } };
+          const {
+            fuelLogs: _fl,
+            selectedVehicle: _sv,
+            dashboardOrder: _do,
+            theme: _th,
+            pushSubscription: _ps,
+            ...cleanProfileData
+          } = data || {};
+          payload = { profile: { ...currentProfile, ...cleanProfileData } };
         } else {
-             payload = { profile: { ...currentProfile, [field]: data } };
+          payload = { profile: { ...currentProfile, [field]: data } };
         }
-    } else {
-        // CORREÇÃO: Apenas colunas reais existentes em public.users
-        const map: any = { 
-            cdiRate: 'cdi_rate', 
-            appLanguage: 'app_language',
-            pushSubscription: 'push_subscription'
+      } else {
+        // Apenas colunas reais existentes em public.users
+        const map: any = {
+          cdiRate: 'cdi_rate',
+          appLanguage: 'app_language',
+          pushSubscription: 'push_subscription'
         };
         payload = { [map[field] || field.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)]: data };
-    }
-    const { error } = await supabase.from('users').update(payload).eq('email', email.toLowerCase().trim());
+      }
 
-    if (error) {
+      const { error } = await supabase.from('users').update(payload).eq('email', emailNorm);
+
+      if (error) {
         console.error(`[Supabase Error] Update failed for field '${field}' on user '${email}':`, error);
         return false;
-    }
+      }
 
-    return true;
-  } catch (error) {
-    console.error(`[JS Error] Exception in saveUserField for field '${field}':`, error);
-    return false;
-  }
+      return true;
+    } catch (error) {
+      console.error(`[JS Error] Exception in saveUserField for field '${field}':`, error);
+      return false;
+    }
+  });
+
+  saveUserFieldQueue = nextOp.catch(() => false);
+  return nextOp;
 };
 
 export const subscribeToUserChanges = (email: string, onUpdate: () => void) => {

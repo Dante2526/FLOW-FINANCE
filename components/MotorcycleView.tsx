@@ -662,6 +662,22 @@ const MotorcycleView: React.FC<Props> = ({
     [selectedVehicleId]
   );
 
+  // Sync vehicle state if cloud profile data finishes loading while Garagem is mounted
+  useEffect(() => {
+    const handleVehicleSynced = (e: Event) => {
+      const customEv = e as CustomEvent<string>;
+      const syncedId = customEv.detail || loadData<string | null>(STORAGE_KEYS.SELECTED_VEHICLE, null);
+      if (syncedId) {
+        setSelectedVehicleId(syncedId);
+        setIsVehicleSelectorOpen(false);
+        const found = VEHICLE_CATALOG.find(v => v.id === syncedId);
+        if (found) setSelectorCategory(found.category);
+      }
+    };
+    window.addEventListener('flow-vehicle-synced', handleVehicleSynced);
+    return () => window.removeEventListener('flow-vehicle-synced', handleVehicleSynced);
+  }, []);
+
   // 3D Animated Studio State
   const [headlightOn, setHeadlightOn] = useState<boolean>(true);
   const [is3DAnimActive, setIs3DAnimActive] = useState<boolean>(true);
@@ -784,21 +800,55 @@ const MotorcycleView: React.FC<Props> = ({
     return { year: now.getFullYear(), monthIdx: now.getMonth() };
   };
 
-  // Filtered Logs for Selected Month & Year
+  // Handle Android hardware/gesture Back Button inside Garagem view
+  useEffect(() => {
+    const handleGaragemBack = (e: Event) => {
+      if (isFormOpen) {
+        e.preventDefault();
+        if (isCustomCalendarOpen) {
+          setIsCustomCalendarOpen(false);
+        } else if (isFuelDropdownOpen) {
+          setIsFuelDropdownOpen(false);
+        } else {
+          setIsFormOpen(false);
+          setEditingLog(null);
+        }
+        return;
+      }
+      if (isVehicleSelectorOpen && selectedVehicleId) {
+        e.preventDefault();
+        setIsVehicleSelectorOpen(false);
+      }
+    };
+    window.addEventListener('flow-back-button', handleGaragemBack);
+    return () => window.removeEventListener('flow-back-button', handleGaragemBack);
+  }, [isFormOpen, isCustomCalendarOpen, isFuelDropdownOpen, isVehicleSelectorOpen, selectedVehicleId]);
+
+  const sortLogsByDateDesc = useCallback((logs: FuelLog[]) => {
+    return [...logs].sort((a, b) => {
+      const dateCmp = (b.date || '').localeCompare(a.date || '');
+      if (dateCmp !== 0) return dateCmp;
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+  }, []);
+
+  // Filtered Logs for Selected Month & Year (sorted newest first)
   const monthLogs = useMemo(() => {
-    return fuelLogs.filter(log => {
+    const filtered = fuelLogs.filter(log => {
       const { year, monthIdx } = parseLogYearMonth(log.date);
       return year === selectedYear && monthIdx === selectedMonthIdx;
     });
-  }, [fuelLogs, selectedYear, selectedMonthIdx]);
+    return sortLogsByDateDesc(filtered);
+  }, [fuelLogs, selectedYear, selectedMonthIdx, sortLogsByDateDesc]);
 
-  // Filtered Logs for Selected Year
+  // Filtered Logs for Selected Year (sorted newest first)
   const yearLogs = useMemo(() => {
-    return fuelLogs.filter(log => {
+    const filtered = fuelLogs.filter(log => {
       const { year } = parseLogYearMonth(log.date);
       return year === selectedYear;
     });
-  }, [fuelLogs, selectedYear]);
+    return sortLogsByDateDesc(filtered);
+  }, [fuelLogs, selectedYear, sortLogsByDateDesc]);
 
   const isElectricVehicle = currentVehicle.powertrain === 'electric';
   const isHybridVehicle = currentVehicle.powertrain === 'hybrid';
@@ -814,13 +864,16 @@ const MotorcycleView: React.FC<Props> = ({
 
   const isSelectedLogElectric = isElectricFuelType(fuelType);
 
-  // Monthly & Annual Totals (supports both Liters and Electric kWh)
+  // Monthly & Annual Totals (supports both Liters and Electric kWh separately for Hybrids)
   const stats = useMemo(() => {
     const monthTotal = monthLogs.reduce((sum, l) => sum + (l.amount || 0), 0);
     const yearTotal = yearLogs.reduce((sum, l) => sum + (l.amount || 0), 0);
 
+    const isLogElectric = (l: FuelLog) =>
+      isElectricFuelType(l.fuelType) || (isElectricVehicle && l.kwh !== undefined);
+
     const getLogUnits = (l: FuelLog) => {
-      if (isElectricFuelType(l.fuelType) || (isElectricVehicle && l.kwh !== undefined)) {
+      if (isLogElectric(l)) {
         const unitPrice = l.pricePerKwh || l.pricePerLiter || 1.8;
         return l.kwh ?? (unitPrice > 0 ? l.amount / unitPrice : 0);
       }
@@ -828,12 +881,22 @@ const MotorcycleView: React.FC<Props> = ({
       return l.liters ?? (unitPrice > 0 ? l.amount / unitPrice : 0);
     };
 
-    const monthUnits = monthLogs.reduce((sum, l) => sum + getLogUnits(l), 0);
+    let monthLiters = 0;
+    let monthKwh = 0;
+    monthLogs.forEach(l => {
+      if (isLogElectric(l)) {
+        monthKwh += getLogUnits(l);
+      } else {
+        monthLiters += getLogUnits(l);
+      }
+    });
+
+    const monthUnits = isElectricVehicle ? monthKwh : monthLiters + monthKwh;
     const yearUnits = yearLogs.reduce((sum, l) => sum + getLogUnits(l), 0);
 
     const yearEstimatedKm = yearLogs.reduce((sum, l) => {
       const units = getLogUnits(l);
-      if (isElectricFuelType(l.fuelType) || isElectricVehicle) {
+      if (isLogElectric(l)) {
         return sum + units * (currentVehicle.avgKmPerKwh || 6.5);
       }
       return sum + units * (currentVehicle.avgKmPerLiter || 14);
@@ -887,6 +950,8 @@ const MotorcycleView: React.FC<Props> = ({
       monthTotal,
       yearTotal,
       monthUnits,
+      monthLiters,
+      monthKwh,
       yearUnits,
       yearEstimatedKm,
       monthlyAverageInYear,
@@ -1682,15 +1747,20 @@ const MotorcycleView: React.FC<Props> = ({
           </div>
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[11px] sm:text-xs text-gray-400 mt-3 pt-3 border-t border-white/5">
             <span className="flex items-center gap-1.5 whitespace-nowrap">
-              {isElectricVehicle ? (
+              {isElectricVehicle || (stats.monthKwh > 0 && stats.monthLiters === 0) ? (
                 <>
                   <BatteryCharging className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  ~{stats.monthUnits.toFixed(1)} kWh no mês
+                  ~{stats.monthKwh.toFixed(1)} kWh no mês
+                </>
+              ) : stats.monthLiters > 0 && stats.monthKwh > 0 ? (
+                <>
+                  <Droplets className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  ~{stats.monthLiters.toFixed(1)} L • ~{stats.monthKwh.toFixed(1)} kWh
                 </>
               ) : (
                 <>
                   <Droplets className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                  ~{stats.monthUnits.toFixed(1)} L no mês
+                  ~{stats.monthLiters.toFixed(1)} L no mês
                 </>
               )}
             </span>
@@ -1851,7 +1921,11 @@ const MotorcycleView: React.FC<Props> = ({
               <button
                 key={item.monthIdx}
                 type="button"
-                onClick={() => setSelectedMonthIdx(item.monthIdx)}
+                onClick={() => {
+                  setSelectedMonthIdx(item.monthIdx);
+                  setBreakdownScope('month');
+                  setHistoryScope('month');
+                }}
                 className="flex flex-col items-center justify-end h-full group cursor-pointer min-w-0"
                 title={`${MONTH_NAMES_PT[item.monthIdx]}: ${formatMoney(item.amount)}`}
               >

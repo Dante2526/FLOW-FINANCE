@@ -26,8 +26,9 @@ import { loadData, saveData, STORAGE_KEYS } from './services/storage';
 import { TRANSLATIONS, getBrowserLanguage, getLocale } from './i18n';
 import { IconBell, JeittoLogo } from './components/Icons';
 import { Crown, Languages, ExternalLink, Zap, Heart, Copy, Check, ChevronRight, HelpCircle, CalendarClock, X, Plus, Landmark, Bell } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 
-import { loginUser, registerUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, upsertItem, upsertBatch, deleteItem, hardDeleteMonth } from './services/supabase';
+import { loginUser, registerUser, deleteUser, loadUserData, saveCollection, saveUserField, subscribeToUserChanges, supabase, upsertItem, upsertBatch, deleteItem, hardDeleteMonth } from './services/supabase';
 import { applyYieldToAll } from './services/investmentYield';
 
 const AnalyticsModal = React.lazy(() => import('./components/AnalyticsModal'));
@@ -218,8 +219,45 @@ const App: React.FC = () => {
     });
   }, [months, transactions]);
 
-  const currentStateRef = useRef({ transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, cdiRate, dashboardOrder, appLanguage, currentView, currentUserEmail, activeMonthId, editingAccount, editingTransaction });
-  useEffect(() => { currentStateRef.current = { transactions, accounts, investments, longTermTransactions, notifications, userProfile, appTheme, months, cdiRate, dashboardOrder, appLanguage, currentView, currentUserEmail, activeMonthId, editingAccount, editingTransaction }; });
+  const currentStateRef = useRef({ transactions, accounts, investments, longTermTransactions, fuelLogs, notifications, userProfile, appTheme, months, cdiRate, dashboardOrder, appLanguage, currentView, currentUserEmail, activeMonthId, editingAccount, editingTransaction });
+  useEffect(() => { currentStateRef.current = { transactions, accounts, investments, longTermTransactions, fuelLogs, notifications, userProfile, appTheme, months, cdiRate, dashboardOrder, appLanguage, currentView, currentUserEmail, activeMonthId, editingAccount, editingTransaction }; });
+
+  // Handle Android hardware/gesture Back Button for global modals and bottom-nav tabs
+  useEffect(() => {
+    const handleGlobalBackButton = (e: Event) => {
+      if (e.defaultPrevented) return;
+      if (isProModalOpen) { e.preventDefault(); setIsProModalOpen(false); return; }
+      if (isDonationModalOpen) { e.preventDefault(); setIsDonationModalOpen(false); return; }
+      if (isAddTransactionOpen) { e.preventDefault(); setIsAddTransactionOpen(false); setEditingTransaction(null); return; }
+      if (isAddAccountOpen) { e.preventDefault(); setIsAddAccountOpen(false); setEditingAccount(null); return; }
+      if (isCalculatorOpen) { e.preventDefault(); setIsCalculatorOpen(false); return; }
+      if (isProfileModalOpen) { e.preventDefault(); setIsProfileModalOpen(false); return; }
+      if (isNotepadOpen) { e.preventDefault(); setIsNotepadOpen(false); return; }
+      if (isCalendarOpen) { e.preventDefault(); setIsCalendarOpen(false); return; }
+      if (isNotificationOpen) { e.preventDefault(); setIsNotificationOpen(false); return; }
+      if (isAnalyticsOpen) { e.preventDefault(); setIsAnalyticsOpen(false); return; }
+      if (isLangMenuOpen) { e.preventDefault(); setIsLangMenuOpen(false); return; }
+      if (currentView !== 'home') {
+        e.preventDefault();
+        setCurrentView('home');
+      }
+    };
+    window.addEventListener('flow-back-button', handleGlobalBackButton);
+    return () => window.removeEventListener('flow-back-button', handleGlobalBackButton);
+  }, [
+    isProModalOpen,
+    isDonationModalOpen,
+    isAddTransactionOpen,
+    isAddAccountOpen,
+    isCalculatorOpen,
+    isProfileModalOpen,
+    isNotepadOpen,
+    isCalendarOpen,
+    isNotificationOpen,
+    isAnalyticsOpen,
+    isLangMenuOpen,
+    currentView
+  ]);
 
   // Reset scroll on view change
   useEffect(() => {
@@ -413,21 +451,28 @@ const App: React.FC = () => {
           missingNotifs.push(newNotif);
 
           // TRIGGER SYSTEM NOTIFICATION
-          if (Notification.permission === 'granted' && !systemNotifiedRef.current.has(notifId) && !systemNotifiedRef.current.has(`bill-due-${t.id}`)) {
+          if ('Notification' in window && Notification.permission === 'granted' && !systemNotifiedRef.current.has(notifId) && !systemNotifiedRef.current.has(`bill-due-${t.id}`)) {
             systemNotifiedRef.current.add(notifId);
             systemNotifiedRef.current.add(`bill-due-${t.id}`);
 
             if ('serviceWorker' in navigator) {
-              navigator.serviceWorker.ready.then(registration => {
-                registration.showNotification(title, {
-                  body: message,
-                  icon: '/icon-192x192.png',
-                  badge: '/notification-icon.png', 
-                  vibrate: [100, 50, 100],
-                  tag: `bill-due-${t.id}`,
-                  data: { url: '/' }
-                } as any);
-              });
+              navigator.serviceWorker
+                .getRegistration()
+                .then(registration => {
+                  if (registration && typeof registration.showNotification === 'function') {
+                    registration.showNotification(title, {
+                      body: message,
+                      icon: '/icon-192x192.png',
+                      badge: '/notification-icon.png',
+                      vibrate: [100, 50, 100],
+                      tag: `bill-due-${t.id}`,
+                      data: { url: '/' }
+                    } as any);
+                  } else {
+                    new Notification(title, { body: message, tag: `bill-due-${t.id}` } as any);
+                  }
+                })
+                .catch(() => {});
             } else {
               new Notification(title, { body: message, tag: `bill-due-${t.id}` } as any);
             }
@@ -583,12 +628,14 @@ const App: React.FC = () => {
     }
     if (data.cdiRate !== undefined) setCdiRate(data.cdiRate);
     if (data.dashboardOrder) setDashboardOrder(data.dashboardOrder);
-    if (Array.isArray(data.fuelLogs) && data.fuelLogs.length > 0) {
+    if (Array.isArray(data.fuelLogs)) {
       setFuelLogs(data.fuelLogs);
       saveData(STORAGE_KEYS.FUEL_LOGS, data.fuelLogs);
     }
     if (typeof data.selectedVehicle === 'string' && data.selectedVehicle) {
       saveData(STORAGE_KEYS.SELECTED_VEHICLE, data.selectedVehicle);
+      saveData('flow_vehicle_picker_confirmed', true);
+      window.dispatchEvent(new CustomEvent('flow-vehicle-synced', { detail: data.selectedVehicle }));
     }
 
     if (data.appLanguage && ['pt', 'en', 'es'].includes(data.appLanguage)) {
@@ -797,17 +844,15 @@ const App: React.FC = () => {
     const act = cur.months.find(m => m.id === cur.activeMonthId);
     const editingTx = cur.editingTransaction;
     const email = cur.currentUserEmail;
-    setTransactions(prev => {
-      if (editingTx) {
-        const upd = { ...editingTx, ...data };
-        if (email) { upsertItem(email, 'transactions', upd); lastActionTimeRef.current = Date.now(); }
-        return prev.map(t => t.id === editingTx.id ? upd : t);
-      } else {
-        const nTx = { id: generateUUID(), ...data, month: act?.month, year: act?.year, createdAt: new Date().toISOString() };
-        if (email) { upsertItem(email, 'transactions', nTx); lastActionTimeRef.current = Date.now(); }
-        return [nTx, ...prev];
-      }
-    });
+    if (editingTx) {
+      const upd = { ...editingTx, ...data };
+      setTransactions(prev => prev.map(t => t.id === editingTx.id ? upd : t));
+      if (email) { upsertItem(email, 'transactions', upd); lastActionTimeRef.current = Date.now(); }
+    } else {
+      const nTx = { id: generateUUID(), ...data, month: act?.month, year: act?.year, createdAt: new Date().toISOString() };
+      setTransactions(prev => [nTx, ...prev]);
+      if (email) { upsertItem(email, 'transactions', nTx); lastActionTimeRef.current = Date.now(); }
+    }
     setEditingTransaction(null);
   }, []);
 
@@ -938,39 +983,33 @@ const App: React.FC = () => {
       id: generateUUID(),
       createdAt: new Date().toISOString()
     };
-    setFuelLogs(prev => {
-      const updated = [newLog, ...prev];
-      saveData(STORAGE_KEYS.FUEL_LOGS, updated);
-      if (currentUserEmail) {
-        saveUserField(currentUserEmail, 'fuelLogs', updated);
-        lastActionTimeRef.current = Date.now();
-      }
-      return updated;
-    });
+    const updated = [newLog, ...currentStateRef.current.fuelLogs];
+    setFuelLogs(updated);
+    saveData(STORAGE_KEYS.FUEL_LOGS, updated);
+    if (currentUserEmail) {
+      saveUserField(currentUserEmail, 'fuelLogs', updated);
+      lastActionTimeRef.current = Date.now();
+    }
   }, [currentUserEmail]);
 
   const handleFuelLogEdit = useCallback((updatedLog: FuelLog) => {
-    setFuelLogs(prev => {
-      const updated = prev.map(l => l.id === updatedLog.id ? updatedLog : l);
-      saveData(STORAGE_KEYS.FUEL_LOGS, updated);
-      if (currentUserEmail) {
-        saveUserField(currentUserEmail, 'fuelLogs', updated);
-        lastActionTimeRef.current = Date.now();
-      }
-      return updated;
-    });
+    const updated = currentStateRef.current.fuelLogs.map(l => l.id === updatedLog.id ? updatedLog : l);
+    setFuelLogs(updated);
+    saveData(STORAGE_KEYS.FUEL_LOGS, updated);
+    if (currentUserEmail) {
+      saveUserField(currentUserEmail, 'fuelLogs', updated);
+      lastActionTimeRef.current = Date.now();
+    }
   }, [currentUserEmail]);
 
   const handleFuelLogDelete = useCallback((id: string) => {
-    setFuelLogs(prev => {
-      const updated = prev.filter(l => l.id !== id);
-      saveData(STORAGE_KEYS.FUEL_LOGS, updated);
-      if (currentUserEmail) {
-        saveUserField(currentUserEmail, 'fuelLogs', updated);
-        lastActionTimeRef.current = Date.now();
-      }
-      return updated;
-    });
+    const updated = currentStateRef.current.fuelLogs.filter(l => l.id !== id);
+    setFuelLogs(updated);
+    saveData(STORAGE_KEYS.FUEL_LOGS, updated);
+    if (currentUserEmail) {
+      saveUserField(currentUserEmail, 'fuelLogs', updated);
+      lastActionTimeRef.current = Date.now();
+    }
   }, [currentUserEmail]);
 
   const handleGoHome = useCallback(() => setCurrentView('home'), []);
@@ -988,10 +1027,33 @@ const App: React.FC = () => {
     setIsProModalOpen(false);
     setIsDonationModalOpen(false);
     setCurrentView('home');
+    setFuelLogs([]);
     localStorage.removeItem(STORAGE_KEYS.USER_SESSION);
+    localStorage.removeItem(STORAGE_KEYS.FUEL_LOGS);
+    localStorage.removeItem(STORAGE_KEYS.SELECTED_VEHICLE);
+    localStorage.removeItem('flow_vehicle_picker_confirmed');
     await supabase.auth.signOut();
     setCurrentUserEmail(null);
   }, []);
+
+  const handleDeleteUserAccount = useCallback(async () => {
+    const email = currentStateRef.current.currentUserEmail;
+    if (!email) return;
+    const lang = currentStateRef.current.appLanguage;
+    const confirmMsg =
+      lang === 'en'
+        ? 'Are you sure you want to permanently delete your account and all data? This action cannot be undone.'
+        : lang === 'es'
+        ? '¿Está seguro de que desea eliminar permanentemente su cuenta y todos sus datos? Esta acción no se puede deshacer.'
+        : 'Tem certeza que deseja excluir permanentemente sua conta e todos os seus dados? Esta ação não pode ser desfeita.';
+    if (!window.confirm(confirmMsg)) return;
+    try {
+      await deleteUser(email);
+    } catch (e) {
+      console.error('Erro ao excluir conta:', e);
+    }
+    await handleLogout();
+  }, [handleLogout]);
 
   const handleLoginSuccess = useCallback(async (email: string, name?: string) => {
     if (name) {
@@ -1110,30 +1172,32 @@ const App: React.FC = () => {
   }, []);
 
   const handleProUpgrade = useCallback(() => {
-    setUserProfile(p => ({ ...p, isPro: true }));
+    const expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    setUserProfile(p => ({ ...p, isPro: true, subscriptionExpiry: expiryDate }));
     setIsProModalOpen(false);
     const cur = currentStateRef.current;
     const email = cur.currentUserEmail;
-    if (email) { saveUserField(email, 'profile', { ...cur.userProfile, isPro: true }); lastActionTimeRef.current = Date.now(); }
+    if (email) {
+      saveUserField(email, 'profile', { ...cur.userProfile, isPro: true, subscriptionExpiry: expiryDate });
+      lastActionTimeRef.current = Date.now();
+    }
   }, []);
 
   const handleSaveNotepad = useCallback((c: string, d: any) => {
     const cur = currentStateRef.current;
-    setMonths(prev => {
-      const updatedMonths = prev.map(m =>
-        m.id === cur.activeMonthId ? { ...m, notepadContent: c, notepadDrawing: d } : m
-      );
-      const email = cur.currentUserEmail;
-      if (email) {
-        const monthToSave = updatedMonths.find(m => m.id === cur.activeMonthId);
-        if (monthToSave) {
-          const { count, ...restOfMonth } = monthToSave as any;
-          upsertItem(email, 'months', restOfMonth);
-          lastActionTimeRef.current = Date.now();
-        }
+    const updatedMonths = cur.months.map(m =>
+      m.id === cur.activeMonthId ? { ...m, notepadContent: c, notepadDrawing: d } : m
+    );
+    setMonths(updatedMonths);
+    const email = cur.currentUserEmail;
+    if (email) {
+      const monthToSave = updatedMonths.find(m => m.id === cur.activeMonthId);
+      if (monthToSave) {
+        const { count, ...restOfMonth } = monthToSave as any;
+        upsertItem(email, 'months', restOfMonth);
+        lastActionTimeRef.current = Date.now();
       }
-      return updatedMonths;
-    });
+    }
   }, []);
 
   const handleMarkAllRead = useCallback(() => {
@@ -1260,7 +1324,7 @@ const App: React.FC = () => {
               <IconBell count={unreadNotifCount} onClick={handleOpenNotification} data-tour-id="notification-bell" />
             </div>
           </div>
-          {!userProfile.pushSubscription && (
+          {!userProfile.pushSubscription && !Capacitor.isNativePlatform() && (
             <div className="mb-4 bg-blue-600/10 border border-blue-500/20 rounded-[2rem] p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg animate-in fade-in slide-in-from-top-4">
               <div className="flex items-center gap-3">
                 <div className="bg-blue-500/20 p-3 rounded-full shrink-0">
@@ -1378,7 +1442,7 @@ const App: React.FC = () => {
       {isAddTransactionOpen && <AddTransactionModal isOpen={isAddTransactionOpen} onClose={handleCloseAddTransaction} onSave={handleSaveTransaction} transactionToEdit={editingTransaction} activeMonthContext={activeMonthContext} appLanguage={appLanguage} />}
       {isAddAccountOpen && <AddAccountModal isOpen={isAddAccountOpen} onClose={handleCloseAddAccount} onSave={handleSaveAccount} accountToEdit={editingAccount} isPro={!!userProfile.isPro} onOpenProModal={handleOpenPro} appLanguage={appLanguage} />}
       {isCalculatorOpen && <CalculatorModal isOpen={isCalculatorOpen} onClose={handleCloseCalculator} appLanguage={appLanguage} />}
-      {isProfileModalOpen && <EditProfileModal isOpen={isProfileModalOpen} onClose={handleCloseProfileModal} onSave={handleSaveProfile} onLogout={handleLogout} onDeleteAccount={noop} currentProfile={userProfile} appLanguage={appLanguage} onOpenProModal={handleOpenPro} />}
+      {isProfileModalOpen && <EditProfileModal isOpen={isProfileModalOpen} onClose={handleCloseProfileModal} onSave={handleSaveProfile} onLogout={handleLogout} onDeleteAccount={handleDeleteUserAccount} currentProfile={userProfile} appLanguage={appLanguage} onOpenProModal={handleOpenPro} />}
       {isNotepadOpen && (
         <NotepadModal
           isOpen={isNotepadOpen}

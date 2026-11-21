@@ -14,6 +14,11 @@ if (Capacitor.isNativePlatform()) {
   SplashScreen.hide().catch(() => {});
 
   CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+    const backEvent = new CustomEvent('flow-back-button', { cancelable: true });
+    const shouldContinue = window.dispatchEvent(backEvent);
+    if (!shouldContinue) {
+      return;
+    }
     if (canGoBack) {
       window.history.back();
     } else {

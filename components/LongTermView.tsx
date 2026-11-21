@@ -166,6 +166,19 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
       return item.monthlyAmount ?? (item.totalAmount / item.installmentsCount);
   };
 
+  const computeInstallmentDateObj = (startDateStr: string, index: number): Date => {
+    const parts = (startDateStr || '').split('-');
+    const year = parseInt(parts[0], 10) || new Date().getFullYear();
+    const monthIdx = (parseInt(parts[1], 10) || 1) - 1;
+    const originalDay = parseInt(parts[2], 10) || 1;
+    const date = new Date(year, monthIdx, originalDay);
+    date.setMonth(date.getMonth() + index);
+    if (date.getDate() !== originalDay) {
+      date.setDate(0);
+    }
+    return date;
+  };
+
   const getInstallmentDate = (item: LongTermTransaction, index: number) => {
     // Check for specific date override first
     if (item.installmentsDates && item.installmentsDates[index]) {
@@ -175,11 +188,7 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
        return dateOverride.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
 
-    // Default Calculation
-    // TIMEZONE FIX: Construct date from parts
-    const parts = item.startDate.split('-');
-    const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-    date.setMonth(date.getMonth() + index);
+    const date = computeInstallmentDateObj(item.startDate, index);
     return date.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
   
@@ -187,11 +196,11 @@ const LongTermView: React.FC<Props> = ({ items, onAdd, onEdit, onDelete, appLang
      if (item.installmentsDates && item.installmentsDates[index]) {
         return item.installmentsDates[index];
      }
-     // TIMEZONE FIX: Construct date from parts
-     const parts = item.startDate.split('-');
-     const date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-     date.setMonth(date.getMonth() + index);
-     return date.toISOString().split('T')[0];
+     const date = computeInstallmentDateObj(item.startDate, index);
+     const yyyy = date.getFullYear();
+     const mm = String(date.getMonth() + 1).padStart(2, '0');
+     const dd = String(date.getDate()).padStart(2, '0');
+     return `${yyyy}-${mm}-${dd}`;
   };
 
   const toggleInstallment = (index: number) => {
