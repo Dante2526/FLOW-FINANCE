@@ -1,0 +1,142 @@
+name: Build Android AAB (Play Store)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Versão do app (ex: 1.5.1)'
+        required: false
+        default: '1.5.1'
+      version_code:
+        description: 'Version Code numérico (deixe vazio para usar o número da execução automaticamente)'
+        required: false
+        default: ''
+      build_apk_also:
+        description: 'Gerar também APK de teste (além do AAB)?'
+        type: boolean
+        default: true
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-android:
+    name: Build Flow Finance Android (.aab)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Setup Java 21 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app and sync Capacitor Android
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+        run: npm run build:android
+
+      - name: Decode Android Keystore (if configured)
+        id: keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 --decode > "${{ runner.temp }}/upload-keystore.jks"
+            echo "keystore_path=${{ runner.temp }}/upload-keystore.jks" >> "$GITHUB_OUTPUT"
+            echo "signed=true" >> "$GITHUB_OUTPUT"
+            echo "✅ Keystore de produção carregada com sucesso."
+          else
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Secret ANDROID_KEYSTORE_BASE64 não configurado — será gerado um AAB sem assinatura (configure os secrets para assinar para a Play Store)."
+          fi
+
+      - name: Determine Version Code & Name
+        id: version
+        run: |
+          V_NAME="${{ inputs.version_name }}"
+          if [ -z "$V_NAME" ]; then
+            V_NAME="1.5.1"
+          fi
+          V_CODE="${{ inputs.version_code }}"
+          if [ -z "$V_CODE" ]; then
+            V_CODE="${{ github.run_number }}"
+          fi
+          echo "version_name=$V_NAME" >> "$GITHUB_OUTPUT"
+          echo "version_code=$V_CODE" >> "$GITHUB_OUTPUT"
+          echo "Versão configurada: $V_NAME (versionCode $V_CODE)"
+
+      - name: Build Android App Bundle (.aab)
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ steps.keystore.outputs.keystore_path }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          ANDROID_VERSION_NAME: ${{ steps.version.outputs.version_name }}
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease --no-daemon
+
+      - name: Build Android APK (Optional for direct phone testing)
+        if: ${{ inputs.build_apk_also == true || github.event_name == 'push' }}
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ steps.keystore.outputs.keystore_path }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          ANDROID_VERSION_NAME: ${{ steps.version.outputs.version_name }}
+        run: |
+          if [ "${{ steps.keystore.outputs.signed }}" = "true" ]; then
+            ./gradlew assembleRelease --no-daemon
+          else
+            ./gradlew assembleDebug --no-daemon
+          fi
+
+      - name: Upload AAB Artifact (Play Store)
+        uses: actions/upload-artifact@v4
+        with:
+          name: flow-finance-v${{ steps.version.outputs.version_name }}-c${{ steps.version.outputs.version_code }}-aab
+          path: android/app/build/outputs/bundle/release/*.aab
+          retention-days: 30
+
+      - name: Upload APK Artifact (Direct Install)
+        if: ${{ inputs.build_apk_also == true || github.event_name == 'push' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: flow-finance-v${{ steps.version.outputs.version_name }}-c${{ steps.version.outputs.version_code }}-apk
+          path: |
+            android/app/build/outputs/apk/release/*.apk
+            android/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+      - name: Build Summary
+        run: |
+          echo "## 📱 Flow Finance Android Build Concluído" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Versão:** \`${{ steps.version.outputs.version_name }}\` (versionCode \`${{ steps.version.outputs.version_code }}\`)" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.keystore.outputs.signed }}" = "true" ]; then
+            echo "- **Assinatura Play Store:** ✅ **Assinado (pronto para enviar ao Google Play Console)**" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- **Assinatura Play Store:** ⚠️ **Sem assinatura** — adicione os 4 secrets (\`ANDROID_KEYSTORE_BASE64\`, \`ANDROID_KEYSTORE_PASSWORD\`, \`ANDROID_KEY_ALIAS\`, \`ANDROID_KEY_PASSWORD\`) em *Settings → Secrets and variables → Actions* para gerar o \`.aab\` assinado pronto para a Play Store." >> "$GITHUB_STEP_SUMMARY"
+          fi
