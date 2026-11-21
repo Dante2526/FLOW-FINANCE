@@ -20,8 +20,6 @@ import {
   X,
   Droplets,
   Navigation,
-  Eye,
-  Layers,
   Search,
   Car,
   Bike,
@@ -378,97 +376,6 @@ export const VEHICLE_CATALOG: VehiclePreset[] = [
   }
 ];
 
-interface HotspotInfo {
-  id: string;
-  x: number; // %
-  y: number; // %
-  title: string;
-  spec: string;
-  detail: string;
-}
-
-const getVehicleHotspots = (vehicle: VehiclePreset): HotspotInfo[] => {
-  if (vehicle.category === 'car') {
-    return [
-      {
-        id: 'tank',
-        x: 78,
-        y: 44,
-        title: `Tanque ${vehicle.tankCapacityL}L`,
-        spec: `Autonomia ~${Math.round(vehicle.tankCapacityL * vehicle.avgKmPerLiter)} km`,
-        detail: `Consumo médio estimado de ${vehicle.avgKmPerLiter} km/L para ${vehicle.brand} ${vehicle.model}.`
-      },
-      {
-        id: 'engine',
-        x: 24,
-        y: 52,
-        title: `Motor ${vehicle.model}`,
-        spec: vehicle.engineSpec,
-        detail: `Conjunto mecânico ${vehicle.year} com gerenciamento eletrônico de alta eficiência.`
-      },
-      {
-        id: 'headlight',
-        x: 25,
-        y: 51,
-        title: 'Faróis Full LED + DRL',
-        spec: 'Projetor LED Adaptativo',
-        detail: 'Iluminação diurna em LED de alta definição e assinatura luminosa esportiva.'
-      },
-      {
-        id: 'wheels',
-        x: 41,
-        y: 67,
-        title: 'Freios ABS + Rodas Liga',
-        spec: 'Discos Ventilados + EBD',
-        detail: 'Controle eletrônico de estabilidade e freios a disco nas 4 rodas.'
-      }
-    ];
-  }
-
-  return [
-    {
-      id: 'tank',
-      x: 52,
-      y: 33,
-      title: `Tanque Muscular ${vehicle.tankCapacityL.toString().replace('.', ',')}L`,
-      spec: `Autonomia de até ${Math.round(vehicle.tankCapacityL * vehicle.avgKmPerLiter)} km`,
-      detail: `Consumo médio ~${vehicle.avgKmPerLiter} km/L com tomadas de ar esportivas ${vehicle.year}.`
-    },
-    {
-      id: 'engine',
-      x: 53,
-      y: 59,
-      title: `Motor ${vehicle.brand} ${vehicle.year}`,
-      spec: vehicle.engineSpec,
-      detail: 'Cilindro com alta dissipação térmica, injeção eletrônica e máxima confiabilidade.'
-    },
-    {
-      id: 'headlight',
-      x: 71,
-      y: 37,
-      title: 'Projetor Full LED + DRL',
-      spec: 'Iluminação 100% LED 2026',
-      detail: 'Canhão projetor bi-funcional, DRL integrado e piscas em LED de alta visibilidade.'
-    },
-    {
-      id: 'abs',
-      x: 75,
-      y: 74,
-      title: 'Freios a Disco com ABS',
-      spec: 'Segurança Ativa 2026',
-      detail: 'Sistema antibloqueio de alta precisão com suspensão calibrada para asfalto e curvas.'
-    },
-    {
-      id: 'panel',
-      x: 64,
-      y: 22,
-      title: 'Painel Digital Blackout',
-      spec: 'LCD 100% Digital + Conectividade',
-      detail: 'Indicador ECO de pilotagem econômica, computador de bordo e alerta de consumo.'
-    }
-  ];
-};
-
 const PAYMENT_META: Record<
   FuelPaymentMethod,
   {
@@ -602,13 +509,8 @@ const MotorcycleView: React.FC<Props> = ({
     [selectedVehicleId]
   );
 
-  const vehicleHotspots = useMemo(() => getVehicleHotspots(currentVehicle), [currentVehicle]);
-
   // 3D Animated Studio State
-  const [showHotspots, setShowHotspots] = useState<boolean>(true);
-  const [activeHotspot, setActiveHotspot] = useState<HotspotInfo | null>(null);
   const [headlightOn, setHeadlightOn] = useState<boolean>(true);
-  const [xrayTank, setXrayTank] = useState<boolean>(false);
   const [is3DAnimActive, setIs3DAnimActive] = useState<boolean>(true);
   const [animPhase, setAnimPhase] = useState<number>(0);
   const isUserInteractingRef = useRef<boolean>(false);
@@ -618,12 +520,6 @@ const MotorcycleView: React.FC<Props> = ({
     glareX: 50,
     glareY: 35
   });
-
-  // Reset active hotspot when vehicle changes
-  useEffect(() => {
-    const spots = getVehicleHotspots(currentVehicle);
-    setActiveHotspot(spots[0] || null);
-  }, [currentVehicle]);
 
   // Smooth Continuous 3D Studio Animation Loop
   useEffect(() => {
@@ -1419,134 +1315,34 @@ const MotorcycleView: React.FC<Props> = ({
                   }
                 />
               )}
-
-              {/* X-Ray Fuel Tank Overlay */}
-              {xrayTank && (
-                <div
-                  className="absolute pointer-events-none rounded-full border-2 border-emerald-400/80 bg-emerald-500/25 backdrop-blur-[2px] flex items-center justify-center animate-pulse"
-                  style={
-                    currentVehicle.category === 'car'
-                      ? { left: '66%', top: '34%', width: '22%', height: '20%' }
-                      : { left: '43%', top: '22%', width: '20%', height: '20%' }
-                  }
-                >
-                  <span className="text-[9px] sm:text-[10px] font-black text-emerald-300 drop-shadow whitespace-nowrap">
-                    {(stats.tankRatio * currentVehicle.tankCapacityL).toFixed(1)}L /{' '}
-                    {currentVehicle.tankCapacityL.toString().replace('.', ',')}L
-                  </span>
-                </div>
-              )}
-
-              {/* Interactive 3D Hotspots */}
-              {showHotspots &&
-                vehicleHotspots.map(spot => {
-                  const isSelected = activeHotspot?.id === spot.id;
-                  return (
-                    <button
-                      key={spot.id}
-                      type="button"
-                      onClick={e => {
-                        e.stopPropagation();
-                        setActiveHotspot(spot);
-                      }}
-                      style={{ left: `${spot.x}%`, top: `${spot.y}%` }}
-                      className={`absolute -translate-x-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center transition-all cursor-pointer z-20 ${
-                        isSelected
-                          ? 'bg-accent text-black scale-125 shadow-[0_0_20px_rgba(255,255,255,0.7)] ring-4 ring-accent/30'
-                          : 'bg-black/75 text-white border border-white/40 hover:scale-110'
-                      }`}
-                      title={spot.title}
-                    >
-                      <span className="w-2 h-2 rounded-full bg-current" />
-                    </button>
-                  );
-                })}
             </div>
           </div>
-
-          {/* Active Hotspot Telemetry Card */}
-          {activeHotspot && showHotspots && (
-            <div className="mt-3 sm:mt-0 sm:absolute sm:bottom-3 sm:left-3 sm:max-w-sm bg-black/85 backdrop-blur-xl border border-white/15 rounded-2xl p-3 z-30 flex items-start justify-between gap-2.5 animate-in fade-in duration-200">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs font-extrabold text-white">{activeHotspot.title}</span>
-                  <span className="text-[10px] font-bold text-accent bg-accent/15 px-2 py-0.5 rounded-full border border-accent/25 whitespace-nowrap">
-                    {activeHotspot.spec}
-                  </span>
-                </div>
-                <p className="text-[11px] text-gray-300 mt-1 leading-snug">{activeHotspot.detail}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setActiveHotspot(null)}
-                className="text-gray-400 hover:text-white p-1 shrink-0 cursor-pointer"
-                aria-label="Fechar especificação"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* Showroom Controls Footer: Fixed Vehicle Color Badge + Interactive 3D Toggles */}
-        <div className="relative z-20 mt-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-3 border-t border-white/5">
-          {/* Fixed Color Info Badge (Color is fixed per vehicle model) */}
-          <div className="flex items-center justify-between sm:justify-start gap-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#1c1c1e] border border-white/5">
-              <span
-                className="w-3 h-3 rounded-full shrink-0 ring-1 ring-white/25"
-                style={{ backgroundColor: currentVehicle.accentHex }}
-              />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 whitespace-nowrap">
-                Cor Fixa: <strong className="text-white">{currentVehicle.colorName}</strong>
-              </span>
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 sm:hidden whitespace-nowrap">
-              {currentVehicle.typeLabel}
+        {/* Showroom Controls Footer: Fixed Vehicle Color Badge + Farol LED Toggle */}
+        <div className="relative z-20 mt-3.5 flex items-center justify-between gap-2 pt-3 border-t border-white/5">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#1c1c1e] border border-white/5 min-w-0">
+            <span
+              className="w-3 h-3 rounded-full shrink-0 ring-1 ring-white/25"
+              style={{ backgroundColor: currentVehicle.accentHex }}
+            />
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 truncate">
+              Cor Fixa: <strong className="text-white">{currentVehicle.colorName}</strong>
             </span>
           </div>
 
-          {/* Interactive 3D Action Toggles */}
-          <div className="grid grid-cols-3 sm:flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setHeadlightOn(h => !h)}
-              className={`px-2.5 py-2 sm:py-1.5 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-1.5 border transition-all cursor-pointer whitespace-nowrap ${
-                headlightOn
-                  ? 'bg-sky-500/20 text-sky-300 border-sky-400/30'
-                  : 'bg-[#1c1c1e] text-gray-400 border-white/5'
-              }`}
-            >
-              <Lightbulb className="w-3.5 h-3.5 shrink-0" />
-              <span>Farol LED</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setXrayTank(x => !x)}
-              className={`px-2.5 py-2 sm:py-1.5 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-1.5 border transition-all cursor-pointer whitespace-nowrap ${
-                xrayTank
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-400/30'
-                  : 'bg-[#1c1c1e] text-gray-400 border-white/5'
-              }`}
-            >
-              <Layers className="w-3.5 h-3.5 shrink-0" />
-              <span>Tanque {currentVehicle.tankCapacityL.toString().replace('.', ',')}L</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowHotspots(s => !s)}
-              className={`px-2.5 py-2 sm:py-1.5 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-1.5 border transition-all cursor-pointer whitespace-nowrap ${
-                showHotspots
-                  ? 'bg-accent/20 text-accent border-accent/30'
-                  : 'bg-[#1c1c1e] text-gray-400 border-white/5'
-              }`}
-            >
-              <Eye className="w-3.5 h-3.5 shrink-0" />
-              <span>Specs</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setHeadlightOn(h => !h)}
+            className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-1.5 border transition-all cursor-pointer whitespace-nowrap shrink-0 ${
+              headlightOn
+                ? 'bg-sky-500/20 text-sky-300 border-sky-400/30'
+                : 'bg-[#1c1c1e] text-gray-400 border-white/5'
+            }`}
+          >
+            <Lightbulb className="w-3.5 h-3.5 shrink-0" />
+            <span>Farol LED</span>
+          </button>
         </div>
       </div>
 
